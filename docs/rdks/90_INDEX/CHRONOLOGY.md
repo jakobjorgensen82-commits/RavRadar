@@ -1,3 +1,7 @@
+## 17. november 2026 —4.0.601-forberedelse ovenpå app600
+
+Tre offentlige vidensfakta og emneopfølgning samles med en lukket after599-konstruktør. C/I/T og privat DATA-preview er beregnet;76 udstedte SQL-originaler bevares. Ingen ny append, native-, FULL-, installations- eller offentlig accept er påstået. Se aktuel sandhed og håndbog89.352.
+
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.

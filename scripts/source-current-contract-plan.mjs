@@ -14,6 +14,14 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const freeze=value=>{for(const item of Object.values(value))if(item&&typeof item==='object')freeze(item);return Object.freeze(value);};
 const INSTALLER='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
 const WEATHER_BUILD='.github/workflows/reusable-weather-build.yml';
+const ASSISTANT_SUCCESSOR_TESTS=new Set([
+  'scripts/test-assistant-after597-fixed-generator.mjs',
+  'scripts/test-assistant-after597-migration-prewrite.mjs',
+  'scripts/test-assistant-after597-parent-profiles.mjs',
+  'scripts/test-assistant-after597-runtime-origin.mjs',
+  'scripts/test-assistant-after597-sync-binding.mjs',
+]);
+const FIXED_ASSISTANT_LOG_TEST='scripts/test-fixed-assistant-failure-log-20261101.mjs';
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
 const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
@@ -57,9 +65,10 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   assistantEdge:[
     'node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-    'node scripts/test-fixed-assistant-failure-log-20261101.mjs',
   ],
+  assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST],
   publicUI:[
+    'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
     'node scripts/test-ravscore-public-browser-closure.mjs',
     'node scripts/test-map-forecast-timeline.mjs',
@@ -123,6 +132,10 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-map-forecast-timeline.mjs',
     'node scripts/test-forecast-share-projection.mjs',
     'node scripts/test-forecast-share-pages-deploy.mjs',
+  ],
+  privateStudy:[
+    // This whole existing entry imports month-rollover and categorical-controller.
+    'node --test scripts/test-account-statistics-assistant-callers.mjs',
   ],
   ownerErasure:[
     'node --test scripts/test-delete-trip-owner-data-readback.mjs',
@@ -230,8 +243,8 @@ const PATH_AREAS=freeze({
     'supabase/functions/_shared/rav-assistant-contract.ts',
     'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-    'scripts/test-fixed-assistant-failure-log-20261101.mjs',
   ],
+  assistantDiagnostic:[FIXED_ASSISTANT_LOG_TEST,'scripts/read-fixed-assistant-failure-log-20261101.mjs'],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'scripts/test-ravscore-public-data-service-binding.mjs',
@@ -342,6 +355,14 @@ const PATH_AREAS=freeze({
     'scripts/deploy-forecast-share-pages.mjs',
     'scripts/test-forecast-share-pages-deploy.mjs',
   ],
+  privateStudy:[
+      ".github/workflows/private-trip-weather-study.yml",
+      "scripts/publish-private-trip-weather-study.mjs",
+      "scripts/deploy-private-trip-study.mjs",
+      "scripts/test-trip-aggregate-month-rollover.mjs",
+      "scripts/test-private-trip-study-categorical-controller.mjs",
+      "scripts/test-account-statistics-assistant-callers.mjs"
+  ],
   ownerErasure:[
     'supabase/functions/_shared/trip-owner-erasure.js',
     'scripts/test-delete-trip-owner-data-readback.mjs',
@@ -408,7 +429,7 @@ const PATH_AREAS=freeze({
 const WEATHER_OPERATION_PATHS=new Set([...PATH_AREAS.waterSourceRouting,...PATH_AREAS.weatherUpdater,...PATH_AREAS.runtimeAudit]);
 const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
-const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure]);
+const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure,...PATH_AREAS.privateStudy]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
@@ -418,6 +439,54 @@ export function currentWorkflowTargets(relative){
   const areas=pathAreas.get(relative);
   if(!areas?.length||areas.some(area=>!COMMANDS[area]?.length))return null;
   return freeze({path:relative,owners:areas.map(area=>({area,commands:[...COMMANDS[area]]}))});
+}
+// Execution-only lookup for the normal source driver. The complete Git diff
+// chooses existing natural owners; this is not a baseline or reuse receipt.
+export function currentSourceTargets(relative){
+  assert.equal(arguments.length,1);
+  if(typeof relative!=='string'||!/^[A-Za-z0-9_.\/-]+$/.test(relative)
+    ||relative.startsWith('/')||relative.split('/').some(part=>part==='.'||part==='..'))return null;
+  let areas=pathAreas.get(relative);
+  if(ASSISTANT_SUCCESSOR_TESTS.has(relative))
+    return freeze({path:relative,owners:[{area:'assistantSuccessor',commands:['node '+relative+' --after599-current']}]});
+  if(['scripts/validate-source-once.mjs','scripts/source-critical-gate.mjs'].includes(relative))
+    return freeze({path:relative,owners:[{area:'sourceDriver',commands:['node scripts/test-source-validation-once.mjs']}]});
+  if(relative==='scripts/national584-source-evidence.mjs')areas=['sourceControls'];
+  if(!areas&&/^docs\/(?:rdks|ai|handbook)\//.test(relative))areas=['documentation'];
+  if(!areas&&['package.json','version.json','data/kystdata.json','data/zones.geojson',
+    'docs/handbook/content.json','CHANGELOG.md','AGENTS.md'].includes(relative))areas=['core'];
+  if(!areas&&/^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(relative))
+    return freeze({path:relative,owners:[{area:'changedTest',commands:['node --test '+relative]}]});
+  if(!areas&&/^js\/core\//.test(relative))areas=['runtimeAudit'];
+  if(!areas&&/^js\/(?:services|ui)\//.test(relative))areas=['publicUI'];
+  if(!areas&&/^js\/(?:map|jordrav)\//.test(relative))areas=['publicUI'];
+  if(!areas&&/^knowledge\//.test(relative))areas=['assistantEdge'];
+  if(!areas&&/^scripts\/fixtures\/rav-assistant-/.test(relative))areas=['assistantEdge'];
+  if(!areas&&/^data\/admin\/ravscore-/.test(relative))areas=['core'];
+  if(!areas&&/^scripts\/(?:assistant-later-h0-|build-assistant-later-h0-|check-assistant-later-h0-|run-frozen586-assistant-later-h0-|sync-ravscore-model-binding|integrated-cutover-readiness|read-authenticated-dmi-current-companions|reconcile-private-runtime-checkpoint)/.test(relative))areas=['runtimeAudit'];
+  if(!areas&&/^scripts\/lib\/(?:assistant-later-h0-|checkpoint-cas-native-|established-native-current-origin|model-source-imports|authenticated-frozen586-)/.test(relative))areas=['runtimeAudit'];
+  if(!areas&&/^scripts\/rollback-assets\//.test(relative))areas=['runtimeAudit'];
+  if(!areas&&['scripts/lib/account-statistics-assistant-package-review.mjs',
+    'scripts/lib/alternative-c-caller-test-input.mjs','scripts/lib/release-gate-test-plan.mjs'].includes(relative))areas=['historicalTests'];
+  if(!areas&&relative==='scripts/source-impact-domain-inputs.mjs')areas=['sourceControls'];
+  if(!areas&&relative==='.github/workflows/validate-copernicus-current-pilot.yml')areas=['actionVersions'];
+  // SQL is executed by the existing separate native phase. This lookup never
+  // represents the preflight as SQL execution or historical qualification.
+  if(!areas&&/^supabase\/(?:migrations\/[A-Za-z0-9_.-]+\.sql|schema\.sql|INSTALL-[A-Za-z0-9_.-]+\.sql)$/.test(relative))areas=['core'];
+  if(!areas&&/^supabase\/functions\/(?:_shared\/rav-assistant-[A-Za-z0-9_.-]+\.(?:ts|js)|rav-assistant\/[A-Za-z0-9_.-]+\.ts)$/.test(relative))areas=['assistantEdge'];
+  if(!areas&&/\.(?:html|css)$/.test(relative))areas=['publicUI'];
+  if(!areas||areas.some(area=>!COMMANDS[area]))return null;
+  return freeze({path:relative,owners:areas.map(area=>{
+    let commands=[...COMMANDS[area]];
+    if(area==='sourceControls'){
+      const test=relative.replace(/^scripts\/(?!test-)/,'scripts/test-');
+      const matching=commands.filter(command=>command.split(' ').includes(test));
+      if(matching.length)commands=matching;
+      else if(relative==='scripts/national584-source-evidence.mjs')
+        commands=commands.filter(command=>command.includes('test-native-postgres-evidence.mjs'));
+    }
+    return {area,commands};
+  })});
 }
 const PAGES_DEPLOYMENT_COMMAND='node scripts/test-ravscore-operational-pages-deployment.mjs';
 const PAGES_OWNER_COMPLETION_COMMAND=PAGES_DEPLOYMENT_COMMAND+' --owner-completion-only';
@@ -990,7 +1059,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

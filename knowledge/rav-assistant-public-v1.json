@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.600",
+  "releaseVersion": "4.0.601",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9"
+    "modelBundleSha256": "8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -240,6 +240,18 @@
     {
       "id": "transport.current-supply-memory",
       "text": "After sufficiently strong and sustained verified coastward current, AmberScore can remain high through a brief seaward reversal. Outflow subtracts from the accumulated current-supply index; it does not reset it automatically. Current evidence has full age weight until 24 hours, then declining weight until 48 hours. The score combines 20 % huntability, 50 % delivery potential and 30 % wave mobilisation; the other parts also count. The 48-hour rule concerns current, not completeness of all weather history. These are model assumptions, not observed amber or a guarantee for any zone or hour."
+    },
+    {
+      "id": "identification.fluorescence-mechanism",
+      "text": "Fluorescent molecules in amber absorb UV light and quickly release part of that energy as visible light of a longer wavelength. This is fluorescence."
+    },
+    {
+      "id": "identification.uv-daylight-contrast",
+      "text": "UV light can still excite fluorescence in daylight. Bright ambient light can mask the glow; darkness or shielding from ambient light can improve the contrast."
+    },
+    {
+      "id": "limits.unobserved-amber-inventory",
+      "text": "RavRadar does not observe how many amber pieces or how much amber is present at a beach or in a local amber deposit. AmberScore and weather describe model evidence and search conditions; they cannot be converted into an observed count or a guaranteed yield."
     }
   ],
   "fixedRefusals": {

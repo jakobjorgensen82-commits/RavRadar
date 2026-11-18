@@ -1,3 +1,4 @@
+import {ACTIVE_ASSISTANT_SUCCESSOR} from './assistant-later-h0-successor-source.mjs';
 /** Shared inventory: standalone release gate always executes every listed test. */
 export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/test-source-validation-once.mjs',
@@ -75,5 +76,7 @@ const AFTER598_CURRENT_TEST_FILES=Object.freeze([
 ]);
 export function releaseGateTestArguments(file){
   // Closed argv mapping: the generic checkpoint target remains NON-PG.
+  if(AFTER598_CURRENT_TEST_FILES.includes(file)&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor')
+    return [file,'--after599-current'];
   return AFTER598_CURRENT_TEST_FILES.includes(file)?[file,'--after598-current']:[file];
 }

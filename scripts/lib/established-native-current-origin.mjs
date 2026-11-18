@@ -38,7 +38,7 @@ import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapsh
   readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot,
   readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh,
   readAuthenticatedSource597Predecessor,assertAuthenticatedSource597Snapshot,assertAuthenticatedSource597SnapshotFresh,
-  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh}
+  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh,readAuthenticatedSource599Predecessor,assertAuthenticatedSource599Snapshot,assertAuthenticatedSource599SnapshotFresh}
   from './authenticated-frozen586-predecessor.mjs';
 
 export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v1';
@@ -61,6 +61,11 @@ const ASSISTANT_AFTER598_ORIGINAL598=Object.freeze({
   I:'f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1',
   C:'239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a',
   T:'035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579',
+});
+const ASSISTANT_AFTER599_ORIGINAL599=Object.freeze({
+  I:'d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9',
+  C:'faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d',
+  T:'23577d15b555acb50ee73f0fb4117282701f4d97e933932f30ac54df2c679645',
 });
 const KIND = 'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN';
 const SHA = /^[a-f0-9]{64}$/, HEAD = /^[a-f0-9]{40}$/;
@@ -664,6 +669,7 @@ async function readOrigin(centralContract, seedOnly) {
     || isScalar597OriginParentBinding(descriptor.modelBinding)
     || isAssistantAfter597OriginParentBinding(descriptor.modelBinding)
     || isAssistantAfter598OriginParentBinding(descriptor.modelBinding)
+    || isAssistantAfter599OriginParentBinding(descriptor.modelBinding)
     || descriptor.modelBinding.modelBundleSha256 === 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54')
     ? PRIVATE_CONDITIONS_MAX_BYTES : MAX_CONDITIONS;
   let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), conditionsMaximum);
@@ -686,6 +692,8 @@ async function readOrigin(centralContract, seedOnly) {
       return readAssistantFrozen597LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
     if(isAssistantAfter598OriginParentBinding(descriptor.modelBinding))
       return readAssistantFrozen598LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(isAssistantAfter599OriginParentBinding(descriptor.modelBinding))
+      return readAssistantFrozen599LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
     need(conditions[ATTEST] === undefined, 'UNSUPPORTED_ATTESTED_FAMILY');
     need(!(descriptor.datasetId === SEED.datasetId && descriptor.productionReferenceAt === SEED.referenceAt
       && descriptor.modelBinding.modelBundleSha256 === SEED.I), 'SEED_CONTENT_CHANGED');
@@ -1278,17 +1286,32 @@ async function readAssistantFrozen597LaterOrigin({descriptor,before,request,cond
 export function isAssistantAfter598OriginParentBinding(binding){
   return binding?.modelBundleSha256===ASSISTANT_AFTER598_ORIGINAL598.I;
 }
+export function isAssistantAfter599OriginParentBinding(binding){
+  return binding?.modelBundleSha256===ASSISTANT_AFTER599_ORIGINAL599.I;
+}
 export function assertAssistantAfter598OriginParentMetadata(descriptor,checkpoint){
   need(isAssistantAfter598OriginParentBinding(descriptor?.modelBinding)
     &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER598_ORIGINAL598.T
     &&checkpoint?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256===ASSISTANT_AFTER598_ORIGINAL598.C,
     '598_FIXED_ORIGINAL_BINDING');return true;
 }
+export function assertAssistantAfter599OriginParentMetadata(descriptor,checkpoint){
+  need(isAssistantAfter599OriginParentBinding(descriptor?.modelBinding)
+    &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER599_ORIGINAL599.T
+    &&checkpoint?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256===ASSISTANT_AFTER599_ORIGINAL599.C,
+    '599_FIXED_ORIGINAL_BINDING');return true;
+}
 export function assertAssistantAfter598OriginTarget(descriptor,target){
   need(arguments.length===2&&isAssistantAfter598OriginParentBinding(descriptor?.modelBinding)
     &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER598_ORIGINAL598.T,'598_FIXED_ORIGINAL_BINDING');
   need(hour(target)&&hour(descriptor.productionReferenceAt)
     &&Date.parse(target)>Date.parse(descriptor.productionReferenceAt),'598_LATER_TARGET');return true;
+}
+export function assertAssistantAfter599OriginTarget(descriptor,target){
+  need(arguments.length===2&&isAssistantAfter599OriginParentBinding(descriptor?.modelBinding)
+    &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER599_ORIGINAL599.T,'599_FIXED_ORIGINAL_BINDING');
+  need(hour(target)&&hour(descriptor.productionReferenceAt)
+    &&Date.parse(target)>Date.parse(descriptor.productionReferenceAt),'599_LATER_TARGET');return true;
 }
 async function readAssistantFrozen598LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
   // En uændret598-model kan ikke aktivere overgangen. Den normale controller
@@ -1329,6 +1352,51 @@ async function readAssistantFrozen598LaterOrigin({descriptor,before,request,cond
   need(same(await readPointer(request),before),'SOURCE_CHANGED');
   need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
   await assertAuthenticatedSource598SnapshotFresh(original598);
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+async function readAssistantFrozen599LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  // En uændret599-model kan ikke aktivere overgangen. Den normale controller
+  // kræver desuden udstedt output før arbejdsfiler og autentificerede læsere.
+  need(isAssistantAfter599OriginParentBinding(descriptor.modelBinding)
+    &&currentSource.integrated!==ASSISTANT_AFTER599_ORIGINAL599.I,'599_FAMILY');
+  assertAssistantAfter599OriginTarget(descriptor,process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
+  const original599=await readAuthenticatedSource599Predecessor();
+  const snapshot=assertAuthenticatedSource599Snapshot(original599);
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'599_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  assertAssistantAfter599OriginParentMetadata(descriptor,snapshot.checkpoint);
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '599_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '599_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'599_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'599_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'599_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'599_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'599_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  await assertAuthenticatedSource599SnapshotFresh(original599);
   const handle=Object.freeze({});
   contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
     parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,

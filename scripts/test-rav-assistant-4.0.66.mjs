@@ -182,8 +182,10 @@ const context = {
 };
 
 const bestPlace = await askRavRadar('bedste sted i morgen?', context, { localOnly: true, now });
-assert.match(bestPlace, /1\. Zone høj – score 81/);
-assert.match(bestPlace, /2\. Zone lav – score 55/);
+assert.match(bestPlace, /1\. Zone høj – områdescore 81/);
+assert.match(bestPlace, /2\. Zone lav – områdescore 55/);
+assert.match(bestPlace, /Bedste kystdel: RavScore 81/);
+assert.match(bestPlace, /Bedste kystdel: RavScore 55/);
 assert.doesNotMatch(bestPlace, /Zone uden data/);
 
 const bestTime = await askRavRadar('bedste tidspunkt i morgen?', context, { localOnly: true, now });
@@ -272,8 +274,10 @@ console.log('OK: Spørg RavRadar bruger lokale integrerede scorer, udelader util
     }
     for (const question of ['hvor er det bedst på mandag','Bedste sted den 26. oktober?','Hvor er det bedst 2026-10-26?','Bedste sted 26/10/2026?']) {
       const answer = await ask(question);
-      assert.match(answer,/1\. Zone høj – score 81/);
-      assert.match(answer,/2\. Zone lav – score 0/,'Zero is a valid score.');
+      assert.match(answer,/1\. Zone høj – områdescore 81/);
+      assert.match(answer,/2\. Zone lav – områdescore 0/,'Zero is a valid score.');
+      assert.match(answer,/Bedste kystdel: RavScore 81/);
+      assert.match(answer,/Bedste kystdel: RavScore 0/,'Zero remains a valid local RavScore.');
       assert.doesNotMatch(answer,/ikke nok gyldige prognosedata/);
     }
     for (const [language,question] of [['da','hvor er det bedst på tirsdag?'],['de','Wo ist es am besten am Dienstag?'],['en','Where is it best on Tuesday?'],['en','Best place on October 27?']]) {
@@ -299,7 +303,7 @@ console.log('OK: Spørg RavRadar bruger lokale integrerede scorer, udelader util
       productionReferenceAt:earlier.conditions.productionReferenceAt, generatedAt:earlier.conditions.generatedAt,
       validUntil:ravScorePublicHorizonValidUntil(earlier.conditions.productionReferenceAt),
     });
-    assert.match(await ask('Bedste sted i morgen?',earlier,'da',atLocalMidnight),/Zone høj – score 81/,
+    assert.match(await ask('Bedste sted i morgen?',earlier,'da',atLocalMidnight),/Zone høj – områdescore 81/,
       'Danish local day crosses midnight before UTC on the DST boundary.');
 
     const changed = mutate => { const copy=structuredClone(partitioned); mutate(copy); return copy; };

@@ -24,8 +24,9 @@ import {readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapsh
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
-import {readAssistantLaterH0RetentionInput,assistantAfter597RuntimePredecessor,assistantAfter598RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598RuntimePredecessor():
+import {readAssistantLaterH0RetentionInput,assistantAfter597RuntimePredecessor,assistantAfter598RuntimePredecessor,assistantAfter599RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599RuntimePredecessor():
+  ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598RuntimePredecessor():
   ACTIVE.sourcePhase==='assistant-mixed-after597-successor'?assistantAfter597RuntimePredecessor():
   ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'?Object.freeze({
   read:readAuthenticatedSource594Predecessor,snapshot:assertAuthenticatedSource594Snapshot,

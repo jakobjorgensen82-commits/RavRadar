@@ -428,6 +428,180 @@ function assertAssistantAfter598ImportInverse(source,file,reviewed){
   }
   if(roundtrip!==source)throw new Error('Hele efter598-rundturen fejlede: '+file);
 }
+// The genuine599 registration adds no current module edge. Reconstruct only
+// this closed registry/selector/assertion delta, then use the EXISTING complete
+// after598 rule. There is no new whole-after hash or current-head acceptance.
+const ASSISTANT_AFTER599_REGISTER_INVERSES=Object.freeze(Object.fromEntries(
+  Object.entries({
+  "scripts/check-assistant-later-h0-predecessor-source.mjs": {
+    "hunks": [
+      {
+        "role": "closed-profile-selector",
+        "before": "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE||profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');\n",
+        "after": "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE||profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE||profile===SOURCE599_CODE_PROFILE||profile===SOURCE599_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');\n"
+      },
+      {
+        "role": "genuine599-assertion-and-selector",
+        "before": "const ASSERTION_SUFFIX=profile===SOURCE598_ORIGINAL_DATA_PROFILE?SOURCE_598_ASSERTION_SUFFIX:profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:\n",
+        "after": "const SOURCE_599_ASSERTION_SUFFIX=String.raw`\n// DATA assertions over whole selected normal598 origin implementation.\n// No original/ForPart/finalizer handle or metadata admission is minted here.\nasync function source599OriginData(descriptor,conditions,centralContract) {\n  const {validateProtectedPrivateRuntimeDescriptor} = await import('../protected-private-production-runtime.mjs');\n  need(same(validateProtectedPrivateRuntimeDescriptor(descriptor),descriptor),'SOURCE_599_DESCRIPTOR');\n  const binding=ravScoreModelBinding(),candidate=candidateBinding(),contracts=await privateRuntimeContractHashes();\n  need(same(descriptor.modelBinding,binding)&&same(descriptor.contractHashes,contracts),'SOURCE_599_FAMILY');\n  const parts=registryParts(centralContract),pairs=pairsFromConditions(conditions,parts);\n  const currentSource=Object.freeze({sourceHead:descriptor.sourceHead,\n    semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,\n    integrated:binding.modelBundleSha256,candidate:candidate.modelBundleSha256,\n    continuation:contracts.continuationStateContractSha256,ownerPolicyGitBlob:SEED.ownerPolicyGitBlob});\n  need(conditions[ATTEST]?.kind===KIND&&conditions[ATTEST]?.transition==='NORMAL_STRICT_CONTINUATION','SOURCE_599_NORMAL_GENERATION_REQUIRED');\n  validateAttestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});\n  need(conditions[ATTEST].registrySha256===digest(centralContract),'METADATA_REGISTRY_CHANGED');\n  return {pairs,binding,candidate,contracts};\n}\nexport async function assertSource599OriginSnapshotData(options) {\n  need(arguments.length===1&&exact(options,['descriptor','conditions','centralContract','checkpoint']),'ARGUMENTS');\n  const {descriptor,conditions,centralContract,checkpoint}=options;\n  const {pairs,binding,candidate,contracts}=await source599OriginData(descriptor,conditions,centralContract);\n  need(same(checkpoint.modelBinding,binding)&&same(checkpoint.candidateGRollbackCompanion?.modelBinding,candidate)\n    &&checkpoint.continuationStateContractSha256===contracts.continuationStateContractSha256\n    &&checkpoint.datasetId===conditions.datasetId&&checkpoint.productionReferenceAt===conditions.productionReferenceAt\n    &&SHA.test(checkpoint.generationSha256),'SOURCE_599_CHECKPOINT');\n  need(same(Object.keys(checkpoint.states??{}).sort(),[...pairs.keys()].sort())\n    &&same(Object.keys(checkpoint.candidateGRollbackCompanion?.states??{}).sort(),[...pairs.keys()].sort()),'PARTS');\n  for(const[id,pair]of pairs)need(same(pair.integrated,checkpoint.states[id])\n    &&same(pair.candidate,checkpoint.candidateGRollbackCompanion.states[id]),'B_S_DIFFER');\n}\n`;\n\nconst ASSERTION_SUFFIX=profile===SOURCE599_ORIGINAL_DATA_PROFILE?SOURCE_599_ASSERTION_SUFFIX:profile===SOURCE598_ORIGINAL_DATA_PROFILE?SOURCE_598_ASSERTION_SUFFIX:profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:\n"
+      },
+      {
+        "role": "source599-entry-guards",
+        "before": "async function withSource(useVerifiedSource){\n",
+        "after": "async function withSource(useVerifiedSource){\n  if(profile===SOURCE599_ORIGINAL_DATA_PROFILE)assertSource599OriginalDataSourceSelected();\n  if(profile===SOURCE599_CODE_PROFILE)assertSource599CodeSourceSelected();\n"
+      },
+      {
+        "role": "source599-builder-selector",
+        "before": "    const builderArgs=(profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE)?['--assistant-after597','--check']:\n",
+        "after": "    const builderArgs=(profile===SOURCE599_CODE_PROFILE||profile===SOURCE599_ORIGINAL_DATA_PROFILE)?['--assistant-after598','--check']:\n      (profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE)?['--assistant-after597','--check']:\n"
+      },
+      {
+        "role": "source599-provenance-and-data-profile",
+        "before": "  assertion:'scripts/lib/established-native-current-origin-598-assertion.mjs',temporaryPrefix:'rr-source-a598-data-'});\n\n",
+        "after": "  assertion:'scripts/lib/established-native-current-origin-598-assertion.mjs',temporaryPrefix:'rr-source-a598-data-'});\n\n// Inactive successor family with fixed old599 CODE provenance.\n// This CODE selection and old tuple create no data/installation authority.\nexport const SOURCE599_CODE_SOURCE_PROVENANCE=Object.freeze({\n  \"selected\": true,\n  \"purpose\": \"CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION\",\n  \"head\": \"9d67207fbbec0f6bcf7819048f72e57535e9615d\",\n  \"tree\": \"a1a76ef3b38885ba46f3422ee287fe1b1c581363\",\n  \"candidateFiles\": 101,\n  \"integratedFiles\": 100,\n  \"originSha256\": \"ede277ca9f4f37b8b1afe85a4b720e567135f9a747870406f528c619f2c38865\",\n  \"partPipelineSha256\": \"8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758\",\n  \"fullRuntimeContractSha256\": \"ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff\",\n  \"publicProjectionContractSha256\": \"24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec\"\n});\nconst SOURCE599_CODE_PROFILE=Object.freeze({\n  ...SOURCE599_CODE_SOURCE_PROVENANCE,\n  builder:'scripts/build-assistant-later-h0-successor.mjs',\n  builderChecked:'Præcis assistentkilde efter598 kontrolleret; ingen installation eller tilstandsoptagelse.',\n  assertion:null,temporaryPrefix:'rr-source-a599-code-',\n  candidate:'faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d',\n  integrated:'d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9',\n  additionalMigrations:Object.freeze([...SOURCE598_CODE_PROFILE.additionalMigrations,\n    Object.freeze({path:'supabase/migrations/20261115174259_assistant_after598_original598_bound_successor.sql',\n      sha256:'3b8270ee8d0e9302cf642a72b888c34255859b16ebc44084a6556e5f7bf0f699'})]),\n  runtimeContracts:Object.freeze({continuationStateContractSha256:'23577d15b555acb50ee73f0fb4117282701f4d97e933932f30ac54df2c679645',\n    fullRuntimeContractSha256:SOURCE599_CODE_SOURCE_PROVENANCE?.fullRuntimeContractSha256??null,\n    publicProjectionContractSha256:SOURCE599_CODE_SOURCE_PROVENANCE?.publicProjectionContractSha256??null}),\n});\nconst SOURCE599_ORIGINAL_DATA_PROFILE=Object.freeze({...SOURCE599_CODE_PROFILE,\n  purpose:'NEW_NORMAL_599_ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION',\n  assertion:'scripts/lib/established-native-current-origin-599-assertion.mjs',temporaryPrefix:'rr-source-a599-data-'});\n\n\n"
+      },
+      {
+        "role": "source599-normal-cache-and-accessors",
+        "before": "  assertSource598OriginalDataSourceSelected();return source598OriginalData(...arguments);\n}\n",
+        "after": "  assertSource598OriginalDataSourceSelected();return source598OriginalData(...arguments);\n}\n\nconst source599Code=fixedSource(SOURCE599_CODE_PROFILE);\nconst source599OriginalData=fixedSource(SOURCE599_ORIGINAL_DATA_PROFILE);\nexport function assertSource599CodeSourceSelected(){\n  assert.equal(arguments.length,0,'No caller-selected599 CODE source');\n  const source=SOURCE599_CODE_SOURCE_PROVENANCE;\n  assert(source&&Object.isFrozen(source),'SOURCE599_CODE_UNSELECTED');\n  assert.equal(source.selected,true);assert.equal(source.purpose,'CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION');\n  assert.deepEqual(Object.keys(source).sort(),['candidateFiles','fullRuntimeContractSha256','head','integratedFiles',\n    'originSha256','partPipelineSha256','publicProjectionContractSha256','purpose','selected','tree'].sort());\n  for(const key of ['head','tree'])assert.match(source[key],/^[a-f0-9]{40}$/);\n  for(const key of ['candidateFiles','integratedFiles'])assert(Number.isSafeInteger(source[key])&&source[key]>0);\n  for(const key of ['originSha256','partPipelineSha256','fullRuntimeContractSha256','publicProjectionContractSha256'])\n    assert.match(source[key],/^[a-f0-9]{64}$/);\n  return source; // CODE data only; no current original or runtime capability.\n}\nexport async function withSource599CodeParent(callback){\n  assertSource599CodeSourceSelected();return source599Code(...arguments);\n}\nexport function assertSource599OriginalDataSourceSelected(){\n  assert.equal(arguments.length,0);assertSource599CodeSourceSelected();\n  assert.equal(SOURCE599_ORIGINAL_DATA_PROFILE.purpose,'NEW_NORMAL_599_ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION');\n  assert.equal(SOURCE599_ORIGINAL_DATA_PROFILE.head,SOURCE599_CODE_SOURCE_PROVENANCE.head);\n  assert.equal(SOURCE599_ORIGINAL_DATA_PROFILE.tree,SOURCE599_CODE_SOURCE_PROVENANCE.tree);\n  assert.equal(SOURCE599_ORIGINAL_DATA_PROFILE.assertion,'scripts/lib/established-native-current-origin-599-assertion.mjs');\n}\nexport async function withSource599OriginalDataSource(callback){\n  assertSource599OriginalDataSourceSelected();return source599OriginalData(...arguments);\n}\n"
+      }
+    ]
+  },
+  "scripts/lib/authenticated-frozen586-predecessor.mjs": {
+    "hunks": [
+      {
+        "role": "same-module-named-imports",
+        "before": "import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,\n  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,\n  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,\n  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,\n  withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE,\n  withSource597OriginalDataSource,assertSource597OriginalDataSourceSelected,SOURCE597_CODE_SOURCE_PROVENANCE,\n  withSource598OriginalDataSource,assertSource598OriginalDataSourceSelected,SOURCE598_CODE_SOURCE_PROVENANCE}\n  from '../check-assistant-later-h0-predecessor-source.mjs';\n",
+        "after": "import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,\n  withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,\n  withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,\n  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,\n  withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE,\n  withSource597OriginalDataSource,assertSource597OriginalDataSourceSelected,SOURCE597_CODE_SOURCE_PROVENANCE,\n  withSource598OriginalDataSource,assertSource598OriginalDataSourceSelected,SOURCE598_CODE_SOURCE_PROVENANCE,\n  withSource599OriginalDataSource,assertSource599OriginalDataSourceSelected,SOURCE599_CODE_SOURCE_PROVENANCE}\n  from '../check-assistant-later-h0-predecessor-source.mjs';\n"
+      },
+      {
+        "role": "closed-snapshot-selector",
+        "before": "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');\n",
+        "after": "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');\n"
+      },
+      {
+        "role": "source599-owned-bound",
+        "before": "  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598\n",
+        "after": "  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599\n"
+      },
+      {
+        "role": "source599-separate-capability-accessors",
+        "before": "export async function assertAuthenticatedSource598SnapshotFresh(handle){return sourceSnapshot598.fresh(...arguments);}\n",
+        "after": "export async function assertAuthenticatedSource598SnapshotFresh(handle){return sourceSnapshot598.fresh(...arguments);}\n\n// Independent capability family over a genuinely new normal599 B/S bank.\n// CODE selection never establishes installation, CURRENT/S or original data.\n// The fixed599 DATA host rejects metadata-only views and historical594 banks.\nconst SOURCE_FROZEN599=Object.freeze({\n  sourceHead:SOURCE599_CODE_SOURCE_PROVENANCE?.head,\n  requiredSha:Object.freeze([SOURCE599_CODE_SOURCE_PROVENANCE?.originSha256,\n    SOURCE599_CODE_SOURCE_PROVENANCE?.partPipelineSha256]),\n  withSource:withSource599OriginalDataSource,\n  assertionPath:'scripts/lib/established-native-current-origin-599-assertion.mjs',\n  assertionExport:'assertSource599OriginSnapshotData',\n  temporaryPrefix:'rr-source599-snapshot-',errorPrefix:'SOURCE599_PREDECESSOR_'});\nconst sourceSnapshot599=fixedSnapshot(SOURCE_FROZEN599);\nexport async function readAuthenticatedSource599Predecessor(){\n  assertSource599OriginalDataSourceSelected();return sourceSnapshot599.read(...arguments);\n}\nexport function assertAuthenticatedSource599Snapshot(handle){return sourceSnapshot599.snapshot(...arguments);}\nexport async function assertAuthenticatedSource599SnapshotFresh(handle){return sourceSnapshot599.fresh(...arguments);}\n"
+      }
+    ]
+  },
+  "scripts/lib/established-native-current-origin.mjs": {
+    "hunks": [
+      {
+        "role": "genuine599-closed-register-1",
+        "before": "  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh}\n",
+        "after": "  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh,readAuthenticatedSource599Predecessor,assertAuthenticatedSource599Snapshot,assertAuthenticatedSource599SnapshotFresh}\n"
+      },
+      {
+        "role": "genuine599-closed-register-2",
+        "before": "  T:'035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579',\n",
+        "after": "  T:'035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579',\n});\nconst ASSISTANT_AFTER599_ORIGINAL599=Object.freeze({\n  I:'d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9',\n  C:'faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d',\n  T:'23577d15b555acb50ee73f0fb4117282701f4d97e933932f30ac54df2c679645',\n"
+      },
+      {
+        "role": "genuine599-closed-register-3",
+        "before": "    || isAssistantAfter598OriginParentBinding(descriptor.modelBinding)\n",
+        "after": "    || isAssistantAfter598OriginParentBinding(descriptor.modelBinding)\n    || isAssistantAfter599OriginParentBinding(descriptor.modelBinding)\n"
+      },
+      {
+        "role": "genuine599-closed-register-4",
+        "before": "      return readAssistantFrozen598LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});\n",
+        "after": "      return readAssistantFrozen598LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});\n    if(isAssistantAfter599OriginParentBinding(descriptor.modelBinding))\n      return readAssistantFrozen599LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});\n"
+      },
+      {
+        "role": "genuine599-closed-register-5",
+        "before": "  return binding?.modelBundleSha256===ASSISTANT_AFTER598_ORIGINAL598.I;\n}\n",
+        "after": "  return binding?.modelBundleSha256===ASSISTANT_AFTER598_ORIGINAL598.I;\n}\nexport function isAssistantAfter599OriginParentBinding(binding){\n  return binding?.modelBundleSha256===ASSISTANT_AFTER599_ORIGINAL599.I;\n}\n"
+      },
+      {
+        "role": "genuine599-closed-register-6",
+        "before": "    '598_FIXED_ORIGINAL_BINDING');return true;\n}\n",
+        "after": "    '598_FIXED_ORIGINAL_BINDING');return true;\n}\nexport function assertAssistantAfter599OriginParentMetadata(descriptor,checkpoint){\n  need(isAssistantAfter599OriginParentBinding(descriptor?.modelBinding)\n    &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER599_ORIGINAL599.T\n    &&checkpoint?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256===ASSISTANT_AFTER599_ORIGINAL599.C,\n    '599_FIXED_ORIGINAL_BINDING');return true;\n}\n"
+      },
+      {
+        "role": "genuine599-closed-register-7",
+        "before": "    &&Date.parse(target)>Date.parse(descriptor.productionReferenceAt),'598_LATER_TARGET');return true;\n",
+        "after": "    &&Date.parse(target)>Date.parse(descriptor.productionReferenceAt),'598_LATER_TARGET');return true;\n}\nexport function assertAssistantAfter599OriginTarget(descriptor,target){\n  need(arguments.length===2&&isAssistantAfter599OriginParentBinding(descriptor?.modelBinding)\n    &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER599_ORIGINAL599.T,'599_FIXED_ORIGINAL_BINDING');\n  need(hour(target)&&hour(descriptor.productionReferenceAt)\n    &&Date.parse(target)>Date.parse(descriptor.productionReferenceAt),'599_LATER_TARGET');return true;\n"
+      },
+      {
+        "role": "genuine599-closed-register-8",
+        "before": "  await assertAuthenticatedSource598SnapshotFresh(original598);\n  const handle=Object.freeze({});\n  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,\n    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,\n    consumedParts:new Set(),finalized:false});\n  return handle;\n}\n",
+        "after": "  await assertAuthenticatedSource598SnapshotFresh(original598);\n  const handle=Object.freeze({});\n  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,\n    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,\n    consumedParts:new Set(),finalized:false});\n  return handle;\n}\nasync function readAssistantFrozen599LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){\n  // En uændret599-model kan ikke aktivere overgangen. Den normale controller\n  // kræver desuden udstedt output før arbejdsfiler og autentificerede læsere.\n  need(isAssistantAfter599OriginParentBinding(descriptor.modelBinding)\n    &&currentSource.integrated!==ASSISTANT_AFTER599_ORIGINAL599.I,'599_FAMILY');\n  assertAssistantAfter599OriginTarget(descriptor,process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);\n  const original599=await readAuthenticatedSource599Predecessor();\n  const snapshot=assertAuthenticatedSource599Snapshot(original599);\n  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'599_ORIGINAL_CHANGED');\n  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();\n  assertAssistantAfter599OriginParentMetadata(descriptor,snapshot.checkpoint);\n  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate\n    &&contracts.continuationStateContractSha256===currentSource.continuation\n    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256\n    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,\n    '599_ISSUED_CURRENT_SOURCE');\n  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)\n    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)\n    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),\n    '599_METADATA_ONLY');\n  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt\n    &&same(conditions[ATTEST],snapshot.attestation),'599_WHOLE_PARENT_CHANGED');\n  const pairs=pairsFromConditions(conditions,parts);\n  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())\n    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'599_PARTS');\n  for(const[id,pair]of pairs){\n    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];\n    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);\n    need(inverseI.modelBundleSha256===I.modelBundleSha256,'599_CURRENT_PAIR_BINDING');\n    inverseI.modelBundleSha256=originalI.modelBundleSha256;\n    if(Object.hasOwn(inverseG,'modelBundleSha256')){\n      need(inverseG.modelBundleSha256===C.modelBundleSha256,'599_CURRENT_CANDIDATE_BINDING');\n      inverseG.modelBundleSha256=originalG.modelBundleSha256;\n    }\n    need(same(inverseI,originalI)&&same(inverseG,originalG),'599_WHOLE_PAIR_INVERSE');\n  }\n  need(same(await readPointer(request),before),'SOURCE_CHANGED');\n  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');\n  await assertAuthenticatedSource599SnapshotFresh(original599);\n  const handle=Object.freeze({});\n  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,\n    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,\n    consumedParts:new Set(),finalized:false});\n  return handle;\n}\n"
+      }
+    ]
+  },
+  "scripts/assistant-later-h0-binding-prewrite.mjs": {
+    "hunks": [
+      {
+        "role": "genuine599-same-module-named-imports",
+        "before": "import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,requireAssistantAfter597Output,requireAssistantAfter598Output} from './lib/assistant-later-h0-successor-source.mjs';\nimport {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource,withSource594OriginalDataSource,withSource597OriginalDataSource,withSource598OriginalDataSource} from './check-assistant-later-h0-predecessor-source.mjs';\n",
+        "after": "import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,requireAssistantAfter597Output,requireAssistantAfter598Output,requireAssistantAfter599Output} from './lib/assistant-later-h0-successor-source.mjs';\nimport {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource,withSource594OriginalDataSource,withSource597OriginalDataSource,withSource598OriginalDataSource,withSource599OriginalDataSource} from './check-assistant-later-h0-predecessor-source.mjs';\n"
+      },
+      {
+        "role": "genuine599-same-module-named-imports",
+        "before": "import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,\n  assertAuthenticatedFrozen587SnapshotFresh,readAuthenticatedFrozen588Predecessor,\n  assertAuthenticatedFrozen588Snapshot,assertAuthenticatedFrozen588SnapshotFresh,readAuthenticatedFrozen590Predecessor,\n  assertAuthenticatedFrozen590Snapshot,assertAuthenticatedFrozen590SnapshotFresh,readAuthenticatedFrozen591Predecessor,\n  assertAuthenticatedFrozen591Snapshot,assertAuthenticatedFrozen591SnapshotFresh,\n  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh,\n  readAuthenticatedSource597Predecessor,assertAuthenticatedSource597Snapshot,assertAuthenticatedSource597SnapshotFresh,\n  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';\n",
+        "after": "import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,\n  assertAuthenticatedFrozen587SnapshotFresh,readAuthenticatedFrozen588Predecessor,\n  assertAuthenticatedFrozen588Snapshot,assertAuthenticatedFrozen588SnapshotFresh,readAuthenticatedFrozen590Predecessor,\n  assertAuthenticatedFrozen590Snapshot,assertAuthenticatedFrozen590SnapshotFresh,readAuthenticatedFrozen591Predecessor,\n  assertAuthenticatedFrozen591Snapshot,assertAuthenticatedFrozen591SnapshotFresh,\n  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh,\n  readAuthenticatedSource597Predecessor,assertAuthenticatedSource597Snapshot,assertAuthenticatedSource597SnapshotFresh,\n  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh,readAuthenticatedSource599Predecessor,assertAuthenticatedSource599Snapshot,assertAuthenticatedSource599SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';\n"
+      },
+      {
+        "role": "genuine599-same-module-named-imports",
+        "before": "import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan,assertInstalled593Original591MigrationPlan,assertScalar597LaterH0MigrationPlan,assertAssistantAfter597MigrationPlan,assertAssistantAfter598MigrationPlan} from './integrated-cutover-readiness.mjs';\n",
+        "after": "import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan,assertInstalled593Original591MigrationPlan,assertScalar597LaterH0MigrationPlan,assertAssistantAfter597MigrationPlan,assertAssistantAfter598MigrationPlan,assertAssistantAfter599MigrationPlan} from './integrated-cutover-readiness.mjs';\n"
+      },
+      {
+        "role": "genuine599-same-module-named-imports",
+        "before": "import {ownFileDescriptorIdentity,ownedFileDescriptorClosed} from './lib/private-weather-component-pack.mjs';\n// Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.\nassert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor'].includes(ACTIVE.sourcePhase));\n",
+        "after": "import {ownFileDescriptorIdentity,ownedFileDescriptorClosed} from './lib/private-weather-component-pack.mjs';\n// Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.\nassert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase));\n"
+      },
+      {
+        "role": "genuine599-closed-register-5",
+        "before": "const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598PrewritePredecessor():\n",
+        "after": "export function assistantAfter599PrewritePredecessor(){\n  assert.equal(arguments.length,0,'Ingen caller-valgt originalfamilie');\n  requireAssistantAfter599Output(); // Uudstedt gren stopper før filer, B/S eller læseklienter.\n  return Object.freeze({withSource:withSource599OriginalDataSource,read:readAuthenticatedSource599Predecessor,\n    snapshot:assertAuthenticatedSource599Snapshot,fresh:assertAuthenticatedSource599SnapshotFresh,\n    plan:assertAssistantAfter599MigrationPlan});\n}\nconst ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599PrewritePredecessor():\n  ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598PrewritePredecessor():\n"
+      }
+    ]
+  }
+}).map(([file,row])=>[
+    file,Object.freeze({hunks:Object.freeze(row.hunks.map(Object.freeze))}),
+  ])
+));
+
+export function assistantAfter599RegisterImportBeforeSource(source,file){
+  const reject=code=>{throw new Error('AFTER599_REGISTER_'+code+': '+file);};
+  if(arguments.length!==2||typeof source!=='string'||typeof file!=='string'
+    ||!Object.hasOwn(ASSISTANT_AFTER599_REGISTER_INVERSES,file))reject('INPUT');
+  const normalized=source.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  const previous=ASSISTANT_AFTER598_REVIEWED[file];
+  if(!previous)reject('EXISTING_RULE');
+  const hunks=ASSISTANT_AFTER599_REGISTER_INVERSES[file].hunks;
+  let original=normalized;
+  for(const hunk of [...hunks].reverse()){
+    if(original.split(hunk.after).length!==2)reject('HUNK');
+    // Parse the actual matched fragments with the unchanged normal lexer.
+    // Literal external imports also cannot be added: exact hunk matching and
+    // the complete before/after roundtrip reject every unexplained byte.
+    const at=original.indexOf(hunk.after),fragment=original.slice(at,at+hunk.after.length);
+    const beforeImports=[...exactRelativeModuleSpecifiers(hunk.before,file)].sort();
+    const afterImports=[...exactRelativeModuleSpecifiers(fragment,file)].sort();
+    if(JSON.stringify(beforeImports)!==JSON.stringify(afterImports))reject('IMPORTS');
+    original=original.replace(hunk.after,()=>hunk.before);
+  }
+  // This hash ALREADY belongs to the issued after598 rule. It is not a new pin.
+  if(crypto.createHash('sha256').update(original).digest('hex')!==previous.sha256)reject('WHOLE_BEFORE');
+  // Include the existing after598 and earlier complete inverse checks.
+  if(modelSourceRelativeModuleSpecifiers(original,file)!==previous.imports)reject('EXISTING_IMPORTS');
+  let roundtrip=original;
+  for(const hunk of hunks){
+    if(roundtrip.split(hunk.before).length!==2)reject('BEFORE_HUNK');
+    roundtrip=roundtrip.replace(hunk.before,()=>hunk.after);
+  }
+  if(roundtrip!==normalized)reject('ROUNDTRIP');
+  return original;
+}
+
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -448,8 +622,15 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
   const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file],ASSISTANT_AFTER597_REVIEWED[file],ASSISTANT_AFTER598_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
-  if (!reviewed)
+  if (!reviewed) {
+    if(Object.hasOwn(ASSISTANT_AFTER599_REGISTER_INVERSES,file)){
+      let original;
+      try{original=assistantAfter599RegisterImportBeforeSource(normalized,file);}
+      catch(cause){throw new Error('Whole reviewed model import source changed: '+file,{cause});}
+      return modelSourceRelativeModuleSpecifiers(original,file);
+    }
     throw new Error('Whole reviewed model import source changed: ' + file);
+  }
   if(reviewed===ASSISTANT_AFTER597_REVIEWED[file])assertAssistantAfter597ImportInverse(normalized,file,reviewed);
   if(reviewed===ASSISTANT_AFTER598_REVIEWED[file])assertAssistantAfter598ImportInverse(normalized,file,reviewed);
   return reviewed.imports;

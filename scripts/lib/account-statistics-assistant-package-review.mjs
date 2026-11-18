@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import path from 'node:path';
 import {expandSourceCommands,buildSourceValidationPlan,runSourceValidation} from '../validate-source-once.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const bytes=fs.readFileSync(new URL('./account-statistics-assistant-package-review.json',import.meta.url));
@@ -236,4 +237,19 @@ export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
   delete prior['test:native-original-continuity-source'];
   assert.equal(sha(canonical(prior)),review.afterSha256,'Whole genuine585 scripts reconstructed before unchanged old oracles');
   return inverseReviewed585AccountStatisticsAssistantSourceScripts(prior);
+}
+
+// TEST DATA only: actual after599 is qualified before unchanged older package oracles.
+// The old after598 actual-release checker deliberately retains its own model binding.
+export async function inverseReviewedAfter599PackageForHistoricalOracles(pkg){
+  assert.equal(arguments.length,1);
+  const actual=structuredClone(pkg),national=await import('../national584-source-evidence.mjs');
+  national.verifyAssistantAfter599Package(pkg);
+  // Old whole-map oracles read their existing authenticated CODE598 package.
+  // They no longer require today's unrelated source/production test map to
+  // be reconstructible by successively undoing application releases.
+  const {withSource598CodeParent}=await import('../check-assistant-later-h0-predecessor-source.mjs');
+  const prior=await withSource598CodeParent(root=>JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')));
+  national.verifyAssistantAfter597Package(prior);
+  assert.deepEqual(pkg,actual,'Current package is never edited or retagged');return prior;
 }

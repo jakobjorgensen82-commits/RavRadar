@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import {createHash} from 'node:crypto';
 
+// Only historical-input assertions use this semantic append projection.
+// Every current prompt, schema, binding and new-fact test uses the full bank.
+const OPTICAL_AND_INVENTORY_ADDED_IDS=Object.freeze(["identification.fluorescence-mechanism","identification.uv-daylight-contrast","limits.unobserved-amber-inventory"]);
+const factsBeforeOpticalAndInventoryAdditions=facts=>facts.filter(fact=>!OPTICAL_AND_INVENTORY_ADDED_IDS.includes(fact.id));
+
 // Exercise the unmodified main client and Edge entry. Only the browser HTTP
 // transport, Deno host and type-only JSR declaration are local test seams.
 // No provider/quota configuration or real network transport is available.
@@ -179,6 +184,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
   assert.equal(typeof edgeHandler, 'function');
   const { askRavRadar, classifyRavQuestion, routeRavQuestion } = await import('../js/services/rav-assistant.js');
   const { t } = await import('../js/i18n.js');
+  const {publicRavAssistantHelp}=await import('../js/services/rav-assistant-public-help.js');
 
   const answers = {
     da: 'En lav RavScore udelukker ikke et ravfund. Scoren beskriver modellerede forhold; den er ikke en målt fundchance og fortæller ikke, hvor meget rav du vil finde. Rav kan stadig være til stede fra tidligere opskyl eller lokale lagre.',
@@ -234,9 +240,9 @@ function expectedPromptFacts(facts, locale, context = {}) {
     let controlledHttp=0;
     try {
       controlledQuotaResponse=null;responseMutation=null;
-      assert.equal(contract.RAV_ASSISTANT_KNOWLEDGE_SHA256,"b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533");
-      assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);
-      const previous44=contract.RAV_ASSISTANT_FACTS.filter(row=>row.id!==id);
+      assert.equal(createHash('sha256').update(JSON.stringify(factsBeforeOpticalAndInventoryAdditions(contract.RAV_ASSISTANT_FACTS))).digest('hex'),"b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533");
+      assert.equal(contract.RAV_ASSISTANT_FACTS.length,48);
+      const previous44=factsBeforeOpticalAndInventoryAdditions(contract.RAV_ASSISTANT_FACTS).filter(row=>row.id!==id);
       assert.equal(previous44.length,44);
       assert.equal(createHash('sha256').update(JSON.stringify(previous44)).digest('hex'),"d0875f85b80ddd7c2ad3f8d78acc7675dedda700b7cf112c81a3d4e0dc3bbeae");
       for(const locale of ['da','de','en']){
@@ -254,7 +260,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
           assert.equal(prompt.question,question);assert.equal(prompt.requestedLocale,locale);
           assert.deepEqual(prompt.publicFacts,expectedPromptFacts(contract.RAV_ASSISTANT_FACTS,locale,context));
           assert.deepEqual(prompt.publicFacts.find(row=>row.id===id),{id,text:expected[locale]});
-          assert.deepEqual(prompt.publicFacts.filter(row=>row.id!==id),expectedPromptFacts(previous44,locale,context));
+          assert.deepEqual(factsBeforeOpticalAndInventoryAdditions(prompt.publicFacts).filter(row=>row.id!==id),expectedPromptFacts(previous44,locale,context));
           assert.doesNotMatch(JSON.stringify(prompt),/TEST_PRIVATE_CONTEXT_MARKER/);
           assert.doesNotMatch(answer,/SYNTHETIC_PROVIDER_PROSE_NOT_PUBLISHED|TEST_PRIVATE_CONTEXT_MARKER/);
           assert.equal(JSON.stringify(context),contextBefore);assert.equal(blockedNetworkCalls,0);
@@ -290,6 +296,61 @@ function expectedPromptFacts(facts, locale, context = {}) {
     }
   };
 
+
+  const assertOpticalBeachInventoryRoundtrip=async()=>{
+const reviewedUvRows={"da":{"question":"Hvorfor lyser rav under en UV-lygte, kan den bruges i dagslys, og betyder det at alt der lyser er rav?","answer":"Lysfølsomme molekyler i rav kan optage UV-lys og hurtigt afgive en del af energien som synligt lys med længere bølgelængde. Det kaldes fluorescens.\n\nUV-lys kan stadig fremkalde fluorescens i dagslys. Kraftigt omgivelseslys kan dog skjule gløden; mørke eller afskærmning kan gøre kontrasten tydeligere.\n\nLav vægt i forhold til størrelse og en harpiksagtig overflade er nyttige første spor. RavRadars søgeråd er en langbølget ravlygte med UV omkring 395 nm i mørke efterfulgt af fysisk kontrol: baltisk rav fluorescerer ofte tydeligt, men fluorescensen varierer med sammensætning, forvitring og behandling. Andre materialer, også nogle efterligninger, kan fluorescere; UV alene er ikke bevis.","ids":["identification.fluorescence-mechanism","identification.uv-daylight-contrast","identification.uv-clue-not-proof","identification.fluorescence-varies"]},"de":{"question":"Warum leuchtet Bernstein unter einer UV-Lampe, kann man sie bei Tageslicht nutzen, und ist alles, was leuchtet, Bernstein?","answer":"Fluoreszierende Moleküle im Bernstein nehmen UV-Licht auf und geben einen Teil der Energie rasch als sichtbares Licht längerer Wellenlänge ab. Das heißt Fluoreszenz.\n\nAuch bei Tageslicht kann UV-Licht Fluoreszenz anregen. Helles Umgebungslicht kann das Leuchten jedoch überstrahlen; Dunkelheit oder Abschirmung kann den Kontrast verbessern.\n\nGeringes Gewicht für die Größe und harzartige Oberfläche sind nützliche erste Hinweise. RavRadar empfiehlt zur Suche eine langwellige UV-Lampe um 395 nm im Dunkeln, danach physische Prüfung. Die oft deutliche Fluoreszenz baltischen Bernsteins variiert mit Zusammensetzung, Verwitterung und Behandlung. Auch andere Stoffe, darunter manche Imitationen, fluoreszieren; UV allein ist kein Beweis.","ids":["identification.fluorescence-mechanism","identification.uv-daylight-contrast","identification.uv-clue-not-proof","identification.fluorescence-varies"]},"en":{"question":"Why does amber glow under a UV torch, can it be used in daylight, and does everything that glows have to be amber?","answer":"Fluorescent molecules in amber absorb UV light and quickly release part of that energy as visible light of a longer wavelength. This is fluorescence.\n\nUV light can still excite fluorescence in daylight. Bright ambient light can mask the glow; darkness or shielding from ambient light can improve the contrast.\n\nLow weight for size and a resin-like surface are useful first clues. RavRadar recommends a long-wave amber light with UV around 395 nm in darkness followed by physical checking: Baltic amber often fluoresces clearly, but fluorescence varies with composition, weathering and treatment. Other materials, including some imitations, also fluoresce; UV alone is not proof.","ids":["identification.fluorescence-mechanism","identification.uv-daylight-contrast","identification.uv-clue-not-proof","identification.fluorescence-varies"]}};
+const reviewedNetBeachRows={"da":{"raw":"Kan den også bruges på stranden?","resolved":"Om ravkesen: Kan den også bruges på stranden?","named":"Hvordan anvender jeg en ravkese ved en strand?"},"de":{"raw":"Kann man ihn auch am Strand verwenden?","resolved":"Zum Bernsteinkescher: Kann man ihn auch am Strand verwenden?","named":"Kann ich einen Bernsteinkescher am Strand benutzen?"},"en":{"raw":"Can it also be used on the beach?","resolved":"About the amber net: Can it also be used on the beach?","named":"How do I use an amber net at a beach?"}};
+const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en strand?","de":"Wie viele Bernsteinstücke liegen jetzt an einem Strand?","en":"How much amber is present in a local amber deposit right now?"};
+
+    const oldResponse=controlledProviderResponse,oldMutation=responseMutation,savedLanguage=browserLanguage;
+    const startingProvider=controlledProviderCalls,startingQuota=controlledQuotaCalls;
+    const {assistantPublicFollowupQuestion,assistantTopicForQuestion}=await import('../js/services/rav-assistant.js');
+    const provider=async(question,locale,ids,disposition='answer')=>{
+      reset();responseMutation=null;browserLanguage=locale;controlledQuotaResponse=null;
+      controlledProviderResponse={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale,disposition,answer:'SYNTHETIC_NOT_PUBLISHED',evidenceIds:ids})}};
+      const beforeProvider=controlledProviderCalls;
+      const answer=await askRavRadar(question,{}, {language:locale});assertRemote(question,locale,200);
+      assert.equal(controlledProviderCalls-beforeProvider,1);assert.equal(controlledProviderPrompts.at(-1).question,question);
+      assert.equal(controlledProviderPrompts.at(-1).publicFacts.length,48);
+      assert.equal(answer,exchanges[0].result.answer);assert.ok(!answer.includes('SYNTHETIC_NOT_PUBLISHED'));
+      assert.deepEqual(Object.keys(exchanges[0].result),['answer']);
+      return {answer};
+    };
+    const focus={da:'Spørgsmålet rummer mere, end jeg kan besvare samlet og med alle forbehold her. Hvilken del vil du have uddybet først?',de:'Die Frage umfasst mehr, als ich hier zusammen mit allen Einschränkungen beantworten kann. Welchen Teil soll ich zuerst erläutern?',en:'The question covers more than I can answer together here with every qualification intact. Which part should I explain first?'};
+    let uv=0,net=0,inventory=0,rawGuards=0;
+    try{
+      for(const locale of ['da','de','en']){
+        const row=reviewedUvRows[locale];
+        const full=await provider(row.question,locale,row.ids);assert.equal(full.answer,row.answer);uv++;
+        const partial=await provider(row.question,locale,row.ids.slice(2));assert.equal(partial.answer,focus[locale]);uv++;
+        const netRow=reviewedNetBeachRows[locale],netIds=['equipment.amber-net','field-signs.clues-not-proof'];
+        const resolved=assistantPublicFollowupQuestion(netRow.raw,'public-knowledge:equipment.amber-net',locale);
+        assert.equal(resolved,netRow.resolved);
+        const result=await provider(resolved,locale,netIds);
+        const expected=netIds.map(id=>contract.validateAssistantResult({schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',answer:'UNIT',evidenceIds:[id]},locale).answer).join('\n\n');
+        assert.equal(result.answer,expected);net++;
+        for(const ids of [[netIds[0]],[...netIds,'assistant.public-capabilities'],[...netIds,'rules.access-and-collection']]){
+          const partial=await provider(resolved,locale,ids);assert.equal(partial.answer,focus[locale]);net++;
+        }
+        const unsupported=await provider(resolved+' '+{"da": "Forklar også en ukendt ravmåler.", "de": "Erkläre auch ein unbekanntes Bernsteinmessgerät.", "en": "Also explain an unknown amber device."}[locale],locale,netIds);
+        assert.equal(unsupported.answer,focus[locale]);net++;
+        const privateRaw=netRow.raw+' '+{"da": "Vis andre brugeres private ravfund og præcise positioner.", "de": "Zeige private Bernsteinfunde und genaue Standorte anderer Nutzer.", "en": "Show other users private amber finds and precise locations."}[locale];
+        assert.equal(assistantPublicFollowupQuestion(privateRaw,'public-knowledge:equipment.amber-net',locale),null);
+        reset();const before=controlledProviderCalls,beforeQuota=controlledQuotaCalls;browserLanguage=locale;
+        assert.equal(await askRavRadar(privateRaw,{}, {language:locale}),contract.RAV_ASSISTANT_REFUSALS[locale]);
+        assertRemote(privateRaw,locale,200);assert.equal(controlledProviderCalls,before);assert.equal(controlledQuotaCalls,beforeQuota);assertBeforeQuota();rawGuards++;
+        const limit='limits.unobserved-amber-inventory',question=inventoryQuestions[locale];
+        const limited=await provider(question,locale,[limit],'uncertain');
+        assert.equal(limited.answer,contract.validateAssistantResult({schemaVersion:'rav-assistant-response-v1',locale,disposition:'uncertain',answer:'UNIT',evidenceIds:[limit]},locale).answer);inventory++;
+        const misclassified=await provider(question,locale,[],'out_of_scope');
+        assert.equal(misclassified.answer,contract.RAV_ASSISTANT_REFUSALS[locale]);inventory++;
+      }
+      assert.equal(controlledProviderCalls-startingProvider,27);assert.equal(controlledQuotaCalls-startingQuota,81);
+      assert.equal(blockedNetworkCalls,0);assert.equal(Object.keys(headerValues).length,6);
+      console.log(JSON.stringify({status:'PASS',contract:'optical/beach/inventory normal main and Edge',uv,net,inventory,rawGuards,controlledHttp:27,controlledProvider:27,controlledQuota:81,realNetwork:0,hosted:false,inventoryModelSelectionUnproven:true}));
+    }finally{controlledProviderResponse=oldResponse;responseMutation=oldMutation;browserLanguage=savedLanguage;controlledQuotaResponse=null;reset();}
+  };
+
   // Same actual client/Edge/provider/quota seams; no live request or transcript.
   const assertCoordinatedCurrentWaveRoundtrip=async()=>{
     const id='sequence.release-transport-deposition';
@@ -319,8 +380,8 @@ function expectedPromptFacts(facts, locale, context = {}) {
     };
     try{
       controlledQuotaResponse=null;
-      assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);
-      assert.equal(contract.RAV_ASSISTANT_KNOWLEDGE_SHA256,'b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533');
+      assert.equal(contract.RAV_ASSISTANT_FACTS.length,48);
+      assert.equal(createHash('sha256').update(JSON.stringify(factsBeforeOpticalAndInventoryAdditions(contract.RAV_ASSISTANT_FACTS))).digest('hex'),'b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533');
       assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS)).digest('hex'),contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
       for(const locale of ['da','de','en']){
         const row=rows[locale],question=row.whole[0];browserLanguage=locale;
@@ -375,7 +436,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
       assert.equal(providerCases,39);assert.equal(completeCases,12);assert.equal(incompleteCases,18);assert.equal(overflowCases,3);assert.equal(localCases,12);
       assert.equal(controlledProviderCalls-startingProvider,39);assert.equal(controlledQuotaCalls-startingQuota,117);
       assert.equal(JSON.stringify(context),contextBefore);assert.equal(blockedNetworkCalls,0);assert.equal(Object.keys(headerValues).length,6);
-      console.log(JSON.stringify({status:'PASS',contract:'coordinated current/wave whole-question normal client/Edge roundtrip',languages:3,providerCases,completeCases,incompleteCases,overflowCases,uncertainNonemptyCases,sameClauseBoundaryCases,localCases,controlledQuotaCalls:117,canonicalLengths:Object.fromEntries(Object.entries(expected).map(([locale,text])=>[locale,text.length])),knowledgeFacts:45,knowledgeSHA:contract.RAV_ASSISTANT_KNOWLEDGE_SHA256,actualBindingHeaders:6,realNetwork:0,hosted:false}));
+      console.log(JSON.stringify({status:'PASS',contract:'coordinated current/wave whole-question normal client/Edge roundtrip',languages:3,providerCases,completeCases,incompleteCases,overflowCases,uncertainNonemptyCases,sameClauseBoundaryCases,localCases,controlledQuotaCalls:117,canonicalLengths:Object.fromEntries(Object.entries(expected).map(([locale,text])=>[locale,text.length])),knowledgeFacts:48,knowledgeSHA:contract.RAV_ASSISTANT_KNOWLEDGE_SHA256,actualBindingHeaders:6,realNetwork:0,hosted:false}));
     }finally{controlledProviderResponse=oldResponse;responseMutation=oldMutation;controlledQuotaResponse=null;browserLanguage=savedLanguage;reset();}
   };
 
@@ -383,7 +444,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
     const rows={"da":{"compound":["Hvad er en ravkese, og hvad kan du?","hvad er er en kese? hvad kan RavRadar hjælpe mig med?","Hvad kan du? Hvad er en kesse til ravjagt?"],"simple":["Hvad er en ravkese?","Hvad er en kese?"],"unknown":"Kan en ravmåler forudsige det præcise landingssted for næste ravstykke?"},"de":{"compound":["Was ist eine Bernsteinkescher und was kannst du?","Was ist ein Bernstein-Kescher? Wobei kannst du mir helfen?","Was kannst du für mich tun? Was ist der Kescher für die Bernsteinsuche?"],"simple":["Was ist eine Bernsteinkescher?","Was ist ein Bernstein-Kescher?"],"unknown":"Kann ein Bernsteinmessgerät den genauen Landeort des nächsten Bernsteinstücks vorhersagen?"},"en":{"compound":["What is an amber net and what can you do?","What is the amber hunting net? What can I ask you?","What can you help me with? What is an amber net?"],"simple":["What is the amber net?","What is an amber hunting net?"],"unknown":"Can an amber meter predict the exact landing place of the next piece of amber?"}};
     const canonical={"da":"En ravkese er et lille net til at tage let opskyl eller synlige stykker i helt lavt vand. Brug den kun, hvor du kan stå sikkert; den gør ikke dybt, koldt eller strømfyldt vand forsvarligt.\n\nJeg kan forklare rav, udstyr, felttegn og hvordan vejr og kyst påvirker en ravtur. Jeg kan også vise bedste steder og tidspunkter fra RavRadars gyldige prognose for den valgte søgemåde og forklare en score. Spørg gerne om en bestemt dag. Jeg kan ikke garantere ravfund eller vurdere, om det er sikkert at gå i vandet.","de":"Ein Bernsteinkescher ist ein kleines Netz für leichtes Treibgut oder sichtbare Stücke in sehr flachem Wasser. Benutze ihn nur bei sicherem Stand; er macht tiefes, kaltes oder stark strömendes Wasser nicht sicher.\n\nIch kann Bernstein, Ausrüstung, Feldzeichen und den Einfluss von Wetter und Küste auf die Suche erklären. Außerdem kann ich beste Orte und Zeiten aus RavRadars gültiger Prognose für die gewählte Suchart zeigen und einen Score erklären. Frage gern nach einem bestimmten Tag. Ich kann weder Funde garantieren noch beurteilen, ob das Betreten des Wassers sicher ist.","en":"An amber net is a small net for light wash or visible pieces in very shallow water. Use it only with secure footing; it does not make deep, cold or fast water safe.\n\nI can explain amber, equipment, field signs and how weather and the coast affect a search. I can also show the best places and times from RavRadar’s valid forecast for the selected search mode and explain a score. You can ask about a particular day. I cannot guarantee finds or assess whether entering the water is safe."},focus={"da":"Spørgsmålet rummer mere, end jeg kan besvare samlet og med alle forbehold her. Hvilken del vil du have uddybet først?","de":"Die Frage umfasst mehr, als ich hier zusammen mit allen Einschränkungen beantworten kann. Welchen Teil soll ich zuerst erläutern?","en":"The question covers more than I can answer together here with every qualification intact. Which part should I explain first?"};
     const ids=['equipment.amber-net','assistant.public-capabilities'];
-    const originalFacts=contract.RAV_ASSISTANT_FACTS.filter(row=>row.id!=='transport.current-supply-memory'&&!ids.includes(row.id));
+    const originalFacts=factsBeforeOpticalAndInventoryAdditions(contract.RAV_ASSISTANT_FACTS).filter(row=>row.id!=='transport.current-supply-memory'&&!ids.includes(row.id));
     assert.equal(originalFacts.length,42);
     assert.equal(createHash('sha256').update(JSON.stringify(originalFacts)).digest('hex'),'714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57');
     assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS)).digest('hex'),contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
@@ -846,7 +907,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
       assert.equal(controlledQuotaCalls-quotaBefore,3);
       assert.equal(controlledSuccessProvenance.at(-1)?.value,'workers-ai-validated-v1');
       assert.equal(controlledProviderPrompts.at(-1).question,question);
-      assert.equal(controlledProviderPrompts.at(-1).publicFacts.length,45);
+      assert.equal(controlledProviderPrompts.at(-1).publicFacts.length,48);
       assert.deepEqual(exchanges[0].body.context.zone,{id:null,name:null,coastType:null});
       assert.equal(blockedNetworkCalls,0);positive++;
     }
@@ -909,7 +970,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
       assert.equal(request.response_format.json_schema.additionalProperties,false);
       assert.doesNotMatch(request.messages[0].content,/brief clarification|state only that you cannot answer reliably/);
       assert.equal(messages.length,2);assert.equal(prompt.question,questions[locale]);
-      assert.equal(prompt.requestedLocale,locale);assert.equal(prompt.publicFacts.length,45);
+      assert.equal(prompt.requestedLocale,locale);assert.equal(prompt.publicFacts.length,48);
       assert.equal(prompt.canonicalAnswerContract.maximumCharacters,900);
       assert(markers[locale].length<=16);
       assert.equal(controlledProviderCalls-providerBefore,1);assert.equal(controlledQuotaCalls-quotaBefore,3);
@@ -1063,8 +1124,8 @@ function expectedPromptFacts(facts, locale, context = {}) {
     const publicKnowledge = JSON.parse(await readFile(new URL('../knowledge/rav-assistant-public-v1.json', import.meta.url), 'utf8'));
     const evalSuite = JSON.parse(await readFile(new URL('./fixtures/rav-assistant-evals-v1.json', import.meta.url), 'utf8'));
     assert.deepEqual(publicKnowledge.facts, contract.RAV_ASSISTANT_FACTS);
-    assert.equal(publicKnowledge.facts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 44);
-    const original42Facts = publicKnowledge.facts.filter(fact =>
+    assert.equal(publicKnowledge.facts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 47);
+    const original42Facts = factsBeforeOpticalAndInventoryAdditions(publicKnowledge.facts).filter(fact =>
       !['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(fact.id));
     assert.equal(original42Facts.length, 42);
     const legacyFacts = original42Facts.filter(fact => !atomIds.includes(fact.id));
@@ -1073,7 +1134,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
       'e90e1b6f0fda9c5e65ee44ed389817f3bdb6c79b3e01cf88a84ef380d0250656');
     assert.equal(createHash('sha256').update(JSON.stringify(original42Facts)).digest('hex'), fixture.newHash);
     assert.equal(createHash('sha256').update(JSON.stringify(publicKnowledge.facts)).digest('hex'), contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
-    assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS.filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(row.id)))).digest('hex'), fixture.newHash);
+    assert.equal(createHash('sha256').update(JSON.stringify(factsBeforeOpticalAndInventoryAdditions(contract.RAV_ASSISTANT_FACTS).filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(row.id)))).digest('hex'), fixture.newHash);
     assert.deepEqual(publicKnowledge.ravScoreModelBinding, binding);
     assert.deepEqual(evalSuite.ravScoreModelBinding, binding);
     assert.deepEqual(publicKnowledge.facts.find(fact => fact.id === fixture.legacy.id), fixture.legacy);
@@ -1430,6 +1491,8 @@ function expectedPromptFacts(facts, locale, context = {}) {
         quickQuestions: service.quickQuestions,
         assistantTopicForQuestion: service.assistantTopicForQuestion,
         assistantLocalFollowupAnswer: service.assistantLocalFollowupAnswer,
+        assistantPublicFollowupQuestion: service.assistantPublicFollowupQuestion,
+        publicRavAssistantHelp,
         ravQuestionNeedsConditionDetails: service.ravQuestionNeedsConditionDetails,
         askRavRadar: async (...args) => {
           const answer = await service.askRavRadar(...args);
@@ -2359,6 +2422,8 @@ function expectedPromptFacts(facts, locale, context = {}) {
       sameAssistantTopicFrame: (a, b) => Boolean(a && b && a.language === b.language),
       assistantTopicForQuestion: service.assistantTopicForQuestion,
       assistantLocalFollowupAnswer: service.assistantLocalFollowupAnswer,
+      assistantPublicFollowupQuestion: service.assistantPublicFollowupQuestion,
+      publicRavAssistantHelp,
       ravQuestionNeedsConditionDetails: service.ravQuestionNeedsConditionDetails,
       ensureConditionDetails: async () => {}, assistantContext: () => context,
       askRavRadar, t: (key, args) => t(key, args, browserLanguage),
@@ -2542,9 +2607,9 @@ function expectedPromptFacts(facts, locale, context = {}) {
     const knowledge = await import('../knowledge/rav-assistant-local-v2.js');
     const { readFile } = await import('node:fs/promises');
     const publicKnowledge = JSON.parse(await readFile(new URL('../knowledge/rav-assistant-public-v1.json', import.meta.url), 'utf8'));
-    assert.equal(publicKnowledge.facts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 44);
+    assert.equal(publicKnowledge.facts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 47);
     assert.deepEqual(publicKnowledge.facts, contract.RAV_ASSISTANT_FACTS);
-    assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS.filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(row.id)))).digest('hex'), '714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57');
+    assert.equal(createHash('sha256').update(JSON.stringify(factsBeforeOpticalAndInventoryAdditions(contract.RAV_ASSISTANT_FACTS).filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(row.id)))).digest('hex'), '714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57');
     assert.equal(Object.keys(headerValues).length, 6);
     const laboratory = {
   "da": "Laboratorier kan kombinere FTIR, Raman, mikroskopi, massefylde og andre analyser for at skelne naturmateriale, behandling og imitation. Ingen enkelt måling besvarer altid både ægthed, behandling, oprindelse og alder. FTIR og Raman giver nyttig evidens om ravets kemi og ændringer. Sammenligning af overflade og indre kan vise forskelle, men naturlig variation og varmebehandling kan give overlappende signaler. Ét spektrum fastslår ikke i sig selv en præcis alder eller et entydigt forvitringsstadium. En faglig vurdering kombinerer sammenlignende spektre, andre analysemetoder og prøvens geologiske kontekst; spektroskopi er ikke generelt ude af stand til at påvise behandling.",
@@ -2642,7 +2707,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
           assert.equal(controlledProviderCalls - providers, 1);
           assert.equal(controlledQuotaCalls - quota, 3);
           const prompt = controlledProviderPrompts.at(-1);
-          assert.equal(prompt.publicFacts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 44);
+          assert.equal(prompt.publicFacts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 47);
           assert.equal(prompt.publicFacts.find(fact => fact.id === 'identification.spectroscopy-limits').text, canonical[locale]);
           assert.doesNotMatch(JSON.stringify(prompt), /TEST_PRIVATE_CONTEXT_MARKER/);
           visited.push(locale + '/' + name); remoteCalls++;
@@ -3152,7 +3217,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
         }catch(error){failures.push({id,name:error.name,message:error.message});}
       }
       assert.equal(blockedNetworkCalls,0);
-      assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);
+      assert.equal(contract.RAV_ASSISTANT_FACTS.length,48);
       if(group==='unknown')for(const bad of [
         {locale:'fr',context:{modelBinding:binding},status:400,error:'LOCALE_NOT_SUPPORTED'},
         {locale:'da',context:{modelBinding:{...binding,modelBundleSha256:'0'.repeat(64)}},status:409,error:'MODEL_BINDING_MISMATCH'}]){
@@ -3241,7 +3306,9 @@ function expectedPromptFacts(facts, locale, context = {}) {
     }
   };
 
-  if (process.argv.includes('--coordinated-current-wave-only')) {
+  if (process.argv.includes('--optical-beach-inventory-only')) {
+    await assertOpticalBeachInventoryRoundtrip();
+  } else if (process.argv.includes('--coordinated-current-wave-only')) {
     await assertCoordinatedCurrentWaveRoundtrip();
   } else if (process.argv.includes('--provider-diagnostic-only')) {
     await assertProviderFailureDiagnostic();
@@ -3296,6 +3363,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
   } else if (process.argv.includes('--known-evidence-contradiction-only')) {
     await assertKnownEvidenceDoesNotValidateContradiction();
   } else {
+  await assertOpticalBeachInventoryRoundtrip();
   await assertCoordinatedCurrentWaveRoundtrip();
   await assertSimpleIdentificationLocal();
   await assertUnderwaterWithoutWash();
@@ -3577,7 +3645,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
   console.log(`OK: normal main client -> actual Edge -> client: ${acceptedControlled} controlled DA/DE/EN answers; ${rejectedHeaders} missing/wrong binding fallbacks; ${privateQuestions.length} private refusals; ${ordinary.length} ordinary fail-closed paths; 3 local security refusals; no network/provider.`);
   console.log('OK: all sixteen controlled forms have normal app/service/Edge delivery; no live browser, working quota or external-AI claim.');
   // Actual main client -> existing Edge -> main client, with no replacement
-  // handler. Selection is server-owned and all45 bank facts remain exact.
+  // handler. Selection is server-owned; the 45 historical facts remain exact.
   {
     const rows=[
       ['da','Kan en lup hjælpe med at skelne rav fra kopal, og hvilke kendetegn kan jeg undersøge uden at beskadige fundet?'],
@@ -3621,9 +3689,9 @@ function expectedPromptFacts(facts, locale, context = {}) {
     }
     assert.equal(JSON.stringify(contract.RAV_ASSISTANT_FACTS),bankBefore);assert.equal(JSON.stringify(context),contextCopy);
     assert.equal(createHash('sha256').update(bankBefore).digest('hex'),contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
-    assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);assert.equal(blockedNetworkCalls,0);
+    assert.equal(contract.RAV_ASSISTANT_FACTS.length,48);assert.equal(blockedNetworkCalls,0);
     controlledProviderResponse=null;controlledProviderHttpStatus=200;
-    console.log(JSON.stringify({status:'PASS',contract:'normal identification selection and provider-path provenance',cases,realNetwork:0,hosted:false,all45FactsUnchanged:true}));
+    console.log(JSON.stringify({status:'PASS',contract:'normal identification selection and provider-path provenance',cases,realNetwork:0,hosted:false,historical45FactsUnchanged:true}));
   }
 
   await assertGeneralHighScoreNoFind();

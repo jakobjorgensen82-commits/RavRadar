@@ -556,26 +556,32 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   for (const changed of mutations) { assert.notEqual(changed, raw); assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build')); }
 });
 
-test('actual issued599 repair keeps all five saved-after598 guards and command routes closed', async () => {
+test('actual issued repair keeps all five family-bound saved guards and command routes closed', async () => {
   const profile=AFTER598_WORKFLOW_SOURCE.ACTIVE_ASSISTANT_SUCCESSOR;
-  assert.equal(profile,AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR);
-  assert.equal(profile?.sourcePhase,'assistant-after598-successor');
+  const after599=profile===AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR;
+  assert([AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,
+    AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR].includes(profile));
+  const savedFamily=after599?'after599':'after598';
+  assert.equal(profile?.sourcePhase,'assistant-'+savedFamily+'-successor');
   profile.requireOutput();
   const binding=profile.requireBinding();
-  assert.equal(profile.requireRelease(),'4.0.599');
+  assert.equal(profile.requireRelease(),after599?'4.0.601':'4.0.599');
   assert.equal(ravScoreModelBinding().modelBundleSha256,binding.I);
   assert.equal(candidateBinding().modelBundleSha256,binding.C);
   const descriptor={modelBinding:{modelBundleSha256:binding.I},
     contractHashes:{continuationStateContractSha256:binding.T}};
-  const old=AFTER598_WORKFLOW_SOURCE.ASSISTANT_AFTER598_BEFORE;
-  assert.equal(typeof CURRENT_RECONCILE.requiresAssistantAfter598CheckpointReconcile,'function');
-  assert.equal(CURRENT_RECONCILE.requiresAssistantAfter598CheckpointReconcile(descriptor),true);
-  assert.equal(CURRENT_RECONCILE.requiresAssistantAfter598CheckpointReconcile({
+  const old=after599?AFTER598_WORKFLOW_SOURCE.ASSISTANT_AFTER599_BEFORE
+    :AFTER598_WORKFLOW_SOURCE.ASSISTANT_AFTER598_BEFORE;
+  const requiresReconcile=after599?CURRENT_RECONCILE.requiresAssistantAfter599CheckpointReconcile
+    :CURRENT_RECONCILE.requiresAssistantAfter598CheckpointReconcile;
+  assert.equal(typeof requiresReconcile,'function');
+  assert.equal(requiresReconcile(descriptor),true);
+  assert.equal(requiresReconcile({
     modelBinding:{modelBundleSha256:old.I},contractHashes:{continuationStateContractSha256:old.T}}),false);
   for(const changed of [
     {...descriptor,modelBinding:{modelBundleSha256:old.I}},
     {...descriptor,contractHashes:{continuationStateContractSha256:old.T}},
-  ])assert.throws(()=>CURRENT_RECONCILE.requiresAssistantAfter598CheckpointReconcile(changed));
+  ])assert.throws(()=>requiresReconcile(changed));
   const raw=(await fs.readFile(new URL('../.github/workflows/deploy-code-only-repair.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
   const byId=(source,id)=>{
     const marker='        id: '+id+'\n';
@@ -591,7 +597,7 @@ test('actual issued599 repair keeps all five saved-after598 guards and command r
   };
   const evaluate=(block,inputs,env,after='false',last='false')=>runInNewContext(
     condition(block).replace(/\bsteps\.([a-z][a-z0-9-]*)/g,(_,id)=>'steps['+JSON.stringify(id)+']'),
-    {inputs,env,steps:{'saved-after598-source':{outputs:{required:after}},
+    {inputs,env,steps:{['saved-'+savedFamily+'-source']:{outputs:{required:after}},
       'saved-last-mile-source':{outputs:{required:last}}}});
   const runBody=block=>{
     const marker='        run: |\n';assert.equal(block.split(marker).length,2);
@@ -605,7 +611,7 @@ test('actual issued599 repair keeps all five saved-after598 guards and command r
     '            node scripts/reconcile-private-runtime-checkpoint.mjs select-saved',
     '            test "${{ steps.saved-last-mile-source.outputs.required }}" = true',
     '          fi',
-  ].join('\n');
+  ].join('\n').replaceAll('after598',savedFamily);
   const reconcileRun=[
     '          set -euo pipefail',
     '          test "${{ steps.current-private-install.outcome }}" = success',
@@ -621,11 +627,11 @@ test('actual issued599 repair keeps all five saved-after598 guards and command r
     '            fi',
     '            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-saved',
     '          fi',
-  ].join('\n');
+  ].join('\n').replaceAll('after598',savedFamily);
   const verify=source=>{
-    const selected=byId(source,'saved-after598-source'),select=byId(source,'saved-checkpoint-reconcile');
+    const selected=byId(source,'saved-'+savedFamily+'-source'),select=byId(source,'saved-checkpoint-reconcile');
     const paired=byId(source,'saved-checkpoint-paired');
-    assert.match(selected,/^        run: node scripts\/reconcile-private-runtime-checkpoint\.mjs select-after598-saved$/m);
+    assert.match(selected,new RegExp('^        run: node scripts/reconcile-private-runtime-checkpoint\\.mjs select-'+savedFamily+'-saved$','m'));
     for(const saved of [false,true])for(const codeOnly of [false,true])
       for(const account of [false,true])for(const native of [false,true]){
         const env={RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE:String(codeOnly),
@@ -643,27 +649,27 @@ test('actual issued599 repair keeps all five saved-after598 guards and command r
           {publish_newest_saved_weather:saved},env,String(after),String(last)),after||last||(account&&saved),
           'Both current saved-pair guards preserve their own route and legacy routes');
       }
-    assert.equal(runBody(select),selectRun,'Exact current after598 select and old fallback routing');
-    assert.equal(runBody(paired),reconcileRun,'Exact current after598 reconcile and old fallback routing');
+    assert.equal(runBody(select),selectRun,'Exact current family select and old fallback routing');
+    assert.equal(runBody(paired),reconcileRun,'Exact current family reconcile and old fallback routing');
     assert(source.indexOf(selected)<source.indexOf(select));
     assert(source.indexOf(select)<source.indexOf('        id: current-private-install\n'));
     assert(source.indexOf('        id: current-private-install\n')<source.indexOf(paired));
   };
   verify(raw);
-  const selected=byId(raw,'saved-after598-source'),select=byId(raw,'saved-checkpoint-reconcile');
+  const selected=byId(raw,'saved-'+savedFamily+'-source'),select=byId(raw,'saved-checkpoint-reconcile');
   const paired=byId(raw,'saved-checkpoint-paired');
   const changeBlock=(block,original,replacement)=>{
     assert.equal(block.split(original).length,2);return raw.replace(block,()=>block.replace(original,replacement));
   };
-  const afterGuard="(steps.saved-after598-source.outputs.required == 'true') || ";
+  const afterGuard="(steps.saved-"+savedFamily+"-source.outputs.required == 'true') || ";
   const mutations=[
     raw.replace(selected,''),raw.replace(selected,selected+'\n'+selected),
     changeBlock(selected,"env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true'",
       "env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE != 'true'"),
-    changeBlock(selected,'select-after598-saved','select-saved'),
+    changeBlock(selected,'select-'+savedFamily+'-saved','select-saved'),
     changeBlock(select,afterGuard,''),changeBlock(paired,afterGuard,''),
-    changeBlock(select,'select-after598-saved','select-saved'),
-    changeBlock(paired,'reconcile-after598-saved','reconcile-saved'),
+    changeBlock(select,'select-'+savedFamily+'-saved','select-saved'),
+    changeBlock(paired,'reconcile-'+savedFamily+'-saved','reconcile-saved'),
     changeBlock(paired,'test "$RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE" = true','true'),
   ];
   for(const changed of mutations){assert.notEqual(changed,raw);assert.throws(()=>verify(changed),{code:'ERR_ASSERTION'});}

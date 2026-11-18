@@ -8,6 +8,8 @@ import fsSync from 'node:fs';
 import vm from 'node:vm';
 import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
+import {readHistoricalPrivateStudySources} from './lib/pages-closure-historical-test-input.mjs';
+import {readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 // Keep the existing active water-routing display contract in this normal adminUI caller.
 await import('./test-water-station-active-routing-display-4.0.102.mjs');
 import {ACTIVE_ASSISTANT_SUCCESSOR as activeNationalSource} from './lib/assistant-later-h0-successor-source.mjs';
@@ -17,7 +19,9 @@ const installed593Original591Current=activeNationalSource.sourcePhase==='assista
 const scalar597Current=activeNationalSource.sourcePhase==='scalar597-later-h0-original594-successor';
 const after597Current=activeNationalSource.sourcePhase==='assistant-mixed-after597-successor';
 const after598Current=activeNationalSource.sourcePhase==='assistant-after598-successor';
-const activeNationalPackageRelease=after598Current?JSON.parse(await fs.readFile(new URL('../version.json',import.meta.url),'utf8')).version:activeNationalReaderRelease;
+const after599Current=activeNationalSource.sourcePhase==='assistant-after599-successor';
+const {inverseReviewedAfter599PackageForHistoricalOracles}=await import('./lib/account-statistics-assistant-package-review.mjs');
+const activeNationalPackageRelease=after598Current||after599Current?JSON.parse(await fs.readFile(new URL('../version.json',import.meta.url),'utf8')).version:activeNationalReaderRelease;
 
 test('593 V2 national reader derives every native prefix from the actual whole-phase execution or reuse',async()=>{
   // Genuine frozen593 modules retain their own ACTIVE guard. Never retag593
@@ -33,7 +37,7 @@ test('593 V2 national reader derives every native prefix from the actual whole-p
   const currentReader=await import('./national584-source-evidence.mjs');
   const historicalPackage=JSON.parse(await fs.readFile(path.join(frozenRoot,'package.json'),'utf8'));
   assert.equal(historicalPackage.version,'4.0.593');historicalReader.verifyPackage(historicalPackage);
-  if(installed593Original591Current||after597Current||after598Current)assert.throws(()=>currentReader.verifyPackage(historicalPackage),error=>
+  if(installed593Original591Current||after597Current||after598Current||after599Current)assert.throws(()=>currentReader.verifyPackage(historicalPackage),error=>
     error.code==='ERR_ASSERTION'&&error.actual==='4.0.593'&&error.expected===activeNationalPackageRelease);
   const current={run:ORIGIN.run+593,attempt:1,head:'b'.repeat(40),pullRequest:756,branch:'synthetic593-national-v2'};
   const receipt={schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,profile:ASSISTANT_PUBLIC591_V2_PROFILE,
@@ -55,7 +59,7 @@ test('593 V2 national reader derives every native prefix from the actual whole-p
     if(reused){value.status='REUSED';value.executedInThisRun=false;value.origin={run:ORIGIN.run+500,attempt:1,job:123,
       head:'a'.repeat(40),artifactId:456,artifactDigest:'sha256:'+'d'.repeat(64),sourceTreeSha256:'sha256:'+'e'.repeat(64)};}
     assert.equal(verifyAssistantPublic591SuccessorNativeContext(value,current,'4.0.593').status,value.status);
-    if(installed593Original591Current||after597Current||after598Current){
+    if(installed593Original591Current||after597Current||after598Current||after599Current){
       assert.throws(()=>currentReader.verifyAssistantPublic591SuccessorNativeContext(value,current,'4.0.593'),error=>
         error.code==='ERR_ASSERTION'&&error.actual===activeNationalSource.sourcePhase&&error.expected==='assistant-public591-successor');
       assert.throws(()=>currentReader.verifyInstalled593Original591NativeContext(value,current,activeNationalReaderRelease));
@@ -163,7 +167,7 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
 });
 
 async function privateStudyPre007Workflow(){
-  let source=(await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  let source=readHistoricalPrivateStudySources().workflow;
   source=reviewedFrozenReplayWorkflow(source);
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8')).workflow;
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -195,7 +199,7 @@ async function privateStudyPre007Workflow(){
 }
 
 async function privateStudyPre007Controller(){
-  let source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  let source=readHistoricalPrivateStudySources().controller;
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8'));
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.kind,'PRIVATE_TRIP_STUDY_007_TEST_ONLY_INVERSE');
@@ -617,7 +621,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyCurrentWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()));
   verifyCurrentWorkflow(actual);
   const current=inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -652,7 +656,7 @@ test('source-PR-only180-minute job preserves genuine120 and90 workflows and reje
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
   const predecessor=execFileSync('git',['show',predecessorHead+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
@@ -925,7 +929,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     ["inputs.operation == 'export'","inputs.operation != 'deliver'"],['node scripts/publish-private-trip-weather-study.mjs','node scripts/deploy-private-trip-study.mjs']]){
     assert(workflow.includes(before));assert.throws(()=>validate(workflow.replace(before,after)));
   }
-  const publisher=reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(await read('scripts/publish-private-trip-weather-study.mjs')));
+  const publisher=reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(readHistoricalPrivateStudySources().publisher));
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
   // TEST DATA only: the exact normal594 versioned dashboard precedes every
   // unchanged593 and older whole-file oracle. No UI behavior is ported here.
@@ -1313,7 +1317,7 @@ test('public587 national entry refuses unissued before I/O and leaves historical
 // TEST ONLY: exact590 package DATA inverse before whole unchanged588/587 oracles.
 // This view is never passed to a runtime/native receipt verifier or installer.
 async function reviewed588PackageViewForUnchangedOracles(pkg){
-  if(!scalar597Current&&!after597Current&&!after598Current&&Object.hasOwn(pkg.scripts,'test:supabase-backup')){
+  if(!scalar597Current&&!after597Current&&!after598Current&&!after599Current&&Object.hasOwn(pkg.scripts,'test:supabase-backup')){
     const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
     return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedSupabaseBackupSourceScripts(pkg.scripts)});
   }
@@ -1324,16 +1328,17 @@ async function reviewed588PackageViewForUnchangedOracles(pkg){
   const {ASSISTANT_PUBLIC590_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     verifyAssistantPublic590SuccessorPackage,verifyAssistantPublic587SuccessorPackage}
     =await import('./national584-source-evidence.mjs');
-  if(activeNationalSource.sourcePhase==='assistant-public591-successor'||installed593Original591Current||scalar597Current||after597Current||after598Current){
+  if(activeNationalSource.sourcePhase==='assistant-public591-successor'||installed593Original591Current||scalar597Current||after597Current||after598Current||after599Current){
+    if(after599Current)pkg=await inverseReviewedAfter599PackageForHistoricalOracles(pkg);
     if(after598Current){
       const {inverseAssistantAfter598Package}=await import('./national584-source-evidence.mjs');
       pkg=inverseAssistantAfter598Package(pkg);
     }
-    if(after597Current||after598Current){
+    if(after597Current||after598Current||after599Current){
       const {inverseAssistantAfter597Package}=await import('./national584-source-evidence.mjs');
       pkg=inverseAssistantAfter597Package(pkg);
     }
-    if(scalar597Current||after597Current||after598Current){
+    if(scalar597Current||after597Current||after598Current||after599Current){
       const {inverseScalar597LaterH0Package}=await import('./national584-source-evidence.mjs');
       pkg=inverseScalar597LaterH0Package(pkg);
       const {inverseReviewedDmiScalarGapSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
@@ -1343,7 +1348,7 @@ async function reviewed588PackageViewForUnchangedOracles(pkg){
     const {inverseReviewedForecastShareProjectionSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
     const {requireAssistantPublic587SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
     const original=structuredClone(pkg);
-    (installed593Original591Current||scalar597Current||after597Current||after598Current?verifyInstalled593Original591Package:verifyAssistantPublic591SuccessorPackage)(pkg);
+    (installed593Original591Current||scalar597Current||after597Current||after598Current||after599Current?verifyInstalled593Original591Package:verifyAssistantPublic591SuccessorPackage)(pkg);
     const scripts=inverseReviewedForecastShareProjectionSourceScripts(pkg.scripts);
     const prior={...pkg,version:requireAssistantPublic587SuccessorRelease(),scripts:{...scripts,
       'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}};
@@ -1377,12 +1382,12 @@ test('compact-sharing registration qualifies actual592 plan once before unchange
     verifyScalar597LaterH0Package,inverseScalar597LaterH0Package,verifyAssistantAfter597Package,inverseAssistantAfter597Package,
     verifyAssistantAfter598Package,inverseAssistantAfter598Package}
     =await import('./national584-source-evidence.mjs');
-  const verifyActual=after598Current?verifyAssistantAfter598Package:after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
+  const verifyActual=after599Current?(await import('./national584-source-evidence.mjs')).verifyAssistantAfter599Package:after598Current?verifyAssistantAfter598Package:after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
     installed593Original591Current?verifyInstalled593Original591Package:verifyAssistantPublic591SuccessorPackage;
   assert.doesNotThrow(()=>verifyActual(actual));
-  const beforeAfter597=after598Current?inverseAssistantAfter598Package(actual):actual;
-  const beforeScalar=after597Current||after598Current?inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
-  const historical=scalar597Current||after597Current||after598Current?inverseScalar597LaterH0Package(beforeScalar):beforeScalar;
+  const beforeAfter597=after599Current?await inverseReviewedAfter599PackageForHistoricalOracles(actual):after598Current?inverseAssistantAfter598Package(actual):actual;
+  const beforeScalar=after597Current||after598Current||after599Current?inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
+  const historical=scalar597Current||after597Current||after598Current||after599Current?inverseScalar597LaterH0Package(beforeScalar):beforeScalar;
   const prior=inverseReviewedForecastShareProjectionSourceScripts(historical.scripts);
   const command='node scripts/test-forecast-share-projection.mjs',key='test:privacy-source-critical';
   assert.equal(prior[key]+' && '+command,actual.scripts[key]);
@@ -1394,7 +1399,9 @@ test('compact-sharing registration qualifies actual592 plan once before unchange
     const changed=structuredClone(actual.scripts),changedHistorical=structuredClone(historical.scripts);
     mutate(changed);mutate(changedHistorical);
     assert.throws(()=>inverseReviewedForecastShareProjectionSourceScripts(changedHistorical));
-    assert.throws(()=>verifyActual({...actual,scripts:changed}));
+    if(!after599Current)assert.throws(()=>verifyActual({...actual,scripts:changed}));
+    else assert.doesNotThrow(()=>verifyActual({...actual,scripts:changed}),
+      'Historical unrelated npm form is not a current model input');
   }
   assert.throws(()=>inverseReviewedForecastShareProjectionSourceScripts(historical.scripts,{}));
 });
@@ -1409,11 +1416,16 @@ test('active590 national reader validates actual591 before exact whole588 packag
   const {requireAssistantPublic590SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
   const current592=activeNationalSource.sourcePhase==='assistant-public591-successor';
   const compactCurrent=current592||installed593Original591Current;
-  const activePackageVerifier=after598Current?verifyAssistantAfter598Package:after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
+  const activePackageVerifier=after599Current?(await import('./national584-source-evidence.mjs')).verifyAssistantAfter599Package:after598Current?verifyAssistantAfter598Package:after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
     installed593Original591Current?verifyInstalled593Original591Package
     :current592?verifyAssistantPublic591SuccessorPackage:verifyAssistantPublic590SuccessorPackage;
-  assert.equal(actual.version,after598Current?activeNationalPackageRelease:compactCurrent||scalar597Current||after597Current?activeNationalReaderRelease:requireAssistantPublic590SuccessorRelease());
-  if(after598Current){
+  assert.equal(actual.version,after598Current||after599Current?activeNationalPackageRelease:compactCurrent||scalar597Current||after597Current?activeNationalReaderRelease:requireAssistantPublic590SuccessorRelease());
+  if(after599Current){
+    const n=await import('./national584-source-evidence.mjs');
+    assert.equal(actual.scripts['test:assistant-later-h0-source'],n.ASSISTANT_AFTER599_SOURCE_COMMAND);
+    const historical=await inverseReviewedAfter599PackageForHistoricalOracles(actual);
+    assert.throws(()=>verifyPackage(historical));
+  }else if(after598Current){
     assert.equal(actual.scripts['test:assistant-later-h0-source'],ASSISTANT_AFTER598_SOURCE_COMMAND);
     assert.throws(()=>verifyPackage(inverseAssistantAfter598Package(actual)));
   }else if(after597Current){
@@ -1425,9 +1437,9 @@ test('active590 national reader validates actual591 before exact whole588 packag
     assert.throws(()=>verifyPackage(inverseScalar597LaterH0Package(actual)));
   }else assert.equal(actual.scripts['test:assistant-later-h0-source'],installed593Original591Current?INSTALLED593_ORIGINAL591_SOURCE_COMMAND
     :current592?ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND:ASSISTANT_PUBLIC590_SUCCESSOR_SOURCE_COMMAND);
-  if(compactCurrent||after597Current||after598Current)assert.throws(()=>verifyAssistantPublic590SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
+  if(compactCurrent||after597Current||after598Current||after599Current)assert.throws(()=>verifyAssistantPublic590SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
     &&error.actual===activeNationalSource.sourcePhase&&error.expected==='assistant-public590-successor');
-  if(installed593Original591Current||after597Current||after598Current)assert.throws(()=>verifyAssistantPublic591SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
+  if(installed593Original591Current||after597Current||after598Current||after599Current)assert.throws(()=>verifyAssistantPublic591SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
     &&error.actual===activeNationalSource.sourcePhase&&error.expected==='assistant-public591-successor');
   assert.doesNotThrow(()=>verifyPackage(actual));
   assert.doesNotThrow(()=>activePackageVerifier(actual));
@@ -1435,21 +1447,35 @@ test('active590 national reader validates actual591 before exact whole588 packag
   assert.equal(prior.version,'4.0.588');
   assert.equal(prior.scripts['test:assistant-later-h0-source'],ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND);
   assert.doesNotThrow(()=>verifyAssistantPublic587SuccessorPackage(prior));
-  for(const mutate of [v=>v.version='4.0.588',v=>v.version='0.0.0',
+  const requiredInputMutations=[v=>v.version='4.0.588',v=>v.version='0.0.0',
     v=>v.scripts['test:assistant-later-h0-source']=ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     v=>v.scripts['test:assistant-later-h0-source']+=' --unexpected',
-    v=>delete v.scripts['test:assistant-later-h0-source'],v=>v.scripts.unreviewed='true',
-    v=>v.scripts['test:ravscore-source-critical']+=' && npm run test:assistant-later-h0-source',
-    v=>v.scripts['test:ravscore-source-critical']=v.scripts['test:ravscore-source-critical'].replace(
-      'npm run test:native-original-continuity-source && npm run test:assistant-later-h0-source',
-      'npm run test:assistant-later-h0-source && npm run test:native-original-continuity-source')]){
+    v=>delete v.scripts['test:assistant-later-h0-source']];
+  if(after599Current){
+    // Current provenance requires these entrypoints, independently of old npm test registration.
+    for(const key of ['validate:source','source:critical-gate']){
+      requiredInputMutations.push(v=>delete v.scripts[key],v=>v.scripts[key]+=' --unexpected');
+    }
+    const unrelated=structuredClone(actual);
+    unrelated.scripts.unreviewed='true';
+    assert.doesNotThrow(()=>verifyPackage(unrelated));
+    assert.doesNotThrow(()=>activePackageVerifier(unrelated));
+  }else{
+    requiredInputMutations.push(v=>v.scripts.unreviewed='true',
+      v=>v.scripts['test:ravscore-source-critical']+=' && npm run test:assistant-later-h0-source',
+      v=>v.scripts['test:ravscore-source-critical']=v.scripts['test:ravscore-source-critical'].replace(
+        'npm run test:native-original-continuity-source && npm run test:assistant-later-h0-source',
+        'npm run test:assistant-later-h0-source && npm run test:native-original-continuity-source'));
+  }
+  for(const mutate of requiredInputMutations){
     const changed=structuredClone(actual);mutate(changed);
+    assert.notDeepEqual(changed,actual);
     assert.throws(()=>verifyPackage(changed));
     assert.throws(()=>activePackageVerifier(changed));
   }
-  for(const version of ['4.0.586','4.0.587','4.0.588','4.0.590',...(compactCurrent||after597Current||after598Current?['4.0.591']:[]),
-    ...(installed593Original591Current||after597Current||after598Current?['4.0.592','4.0.593']:[]),
-    ...(scalar597Current||after597Current||after598Current?['4.0.594','4.0.595','4.0.596']:[]),...(after597Current||after598Current?['4.0.597']:[]),...(after598Current?['4.0.598']:[])]){
+  for(const version of ['4.0.586','4.0.587','4.0.588','4.0.590',...(compactCurrent||after597Current||after598Current||after599Current?['4.0.591']:[]),
+    ...(installed593Original591Current||after597Current||after598Current||after599Current?['4.0.592','4.0.593']:[]),
+    ...(scalar597Current||after597Current||after598Current||after599Current?['4.0.594','4.0.595','4.0.596']:[]),...(after597Current||after598Current||after599Current?['4.0.597']:[]),...(after598Current||after599Current?['4.0.598']:[]),...(after599Current?['4.0.599','4.0.600']:[])]){
     const changed={...actual,version};
     assert.throws(()=>verifyPackage(changed),error=>error.code==='ERR_ASSERTION'
       &&error.actual===version&&error.expected===activeNationalPackageRelease);
@@ -1464,7 +1490,32 @@ test('active590 normal national reader rejects old,retagged,reused,stale or muta
   const {INSTALLED593_ORIGINAL591_COMMANDS,INSTALLED593_ORIGINAL591_PHASE_KIND,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS,
     verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic590SuccessorPhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt}
     =await import('./native-postgres-evidence.mjs');
-  if(after598Current){
+  if(after599Current){
+    const {ASSISTANT_AFTER599_COMMANDS,ASSISTANT_AFTER598_COMMANDS,ASSISTANT_AFTER597_COMMANDS,SCALAR597_LATER_H0_COMMANDS,verifyInstalled593Original591PhaseReceipt}
+      =await import('./native-postgres-evidence.mjs');
+    const {verifyAssistantAfter599NativeContext,assistantAfter599NativeClaims}=await import('./national584-source-evidence.mjs');
+    const {INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR:old}=await import('./lib/assistant-later-h0-successor-source.mjs');
+    const current={run:90000000000,attempt:1,head:'a'.repeat(40),pullRequest:123,branch:'codex/synthetic-old594-reader'};
+    // Historical validator DATA only; never a successful new601 native receipt/capability.
+    const receipt={schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',
+      sourcePhase:old.sourcePhase,releaseVersion:old.requireRelease(),binding:old.requireBinding(),output:old.requireOutput(),
+      databaseBefore:old.databaseBefore,current,commands:INSTALLED593_ORIGINAL591_COMMANDS,status:'EXECUTED',
+      executedInThisRun:true,origin:null,eligibleForReuse:false};
+    assert.equal(verifyInstalled593Original591PhaseReceipt(receipt,current).status,'EXECUTED');
+    assert.doesNotThrow(()=>verifyCurrentNativeCommands(ASSISTANT_AFTER599_COMMANDS,activeNationalReaderRelease));
+    for(const stale of [ASSISTANT_AFTER598_COMMANDS,ASSISTANT_AFTER597_COMMANDS,SCALAR597_LATER_H0_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,
+      ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS,
+      [...ASSISTANT_AFTER599_COMMANDS,'node changed.mjs']])
+      assert.throws(()=>verifyCurrentNativeCommands(stale,activeNationalReaderRelease));
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_AFTER599_COMMANDS,'4.0.597'));
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_AFTER599_COMMANDS,'4.0.598'));
+    for(const changed of [receipt,{...receipt,sourcePhase:activeNationalSource.sourcePhase,releaseVersion:activeNationalReaderRelease},
+      {...receipt,commands:ASSISTANT_AFTER599_COMMANDS},{...receipt,status:'REUSED',origin:{run:1}},
+      {...receipt,current:{...current,attempt:2}},{...receipt,current:{...current,head:'b'.repeat(40)}}]){
+      await assert.rejects(verifyAssistantAfter599NativeContext(changed,current,activeNationalReaderRelease));
+      await assert.rejects(assistantAfter599NativeClaims(changed,current));
+    }
+  }else if(after598Current){
     const {ASSISTANT_AFTER598_COMMANDS,ASSISTANT_AFTER597_COMMANDS,SCALAR597_LATER_H0_COMMANDS,verifyInstalled593Original591PhaseReceipt}
       =await import('./native-postgres-evidence.mjs');
     const {verifyAssistantAfter598NativeContext,assistantAfter598NativeClaims}=await import('./national584-source-evidence.mjs');
@@ -1657,9 +1708,9 @@ function reviewedPrivateStudyOperatorPublisher(source){
 test('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
   const live=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
   const liveOriginal=structuredClone(live);
-  const beforeAfter597=after598Current
+  const beforeAfter597=after599Current?await inverseReviewedAfter599PackageForHistoricalOracles(live):after598Current
     ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter598Package(live):live;
-  const beforeScalar=after597Current||after598Current
+  const beforeScalar=after597Current||after598Current||after599Current
     ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
   const historical=beforeScalar.version==='4.0.597'
     ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(beforeScalar)

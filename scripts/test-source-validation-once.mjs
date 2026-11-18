@@ -1,612 +1,77 @@
-import { reviewedFixedAssistantFailureLegacyWorkflow } from './lib/fixed-assistant-failure-workflow-review.mjs';
+// Current normal source driver: behavior, failure propagation and child isolation.
+// Historical command-map snapshots are not admission rules for today's code.
 import './test-source-child-environment.mjs';
-import {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseReviewedDmiScalarGapSourceScripts,inverseReviewedSupabaseBackupSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
 import fs from 'node:fs';
-import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
-import {
-  buildSourceValidationPlan,
-  expandSourceCommands,
-  runSourceValidation,
-  SOURCE_BINDING_PREFLIGHT,
-} from './validate-source-once.mjs';
-
-// Qualify the actual compact-sharing registration before any historical view.
-const forecastShareProjectionCommand = 'node scripts/test-forecast-share-projection.mjs';
-const precedingPrivacySourceDefinition = 'node scripts/test-post-cutover-private-runtime-migration.mjs && node scripts/test-tracked-runtime-privacy.mjs && node scripts/test-pages-artifact-privacy.mjs';
-function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
-  if(Object.hasOwn(actualScripts,'test:supabase-backup'))
-    return inverseReviewedForecastShareProjectionRegistration(inverseReviewedSupabaseBackupSourceScripts(actualScripts));
-  if(createHash('sha256').update(JSON.stringify(Object.keys(actualScripts).sort().map(key=>[key,actualScripts[key]]))).digest('hex')==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663')
-    return inverseReviewedForecastShareProjectionRegistration(inverseReviewedDmiScalarGapSourceScripts(actualScripts));
-  const digest = scripts => createHash('sha256').update(JSON.stringify(scripts)).digest('hex');
-  assert.equal(digest(actualScripts), '0c471e7f1dd23549309ef500c2f1b4749e02fb3b7529fbe0260eb06694abdee0',
-    'Only the entire reviewed592 script map plus the one compact-sharing registration.');
-  assert.equal(actualScripts['test:privacy-source-critical'],
-    precedingPrivacySourceDefinition + ' && ' + forecastShareProjectionCommand);
-  const declared = expandSourceCommands(actualScripts, 'validate:source:checks');
-  assert.equal(declared.length, 72);
-  assert.equal(declared.filter(command => command === forecastShareProjectionCommand).length, 1,
-    'The real compact producer/privacy/copy target is registered exactly once.');
-  const plan = buildSourceValidationPlan(actualScripts), calls = [];
-  assert.deepEqual(plan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
-  assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
-  assert.equal(runSourceValidation(plan, {execute(command) { calls.push(command); return 0; }, log() {}}), 0);
-  assert.deepEqual(calls, [...plan.preflight, ...plan.remaining, plan.gate]);
-  const previous = {...actualScripts, 'test:privacy-source-critical': precedingPrivacySourceDefinition};
-  assert.equal(digest(previous), '63d0c2106fedef75e01ff230f52b07c81bd00411f80dd8cf985d8a8053852fc5',
-    'Reconstruct the exact entire preceding592 script map before the old unchanged inverses.');
-  assert.deepEqual(declared.filter(command => command !== forecastShareProjectionCommand),
-    expandSourceCommands(previous, 'validate:source:checks'), 'Preserve all preceding commands, order and duplicate counts.');
-  return previous;
-}
-const activeSourcePackage = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const {ACTIVE_ASSISTANT_SUCCESSOR} = await import('./lib/assistant-later-h0-successor-source.mjs');
-const beforeAfter597SourcePackage = ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase === 'assistant-after598-successor'
-  ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter598Package(activeSourcePackage)
-  : activeSourcePackage;
-const beforeScalarSourcePackage = ['assistant-after598-successor','assistant-mixed-after597-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
-  ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter597Package(beforeAfter597SourcePackage)
-  : beforeAfter597SourcePackage;
-const historicalSourcePackage = beforeScalarSourcePackage.version === '4.0.597'
-  ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(beforeScalarSourcePackage)
-  : beforeScalarSourcePackage;
-const actualForecastShareSourceScripts = historicalSourcePackage.scripts;
-// Actual backup tests have their own visible normal group; old cases below keep their complete M5 map.
-const backupActualScripts=activeSourcePackage.scripts;
-const backupRegistrationBefore=JSON.stringify(backupActualScripts);
-const backupFamilies=['scripts/test-export-supabase-database.mjs','scripts/test-seal-supabase-database-export.mjs',
-  'scripts/test-archive-supabase-database-backup.mjs','scripts/test-supabase-backup-bucket.mjs','scripts/test-supabase-database-backup-workflow.mjs'];
-const backupCommand='node --test '+backupFamilies.join(' ');
-assert.equal(actualForecastShareSourceScripts['test:supabase-backup'],backupCommand);
-const backupPrevious=inverseReviewedSupabaseBackupSourceScripts(actualForecastShareSourceScripts);
-const backupDeclared=expandSourceCommands(backupActualScripts,'validate:source:checks');
-const backupPlan=buildSourceValidationPlan(backupActualScripts),backupDispatched=[];
-assert.equal(runSourceValidation(backupPlan,{execute(command){backupDispatched.push(command);return 0;},log(){}}),0);
-assert.deepEqual(backupDispatched,[...backupPlan.preflight,...backupPlan.remaining,backupPlan.gate]);
-for(const list of [backupDeclared,backupDispatched]){
-  assert.equal(list.filter(command=>command===backupCommand).length,1);
-  for(const file of backupFamilies)assert.equal(list.flatMap(command=>command.split(' ')).filter(value=>value===file).length,1);
-}
-const activeBeforeBackup=beforeScalarSourcePackage.version==='4.0.597'
-  ? {...backupPrevious,'test:assistant-later-h0-source':backupActualScripts['test:assistant-later-h0-source']}
-  : backupPrevious;
-assert.deepEqual(backupDeclared.filter(command=>command!==backupCommand),expandSourceCommands(activeBeforeBackup,'validate:source:checks'));
-for(const mutate of [v=>v['test:supabase-backup']+=' scripts/UNREVIEWED.mjs',
-  v=>v['validate:source:checks']+=' && npm run test:supabase-backup',
-  v=>v['test:unreviewed']='node scripts/UNREVIEWED.mjs',
-  v=>v['test:weather-source-critical']+=' --unreviewed']){
-  const value={...actualForecastShareSourceScripts};mutate(value);assert.throws(()=>inverseReviewedSupabaseBackupSourceScripts(value));
-}
-assert.equal(JSON.stringify(backupActualScripts),backupRegistrationBefore);
-
-const precedingForecastShareSourceScripts = inverseReviewedForecastShareProjectionRegistration(actualForecastShareSourceScripts);
-for (const definition of [precedingPrivacySourceDefinition,
-  actualForecastShareSourceScripts['test:privacy-source-critical'] + ' && ' + forecastShareProjectionCommand,
-  forecastShareProjectionCommand + ' && ' + precedingPrivacySourceDefinition,
-  actualForecastShareSourceScripts['test:privacy-source-critical'] + ' --unexpected'])
-  assert.throws(() => inverseReviewedForecastShareProjectionRegistration({...actualForecastShareSourceScripts,
-    'test:privacy-source-critical': definition}));
-assert.throws(() => inverseReviewedForecastShareProjectionRegistration({...actualForecastShareSourceScripts,
-  'test:tracked-runtime': 'node scripts/UNREVIEWED.mjs'}));
-
-// Validate the ACTUAL new source plan first. Then reverse only one exact
-// last-mile registration and the three reviewed historical route rewrites.
-// Every original oracle/assertion below remains whole and unchanged.
-const actualOriginSourceScripts = inverseReviewedAccountStatisticsAssistantSourceScripts(precedingForecastShareSourceScripts);
-const originalOriginSourceCritical = "node scripts/build-ravscore-model-bundle.mjs --check && node scripts/check-account-assistant-issued-source.mjs && node scripts/check-native-identity-frozen-i71-source.mjs && node scripts/run-frozen-current-memory-warmup-source-targets.mjs builder && node scripts/build-established-native-current-origin-successor.mjs --check && node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs && node scripts/test-established-native-current-origin-followers.mjs && node scripts/sync-ravscore-model-binding.mjs --check && npm run test:native-identity-successor && npm run test:current-memory-warmup && npm run test:weather-state-epoch && node scripts/test-ravscore-integrated-model.mjs && node scripts/test-ravscore-integrated-state-pipeline.mjs && node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs && node scripts/test-ravscore-public-runtime-contract.mjs && node scripts/test-ravscore-public-data-service-binding.mjs && node scripts/test-missing-weather-null-safety-4.0.116.mjs";
-const originSourceRoutingHunks = [
-  [
-    "node scripts/build-established-native-current-origin-successor.mjs --check",
-    "node scripts/run-frozen-established-native-current-origin-source-targets.mjs builder"
-  ],
-  [
-    "node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs",
-    "node scripts/run-frozen-established-native-current-origin-source-targets.mjs model-imports && node scripts/run-frozen-established-native-current-origin-source-targets.mjs successor && node scripts/run-frozen-established-native-current-origin-source-targets.mjs postgres-source && node --test scripts/test-last-mile-enclosure-current-model-imports.mjs scripts/test-code-only-public-coastal-registry-stage.mjs"
-  ],
-  [
-    "node scripts/test-established-native-current-origin-followers.mjs",
-    "node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers"
-  ]
+import {buildSourceValidationPlan,expandSourceCommands,runSourceValidation,
+  sourceCommandsForChangedPaths,isOnlyReleaseVersionChange,SOURCE_BINDING_PREFLIGHT} from './validate-source-once.mjs';
+const scripts=JSON.parse(fs.readFileSync('package.json','utf8')).scripts;
+const plan=buildSourceValidationPlan(scripts);
+assert.deepEqual(plan.preflight,[...SOURCE_BINDING_PREFLIGHT]);
+assert.equal(plan.gate,'node scripts/source-critical-gate.mjs');
+const expected=[
+  'node scripts/validate-release-version.mjs',
+  'node scripts/validate-rdks.mjs',
+  'node scripts/test-security-hardening-4.0.284.mjs',
+  'node scripts/test-tracked-runtime-privacy.mjs',
+  'node scripts/test-source-validation-once.mjs',
 ];
-const actualOriginSourceCommands = [
-  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs builder",
-  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs model-imports",
-  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs successor",
-  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs postgres-source",
-  "node --test scripts/test-last-mile-enclosure-current-model-imports.mjs scripts/test-code-only-public-coastal-registry-stage.mjs",
-  "node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers"
-];
-const lastMileSourceGroup = "test:last-mile-enclosure";
-const lastMileSourceDefinition = "node scripts/build-last-mile-enclosure-successor.mjs --check && node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-archived-weather-restart-workflow.mjs";
-const lastMileSourceChecks = [
-  "node scripts/build-last-mile-enclosure-successor.mjs --check",
-  "node --test scripts/test-ravscore-last-mile-canonical-checkpoint.mjs scripts/test-unpaired-weather-restart-archive.mjs scripts/test-archived-weather-restart-input-view.mjs scripts/test-archived-weather-restart-locator.mjs scripts/test-last-mile-enclosure-predecessor-source.mjs scripts/test-last-mile-enclosure-plan.mjs scripts/test-last-mile-enclosure-postgres-source.mjs scripts/test-last-mile-enclosure-restart-archive-origin.mjs scripts/test-archived-weather-restart-workflow.mjs"
-];
-const lastMileCriticalRegistration = ["node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers","node scripts/run-frozen-established-native-current-origin-source-targets.mjs followers && npm run test:last-mile-enclosure"];
-function inverseReviewedOriginSourceRouting(actualScripts) {
-  assert.equal(actualScripts[lastMileSourceGroup], lastMileSourceDefinition,
-    'The exact current584 builder and all nine direct normal targets must stay in order.');
-  const expanded = expandSourceCommands(actualScripts, 'validate:source:checks');
-  for (const command of [...actualOriginSourceCommands, ...lastMileSourceChecks])
-    assert.equal(expanded.filter(value => value === command).length, 1,
-      'Each historical route and direct584 target runs exactly once.');
-  let critical = actualScripts['test:ravscore-source-critical'];
-  assert.equal(typeof critical, 'string');
-  assert.equal(critical.split('npm run ' + lastMileSourceGroup).length, 2,
-    'Exactly one last-mile group reference in the normal critical group.');
-  assert.equal(critical.split(lastMileCriticalRegistration[1]).length, 2,
-    'The one fixed registration retains its reviewed location.');
-  critical = critical.replace(lastMileCriticalRegistration[1], () => lastMileCriticalRegistration[0]);
-  for (const [oldCommand, newCommand] of [...originSourceRoutingHunks].reverse()) {
-    assert.equal(critical.split(newCommand).length, 2, 'Exact whole routing operand, no duplicate or missing target.');
-    critical = critical.replace(newCommand, () => oldCommand);
-  }
-  assert.equal(critical, originalOriginSourceCritical, 'Whole qualified preceding source group, not a pin retag.');
-  const previous = { ...actualScripts, 'test:ravscore-source-critical': critical };
-  delete previous[lastMileSourceGroup];
-  return previous;
+assert.deepEqual(plan.remaining,expected);
+assert.equal(plan.preflight.length+plan.remaining.length+1,8);
+const calls=[];
+assert.equal(runSourceValidation(plan,{execute(c){calls.push(c);return 0;},log(){}}),0);
+assert.deepEqual(calls,[...plan.preflight,...expected,plan.gate]);
+for(const failure of calls.keys()){
+  let count=0;
+  assert.equal(runSourceValidation(plan,{execute(){return count++===failure?1:0;},log(){}}),1);
+  assert.equal(count,failure<plan.preflight.length?plan.preflight.length:calls.length);
 }
-// The normal reusable caller already imports the full B/S reconcile target.
-// Keep that coverage once, rather than executing the same costly fixture in
-// both the new group and the existing deploy-source group.
-const onceExpanded = expandSourceCommands(actualOriginSourceScripts, 'validate:source:checks');
-assert.equal(onceExpanded.filter(command => command.includes('scripts/test-reusable-production-workflows.mjs')).length, 1);
-assert.equal(onceExpanded.some(command => command.includes('scripts/test-reconcile-private-runtime-checkpoint.mjs')), false);
-assert.equal((fs.readFileSync('scripts/test-reusable-production-workflows.mjs', 'utf8')
-  .match(/^await import\('\.\/test-completed-private-runtime-admission\.mjs'\);$/gm) ?? []).length, 1);
-assert.equal((fs.readFileSync('scripts/test-completed-private-runtime-admission.mjs', 'utf8')
-  .match(/^import '\.\/test-reconcile-private-runtime-checkpoint\.mjs';$/gm) ?? []).length, 1);
-const actualOriginSourcePlan = buildSourceValidationPlan(actualOriginSourceScripts);
-const actualOriginSourceDeclared = expandSourceCommands(actualOriginSourceScripts, 'validate:source:checks');
-assert.deepEqual(actualOriginSourcePlan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
-assert.equal(actualOriginSourcePlan.gate, 'node scripts/source-critical-gate.mjs');
-assert.deepEqual(actualOriginSourcePlan.remaining, actualOriginSourceDeclared.filter(command =>
-  command !== actualOriginSourcePlan.gate && !actualOriginSourcePlan.preflight.includes(command)));
-const actualOriginSourceCalls = [];
-assert.equal(runSourceValidation(actualOriginSourcePlan, { execute(command) {
-  actualOriginSourceCalls.push(command); return 0;
-}, log() {} }), 0);
-assert.deepEqual(actualOriginSourceCalls, [...actualOriginSourcePlan.preflight,
-  ...actualOriginSourcePlan.remaining, actualOriginSourcePlan.gate]);
-for (const command of actualOriginSourceCommands) {
-  const current = actualOriginSourceScripts['test:ravscore-source-critical'];
-  for (const changed of [current.replace(command, 'node scripts/UNQUALIFIED-MISSING.mjs'),
-    current.replace(command, command + ' && ' + command)])
-    assert.throws(() => inverseReviewedOriginSourceRouting({ ...actualOriginSourceScripts,
-      'test:ravscore-source-critical': changed }));
-}
-for (const definition of [undefined, '', lastMileSourceDefinition + ' && node scripts/UNKNOWN.mjs',
-  lastMileSourceDefinition.replace(lastMileSourceChecks[0], lastMileSourceChecks[0] + ' --unexpected'),
-  lastMileSourceDefinition.replace('scripts/test-unpaired-weather-restart-archive.mjs',
-    'scripts/test-archived-weather-restart-input-view.mjs')])
-  assert.throws(() => inverseReviewedOriginSourceRouting({ ...actualOriginSourceScripts, [lastMileSourceGroup]: definition }));
-for (const critical of [
-  actualOriginSourceScripts['test:ravscore-source-critical'].replace(lastMileCriticalRegistration[1], lastMileCriticalRegistration[0]),
-  actualOriginSourceScripts['test:ravscore-source-critical'] + ' && npm run ' + lastMileSourceGroup,
-  actualOriginSourceScripts['test:ravscore-source-critical'] + ' && node scripts/UNKNOWN.mjs',
-]) assert.throws(() => inverseReviewedOriginSourceRouting({ ...actualOriginSourceScripts,
-  'test:ravscore-source-critical': critical }));
-const scripts = inverseReviewedOriginSourceRouting(actualOriginSourceScripts);
-const plan = buildSourceValidationPlan(scripts);
-const declared = expandSourceCommands(scripts, 'validate:source:checks');
-
-// The new normal adapter check is additive, exact and first. Only its one
-// qualified command is inverted before the unchanged historical inventory.
-const coldSupervisorName = 'test:current-family-cold-supervisor';
-const coldSupervisorCheck = 'node --test scripts/test-current-family-cold-supervisor-wrapper.mjs';
-const coldSupervisorPrefix = 'npm run ' + coldSupervisorName + ' && ';
-function inverseReviewedColdSupervisorCommand(actualScripts) {
-  assert.equal(actualScripts[coldSupervisorName], coldSupervisorCheck,
-    'The actual C supervisor group must retain its exact normal target.');
-  assert.ok(actualScripts['validate:source:checks'].startsWith(coldSupervisorPrefix),
-    'The exact C supervisor group must remain the first declared source check.');
-  const commands = expandSourceCommands(actualScripts, 'validate:source:checks');
-  assert.equal(commands.filter(command => command === coldSupervisorCheck).length, 1,
-    'The exact C supervisor command must execute once, never be dropped or duplicated.');
-  assert.deepEqual(commands.slice(0, 1), [coldSupervisorCheck]);
-  return commands.slice(1);
-}
-const baselineDeclared = inverseReviewedColdSupervisorCommand(scripts);
-assert.deepEqual([coldSupervisorCheck, ...baselineDeclared], declared,
-  'The inverse must preserve every other command byte, order and duplicate count.');
-for (const changes of [
-  { [coldSupervisorName]: undefined },
-  { [coldSupervisorName]: coldSupervisorCheck + ' --test-concurrency 2' },
-  { 'validate:source:checks': scripts['validate:source:checks'].slice(coldSupervisorPrefix.length) },
-  { 'validate:source:checks': coldSupervisorPrefix + scripts['validate:source:checks'] },
-  { 'validate:source:checks': scripts['validate:source:checks'].slice(coldSupervisorPrefix.length)
-    + ' && npm run ' + coldSupervisorName },
-  { 'validate:source:checks': coldSupervisorCheck + ' && '
-    + scripts['validate:source:checks'].slice(coldSupervisorPrefix.length) },
-  { 'test:ravscore-source-critical': coldSupervisorCheck + ' && ' + scripts['test:ravscore-source-critical'] },
-]) assert.throws(() => inverseReviewedColdSupervisorCommand({ ...scripts, ...changes }));
-
-// Historical assertions retain their actual immutable source, not a package
-// projection retagged as current. The normal host verifies every materialized
-// leaf and the complete native0600 migration catalog before this callback.
-const frozen = await withFrozenNative0600TestSource('native', sourceRoot =>
-  JSON.parse(fs.readFileSync(path.join(sourceRoot, 'package.json'), 'utf8')).scripts);
-assert.equal(frozen.head, '60d999a68136c43acb4d3664bbd66eed47283bb2');
-assert.equal(frozen.tree, 'ead5743dd9098035b0de5f748de2009460506971');
-const historicalScripts = frozen.result;
-const historicalDeclared = expandSourceCommands(historicalScripts, 'validate:source:checks');
-
-assert.deepEqual(plan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
-assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gate
-  && !plan.preflight.includes(command)));
-assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
-assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
-assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
-// Preserve all 47 baseline commands and the genuine issued213 historical check.
-// Issued220 is checked by its genuine frozen source, never rebuilt against NEW.
-// The exact NEW builder and bounded native group are separate required checks.
-const issuedCheck = 'node scripts/check-account-assistant-issued-source.mjs';
-const frozenCurrentCheck = 'node scripts/check-native-identity-frozen-i71-source.mjs';
-const successorCheck = 'node scripts/build-native-sampling-identity-original-binding-successor.mjs --check';
-const diagnosticCheck = 'node scripts/test-current-grid-prewrite-diagnostic.mjs';
-const nativeFrozenCheck = 'node scripts/test-native-identity-frozen-i71-source.mjs';
-const nativeTargets = [
-  'scripts/test-native-sampling-identity-successor.mjs',
-  'scripts/test-native-identity-normal-readiness.mjs',
-  'scripts/test-native-identity-normal-routing.mjs',
-  'scripts/test-owned-i71-native-identity-working.mjs',
-  'scripts/test-native-identity-staging-working-copy.mjs',
-  'scripts/test-native-identity-installed-migration-metadata.mjs',
-  'scripts/test-native-identity-checkpoint-runtime.mjs',
-  'scripts/test-native-identity-workflow.mjs',
-];
-const nativeCheck = 'node --test --test-concurrency 2 ' + nativeTargets.join(' ');
-const epochTargets = [
-  'scripts/test-weather-state-epoch-archive.mjs',
-  'scripts/test-weather-state-epoch-input-view.mjs',
-  'scripts/test-weather-state-epoch-callers.mjs',
-  'scripts/test-weather-state-epoch.mjs',
-  'scripts/test-weather-state-epoch-budget.mjs',
-  'scripts/test-weather-state-epoch-workflow.mjs',
-];
-const epochCheck = 'node --test --test-concurrency 2 ' + epochTargets.join(' ');
-assert.equal(historicalScripts['test:weather-state-epoch'], epochCheck);
-assert.equal(historicalScripts['test:native-identity-successor'], nativeFrozenCheck + ' && ' + nativeCheck,
-  'All eight native targets and explicit concurrency2 must remain in the same normal group.');
-const successorChecks = [issuedCheck, frozenCurrentCheck, successorCheck, diagnosticCheck,
-  nativeFrozenCheck, nativeCheck, epochCheck];
-for (const check of successorChecks) {
-  assert.equal(historicalDeclared.filter(command => command === check).length, 1,
-    'Issued, genuine OLD, NEW, native and pure diagnostic source must each be checked exactly once.');
-}
-assert.equal(declared.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false,
-  'The immutable issued213 builder must not be rerun against current220 source.');
-assert.equal(declared.includes('node scripts/build-current-grid-original-binding-successor.mjs --check'), false,
-  'The immutable issued220 builder must run only inside its genuine frozen source, not against NEW.');
-assert.ok(historicalDeclared.filter(command => !successorChecks.includes(command)).length <= 47,
-  `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${historicalDeclared.length} kommandoer.`);
-
-// Check the real normal host's literal group inventory, not just wrapper names.
-// Its native producer above also physically verified these immutable sources.
-const hostSource = fs.readFileSync('scripts/run-frozen-native0600-source-targets.mjs', 'utf8').replace(/\r\n/g, '\n');
-function hostTargets(group) {
-  const body = new RegExp('^  ' + group + ':Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\),$', 'm').exec(hostSource)?.[1];
-  assert.ok(body, 'The actual normal frozen group must be literal and bounded.');
-  assert.equal(body.replace(/'[^']+'/g, '').replace(/[\s,]/g, ''), '');
-  return [...body.matchAll(/'([^']+)'/g)].map(match => match[1]);
-}
-assert.deepEqual(hostTargets('native'), [nativeFrozenCheck.split(' ')[1], ...nativeTargets]);
-assert.deepEqual(hostTargets('epoch'), epochTargets);
-assert.deepEqual(hostTargets('install'), ['scripts/test-integrated-cutover-install-contract.mjs']);
-assert.deepEqual(hostTargets('readiness'), ['scripts/test-integrated-cutover-readiness.mjs']);
-assert.ok(hostSource.includes("group==='native'?[[GROUPS.native[0]],['--test','--test-concurrency','2',...GROUPS.native.slice(1)]]\n"
-  + "      :group==='epoch'?[['--test','--test-concurrency','2',...GROUPS.epoch]]:[[...GROUPS[group]]];"));
-assert.ok(hostSource.includes('await exec(process.execPath,argv,{cwd:sourceRoot,env:'));
-const host = group => 'node scripts/run-frozen-native0600-source-targets.mjs ' + group;
-assert.equal(scripts['test:native-identity-successor'], host('native'));
-assert.equal(scripts['test:weather-state-epoch'], host('epoch'));
-const currentBuilder = 'node scripts/run-frozen-current-memory-warmup-source-targets.mjs builder';
-const originBuilder = 'node scripts/build-established-native-current-origin-successor.mjs --check';
-const originFollowers = 'node scripts/test-established-native-current-origin-followers.mjs';
-const originTargets = 'node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs';
-const warmupTargets = ['scripts/test-current-memory-warmup-successor.mjs',
-  'scripts/test-current-memory-warmup-current-consumers.mjs',
-  'scripts/test-current-memory-warmup-postgres-source.mjs',
-  'scripts/test-current-memory-warmup-workflow.mjs'];
-const warmupChecks = ['node --test --test-concurrency 2 ' + warmupTargets.join(' '),
-  'node scripts/test-current-memory-warmup-runtime-transition.mjs',
-  'node --test --test-name-pattern inner-unknown scripts/test-weather-state-epoch-input-view.mjs'];
-assert.equal(scripts['test:current-memory-warmup'], warmupChecks.join(' && '));
-const epochSource = fs.readFileSync('scripts/test-weather-state-epoch-input-view.mjs', 'utf8');
-assert.deepEqual([...epochSource.matchAll(/^test\('([^']+)'/gm)].map(match => match[1])
-  .filter(name => /inner-unknown/.test(name)),
-['normal strict inner-unknown NEW checkpoint follows without relabeling history']);
-const priorIntegratedTargets = 'node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs';
-const currentWindowAuditTarget = 'scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs';
-const currentForwardOriginalTargets = 'scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs';
-const currentIntegratedTargets = priorIntegratedTargets + ' ' + currentWindowAuditTarget + ' ' + currentForwardOriginalTargets;
-assert.equal(declared.filter(command => command === currentIntegratedTargets).length, 1,
-  'The exact diagnostic target must execute once alongside the unchanged integrated targets.');
-assert.equal(currentIntegratedTargets.replace(' ' + currentForwardOriginalTargets, '').replace(' ' + currentWindowAuditTarget, ''), priorIntegratedTargets);
-const replaced = new Map([
-  [priorIntegratedTargets, [currentIntegratedTargets]],
-  [successorCheck, [currentBuilder, originBuilder, originTargets, originFollowers]],
-  [nativeFrozenCheck, [host('native'), ...warmupChecks]],
-  [nativeCheck, []], // The same eight targets now execute in the genuine host.
-  [epochCheck, [host('epoch')]],
-  ['node scripts/test-integrated-cutover-install-contract.mjs', [host('install')]],
-  ['node scripts/test-integrated-cutover-readiness.mjs', [host('readiness')]],
-]);
-const mapTimelineChecks = ['node scripts/test-map-forecast-timeline.mjs',
-  'node --test scripts/test-map-forecast-panel.mjs scripts/test-map-timeline-generation.mjs'];
-assert.equal(scripts['test:map-timeline'], mapTimelineChecks.join(' && '));
-const mapTimelineAnchor = 'node --test scripts/test-protected-operational-reentry-evidence.mjs';
-assert.equal(declared.filter(command => command === mapTimelineAnchor).length, 1);
-for (const check of mapTimelineChecks)
-  assert.equal(declared.filter(command => command === check).length, 1,
-    'Every actual timeline command must execute exactly once.');
-const mapTimelineAt = declared.indexOf(mapTimelineAnchor);
-assert.deepEqual(declared.slice(mapTimelineAt, mapTimelineAt + 3),
-  [mapTimelineAnchor, ...mapTimelineChecks], 'Both timeline commands keep their normal additive position.');
-assert.deepEqual(baselineDeclared.filter(command => !mapTimelineChecks.includes(command)),
-  historicalDeclared.flatMap(command => replaced.get(command) ?? [command]),
-  'Preserve every baseline command, order and duplicate count except the six exact historical routes and three separate warmup checks.');
-for (const check of [issuedCheck, frozenCurrentCheck, diagnosticCheck, currentBuilder, originBuilder, originTargets, originFollowers,
-  host('native'), host('epoch'), host('install'), host('readiness'), ...warmupChecks])
-  assert.equal(declared.filter(command => command === check).length, 1,
-    'Every genuine historical route and current warmup builder/target must execute exactly once.');
-assert.equal(declared.includes(successorCheck), false,
-  'The immutable native0600 builder must run only inside its genuine frozen source.');
-assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
-assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(
-  'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
-  'The existing Copernicus source group must execute the actual subset/checkpoint regression suite.');
-const pythonContractGroup = fs.readFileSync('scripts/test-current-operational-python-contracts.mjs', 'utf8');
-const normalPublicContractGroup = fs.readFileSync('scripts/test-ravscore-public-runtime-contract.mjs', 'utf8');
-const candidatePublicCiWorkflow = fs.readFileSync('.github/workflows/validate-pull-request.yml', 'utf8');
-const candidatePublicCiSourceLine = candidatePublicCiWorkflow.split(/\r?\n/)
-  .filter(line => line.trimStart().startsWith('run: npm run validate:source'));
-assert.equal(candidatePublicCiSourceLine.length, 1);
-assert.equal(declared.filter(command => command === 'node scripts/test-ravscore-public-runtime-contract.mjs').length, 1,
-  'The existing source public-contract entry must execute exactly once.');
-for (const target of ['test-prepare-candidate-g-operational-rollback.mjs',
-  'test-candidate-g-rollback-public-stage.mjs']) {
-  const command = `node scripts/${target}`;
-  assert.equal(candidatePublicCiWorkflow.split(command).length - 1, 1,
-    `The normal PR source CI must execute the actual ${target} exactly once.`);
-  assert.ok(candidatePublicCiSourceLine[0].includes(` && ${command}`),
-    'Candidate public regressions run only after successful normal source validation.');
-  assert.equal(normalPublicContractGroup.includes(`import('./${target}')`), false,
-    'The public-contract entry must not repeat targets already listed in the broad release gate.');
-  assert.equal(declared.some(command => command.includes(`scripts/${target}`)), false,
-    'The packed Candidate targets must not also run inside the source command plan.');
-}
-const publicPrivacyGroup = fs.readFileSync('scripts/test-tracked-runtime-privacy.mjs', 'utf8');
-for (const file of [
-  'scripts/test-observation-production-mapping.mjs',
-  'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
-  'scripts/test-public-page-resume-4.0.292.mjs',
-  'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-  'scripts/test-auth-bootstrap-4.0.66.mjs',
-  'scripts/test-user-account-trip-log-4.0.264.mjs',
-  'scripts/test-profile-permission-owner-epoch.mjs',
-  'scripts/test-delete-trip-owner-data-readback.mjs',
-  'scripts/test-trip-evidence-controller-active-intent.mjs',
-  'scripts/test-assistant-ui-error-boundary.mjs',
-  'scripts/test-trip-evidence-upload-receipt.mjs',
-  'scripts/test-trip-evidence-storage-interruption.mjs',
-  'scripts/test-trip-storage-edge-transient-retry.mjs',
-]) assert.equal(publicPrivacyGroup.split(`'${file}'`).length - 1, 1,
-  `The existing source privacy group must execute ${file} exactly once.`);
-assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,
-  'The existing Python source group must execute the DMI supervisor regression exactly once.');
-for (const target of ['test-dmi-transactional-checkpoint.py',
-  'CanonicalTimeParsingTests', 'CurrentLedgerCheckpointTests'])
-  assert.equal(pythonContractGroup.split(`'${target}'`).length - 1, 1,
-    `The existing Python source group must select ${target} exactly once.`);
-assert.match(pythonContractGroup, /spawnSync\(python, \['-B', path\.join\(root, 'scripts', file\),\r?\n    'CanonicalTimeParsingTests', 'CurrentLedgerCheckpointTests'\]/,
-  'The registered group must actually invoke both current classes, not the full native suite or a frozen copy.');
-assert.equal((scripts['test:flow-arrow-runtime'].match(/node scripts\/test-current-arrow-land-mask\.mjs/g) || []).length, 1,
-  'The existing flow-arrow group must verify the actual nationwide land mask exactly once.');
-assert.equal((fs.readFileSync('scripts/source-critical-gate.mjs', 'utf8').match(/'test:flow-arrow-runtime'/g) || []).length, 1,
-  'The normal source gate must retain the flow-arrow group exactly once.');
-const invokedFiles = declared.flatMap(command => command.split(' ').filter(argument =>
-  /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
-for (const file of [
-  'scripts/test-current-family-cold-supervisor-wrapper.mjs',
-  'scripts/test-progressive-public-conditions-4.0.216.mjs',
-  'scripts/test-public-nonblocking-forecast-4.0.83.mjs',
-  'scripts/test-map-zoom-refresh-4.0.88.mjs',
-  'scripts/test-source-validation-once.mjs',
-  'scripts/test-tracked-runtime-privacy.mjs',
-  'scripts/test-current-operational-python-contracts.mjs',
-  'scripts/test-saved-weather-audit-workflow.mjs',
-  'scripts/test-audit-saved-weather-inputs.mjs',
-  'scripts/test-protected-dmi-native-current-proofs.mjs',
-  'scripts/test-dmi-forecast-file.mjs',
-  'scripts/test-weather-component-safe-summary.mjs',
-  'scripts/test-weather-component-progress-cache.mjs',
-  'scripts/test-weather-component-progress-workflow.mjs',
-  'scripts/test-dmi-progress-inputs.mjs',
-  'scripts/test-ravscore-recovery-replay.mjs',
-  'scripts/test-dmi-bulk-forecast-integration.mjs',
-  'scripts/test-weather-component-normal-wireup.mjs',
-  'scripts/test-dmi-protected-tuple-continuity.mjs',
-  'scripts/test-current-provenance-sealing.mjs',
-  'scripts/test-open-meteo-part-bank.mjs',
-  'scripts/test-open-meteo-part-runtime.mjs',
-  'scripts/test-open-meteo-normal-component-chain.mjs',
-]) {
-  assert.equal(invokedFiles.filter(candidate => candidate === file).length, 1,
-    `Source plan must run ${file} exactly once.`);
-}
-
-for (const changes of [
-  { 'validate:source': 'node other.mjs' },
-  { 'source:critical-gate': 'node other.mjs' },
-  { 'validate:source:checks': 'node scripts/test-score-engine.mjs' },
-  { 'validate:source:checks': 'npm run source:critical-gate && npm run source:critical-gate' },
-  { 'validate:source:checks': 'npm run source:critical-gate && node scripts/test-score-engine.mjs' },
-  { 'validate:source:checks': 'npm run missing' },
-  { 'validate:source:checks': 'npm run validate:source:checks' },
-  { 'validate:source:checks': 'echo ok || true && npm run source:critical-gate' },
-  { 'test:current-memory-warmup': scripts['test:current-memory-warmup']
-    .replace('--test-concurrency 2', '--test-concurrency=2') },
-  { 'test:current-memory-warmup': scripts['test:current-memory-warmup']
-    .replace('--test-name-pattern inner-unknown', '--test-name-pattern="inner-unknown"') },
-]) assert.throws(() => buildSourceValidationPlan({ ...scripts, ...changes }));
-// Keep the original historical concurrency refusal against its actual package.
-for (const changes of [
-  { 'test:native-identity-successor': historicalScripts['test:native-identity-successor']
-    .replace('--test-concurrency 2', '--test-concurrency=2') },
-]) assert.throws(() => buildSourceValidationPlan({ ...historicalScripts, ...changes }));
-
-const calls = [];
-assert.equal(runSourceValidation(plan, { execute(command) { calls.push(command); return 0; }, log() {} }), 0);
-assert.deepEqual(calls, [...plan.preflight, ...plan.remaining, plan.gate]);
-
-for (const failureIndex of calls.keys()) {
-  let executed = 0;
-  assert.equal(runSourceValidation(plan, {
-    execute() { return executed++ === failureIndex ? 1 : 0; },
-    log() {},
-  }), 1);
-  assert.equal(executed, failureIndex < plan.preflight.length ? plan.preflight.length : calls.length,
-    'A failed binding precondition stops dependent work; independent later failures are still collected.');
-}
-
-const sourceDeclaration = scripts['validate:source:checks'];
-for (const required of [
-  'test:ravscore-source-critical',
-  'test:weather-source-critical',
-  'test:water-source-production-chain',
-  'test:water-regressions',
-  'test:provider-continuity',
-  'test:deploy-source-critical',
-  'test:privacy-source-critical',
-  'source:critical-gate',
-]) assert.ok(sourceDeclaration.includes(required), `Den kritiske kildegate mangler ${required}.`);
-for (const removed of [
-  'validate:rdks',
-  'test:rav-assistant',
-  'test:feedback-learning',
-  'test:hybrid-trip-storage',
-  'test:adaptive-prediction',
-  'test:admin-feature-reachability',
-  'test:ravscore-rollback-oracle',
-  'test:legacy-bootstrap-hydration',
-  'test:workflow-action-contracts',
-  'release:gate',
-]) assert.ok(!sourceDeclaration.includes(removed), `${removed} hører ikke længere til i den faste kildegate.`);
-
-// The new fixed historical read uses the same guarded job, never a write job.
-// Parse only the actual existing equality/and/or operation grammar here;
-// this is a source routing assertion, not live GitHub or log-read proof.
-const fixedOperation = 'fixed-public-rate-log-read-20261013';
-const fixedWorkflow = reviewedFixedAssistantFailureLegacyWorkflow(fs.readFileSync('.github/workflows/deploy-trip-storage.yml', 'utf8').replace(/\r\n/g, '\n'));
-const fixedJobsSource = fixedWorkflow.slice(fixedWorkflow.indexOf('\njobs:\n'));
-const fixedHeaders = [...fixedJobsSource.matchAll(/^  ([a-z0-9-]+):$/gm)];
-const fixedJobs = new Map(fixedHeaders.map((row,index) => [row[1], fixedJobsSource.slice(row.index,
-  fixedHeaders[index+1]?.index ?? fixedJobsSource.length)]));
-assert.deepEqual([...fixedJobs.keys()].sort(), ['deploy-trip-storage','read-fixed-supabase-metadata','reject-unknown-operation','repair-existing-worker']);
-// A source fallback is an offline check, not permission to borrow job credentials.
-function assertOfflineTripInstallerSource(job) {
-  assert.ok(job.includes('      - uses: actions/checkout@v7\n'
-    + '        with:\n'
-    + '          # Offline source fixtures archive genuine historical producer commits.\n'
-    + '          fetch-depth: 0\n'),
-  'source fallback must retain genuine historical Git objects, not just one legacy ref');
-  assert.ok(job.includes("      - name: Validate exact source head before external writes\n"
-    + "        id: source-gate\n"
-    + "        if: steps.source-proof.outputs.required != 'false'\n"
-    + '        run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source\n'),
-  'offline source child must receive no ambient Management-token key');
-  assert.ok(job.includes('      SUPABASE_ACCESS_TOKEN: ' + '$' + '{{ secrets.SUPABASE_ACCESS_TOKEN }}\n'),
-    'step-local isolation must not remove credentials needed by later approved operations');
-}
-for (const name of ['deploy-trip-storage', 'repair-existing-worker']) {
-  const job = fixedJobs.get(name);
-  assertOfflineTripInstallerSource(job);
-  assert.throws(() => assertOfflineTripInstallerSource(job.replace('          fetch-depth: 0\n', '')),
-    /genuine historical Git objects/);
-  assert.throws(() => assertOfflineTripInstallerSource(job.replace(
-    'run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source', 'run: npm run validate:source')),
-  /no ambient Management-token key/);
-}
-if (process.platform === 'linux') {
-  const syntheticSourceEnv = {
-    PATH: process.env.PATH,
-    SUPABASE_ACCESS_TOKEN: 'synthetic-offline-source-token',
-  };
-  const sanitizedChild = spawnSync('env', ['-u', 'SUPABASE_ACCESS_TOKEN', process.execPath,
-    '--input-type=module', '-e',
-    "if(Object.hasOwn(process.env,'SUPABASE_ACCESS_TOKEN'))process.exit(1);"
-      + "process.stdout.write('OFFLINE_TOKEN_ABSENT\\n');"],
-  { env: syntheticSourceEnv, encoding: 'utf8', timeout: 5000 });
-  assert.equal(sanitizedChild.error, undefined, 'the actual Linux env caller must execute');
-  assert.equal(sanitizedChild.status, 0, 'the actual source child must have no token key');
-  assert.equal(sanitizedChild.stdout, 'OFFLINE_TOKEN_ABSENT\n');
-  assert.equal(sanitizedChild.stderr, '');
-  assert.equal(syntheticSourceEnv.SUPABASE_ACCESS_TOKEN, 'synthetic-offline-source-token',
-    'step-local removal must not mutate its parent environment');
-} else {
-  console.log('Linux env -u source-child token isolation: UNRUN on this platform.');
-}
-
-function operationAllows(job,operation) {
-  const expression = /^    if: \$\{\{ (.+) \}\}$/m.exec(job)?.[1];
-  assert.ok(expression, 'Every actual operation job must retain an explicit condition.');
-  return expression.split(' || ').some(disjunction => disjunction.split(' && ').every(clause => {
-    const match = /^inputs\.operation (==|!=) '([a-z0-9-]*)'$/.exec(clause);
-    assert.ok(match, 'Do not silently accept another routing grammar.');
-    return match[1] === '==' ? operation === match[2] : operation !== match[2];
-  }));
-}
-for (const [name,job] of fixedJobs) assert.equal(operationAllows(job,fixedOperation),name === 'read-fixed-supabase-metadata');
-for (const operation of ['typed-trip-catalog-read','fixed-public-rate-log-read']) {
-  assert.equal(operationAllows(fixedJobs.get('read-fixed-supabase-metadata'),operation),true);
-  assert.equal(operationAllows(fixedJobs.get('reject-unknown-operation'),operation),false);
-}
-for (const [name,job] of fixedJobs) assert.equal(operationAllows(job,'unknown-read-operation'),name === 'reject-unknown-operation');
-const actualFixedReadJob = fixedJobs.get('read-fixed-supabase-metadata');
-const consoleOperation = 'fixed-public-rate-console-read-20261015';
-for (const [name, job] of fixedJobs) assert.equal(operationAllows(job, consoleOperation),
-  name === 'read-fixed-supabase-metadata');
-const consoleReadStep = "      - name: Read the one fixed 15 October public rate console-log interval\n        if: inputs.operation == 'fixed-public-rate-console-read-20261015'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-public-rate-console-log-20261015.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
-assert.equal(actualFixedReadJob.split(consoleReadStep).length, 2,
-  'the separately tested console route must occur exactly once before historical projection');
-assert.ok(actualFixedReadJob.indexOf('Require genuinely fresh idle main')
-  < actualFixedReadJob.indexOf(consoleReadStep));
-assert.doesNotMatch(actualFixedReadJob, /supabase db push|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
-// Remove only this exact additive step; preserve every historical assertion.
-const fixedReadJob = actualFixedReadJob.replace(consoleReadStep, '');
-for (const marker of ['test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar',
-  'test "$GITHUB_RUN_ATTEMPT" = 1','test "$GITHUB_REF" = refs/heads/main',
-  'node scripts/weather-source-gate.mjs check','steps.fixed_read_source.outputs.required',
-  'node scripts/check-fixed-supabase-account-read-idle.mjs']) assert.ok(fixedReadJob.includes(marker));
-const newFixedRead = 'node scripts/read-fixed-public-rate-log-20261013.mjs';
-assert.equal(fixedReadJob.split(newFixedRead).length-1,1);
-assert.ok(fixedReadJob.indexOf('Require genuinely fresh idle main') < fixedReadJob.indexOf(newFixedRead));
-assert.equal(fixedReadJob.split('node scripts/read-fixed-public-rate-log-20261012.mjs').length-1,1);
-assert.doesNotMatch(fixedReadJob,/supabase db push|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
-const fixedSourceWorkflow = fs.readFileSync('.github/workflows/validate-pull-request.yml','utf8');
-const normalFixedTarget = 'node scripts/test-fixed-public-rate-log-20261013.mjs';
-assert.equal(fixedSourceWorkflow.split(normalFixedTarget).length-1,1);
-assert.ok(fixedSourceWorkflow.includes('run: npm run validate:source && '+normalFixedTarget),
-  'The required normal Source step must run the synthetic reader target only after the existing source gate succeeds.');
-
-// New Storage read is a fourth separately scoped fixed reader, never a write job.
-const storageOperation='fixed-storage-upload-log-read-20261013';
-for(const[name,job]of fixedJobs)assert.equal(operationAllows(job,storageOperation),name==='read-fixed-supabase-metadata');
-const storageReadStep="      - name: Read the one fixed 13 October Storage upload-log interval\n        if: inputs.operation == 'fixed-storage-upload-log-read-20261013'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-storage-upload-log-20261013.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
-assert.equal(fixedReadJob.split(storageReadStep).length,2);
-assert.ok(fixedReadJob.indexOf('Require genuinely fresh idle main')<fixedReadJob.indexOf(storageReadStep));
-assert.equal((fixedReadJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,4);
-const storageRemovedJob=fixedReadJob.replace(storageReadStep,'');
-assert.equal((storageRemovedJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,3);
-for(const oldRead of ['read-typed-trip-catalog.mjs','read-fixed-public-rate-log-20261012.mjs','read-fixed-public-rate-log-20261013.mjs'])
-  assert.equal(storageRemovedJob.split('node scripts/'+oldRead).length,2);
-assert.equal(fixedSourceWorkflow.split('node scripts/test-fixed-storage-upload-log-20261013.mjs').length,2);
-assert.ok(fixedSourceWorkflow.includes('run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs'));
-assert.doesNotMatch(fixedReadJob,/supabase db push|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
-
-console.log(`Source validation: ${calls.length} direkte produktionskritiske kommandoer, samlet fejlrapport og ingen bred release-/historiksuite; ny fast loglæsning bruger alene det beskyttede læsejob.`);
+for(const changes of [
+  {'validate:source':'node other.mjs'},
+  {'source:critical-gate':'node other.mjs'},
+  {'validate:source:checks':'node scripts/test-score-engine.mjs'},
+  {'validate:source:checks':'npm run source:critical-gate && npm run source:critical-gate'},
+  {'validate:source:checks':'npm run source:critical-gate && node scripts/test-score-engine.mjs'},
+  {'validate:source:checks':'npm run missing'},
+  {'validate:source:checks':'npm run validate:source:checks'},
+  {'validate:source:checks':'echo ok || true && npm run source:critical-gate'},
+])assert.throws(()=>buildSourceValidationPlan({...scripts,...changes}));
+assert.throws(()=>expandSourceCommands({a:'npm run b',b:'npm run a'},'a'));
+const sharing=sourceCommandsForChangedPaths(['scripts/forecast-share/handler.mjs',
+  'scripts/test-forecast-share-projection.mjs']);
+assert(sharing.includes('node scripts/test-forecast-share-projection.mjs'));
+assert.equal(new Set(sharing).size,sharing.length);
+assert(!sharing.some(c=>/native-postgres|test-source-current-contracts/.test(c)));
+assert(sourceCommandsForChangedPaths(['js/services/rav-assistant-public-help.js'])
+  .includes('node --test scripts/test-assistant-ui-error-boundary.mjs'),
+  'Public help-only changes must execute the normal whole UI caller contract');
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/test-assistant-after597-sync-binding.mjs']),
+  expandSourceCommands(scripts,'test:assistant-later-h0-source').filter(command=>command.includes('/test-assistant-after597-sync-binding.mjs')));
+assert(!sourceCommandsForChangedPaths(['supabase/functions/ravradar-assistant/index.ts'])
+  .some(command=>command.includes('test-fixed-assistant-failure-log-20261101.mjs')));
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-assistant-failure-log-20261101.mjs']),
+  ['node scripts/test-fixed-assistant-failure-log-20261101.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/lib/pages-closure-historical-test-input.mjs']),[]);
+assert.throws(()=>sourceCommandsForChangedPaths(['../arbitrary.mjs']));
+assert.throws(()=>sourceCommandsForChangedPaths(['unowned-source.mjs']),/SOURCE_CHANGED_OWNER_REQUIRED/);
+assert.equal(isOnlyReleaseVersionChange('import x from "a?v=4.0.600"','import x from "a?v=4.0.601"','4.0.600','4.0.601'),true);
+for(const value of ['import y from "a?v=4.0.601"','import x from "a?v=4.0.601";extra',
+  'import x from "a?v=4.0.601"\0','import x from "a?v=4.0.601"\uFFFD'])
+  assert.equal(isOnlyReleaseVersionChange('import x from "a?v=4.0.600"',value,'4.0.600','4.0.601'),false);
+for(const [before,after] of [
+  ['} from "./a.js?lang=da&v=4.0.600#asset";','} from "./a.js?lang=da&v=4.0.601#asset";'],
+  ['<script src="./app.js?v=4.0.600"></script>','<script src="./app.js?v=4.0.601"></script>'],
+  ['  <link href="./style.css?v=4.0.600" rel="stylesheet">','  <link href="./style.css?v=4.0.601" rel="stylesheet">'],
+])assert.equal(isOnlyReleaseVersionChange(before,after,'4.0.600','4.0.601'),true);
+for(const before of [
+  "if(version==='4.0.600')return fallback;",
+  "if(version>='4.0.600')activate();",
+  "const minimumVersion='4.0.600';",
+  '{"version":"4.0.600"}',
+  "const cache='?v=4.0.600';",
+  "if(html==='<script src=\"a.js?v=4.0.600\"></script>')activate();",
+  "import('./module.js').then(()=>check('from \"a?v=4.0.600\"'));",
+  'import x from "a?v=4.0.600";\nconst minimumVersion="4.0.600";',
+  'import x from "a?v=4.0.600-extra";',
+])assert.equal(isOnlyReleaseVersionChange(before,before.replaceAll('4.0.600','4.0.601'),'4.0.600','4.0.601'),false);
+console.log('Current source driver: eight fixed commands, actual changed natural owners, unique execution, red preconditions and failures preserved; historical and SQL proof not claimed.');

@@ -8,10 +8,10 @@ import {publishPrivateTripStudyAdmin} from './lib/private-trip-study-admin-trans
 // Fixed diagnostic vocabulary only. Never retain child output, headers, causes,
 // report rows, credentials or arbitrary provider error strings in this receipt.
 const OPERATOR_PHASES = new Set(['AUTHORITY','MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF',
-  'AGGREGATE','ADMIN_PUBLISH','UNKNOWN']);
-const COMMAND_PHASES = new Set(['MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF']);
+  'PRIVATE_ACTIVATION','AGGREGATE','ADMIN_PUBLISH','UNKNOWN']);
+const COMMAND_PHASES = new Set(['MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF','PRIVATE_ACTIVATION']);
 const OPERATOR_ERROR_CODES = new Set([
-  'PRIVATE_STUDY_OPERATOR_AUTHORITY','PRIVATE_STUDY_OPERATOR_SOURCE',
+  'PRIVATE_STUDY_OPERATOR_AUTHORITY','PRIVATE_STUDY_OPERATOR_SOURCE','PRIVATE_STUDY_ACTIVATION_UNVERIFIED',
   'PRIVATE_STUDY_EXPORT_MODE_INVALID','AGGREGATE_FROZEN_REPLAY_INVALID','AGGREGATE_FROZEN_IDENTITY_MISMATCH',
   'AGGREGATE_CONFIGURATION_INVALID','AGGREGATE_READ_TIMEOUT','AGGREGATE_READ_REJECTED',
   'AGGREGATE_RESPONSE_TOO_LARGE','AGGREGATE_RESPONSE_INVALID','AGGREGATE_ACCOUNT_INVENTORY_INCOMPLETE',
@@ -34,7 +34,7 @@ function operatorFailureReport(error, phase = 'UNKNOWN') {
       : 'PRIVATE_STUDY_OPERATOR_COMMAND_FAILED';
   }
   return Object.freeze({kind:'PRIVATE_STUDY_OPERATOR_FAILED', phase, errorCode,
-    writeOutcome:['AUTHORITY','MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF'].includes(phase)
+    writeOutcome:['AUTHORITY','MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF','PRIVATE_ACTIVATION'].includes(phase)
       ? 'NOT_STARTED' : 'UNKNOWN_NO_RETRY'});
 }
 class PrivateStudyOperatorFailure extends Error {
@@ -47,7 +47,11 @@ export async function publishOwnerPrivateTripStudy(){
   let phase = 'AUTHORITY';
   try {
   const env=process.env;
-  if(process.argv.length!==2||env.GITHUB_EVENT_NAME!=='workflow_dispatch'||env.GITHUB_WORKFLOW!=='Private RavRadar trip weather study'
+  const manual=env.GITHUB_EVENT_NAME==='workflow_dispatch'&&!env.PRIVATE_STUDY_EVENT_SCHEDULE;
+  const scheduled=env.GITHUB_EVENT_NAME==='schedule'&&env.PRIVATE_STUDY_EVENT_SCHEDULE==='47 6 1 * *'
+    &&(env.PRIVATE_STUDY_EXPORT_MODE||'ordinary')==='ordinary'
+    &&['PRIVATE_STUDY_FROZEN_MONTH','PRIVATE_STUDY_FROZEN_BINDING_SHA256','PRIVATE_STUDY_FROZEN_REPORT_SHA256'].every(key=>!env[key]);
+  if(process.argv.length!==2||(!manual&&!scheduled)||env.GITHUB_WORKFLOW!=='Private RavRadar trip weather study'
     ||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_RUN_ATTEMPT!=='1'||env.TRIP_STORAGE_OPERATION!=='private-study-export'
     ||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||''))throw Error('PRIVATE_STUDY_OPERATOR_AUTHORITY');
   const exportMode = env.PRIVATE_STUDY_EXPORT_MODE || 'ordinary';
@@ -65,6 +69,25 @@ export async function publishOwnerPrivateTripStudy(){
   for(const ref of ['HEAD^{commit}','origin/main^{commit}'])if(read('git',['rev-parse',ref]).trim()!==env.GITHUB_SHA)throw Error('PRIVATE_STUDY_OPERATOR_SOURCE');
   phase = 'SOURCE_PROOF';
   if(!/^Source gate: required=false; reason=[^\r\n]+$/m.test(read('node',['scripts/weather-source-gate.mjs','check'])))throw Error('PRIVATE_STUDY_OPERATOR_SOURCE');
+  if(scheduled){
+    phase = 'PRIVATE_ACTIVATION';
+    const planEnv={...env,SUPABASE_PROJECT_ID:'afqhhdrkjfjtpadntdzo',TRIP_STORAGE_OPERATION:'existing-private-study-upgrade',
+      TRIP_STORAGE_PRIVATE_STUDY:'1',TRIP_PRIVATE_STUDY_MODE:'plan',TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION:'',
+      TRIP_PRIVATE_STUDY_APPLY_ALLOWED:'false',TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED:'false',
+      TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED:'false',TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED:'false'};
+    for(const key of ['SUPABASE_SERVICE_ROLE_KEY','SUPABASE_DB_PASSWORD','TRIP_PSEUDONYM_SECRET_V1','TRIP_GATEWAY_SHARED_SECRET'])delete planEnv[key];
+    const activation=JSON.parse(execFileSync('node',['scripts/deploy-private-trip-study.mjs'],{
+      env:planEnv,encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:60000,maxBuffer:65536}));
+    if(activation?.kind!=='PRIVATE_TRIP_STUDY_CONTROL0_PLAN'||activation.operation!=='READ_ONLY_PLAN'
+      ||activation.sourceSha!==env.GITHUB_SHA||!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(activation.workerVersionId||'')
+      ||activation.schemaApplied!==false||activation.workerUpdated!==false
+      ||typeof activation.privateAggregationEnabled!=='boolean'||activation.aggregateOffAttested!==!activation.privateAggregationEnabled)
+      throw Error('PRIVATE_STUDY_ACTIVATION_UNVERIFIED');
+    if(!activation.privateAggregationEnabled)return{kind:'PRIVATE_STUDY_MONTHLY_SKIPPED',
+      status:'SKIPPED_PRIVATE_AGGREGATION_OFF',sourceSha:env.GITHUB_SHA,reportExported:false};
+    if(activation.state!=='EXACT_004_005_006_007'||activation.originalJobBindingReady!==true||activation.categoricalPolicyReady!==true)
+      throw Error('PRIVATE_STUDY_ACTIVATION_UNVERIFIED');
+  }
   phase = 'AGGREGATE';
   const report=await readTripWeatherAggregate({supabaseUrl:'https://afqhhdrkjfjtpadntdzo.supabase.co',
     serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,gatewayUrl:env.CLOUDFLARE_TRIP_GATEWAY_URL,

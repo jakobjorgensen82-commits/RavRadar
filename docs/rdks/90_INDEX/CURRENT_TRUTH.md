@@ -1,3 +1,21 @@
+## Assistent601: lokal forberedelse efter app600 og model599
+
+App600 er nu faktisk databaseinstalleret og server-/UI-leveret gennem den normale rene kodevej med fortsat numerisk modelfamilie599. Normal FULL-kvalifikation, de28 præcise CHECK-definitioner og kataloggenlæsning er bekræftet; offentlig210/673 og den terminale afslutning er verificeret. Det oprindelige fejlede installerforløbs udfald står særskilt UNKNOWN og omskrives ikke til succes. Ejerens normale kontomodal og præference er browserlæst på600, men faktisk sletning, privacy- og samlet målopfyldelse er ikke accepteret. Alle fem hovedmål er fortsat åbne. Ældre600-kandidatposter nedenfor er erstattet på dette leveringsstatuspunkt.
+
+Den lokale601-kandidat bygger videre på app600-kilden. Den samler emnebundet opfølgning og tre fagligt gennemgåede offentlige fakta: fluorescensens årsag, UV-kontrast i dagslys og grænsen for uobserveret ravmængde. De45 tidligere fakta bevares. Hele det nye spørgsmål, inklusive sted-, brugs- og dagslyskvalifikationer, skal fortsat vurderes; kendt offentligt emne er ikke tilladelse til private, blandede eller uvedkommende spørgsmål. Ukendt antal er ikke et observeret lokalt lager eller en fundgaranti. Hosted AI og offentlig DA/DE/EN-adfærd kræver stadig faktisk accept.
+
+Den næste lukkede binding har ægte599 som modelforgænger og kræver præcis den kendte app600-ledger før SQL. Normale C→I→T-byggere og DATA-konstruktør har beregnet kandidaten. En privat migrationsvisning indeholder de76 byteidentiske originaler og netop den normale uudstedte preview; kun de syv almindelige mutable derivater synkroniseres tilbage. Den ene binding efter599 er nu lokalt udstedt gennem den normale konstruktør som den77. SQL-fil; alle76 tidligere originaler er byteidentiske. Ingen gammel PG-, FULL-, native- eller produktionskvittering ommærkes. Frisk samlet FULL/PG/native, installation og offentlig levering er fortsat åbne. App600s selvstændige levering afventer ikke denne vidensopdatering.
+
+Nativeprøvens historiske ledgerinput er udtrykkeligt syntetisk:44 ældre poster samt det allerede eksisterende scaffoldanker er ikke45 hele migrationer udført i værten. Normal senere after599-prøve skal særskilt udføre19 hele suffixmigrationer, den præcise app600-SQL og den nye append. Typedfacit fastholder allHistoricalMigrationsExecuted=false og productionInstalledHistoryEvidence=false. Den uændrede produktguard og afslag ved manglende prefix/model599/app600, ukendt version, ændrede OID/ACL/definitioner samt den særskilte49-case kontoøvelse består. Faktisk nativeeksekvering af601 er endnu ikke udført.
+
+## Arkivets lokale administrator — afgrænset 601-kandidat
+
+Et autentisk gendannelsesforsøg nåede DATA, men blev afvist med SQLSTATE 42501 på en leverandørejet Storage-tabel. Den ejede lokale forbindelse var allerede oprettet som supabase_admin. Restore-envelopen indsatte imidlertid SET LOCAL ROLE postgres før SCHEMA og DATA og mistede derved den nødvendige lokale restoreautoritet.
+
+Den afgrænsede rettelse bevarer samme ejede supabase_admin-session og current_user gennem den første ROLES/SCHEMA/DATA-transaktion. Tre identitetskontroller før SCHEMA, før DATA og efter DATA kræver fortsat den præcise lokale administrator. Ingen GRANT, ownerændring eller ny rolletildeling tilføjes. De fem autentiske SQL-filer, alle originale bytes og hashes samt de eksisterende katalog-, CHECK-, transaktions-, første-fejl- og oprydningskontroller bevares.
+
+HISTORY beholder sin separate postgres-transaktion. Dens faktiske rettigheder i originalarkivet er endnu ikke afprøvet. Den normale lokale selvtest er bestået på Windows med Node 24, men det er ikke Linux-/SQL- eller originalrestoreaccept. Fuld indholds-, dublet- og sekvensparitet, gendannet Auth, faktisk originalrestore, autonom kvittering, backuprotation og samlet Free-klarhed er fortsat åbne. Rettelsen giver ingen ny autoritet til gendannelse i produktion.
+
 ## Arkivets komplette CHECK-kontrol og afgrænsede udsættelse
 
 Den lokale arkivlæser skelner nu mellem det komplette CHECK-katalog og det mindre sæt, som skal udsættes under DATA. Kun oprindeligt ikke-validerede CHECKs på katalogbeviste selvstændige almindelige tabeller i den pågældende fases direkte COPY-inventar udsættes og genetableres. Hele kataloget før og efter, inklusive validerede og urørte ikke-validerede regler, skal fortsat være identisk. Udsatte, bevarede ikke-validerede og validerede regler tælles særskilt; deres sum skal være det komplette antal.
@@ -120,6 +138,32 @@ De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begg
 
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## Drift frem for brede historiske kontrolkrav
+
+Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
+
+GitHubs trin til installation af afhængigheder starter ikke længere de otte kontrolprogrammer som en fast blok. Relevante prøver vælges i selve kildekontrollen. Den aktuelle læser kontrollerer PR-jobbets adgang, rækkefølge og beviser direkte. Historiske prøver beholder deres eget workflow. Den tidligere faste 480-sekunders prøve i installationstrinnet er erstattet af denne ændring. Den nye kode kræver sin egen GitHub-kontrol. Kildekontrollen bruger nu de fem assistentprøvers udstedte aktuelle tilstand. Den daterede fejllogprøve hører kun til sin egen læser. Den almindelige Edge-prøve følger Edge-koden. Prøven af næste appversion bruger den aktuelle pakkelæser og dens afslag på et forkert assistent-entrypoint. Historiske Git-prøver ejer deres egne arkivinput. Pages-prøven bruger samme kvalificerede kilde til den positive genoptagelse, mens afvisning af afvigende input bevares.
+
+App-ejet offentlig hjælp besvarer generelle høj-/lavvandsspørgsmål, offentlig ophavsmand og Facebook-gruppe, begynderhjælp og uklare sammensatte navne. Hele praktiske spørgsmål om ravkese på stranden kan også omfatte almindelige forholdsregler; de sammensættes af eksisterende godkendte udstyrs- og strandtekster. Hele spørgsmålet skal være dækket. Private oplysninger, ukendte tillæg, lokale tid-/stedspørgsmål og fundgarantier bliver ikke klippet væk. Den normale AI-vej og prognoserangering bevares. Dette ændrer ingen numerisk model eller SQL og er ikke en påstand om samlet ekstern AI-kvalitet.
+
+Præcis samlet kildekvalifikation og faktisk levering er fortsat åbne. Alle fem mål og sikker Free bevares; automatisk retention, gendannelse og målt kontoforbrug skal fortsat verificeres gennem deres normale forløb.
+
+
+
+## Forberedt driftsforenkling og sammenhængende arkividentitet
+
+Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke med ti artifactkommandoer og én versionskontrol i stedet for 55 og tre kommandoer. Den bevarer data, vejrhelbred, kyst- og zoneplan, geometri, offentlig deterministisk projektion og filintegritet, strøm-/cacheforhold, state-reference og adskilte kystdele. UI-, udviklings- og kildefixtures hører til ændringer af deres egne funktioner frem for hver vejrhentning. De øvrige private, offentlige, no-loss-, B/S/T-, ene-skriver- og leveringskontroller er uændrede. Der er 47 færre processtarter; den faktiske tidsbesparelse og næste normale produktionsvirkning er endnu ikke målt.
+
+Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_admin-session, fordi de oprindelige leverandørrelationer kræver denne ejeradgang. Den normale CHECK-suspension og -genoprettelse skal derfor bindes til samme præcise session_user, current_user og lokale postgres-database. Den afgrænsede rettelse ændrer ingen grants, originale SQL-filer eller CHECK-semantik. HISTORY og den syntetiske vej beholder den hidtidige postgres-kontrol. Den kildegennemgang fandt en konkret rollekonflikt før næste forsøg; de målrettede kalderprøver består, men faktisk original SQL-/Auth-gendannelse, autonom kvittering/rotation og samlet Free-klarhed er stadig åbne.
+
+
+
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
+
+
 ## LF7-observation, historiske prøveinput og uafhængig levering
 
 Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
@@ -149,7 +193,7 @@ En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul 
 
 Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.
 
-**Den fungerende produktionsvej er den numeriske 598-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
+**Den fungerende produktionsvej er den numeriske 599-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
 
 Vejret skal fortsat hentes og opdateres gennem DMI, dernæst Copernicus og til sidst Open-Meteo. DMI skal prioritere reelle tomme huller før overtagelse af gyldige timer fra andre kilder. Nyere gyldige data skal fortsat kunne opdatere prognosen efter de gældende kilde- og proveniensregler. Cache og fremadrettet historik fortsætter uden endnu en nulstilling. Gamle originale data og offentliggjorte scorer bevares efter deres egne kontrakter; de er ikke en tvungen gammel strømhistorik for den nye drift.
 

@@ -1,5 +1,23 @@
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## Drift frem for brede historiske kontrolkrav
+
+Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
+
+GitHubs trin til installation af afhængigheder starter ikke længere de otte kontrolprogrammer som en fast blok. Relevante prøver vælges i selve kildekontrollen. Den aktuelle læser kontrollerer PR-jobbets adgang, rækkefølge og beviser direkte. Historiske prøver beholder deres eget workflow. Den tidligere faste 480-sekunders prøve i installationstrinnet er erstattet af denne ændring. Den nye kode kræver sin egen GitHub-kontrol. Kildekontrollen bruger nu de fem assistentprøvers udstedte aktuelle tilstand. Den daterede fejllogprøve hører kun til sin egen læser. Pages-prøven bruger samme kvalificerede kilde til den positive genoptagelse, mens afvisning af afvigende input bevares.
+
+App-ejet offentlig hjælp besvarer generelle høj-/lavvandsspørgsmål, offentlig ophavsmand og Facebook-gruppe, begynderhjælp og uklare sammensatte navne. Hele praktiske spørgsmål om ravkese på stranden kan også omfatte almindelige forholdsregler; de sammensættes af eksisterende godkendte udstyrs- og strandtekster. Hele spørgsmålet skal være dækket. Private oplysninger, ukendte tillæg, lokale tid-/stedspørgsmål og fundgarantier bliver ikke klippet væk. Den normale AI-vej og prognoserangering bevares. Dette ændrer ingen numerisk model eller SQL og er ikke en påstand om samlet ekstern AI-kvalitet.
+
+Præcis samlet kildekvalifikation og faktisk levering er fortsat åbne. Alle fem mål og sikker Free bevares; automatisk retention, gendannelse og målt kontoforbrug skal fortsat verificeres gennem deres normale forløb.
+
+
+
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
+
+
 ## LF7-observation, historiske prøveinput og uafhængig levering
 
 Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.

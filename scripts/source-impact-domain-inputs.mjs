@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {ASSISTANT_AFTER599_BINDING as FAMILY601} from './lib/assistant-later-h0-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 // Known issued model family, not an application-version range or gate authority.
@@ -14,6 +15,8 @@ const FAMILY599=Object.freeze({C:'faa049cb86e733e451211f50c155ff90fd346223031029
 const TEMPLATE598=Object.freeze({head:'bd9cf518fe798ddea45d2b835f324f6e2bea06fc',tree:'2f71c562eea774ca03996802f83bdad7cccd43cc'});
 const FACTORY598=Object.freeze({head:'82200280c42b9060f14be2721ba7b766e0ede5a6',tree:'c69c1beed4275fb02af216a1c4741410555e2675'});
 const PROFILE599_ID='DERIVED_599_DOMAIN_INPUTS_C101_I100_T12';
+const PROFILE601_ID='DERIVED_601_DOMAIN_INPUTS_C101_I100_T12';
+const FACTORY599=Object.freeze({head:'9d67207fbbec0f6bcf7819048f72e57535e9615d',tree:'a1a76ef3b38885ba46f3422ee287fe1b1c581363'});
 // One semantic ancillary app schema after issued599, never a per-head profile.
 const ERASURE_SQL='supabase/migrations/20261116181500_account_erasure_outbox_off.sql';
 const ERASURE_METADATA_READER='scripts/verify-account-erasure-schema.mjs';
@@ -90,6 +93,13 @@ function profile599(){
   return {...source,id:PROFILE599_ID,derivedFrom:{id:source.id,sha256:'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0',
     family:FAMILY599,metadataTemplate:TEMPLATE598,factory:FACTORY598},
     frozenGitAnchors:[...source.frozenGitAnchors,TEMPLATE598,FACTORY598]};
+}
+function profile601(){
+  assert(FAMILY601,'DOMAIN_AFTER599_UNISSUED');
+  const source=profile599();
+  return {...source,id:PROFILE601_ID,derivedFrom:{id:source.id,family:FAMILY601,
+    metadataTemplate:FACTORY599,factory:FACTORY599},
+    frozenGitAnchors:[...source.frozenGitAnchors,FACTORY599]};
 }
 function fixedProfileForReleases(before,after){
   assert.match(before,/^4\.0\.[0-9]+$/);assert.match(after,/^4\.0\.[0-9]+$/);
@@ -256,18 +266,59 @@ export function analyzeSourceDomainInputs(input){
         assert.equal(modelData.get(ref).I.contractSha256,expected.modelBindings.integrated.modelContractSha256,'DOMAIN_AFTER598_RELEASE_METADATA');
       }
     }
+    const family601=refs.map(ref=>FAMILY601!==null&&modelData.get(ref).C.bundleSha256===FAMILY601.C
+      &&modelData.get(ref).I.bundleSha256===FAMILY601.I);
+    if(family601.some(Boolean)){
+      assert(family601.every(Boolean),'DOMAIN_RELEASE_PROFILE_MISMATCH');
+      const previousModels=p.models;p=profile601();assert.deepEqual(p.models,previousModels);
+      const origins=[FACTORY599];
+      load(origins.flatMap(origin=>[origin.head,origin.tree]),'ANCHOR');
+      for(const origin of origins){
+        assert.equal(objects.get(origin.head).type,'commit');assert.equal(objects.get(origin.tree).type,'tree');
+        assert.equal(objects.get(origin.head).raw.toString('utf8').split('\n',1)[0],'tree '+origin.tree,'DOMAIN_FROZEN_ANCHOR_TREE');
+      }
+      const historicalTrees=new Map([[FACTORY599.head,parseTree(git(['ls-tree','-rz','--full-tree',FACTORY599.head,'--',
+        'version.json','scripts/test-protected-ravscore-continuation-checkpoint.mjs','data/admin/ravscore-profile-selection.json']))]]);
+      const historicalBlob=(origin,file)=>{const row=historicalTrees.get(origin.head).get(file);
+        assert(row&&row.mode==='100644'&&row.type==='blob','DOMAIN_FROZEN_SELECTED_INPUT');return row.blob;};
+      const templateBlob=historicalBlob(FACTORY599,'version.json');
+      const factoryBlob=historicalBlob(FACTORY599,'scripts/test-protected-ravscore-continuation-checkpoint.mjs');
+      const factoryProfileBlob=historicalBlob(FACTORY599,'data/admin/ravscore-profile-selection.json');
+      const metadataFiles=refs.flatMap(ref=>['package.json','version.json'].map(file=>{const row=trees.get(ref).get(file);
+        assert(row&&row.mode==='100644'&&row.type==='blob','DOMAIN_AFTER599_RELEASE_METADATA');return row.blob;}));
+      load([templateBlob,factoryBlob,factoryProfileBlob,...metadataFiles],'INPUT');
+      const templateRaw=objects.get(templateBlob).raw;assert(templateRaw.length>0&&templateRaw.length<=65536,'DOMAIN_METADATA_BOUND');
+      const template=JSON.parse(templateRaw);assert.equal(template.version,'4.0.599','DOMAIN_METADATA_TEMPLATE');
+      assert.equal(template.releaseContract.releaseVersion,'4.0.599','DOMAIN_METADATA_TEMPLATE');
+      assert.equal(objects.get(factoryBlob).raw.length,73002,'DOMAIN_FACTORY_INPUT_BOUND');
+      assert.equal(sha(objects.get(factoryBlob).raw),'a6251fe2370dabe00191c79dd545a0f6a33e42acfbaf3089828da6cec602d2ea','DOMAIN_FACTORY_INPUT');
+      assert.equal(objects.get(factoryProfileBlob).raw.length,1633,'DOMAIN_FACTORY_INPUT_BOUND');
+      assert.equal(sha(objects.get(factoryProfileBlob).raw),'3c5a8b22c53dfc4be1683201f982adc8dbf51d2ee652a8785d3636eac81ce5d4','DOMAIN_FACTORY_INPUT');
+      for(const ref of refs){
+        const boundedJson=file=>{const bytes=raw(ref,file);assert(bytes.length>0&&bytes.length<=65536,'DOMAIN_METADATA_BOUND');return JSON.parse(bytes);};
+        const pkg=boundedJson('package.json'),version=boundedJson('version.json');
+        assert.equal(pkg.type,'module','DOMAIN_AFTER599_RELEASE_METADATA');assert.match(pkg.version,/^4\.0\.[0-9]+$/);
+        assert.equal(version.version,pkg.version,'DOMAIN_AFTER599_RELEASE_METADATA');
+        const expected=structuredClone(template.releaseContract);expected.releaseVersion=pkg.version;
+        expected.modelBindings.candidateGRollback.modelBundleSha256=FAMILY601.C;
+        expected.modelBindings.integrated.modelBundleSha256=FAMILY601.I;
+        assert.deepEqual(version.releaseContract,expected,'DOMAIN_AFTER599_RELEASE_METADATA');
+        assert.equal(modelData.get(ref).C.contractSha256,expected.modelBindings.candidateGRollback.modelContractSha256,'DOMAIN_AFTER599_RELEASE_METADATA');
+        assert.equal(modelData.get(ref).I.contractSha256,expected.modelBindings.integrated.modelContractSha256,'DOMAIN_AFTER599_RELEASE_METADATA');
+      }
+    }
     const is597=p.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12';
-    const is598=p.id==='REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12',is599=p.id===PROFILE599_ID;
+    const is598=p.id==='REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12',is599=p.id===PROFILE599_ID,is601=p.id===PROFILE601_ID;
     const scopePaths=new Set(['package.json']);
     for(const module of p.postgresModules)for(let directory=path.posix.dirname(module);directory!=='.';directory=path.posix.dirname(directory))
       scopePaths.add(directory+'/package.json');
     const sql=ref=>[...trees.get(ref).keys()].filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')).sort();
-    const offPresent=ref=>is599&&trees.get(ref).has(ERASURE_SQL);
+    const offPresent=ref=>(is599||is601)&&trees.get(ref).has(ERASURE_SQL);
     const pgModules=ref=>offPresent(ref)?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER]:p.postgresModules;
     // All SQL stays in the real PG inventory; the known76th row grants no reuse.
-    assert.equal(sql(input.baselineCommit).length,is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
+    assert.equal(sql(input.baselineCommit).length,is601?77:is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
       'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
-    if(is597||is598||is599){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
+    if(is597||is598||is599||is601){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
       assert.equal(modelData.get(input.baselineCommit).I.manifest.files.length,100,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');}
     const selected=ref=>[...new Set([...pgModules(ref),...p.postgresData,...sql(ref),...p.nativeEvidenceControls,
       ...p.setupInputs,...p.plannerTrustChain,...scopePaths,...p.continuation.files,p.continuation.file,
@@ -316,14 +367,15 @@ export function analyzeSourceDomainInputs(input){
     const beforeT=continuation(input.baselineCommit),afterT=continuation(input.candidateCommit);
     models.T={before:beforeT,after:afterT,unchanged:JSON.stringify(beforeT)===JSON.stringify(afterT)};
     if(is599)for(const value of [beforeT,afterT])assert.equal(value.implementationSha256,FAMILY599.T,'DOMAIN_AFTER598_FAMILY_T_MISMATCH');
+    if(is601)for(const value of [beforeT,afterT])assert.equal(value.implementationSha256,FAMILY601.T,'DOMAIN_AFTER599_FAMILY_T_MISMATCH');
     const control=(files,optional=false)=>comparison(rows(input.baselineCommit,files,!optional),rows(input.candidateCommit,files,!optional));
     const inventoryRaw=git(['diff-tree','-r','--raw','-z','--no-abbrev','--no-renames','--no-ext-diff','--no-textconv',
       '--no-commit-id',input.baselineCommit,input.candidateCommit,'--']);
     const inventory=diffInventory(inventoryRaw);
     exactHead();assert.equal(text(['for-each-ref','refs/replace']),'');
     return freeze({schemaVersion:1,status:SOURCE_DOMAIN_ANALYSIS_STATUS,analysis:'COMPLETE',...authority,
-      profile:{id:p.id,sha256:is599?sha(JSON.stringify(canonical(p))):is598?'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0':is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
-        scope:is599?'DERIVED_599_INPUT_INVENTORY_ONLY':is598?'REVIEWED_598_INPUT_INVENTORY_ONLY':is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
+      profile:{id:p.id,sha256:is601||is599?sha(JSON.stringify(canonical(p))):is598?'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0':is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
+        scope:is601?'DERIVED_601_INPUT_INVENTORY_ONLY':is599?'DERIVED_599_INPUT_INVENTORY_ONLY':is598?'REVIEWED_598_INPUT_INVENTORY_ONLY':is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
       identity:{...input,actualHead:input.expectedHead,ancestorVerified:true,
         baselineTree:text(['rev-parse',input.baselineCommit+'^{tree}']),candidateTree:text(['rev-parse',input.candidateCommit+'^{tree}'])},
       completeGitDiff:{inventory,rawInventorySha256:sha(inventoryRaw),changedRows:inventory.length},

@@ -15,13 +15,15 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
   requireAssistantAfter597Output,requireAssistantAfter597Release,requireAssistantAfter597Binding,
   readScalar597LaterH0CanonicalSource,readAssistantAfter597CanonicalSource,assistantLaterH0Definition,
   INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,ASSISTANT_AFTER598_BEFORE,ASSISTANT_AFTER598_ALIASES,
-  requireAssistantAfter598Output,requireAssistantAfter598Release,requireAssistantAfter598Binding,readAssistantAfter598CanonicalSource} from './lib/assistant-later-h0-successor-source.mjs';
+  requireAssistantAfter598Output,requireAssistantAfter598Release,requireAssistantAfter598Binding,readAssistantAfter598CanonicalSource,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,ASSISTANT_AFTER599_BEFORE,ASSISTANT_AFTER599_ALIASES,requireAssistantAfter599Output,requireAssistantAfter599Release,requireAssistantAfter599Binding,readAssistantAfter599CanonicalSource} from './lib/assistant-later-h0-successor-source.mjs';
 
-import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations} from './integrated-cutover-readiness.mjs';
+import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,assistantAfter599RequiredMigrations} from './integrated-cutover-readiness.mjs';
 import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
-import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {ASSISTANT_AFTER599_DATABASE_LEDGER} from './lib/assistant-later-h0-successor-source.mjs';
+import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE,FROZEN599_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
-  projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256}
+  projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
+  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow}
   from './lib/source-impact-workflow-review.mjs';
 
 export const ORIGIN = Object.freeze({
@@ -75,14 +77,19 @@ export const ASSISTANT_AFTER598_PHASE=INACTIVE_ASSISTANT_AFTER598_SUCCESSOR.sour
 export const ASSISTANT_AFTER598_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER598_POSTGRES_PHASE_V1';
 export const ASSISTANT_AFTER598_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after598-successor']);
 export const ASSISTANT_AFTER598_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER598_COMMANDS.join('\n')+'\n';
-export const ACTIVE_COMMANDS=ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_COMMANDS
+export const ASSISTANT_AFTER599_PHASE=INACTIVE_ASSISTANT_AFTER599_SUCCESSOR.sourcePhase;
+export const ASSISTANT_AFTER599_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES_PHASE_V1';
+export const ASSISTANT_AFTER599_REUSE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES_REUSE_V2';
+export const ASSISTANT_AFTER599_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after599-successor']);
+export const ASSISTANT_AFTER599_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER599_COMMANDS.join('\n')+'\n';
+export const ACTIVE_COMMANDS=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_COMMANDS
   :ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE
   ?SCALAR597_LATER_H0_COMMANDS:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
   ?INSTALLED593_ORIGINAL591_COMMANDS:ACTIVE.sourcePhase==='assistant-public591-successor'
   ?ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public588-successor'
   ?ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS:ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS;
-export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_SCRIPT
+export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_SCRIPT
   :ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE
   ?SCALAR597_LATER_H0_SCRIPT:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
   ?INSTALLED593_ORIGINAL591_SCRIPT:ACTIVE.sourcePhase==='assistant-public591-successor'
@@ -1034,8 +1041,11 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
     const raw=readGit(['cat-file','blob',run.head_sha+':'+WORKFLOW]);
     assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
     const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
-    assert.notEqual(inverseOwnedCacheNativeWorkflow(workflow),workflow,'EXACT_OWNED_CACHE_NATIVE_WORKFLOW_REQUIRED');
-    assert.equal(sha(projectSourceImpactWorkflowFull(workflow)),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
+    if(hasDependencyOnlySourceSetup(workflow))verifyCurrentSourceWorkflow(workflow);
+    else{
+      assert.notEqual(inverseOwnedCacheNativeWorkflow(workflow),workflow,'EXACT_OWNED_CACHE_NATIVE_WORKFLOW_REQUIRED');
+      assert.equal(sha(projectSourceImpactWorkflowFull(workflow)),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
+    }
     for(let index=0;index<OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.length;index++){
       const step=one(earlyNode24.filter(row=>row.name===OWNED_CACHE_NATIVE_EARLY_STEP_NAMES[index]));
       assert.equal(step.number,4+index);assert(successful(step));
@@ -1890,6 +1900,47 @@ async function assistantAfter598PhaseIdentity(){
   return {releaseVersion,binding,output,databaseBefore:ASSISTANT_AFTER598_BEFORE,
     shape:next,migrationInventory:migrations.length};
 }
+const AFTER599_RESULT='ASSISTANT_AFTER599_SUCCESSOR';
+const after599ReportTruths=['sqlExecuted','wholeMigrationExecuted','oldFunctionsAndOidsPreserved',
+  'allOriginalDefinitionsPreserved','exactCheckpointContract','exactTripContract','schema2Catalog',
+  'normalProtectedJsonbRoundtrip','originalDigestsPreserved','trueOld599Fixtures','currentNormalFixtures',
+  'old599ModelNotRetagged','wholeMetadataInverse','strictlyLater599ToNextOnly','sqlIsNotOriginAuthentication',
+  'predecessorExecutedInSameHost'];
+const after599IntermediateTruths=['old599ActiveAfterSql','nextRefusedBeforeActivation','pendingBothRefused',
+  'nextActiveAfterCompletion','old599RefusedAfterCompletion','wholeHistoryAndDocumentsPreserved',
+  'quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking'];
+async function assistantAfter599PhaseIdentity(){
+  const output=requireAssistantAfter599Output(); // FIRST: unissued never reads SQL/files/environment.
+  assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE);
+  const binding=requireAssistantAfter599Binding(),releaseVersion=requireAssistantAfter599Release();
+  const before=await readAssistantAfter598CanonicalSource(),after=await readAssistantAfter599CanonicalSource();
+  assert.equal(sha(before.canonicalSource),ASSISTANT_AFTER599_BEFORE.canonicalSha256);
+  assert.equal(sha(after.canonicalSource),output.canonicalSha256);
+  const shape=source=>{
+    const contract=assistantLaterH0Definition(source,'ravradar_ravscore_checkpoint_contract');
+    const array=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contract);assert(array);
+    return {oidSlots:(array[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,
+      contractBodies:(contract.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1};
+  };
+  const old=shape(before.canonicalSource),next=shape(after.canonicalSource);
+  assert.equal(next.oidSlots,old.oidSlots+ASSISTANT_AFTER599_ALIASES.length);
+  assert.equal(next.contractBodies,old.contractBodies+ASSISTANT_AFTER599_ALIASES.length);
+  const migrations=assistantAfter599RequiredMigrations();
+  assert.equal(migrations.at(-3).version,ASSISTANT_AFTER599_BEFORE.version);
+  assert.equal(migrations.at(-2).version,'20261116181500');
+  assert.equal(migrations.at(-1).version,binding.version);
+  const nativeStart=migrations.findIndex(row=>row.version==='20261010130000');assert.equal(nativeStart,44);
+  const sourceInventory=await Promise.all(migrations.map(async row=>({version:row.version,filename:row.filename,
+    sha256:sha(await fs.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)))})));
+  const ledgerFixture={kind:'SYNTHETIC_PRIOR_LEDGER_AND_EXECUTED_SUFFIX_V1',
+    priorFixtureVersions:migrations.slice(0,nativeStart+1).map(row=>row.version),
+    wholeExecutedMigrationVersions:migrations.slice(nativeStart+1).map(row=>row.version),
+    sourceInventorySha256:sha(JSON.stringify(sourceInventory))};
+  assert.equal(ledgerFixture.priorFixtureVersions.length,45);assert.equal(ledgerFixture.wholeExecutedMigrationVersions.length,21);
+  return {releaseVersion,binding,output,ledgerFixture,databaseBefore:{...ASSISTANT_AFTER599_BEFORE,version:ASSISTANT_AFTER599_DATABASE_LEDGER.maximumVersion},
+    shape:next,migrationInventory:migrations.length};
+}
+
 // App evidence is separate from the unchanged64-row numerical cutover report.
 // No caller option can turn a current76-row source into historical75-row evidence.
 async function accountErasureSourceIdentity(){
@@ -1903,12 +1954,13 @@ async function accountErasureSourceIdentity(){
     return null;
   }
   assert.deepEqual(descriptor,{version:'20261116181500',id:'20261116181500_account_erasure_outbox_off',filename});
-  assert.equal(files.length,76,'The current OFF candidate requires all75 original SQL plus its exact76th source');
+  const expectedCount=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?77:76;
+  assert.equal(files.length,expectedCount,'Every original SQL and the active append must physically exist');
   assert(files.includes(filename),'The current OFF source must physically exist');
   const file=new URL(filename,directory),stat=await fs.lstat(file);
   assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>0&&stat.size<=65536,'OFF source must be bounded regular SQL');
   const source=await fs.readFile(file);assert.equal(source.length,stat.size);
-  return {migrationVersion:descriptor.version,migrationSQLSha256:sha(source),sourceSqlFileCount:76};
+  return {migrationVersion:descriptor.version,migrationSQLSha256:sha(source),sourceSqlFileCount:expectedCount};
 }
 function projectAccountErasureNative(value,identity,postgresMajor){
   assert(identity,'Historical75-row evidence cannot claim an OFF installation');
@@ -1954,10 +2006,43 @@ export async function assistantAfter598NativeReportProjection(report,options){
     normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,assistantAfter598Successor:observed,
     ...(app===null?{}:{accountErasure:app})};
 }
+export async function assistantAfter599NativeReportProjection(report,options){
+  const identity=await assistantAfter599PhaseIdentity();
+  const {selectedPrograms}=options;
+  assert.equal(report?.kind,SCALAR597_REPORT_MARKER);
+  assert.equal(report.sqlExecuted,true);assert.equal(report.migrationExecuted,true);
+  assert.equal(report.tcpEnabled,false);assert.equal(report.normalModelPartCount,673);
+  const {majorVersion:postgresMajorVersion}=verifyAssistantPublic591Programs(selectedPrograms);
+  assert.deepEqual(report.nativeProgramIdentity,selectedPrograms);
+  assert.equal(report.postgresMajorVersion,postgresMajorVersion);
+  for(const arm of ['nativeOriginalContinuity','assistantLaterH0','assistantPublic587Successor',
+    'assistantPublic588Successor','assistantPublic590Successor','assistantPublic591Successor',
+    'installed593Original591Successor','scalar597LaterH0Successor','assistantAfter597Successor','assistantAfter598Successor'])assert(!Object.hasOwn(report,arm));
+  const observed={kind:AFTER599_RESULT,sourceMigrationInventory:identity.migrationInventory,
+    databaseBeforeVersion:identity.databaseBefore.version,originalStateRelease:599,
+    migrationVersion:identity.binding.version,partCount:673,checkpointOidSlots:identity.shape.oidSlots,
+    contractBodies:identity.shape.contractBodies,productionSeedAuthenticated:false,
+    parentCodeHead:FROZEN599_NATIVE_SOURCE.codeHead,predecessorSetupMigrationCount:11,
+    app600InstalledInCheckpointDatabase:true,app600CatalogPreserved:true,beforeGuardCases:14,
+    allHistoricalMigrationsExecuted:false,productionInstalledHistoryEvidence:false,ledgerFixture:identity.ledgerFixture};
+  for(const key of after599ReportTruths)observed[key]=true;
+  observed.intermediateRuntime=Object.fromEntries(after599IntermediateTruths.map(key=>[key,true]));
+  for(const[key,value]of Object.entries(observed))assert.deepEqual(report.assistantAfter599Successor?.[key],value,'After599 native report: '+key);
+  assert(Object.hasOwn(report,'accountErasure'),'After599 requires actual current77-file app evidence');
+  const app=projectAccountErasureNative(report.accountErasure,await accountErasureSourceIdentity(),postgresMajorVersion);
+  return {kind:SCALAR597_REPORT_MARKER,sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
+    normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,assistantAfter599Successor:observed,
+    accountErasure:app};
+}
 export function assistantAfter598NativeReportCollector(options){
   requireAssistantAfter598Output(); // FIRST before options or evidence ingestion.
   const collector=nativeMarkerCollector(SCALAR597_REPORT_MARKER,65536);
   return {write:collector.write,async finish(){return assistantAfter598NativeReportProjection(collector.finish(),options);}};
+}
+export function assistantAfter599NativeReportCollector(options){
+  requireAssistantAfter599Output(); // FIRST before options or evidence ingestion.
+  const collector=nativeMarkerCollector(SCALAR597_REPORT_MARKER,65536);
+  return {write:collector.write,async finish(){return assistantAfter599NativeReportProjection(collector.finish(),options);}};
 }
 export async function verifyAssistantAfter598PhaseReceipt(native,current){
   const identity=await assistantAfter598PhaseIdentity();
@@ -1971,6 +2056,132 @@ export async function verifyAssistantAfter598PhaseReceipt(native,current){
   const {shape,migrationInventory,...issued}=identity;
   assert.deepEqual(native,{schemaVersion:1,kind:ASSISTANT_AFTER598_PHASE_KIND,phase:AFTER598_RESULT,
     sourcePhase:ASSISTANT_AFTER598_PHASE,...issued,current,commands:ASSISTANT_AFTER598_COMMANDS,
+    status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
+  return native;
+}
+// The normal old EXECUTED-V1 receipt stays unchanged. This separately typed
+// decision qualifies an authentic original phase; it never claims new SQL.
+function after599BoundedGit(readGit,deadline){
+  return args=>{
+    const remaining=()=>{const value=Math.floor(deadline-performance.now());assert(value>0,'AFTER599_PG_REUSE_TIME_BOUND');return value;};
+    const time=remaining();const value=readGit===git?execFileSync('git',args,{encoding:'utf8',maxBuffer:64*1024*1024,
+      timeout:Math.min(10000,time),env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}):readGit(args);
+    remaining();return value;
+  };
+}
+export async function captureAssistantAfter599PgInput(options){
+  requireAssistantAfter599Output(); // FIRST, including before option getters.
+  assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert(Object.keys(options).every(key=>['ref','readGit','root','physical'].includes(key)));
+  const {ref='HEAD',root=process.cwd(),physical=true}=options;
+  const readGit=after599BoundedGit(options.readGit??git,performance.now()+60000);
+  const tree=parseTree(readGit(['ls-tree','-rz','--full-tree',ref])),index=new Map(tree.map(row=>[row[0],row]));
+  const sql=tree.filter(row=>row[0].startsWith('supabase/migrations/')&&row[0].endsWith('.sql')).map(row=>row[0]).sort();
+  assert(sql.length>0&&sql.length<=512);
+  if(physical)assert.deepEqual((await fs.readdir(path.join(root,'supabase/migrations'))).filter(file=>file.endsWith('.sql')).sort(),
+    sql.map(file=>path.posix.basename(file)));
+  const rows=new Map();let bytes=0;
+  const read=async file=>{
+    assert(typeof file==='string'&&file.length<=512&&!file.startsWith('/')&&!file.split('/').includes('..'));
+    if(rows.has(file))return rows.get(file);
+    const row=index.get(file);
+    if(!row){assert(!physical,'Required current native input is absent: '+file);const absent={file,present:false};rows.set(file,absent);return absent;}
+    assert(['100644','100755'].includes(row[1])&&row[2]==='blob');
+    const raw=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));bytes+=raw.length;
+    assert(raw.length<=4*1024*1024&&bytes<=64*1024*1024&&rows.size<512);
+    if(physical){const absolute=path.resolve(root,file),stat=await fs.lstat(absolute);
+      assert(stat.isFile()&&!stat.isSymbolicLink());assert.equal(stat.size,raw.length);assert.equal(await fs.realpath(absolute),absolute);
+      assert.deepEqual(await fs.readFile(absolute),raw,'Physical native input differs from Git');}
+    const value={file,mode:row[1],bytes:raw.length,sha256:sha(raw)};rows.set(file,value);return value;
+  };
+  const profileFile='scripts/lib/source-impact-domain-inputs-598.json';await read(profileFile);
+  const profile=JSON.parse(String(readGit(['cat-file','blob',ref+':'+profileFile])));
+  assert.equal(profile.id,'REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12');assert.equal(profile.postgresModules.length,69);
+  const modules=new Set([...profile.postgresModules,'scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs']);
+  const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
+  const selected=new Set([...modules,...profile.postgresData,...setup,...profile.continuation.files,profile.continuation.file,...sql]);
+  for(const definition of Object.values(profile.models)){
+    await read(definition.file);selected.add(definition.file);
+    const source=String(readGit(['cat-file','blob',ref+':'+definition.file]));
+    const escaped=definition.manifestName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const match=new RegExp('export const '+escaped+' = Object\\.freeze\\(([\\s\\S]*)\\);\\n$').exec(source);assert(match);
+    const manifest=JSON.parse(match[1]);assert.equal(manifest.schemaVersion,definition.schemaVersion);
+    assert.equal(manifest.normalizationId,definition.normalizationId);assert(Array.isArray(manifest.files)&&manifest.files.length<=512);
+    for(const row of manifest.files){assert(typeof row[definition.rowKey]==='string');selected.add(row[definition.rowKey]);}
+  }
+  for(const file of [...selected].sort())await read(file);
+  const scopePaths=new Set(['package.json']);
+  for(const file of modules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
+  const scopes=[];
+  for(const file of [...scopePaths].sort()){
+    if(!index.has(file)){
+      if(physical){let stat=null;try{stat=await fs.lstat(path.resolve(root,file));}catch(error){if(error.code!=='ENOENT')throw error;}assert.equal(stat,null,'Untracked package scope changes native resolution');}
+      scopes.push({file,present:false});continue;
+    }
+    const row=index.get(file);assert(['100644','100755'].includes(row[1])&&row[2]==='blob');
+    const raw=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));
+    if(physical){const absolute=path.resolve(root,file),stat=await fs.lstat(absolute);
+      assert(stat.isFile()&&!stat.isSymbolicLink());assert.equal(await fs.realpath(absolute),absolute);
+      assert.deepEqual(await fs.readFile(absolute),raw);}
+    const value=JSON.parse(raw);assert(value&&typeof value==='object'&&!Array.isArray(value));
+    // Preserve name/main and all explicit resolver maps; release/script metadata
+    // alone is not an execution input and is still reviewed by fresh source CI.
+    scopes.push({file,present:true,mode:row[1],type:value.type??null,name:value.name??null,main:value.main??null,imports:value.imports??null,exports:value.exports??null});
+  }
+  const anchors=[...profile.frozenGitAnchors,{head:FROZEN599_NATIVE_SOURCE.codeHead,tree:FROZEN599_NATIVE_SOURCE.codeTree}];
+  const frozenGitTrees=[...new Map(anchors.map(row=>[row.head,row])).values()].sort((a,b)=>a.head.localeCompare(b.head));
+  for(const row of frozenGitTrees)assert.equal(readGit(['rev-parse',row.head+'^{tree}']).trim(),row.tree);
+  const files=[...rows.values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
+  return {schemaVersion:1,kind:'AFTER599_ACTUAL_PG_INPUT_V1',files:files.length,sqlFiles:sql.length,
+    complete:files.every(row=>row.present!==false),inputSha256:sha(JSON.stringify(files)),packageScopes:scopes,frozenGitTrees};
+}
+export function verifyAssistantAfter599PgInput(value,prior=value){
+  requireAssistantAfter599Output();
+  assert.deepEqual(value,prior,'Actual SQL/native/model/frozen inputs changed');
+  assert.deepEqual(Object.keys(value).sort(),['schemaVersion','kind','files','sqlFiles','complete','inputSha256','packageScopes','frozenGitTrees'].sort());
+  assert.equal(value.schemaVersion,1);assert.equal(value.kind,'AFTER599_ACTUAL_PG_INPUT_V1');assert.equal(value.complete,true);
+  assert(Number.isSafeInteger(value.files)&&value.files>0&&value.files<=512);
+  assert(Number.isSafeInteger(value.sqlFiles)&&value.sqlFiles>0&&value.sqlFiles<=512);assert.match(value.inputSha256,hashPattern);
+  assert(Array.isArray(value.packageScopes)&&value.packageScopes.length>0&&value.packageScopes.length<=128);
+  assert(Array.isArray(value.frozenGitTrees)&&value.frozenGitTrees.length>0&&value.frozenGitTrees.length<=64);
+  return value;
+}
+export async function verifyAssistantAfter599ReusePhaseReceipt(native,current,options){
+  const identity=await assistantAfter599PhaseIdentity(); // FIRST before receipt/options.
+  options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert(Object.keys(options).every(key=>key==='readGit'));const readGit=options.readGit??git;
+  assert.equal(native?.kind,ASSISTANT_AFTER599_REUSE_KIND);assert.equal(native.schemaVersion,2);
+  assert.match(current.head,/^[a-f0-9]{40}$/);assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+  assert.equal(current.attempt,1);assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+  assert(typeof current.branch==='string'&&current.branch.length>0&&current.branch.length<=255);
+  const runtime=verifyAssistantPublic591Runtime(native?.runtime);
+  const report=await assistantAfter599NativeReportProjection(native.report,{selectedPrograms:runtime.selectedPrograms});
+  const input=verifyAssistantAfter599PgInput(native.nativeInput);
+  verifyAssistantAfter599PgInput(input,await captureAssistantAfter599PgInput({ref:current.head,readGit,physical:current.head===String(readGit(['rev-parse','HEAD'])).trim()}));
+  const origin=native.origin;assert(Number.isSafeInteger(origin?.run)&&origin.run>ORIGIN.run&&origin.run<current.run);
+  assert.equal(origin.attempt,1);assert(Number.isSafeInteger(origin.job)&&origin.job>0);assert.match(origin.head,/^[a-f0-9]{40}$/);
+  assert(Number.isSafeInteger(origin.artifactId)&&origin.artifactId>0);assert.match(origin.artifactDigest,/^sha256:[a-f0-9]{64}$/);
+  assert.match(origin.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  const {shape,migrationInventory,ledgerFixture,...issued}=identity;
+  assert.deepEqual(native,{schemaVersion:2,kind:ASSISTANT_AFTER599_REUSE_KIND,phase:AFTER599_RESULT,sourcePhase:ASSISTANT_AFTER599_PHASE,
+    ...issued,current,commands:ASSISTANT_AFTER599_COMMANDS,status:'REUSED',executedInThisRun:false,
+    origin,eligibleForReuse:false,nativeInput:input,runtime,report});return native;
+}
+
+export async function verifyAssistantAfter599PhaseReceipt(native,current,options){
+  requireAssistantAfter599Output();
+  if(native?.kind===ASSISTANT_AFTER599_REUSE_KIND)return verifyAssistantAfter599ReusePhaseReceipt(native,current,options);
+  const identity=await assistantAfter599PhaseIdentity();
+  assert.match(current.head,/^[a-f0-9]{40}$/);
+  assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+  assert(Number.isSafeInteger(current.attempt)&&current.attempt>0);
+  assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+  assert(typeof current.branch==='string'&&current.branch.length>0&&current.branch.length<=255);
+  const runtime=verifyAssistantPublic591Runtime(native?.runtime);
+  const report=await assistantAfter599NativeReportProjection(native.report,{selectedPrograms:runtime.selectedPrograms});
+  const {shape,migrationInventory,ledgerFixture,...issued}=identity;
+  assert.deepEqual(native,{schemaVersion:1,kind:ASSISTANT_AFTER599_PHASE_KIND,phase:AFTER599_RESULT,
+    sourcePhase:ASSISTANT_AFTER599_PHASE,...issued,current,commands:ASSISTANT_AFTER599_COMMANDS,
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
   return native;
 }
@@ -2002,6 +2213,158 @@ export async function executeAssistantAfter598Native(){
     sourcePhase:ASSISTANT_AFTER598_PHASE,...issued,current,commands:ASSISTANT_AFTER598_COMMANDS,
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
 }
+// Uses the existing bounded GitHub/artifact transport. A prior successful PG
+// upload survives a later national-only failure; a newer relevant negative does not.
+export async function decideAssistantAfter599Reuse(options){
+  requireAssistantAfter599Output(); // FIRST: an unissued family never reads options.
+  try{
+    assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+    assert(Object.keys(options).every(key=>['env','get','readGit','getRuntime','getInput','decode'].includes(key)));
+    let {env=process.env,get,getRuntime=assistantPublic591Runtime,getInput=captureAssistantAfter599PgInput,decode=decodeCurrent586Artifact}=options;
+    const deadline=performance.now()+60000,readGit=after599BoundedGit(options.readGit??git,deadline);
+    get??=installed593Original591Reader({env});
+    const transport=get;get=async(...args)=>{assert(performance.now()<deadline,'AFTER599_PG_REUSE_TIME_BOUND');const value=await transport(...args);assert(performance.now()<deadline,'AFTER599_PG_REUSE_TIME_BOUND');return value;};
+    assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+    assert.equal(env.GITHUB_RUN_ATTEMPT,'1');assert.match(env.SOURCE_GATE_HEAD_SHA,/^[a-f0-9]{40}$/);
+    const head=env.SOURCE_GATE_HEAD_SHA;
+    const checkout=()=>{
+      assert.equal(readGit(['rev-parse','HEAD^{commit}']).trim(),head);
+      assert.equal(readGit(['status','--porcelain','--untracked-files=no']).trim(),'');
+      assert.equal(readGit(['for-each-ref','refs/replace']).trim(),'');
+      assert.equal(readGit(['rev-parse','--is-shallow-repository']).trim(),'false');
+    };checkout();
+    const current={run:Number(env.GITHUB_RUN_ID),attempt:1,head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+    assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+    assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+    assert(typeof current.branch==='string'&&current.branch.length>0);
+    const nativeInput=verifyAssistantAfter599PgInput(await getInput({readGit}));
+    const runtime=verifyAssistantPublic591Runtime(await getRuntime());
+    const repo='/repos/'+ORIGIN.repository,base=repo+'/actions';
+    const running=await get(base+'/runs/'+current.run);
+    assert.equal(running.id,current.run);assert.equal(running.run_attempt,1);assert.equal(running.head_sha,head);
+    assert.equal(running.head_branch,current.branch);assert.equal(running.path,WORKFLOW);assert.equal(running.event,'pull_request');
+    verifyCurrentPullRequest(await get(repo+'/pulls/'+current.pullRequest),running,current.pullRequest);
+    const currentJobs=await get(base+'/runs/'+current.run+'/attempts/1/jobs?per_page=100');assert(complete(currentJobs,'jobs'));
+    const currentJob=one(currentJobs.jobs.filter(row=>row.name===JOB));
+    assert.equal(currentJob.head_sha,head);assert.equal(currentJob.run_attempt,1);assert.equal(currentJob.run_id,current.run);
+    assert(successful(one(currentJob.steps.filter(row=>row.name==='Validate source contracts and release governance'))));
+    const query=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+new Date(Date.parse(running.created_at)-30*86400000).toISOString()});
+    const listing=await get(base+'/workflows/validate-pull-request.yml/runs?'+query);
+    assert(Number.isSafeInteger(listing.total_count)&&listing.total_count>=0);
+    assert.equal(listing.workflow_runs.length,Math.min(listing.total_count,100));
+    assert.equal(new Set(listing.workflow_runs.map(row=>row.id)).size,listing.workflow_runs.length);
+    const inputs=new Map([[head,nativeInput]]);
+    const inputFor=async ref=>{if(!inputs.has(ref))inputs.set(ref,await getInput({ref,readGit,physical:false}));return inputs.get(ref);};
+    const sameInput=async ref=>JSON.stringify(await inputFor(ref))===JSON.stringify(nativeInput);
+    let selected=null;
+    for(const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)){
+      if(await sameInput(row.head_sha)){selected=row;break;}
+    }
+    assert(selected,'No authentic matching phase');
+    const originPr=async(run,number)=>{
+      const pr=await get(repo+'/pulls/'+number);
+      assert.equal(pr.number,number);assert(['open','closed'].includes(pr.state));assert.equal(pr.base?.ref,'main');
+      assert.equal(pr.base?.repo?.full_name,ORIGIN.repository);assert.equal(pr.head?.repo?.full_name,ORIGIN.repository);
+      assert.equal(pr.head.ref,run.head_branch);assert.match(pr.head.sha,/^[a-f0-9]{40}$/);
+      assert(Array.isArray(run.pull_requests));if(run.pull_requests.length)assert.equal(one(run.pull_requests).number,number);
+      if(pr.head.sha!==run.head_sha)readGit(['merge-base','--is-ancestor',run.head_sha,pr.head.sha]);
+      return pr;
+    };
+    const load=async expected=>{
+      const run=await get(base+'/runs/'+expected.id);
+      assert.equal(run.id,expected.id);assert.equal(run.head_sha,expected.head_sha);assert.equal(run.run_attempt,1);
+      const jobs=await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
+      const phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
+      const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
+      const metadata=one(artifacts.artifacts.filter(row=>row.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
+      verifyAssistantPublic591ArtifactMetadata(metadata,run,phase);
+      const zip=await get(base+'/artifacts/'+metadata.id+'/zip',{zip:true});assert.equal(zip.length,metadata.size_in_bytes);
+      assert.equal('sha256:'+sha(zip),metadata.digest);const raw=decode(zip);assert(raw.length>0&&raw.length<=32768);
+      const proof=JSON.parse(raw);assert([1,2].includes(proof.schemaVersion));
+      assert.equal(proof.repository,ORIGIN.repository);assert.equal(proof.headSha,run.head_sha);
+      assert.equal(proof.privatePayloadIncluded,false);assert.match(proof.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+      const receipt=proof.nativePostgres;
+      assert.equal(proof.kind,receipt.kind);assert.equal(proof.schemaVersion,receipt.schemaVersion);
+      assert.equal(receipt.current.head,run.head_sha);assert.equal(receipt.current.run,run.id);assert.equal(receipt.current.attempt,1);
+      assert.equal(receipt.current.branch,run.head_branch);await originPr(run,receipt.current.pullRequest);
+      await verifyAssistantAfter599PhaseReceipt(receipt,receipt.current,{readGit});
+      return {run,phase,metadata,proof};
+    };
+    let original=await load(selected);
+    if(original.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND){
+      const locator=original.proof.nativePostgres.origin;
+      original=await load({id:locator.run,head_sha:locator.head});
+      assert.equal(original.phase.job,locator.job);assert.equal(original.metadata.id,locator.artifactId);
+      assert.equal(original.metadata.digest,locator.artifactDigest);assert.equal(original.proof.sourceTreeSha256,locator.sourceTreeSha256);
+    }
+    const prior=original.proof.nativePostgres;
+    assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
+    assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
+    assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
+    verifyAssistantAfter599PgInput(nativeInput,await inputFor(original.run.head_sha));
+    verifyAssistantPublic591Runtime(runtime,prior.runtime);
+    const laterQuery=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+original.run.created_at});
+    const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+laterQuery);assert(complete(later,'workflow_runs'));
+    assert.equal(new Set(later.workflow_runs.map(row=>row.id)).size,later.total_count);
+    assert(later.workflow_runs.some(row=>row.id===original.run.id)&&later.workflow_runs.some(row=>row.id===current.run));
+    for(const row of later.workflow_runs.filter(row=>row.id>original.run.id&&row.id!==current.run)){
+      if(!await sameInput(row.head_sha))continue;
+      assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
+      assert.equal(row.status,'completed');assert.equal(row.repository?.full_name,ORIGIN.repository);
+      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');assert(complete(jobs,'jobs'));
+      const job=one(jobs.jobs.filter(value=>value.name===JOB));assert.equal(job.run_id,row.id);assert.equal(job.head_sha,row.head_sha);
+      assert.equal(job.run_attempt,1);assert.equal(job.status,'completed');
+      assert(successful(one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'))));
+      const pg=one(job.steps.filter(value=>value.name===STEP));assert(pg.conclusion==='skipped'||successful(pg));
+    }
+    // Fresh identity and independent origin metadata after the history walk.
+    verifyAssistantAfter599PgInput(nativeInput,await getInput({readGit}));
+    verifyAssistantPublic591Runtime(runtime,await getRuntime());checkout();
+    const finalRun=await get(base+'/runs/'+original.run.id);assert.deepEqual(finalRun,original.run);
+    const finalJobs=await get(base+'/runs/'+original.run.id+'/attempts/1/jobs?per_page=100');
+    assert.deepEqual(verifyAssistantPublic591Metadata(finalRun,finalJobs,readGit),original.phase);
+    assert.deepEqual(await get(base+'/artifacts/'+original.metadata.id),original.metadata);
+    await originPr(finalRun,prior.current.pullRequest);
+    verifyCurrentPullRequest(await get(repo+'/pulls/'+current.pullRequest),running,current.pullRequest);
+    const identity=await assistantAfter599PhaseIdentity(),{shape,migrationInventory,ledgerFixture,...issued}=identity;
+    return {schemaVersion:2,kind:ASSISTANT_AFTER599_REUSE_KIND,phase:AFTER599_RESULT,sourcePhase:ASSISTANT_AFTER599_PHASE,
+      ...issued,current,commands:ASSISTANT_AFTER599_COMMANDS,status:'REUSED',executedInThisRun:false,
+      origin:{run:original.run.id,attempt:1,head:original.run.head_sha,job:original.phase.job,artifactId:original.metadata.id,
+        artifactDigest:original.metadata.digest,sourceTreeSha256:original.proof.sourceTreeSha256},
+      eligibleForReuse:false,nativeInput,runtime,report:prior.report};
+  }catch{return null;}
+}
+
+export async function executeAssistantAfter599Native(){
+  const reused=await decideAssistantAfter599Reuse();
+  if(reused){await record(reused);return;}
+  const identity=await assistantAfter599PhaseIdentity(); // Before environment/Git/native launch.
+  const appSourceBefore=await accountErasureSourceIdentity();
+  const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;
+  assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+  const verifyCheckout=()=>{
+    assert.match(head,/^[a-f0-9]{40}$/);
+    assert.equal(git(['rev-parse','HEAD^{commit}']).trim(),head);
+    assert.equal(git(['status','--porcelain','--untracked-files=no']).trim(),'');
+    assert.equal(git(['for-each-ref','refs/replace']).trim(),'');
+    assert.equal(git(['rev-parse','--is-shallow-repository']).trim(),'false');
+  };
+  verifyCheckout();
+  const current={run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+    pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+  const runtime=await assistantPublic591Runtime();
+  for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
+  const report=await executeMarkedNative(env,ASSISTANT_AFTER599_SCRIPT,
+    assistantAfter599NativeReportCollector({selectedPrograms:runtime.selectedPrograms}));
+  if(!report)return;
+  assert.deepEqual(await accountErasureSourceIdentity(),appSourceBefore,'OFF source changed during native execution');
+  await assertCurrentAccountErasureNativeReport(report);
+  verifyCheckout();verifyAssistantPublic591Runtime(runtime,await assistantPublic591Runtime());
+  const {shape,migrationInventory,ledgerFixture,...issued}=identity;
+  await record({schemaVersion:1,kind:ASSISTANT_AFTER599_PHASE_KIND,phase:AFTER599_RESULT,
+    sourcePhase:ASSISTANT_AFTER599_PHASE,...issued,current,commands:ASSISTANT_AFTER599_COMMANDS,
+    status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
+}
 
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
@@ -2009,7 +2372,11 @@ async function record(receipt) {
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
-  if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE){
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE){
+    await assertCurrentAccountErasureNativeReport(receipt.report);
+    await verifyAssistantAfter599PhaseReceipt(receipt,current);
+  }
+  else if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE){
     // Actual current source decides; old/omitted RAW metadata cannot authorize a current76-row record.
     await assertCurrentAccountErasureNativeReport(receipt.report);
     await verifyAssistantAfter598PhaseReceipt(receipt,current);
@@ -2028,7 +2395,7 @@ async function record(receipt) {
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
   const phaseProof={
     schemaVersion:receipt.schemaVersion===2?2:1,
-    kind:receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND?receipt.kind:
+    kind:receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND||receipt.kind===ASSISTANT_AFTER599_PHASE_KIND?receipt.kind:
       receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR'?INSTALLED593_ORIGINAL591_PHASE_KIND:
       receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR'?ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND:
@@ -2038,10 +2405,11 @@ async function record(receipt) {
     repository:proof.repository,headSha:proof.headSha,sourceTreeSha256:proof.sourceTreeSha256,
     privatePayloadIncluded:false,nativePostgres:receipt,
   };
-  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND)assert(Buffer.byteLength(raw)<=32768);
+  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND||receipt.kind===ASSISTANT_AFTER599_PHASE_KIND)assert(Buffer.byteLength(raw)<=32768);
   await fs.writeFile(CURRENT586_PHASE_FILE,raw,{flag:'wx'});
 }
 async function main() {
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE)return executeAssistantAfter599Native();
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)return executeAssistantAfter598Native();
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)return executeAssistantAfter597Native();
   if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)return executeScalar597LaterH0();

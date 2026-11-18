@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import {inverseReviewedAfter599PackageForHistoricalOracles} from './lib/account-statistics-assistant-package-review.mjs';
 import test from 'node:test';
 import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   SCALAR597_LATER_H0_SOURCE_COMMAND,inverseScalar597LaterH0Package,verifyScalar597LaterH0NativeContext,
-  ASSISTANT_AFTER598_SOURCE_COMMAND,inverseAssistantAfter598Package,
+  ASSISTANT_AFTER599_SOURCE_COMMAND,ASSISTANT_AFTER598_SOURCE_COMMAND,inverseAssistantAfter598Package,
   scalar597LaterH0NativeClaims,ASSISTANT_AFTER597_SOURCE_COMMAND,inverseAssistantAfter597Package}
   from './national584-source-evidence.mjs';
-import {projectSourceImpactWorkflowFull,inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES}
+import {projectSourceImpactWorkflowFull,inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
+  readHistoricalSourceSetupWorkflow,verifyCurrentSourceWorkflow}
   from './lib/source-impact-workflow-review.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
@@ -17,6 +19,7 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMM
   SCALAR597_LATER_H0_PHASE,SCALAR597_LATER_H0_PHASE_KIND,SCALAR597_LATER_H0_COMMANDS,SCALAR597_LATER_H0_SCRIPT,
   scalar597NativeReportCollector,verifyScalar597LaterH0PhaseReceipt,
   ASSISTANT_AFTER597_PHASE,ASSISTANT_AFTER597_COMMANDS,ASSISTANT_AFTER597_SCRIPT,
+  ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER599_COMMANDS,ASSISTANT_AFTER599_SCRIPT,
   ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER598_COMMANDS,ASSISTANT_AFTER598_SCRIPT,
   ASSISTANT_LATER_H0_PHASE_KIND,verifyAssistantLaterH0PhaseReceipt,
   inverseCurrent586PhaseUpload,verifyCurrent586Workflow,verifyCurrent586Runtime,
@@ -34,6 +37,8 @@ import {ASSISTANT_AFTER597_BINDING as AFTER597_BINDING} from './lib/assistant-la
 const AFTER597_ISSUED=AFTER597_BINDING!==null;
 import {ACTIVE_ASSISTANT_SUCCESSOR as CURRENT_ASSISTANT} from './lib/assistant-later-h0-successor-source.mjs';
 const AFTER598_ACTIVE=CURRENT_ASSISTANT.sourcePhase==='assistant-after598-successor';
+const AFTER599_ACTIVE=CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor';
+const HISTORICAL598_INPUT_REQUIRED=AFTER598_ACTIVE||AFTER599_ACTIVE;
 // The existing authenticated old CODE host supplies actual old package/profile
 // input. No rewritten current package, copied legacy suite or new cohort.
 async function genuineIssued598SourceData(){
@@ -220,7 +225,7 @@ test('exact native phase reuse; drift, missing evidence and later failure execut
     const readGit=args=>{
       if(args[0]==='status'||args[0]==='for-each-ref'||args[0]==='merge-base')return '';
       if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
-      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
       if(args[0]==='rev-parse')return verifyInputTrees(tree,tree).frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
       if(args[0]==='show')return args[1].startsWith('HEAD:')?candidateWorkflow:originalWorkflow;
       if(args[0]==='ls-tree')return tree.map(([file,mode,type,id])=>mode+' '+type+' '+id+'\t'+file+'\0').join('');
@@ -270,7 +275,7 @@ test('follow-up PR identity and both native branch histories remain independentl
     const readGit=args=>{
       if(['status','for-each-ref','merge-base'].includes(args[0]))return '';
       if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
-      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
       if(args[0]==='rev-parse')return verifyInputTrees(tree,tree).frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
       if(args[0]==='show')return args[1].startsWith('HEAD:')?candidateWorkflow:originalWorkflow;
       if(args[0]==='ls-tree')return tree.map(([file,mode,type,id])=>mode+' '+type+' '+id+'\t'+file+'\0').join('');
@@ -389,10 +394,9 @@ test('current586 phase artifact is independent, exact, honest, and does not rela
   const actualWorkflow=(await fs.readFile(WORKFLOW,'utf8')).replace(/\r\n/g,'\n');
   // Only the historical V1 oracle and its mutation inputs receive the exact
   // qualified FULL workflow. V2 captures the actual workflow bytes unchanged.
-  const historicalWorkflow=projectSourceImpactWorkflowFull(actualWorkflow);
+  const historicalWorkflow=projectSourceImpactWorkflowFull(readHistoricalSourceSetupWorkflow());
   const workflow=inverseSourceBeforePostgresWorkflow(historicalWorkflow);
-  assert(actualWorkflow.indexOf('      - name: Validate source contracts')<actualWorkflow.indexOf('      - name: '+STEP));
-  assert(actualWorkflow.indexOf(CURRENT586_PHASE_UPLOAD_BLOCK)<actualWorkflow.indexOf('      - name: Validate isolated restart and two ordinary national followers'));
+  verifyCurrentSourceWorkflow(actualWorkflow);
   // The existing586 whole-workflow hash below proves the complete inverse, not a new current hash.
   for(const changed of [
     historicalWorkflow.replace('npm run validate:source','true'),
@@ -452,7 +456,7 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
     return Buffer.concat([local,name,raw,central,name,end]);
   };
-  const workflow=inverseSourceBeforePostgresWorkflow(await fs.readFile(WORKFLOW,'utf8')),
+  const workflow=inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()),
     oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
   const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
   const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',
@@ -490,7 +494,7 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
   const readGit=args=>{
     if(['status','for-each-ref','merge-base'].includes(args[0]))return '';
     if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
-    if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+    if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
     if(args[0]==='rev-parse')return nativeInput.frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
     if(args[0]==='show'&&args[1].endsWith(':package.json'))return '{"version":"4.0.586"}';
     if(args[0]==='show'&&args[1].endsWith(':'+WORKFLOW))return workflow;
@@ -593,7 +597,10 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE){
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER599_PHASE){
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER599_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_AFTER599_SCRIPT);
+  }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE){
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER598_COMMANDS);
     assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_AFTER598_SCRIPT);
   }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE){
@@ -843,7 +850,9 @@ test('calendar588 normal native route uses genuine parent factory then current c
   const main=evidence.slice(evidence.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic588SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE)
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER599_PHASE)
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER599_COMMANDS);
+  else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE)
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER598_COMMANDS);
   else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE)
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER597_COMMANDS);
@@ -863,6 +872,7 @@ test('calendar588 normal native route uses genuine parent factory then current c
 test('calendar588 normal source command follows only its source-owned active profile',async()=>{
   const packageData=JSON.parse(await fs.readFile('package.json','utf8'));
   assert.equal(packageData.scripts['test:assistant-later-h0-source'],
+    ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_SOURCE_COMMAND:
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_SOURCE_COMMAND:
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_SOURCE_COMMAND:
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE?SCALAR597_LATER_H0_SOURCE_COMMAND:
@@ -1213,7 +1223,7 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   const {execFileSync}=await import('node:child_process'),cache=new Map(),requests=[];
   const readGit=args=>{const key=JSON.stringify(args);requests.push(args);
     if(!cache.has(key))cache.set(key,execFileSync('git',
-      [ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+      [ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
         ?args.map(arg=>arg==='HEAD'?FROZEN593_NATIVE_CODE.head:arg.startsWith('HEAD:')?FROZEN593_NATIVE_CODE.head+arg.slice(4):arg):args,
       {encoding:'utf8',maxBuffer:64*1024*1024,env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}));return cache.get(key);};
   const original=await captureAssistantPublic591Input({root:sourceRoot,readGit});
@@ -1260,7 +1270,7 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   await assert.rejects(captureAssistantPublic591Input({physical:false,readGit:args=>
     args[0]==='rev-parse'&&args[1]===ASSISTANT_PUBLIC591_FROZEN.at(-1).head+'^{tree}'?'d'.repeat(40):readGit(args)}));
   };
-  if([ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase))
+  if([ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase))
     await withInstalled593CodePredecessorSource(check);
   else await check(process.cwd());
 });
@@ -1389,7 +1399,7 @@ test('native phase metadata permits only the reviewed early DMI setup step',()=>
   }
 });
 
-test('native FULL metadata accepts only the whole authenticated owned-cache environment layout',async()=>{
+test('native FULL metadata verifies the actual and historical owned-cache environment layouts',async()=>{
   const fixture=v2LiveFixture(),requests=[];
   const expected=verifyAssistantPublic591Metadata(fixture.origin,fixture.originalJobs,()=>{
     throw new Error('Old metadata must not need a new workflow read');
@@ -1409,7 +1419,9 @@ test('native FULL metadata accepts only the whole authenticated owned-cache envi
   };
   assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,readWorkflow),expected);
   assert.equal(requests.length,1);
-  for(const value of [predecessor,predecessor.replace(/\n/g,'\r\n'),workflow+'\n',
+  const historical=readHistoricalSourceSetupWorkflow();
+  assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,args=>readWorkflow(args,historical)),expected);
+  for(const value of [predecessor,predecessor.replace(/\n/g,'\r\n'),historical+'\n',
     workflow.replace('          node-version: 24','          node-version: 22'),
     workflow.replace('  contents: read','  contents: write')])
     assert.throws(()=>verifyAssistantPublic591Metadata(fixture.origin,shifted,args=>readWorkflow(args,value)));
@@ -1525,7 +1537,7 @@ test('593 quartet observation remains conditional and follows proved cleanup wit
 
 test('597 quartet observation is conditional and follows proved stop and cleanup before the completed report',async()=>{
   const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
-  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
+  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
   const setup=source.indexOf("const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'))",before);
   const stop=source.indexOf("assert.equal(stop.code,0,'native server stop was not proved; preserve directory');",setup);
   const terminal=source.indexOf("assert.equal(status.code,3,'native server is not physically terminal; preserve directory');",stop);
@@ -1571,7 +1583,7 @@ import {withFrozen593CheckpointPostgresSource} from './run-frozen586-assistant-l
 import {FROZEN593_NATIVE_CODE,verifyFrozen593NativeCodeManifest,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
 const FROZEN594_NATIVE_EVIDENCE_HEAD='84051e2d700595837ebf80426410dcbef8e08704';
 async function historical593ImportReviewSource(file){
-  if([ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+  if([ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
     &&Object.hasOwn(reviewedConditions593ImportViews,file)){
     const {execFileSync}=await import('node:child_process');
     return execFileSync('git',['cat-file','blob',FROZEN593_NATIVE_CODE.head+':'+file],{
@@ -1589,7 +1601,7 @@ function installed594Receipt(){return {schemaVersion:1,kind:INSTALLED593_ORIGINA
   commands:[...INSTALLED593_ORIGINAL591_COMMANDS],status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};}
 
 test('installed593 new594 active native commands and receipt refuse predecessor, reused and changed inputs',()=>{
-  if([ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)){
+  if([ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)){
     assert.notDeepEqual(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
     assert.notEqual(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
   }else{
@@ -1616,11 +1628,12 @@ test('installed593 new594 active native commands and receipt refuse predecessor,
 
 test('installed593 new594 normal national caller preserves package and executed-only native claims',async()=>{
   const activePackage=JSON.parse(await fs.readFile('package.json','utf8')),receipt=installed594Receipt();
-  const beforeAfter597=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE
-    ?inverseAssistantAfter598Package(activePackage):activePackage;
-  const scalarPackage=[ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+  const beforeAfter597=AFTER599_ACTIVE?await inverseReviewedAfter599PackageForHistoricalOracles(activePackage)
+    :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE
+      ?inverseAssistantAfter598Package(activePackage):activePackage;
+  const scalarPackage=[ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
     ?inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
-  const pkg=[ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+  const pkg=[ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
     ?inverseScalar597LaterH0Package(scalarPackage):scalarPackage;
   verifyInstalled593Original591Package(pkg);
   verifyInstalled593Original591NativeContext(receipt,receipt.current,pkg.version);
@@ -1691,7 +1704,7 @@ test('594 V2 normal capture binds66 actual modules/five data/all72 SQL, controls
   const {execFileSync}=await import('node:child_process'),cache=new Map(),selected=new Set();
   const readGit=args=>{const key=JSON.stringify(args);if(args[0]==='cat-file')selected.add(args[2].split(':').slice(1).join(':'));
     if(!cache.has(key))cache.set(key,execFileSync('git',
-      [ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+      [ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
         ?args.map(arg=>arg==='HEAD'?FROZEN594_NATIVE_EVIDENCE_HEAD:
           arg.startsWith('HEAD:')?FROZEN594_NATIVE_EVIDENCE_HEAD+arg.slice(4):arg):args,
       {encoding:'utf8',maxBuffer:64*1024*1024,timeout:30000,
@@ -2029,7 +2042,7 @@ test('after597 frozen native boundary preserves CODE/native identities and check
   const {SOURCE597_CODE_SOURCE_PROVENANCE:code}=await import('./check-assistant-later-h0-predecessor-source.mjs');
   const {SCALAR597_LATER_H0_BINDING:binding,ASSISTANT_AFTER597_BINDING,ASSISTANT_AFTER597_OUTPUT,
     ACTIVE_ASSISTANT_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
-  if(AFTER598_ACTIVE){
+  if(HISTORICAL598_INPUT_REQUIRED){
     const historical=await genuineIssued598SourceData();
     assert.equal(historical.sourcePhase,ASSISTANT_AFTER597_PHASE);
     assert.deepEqual(historical.binding,ASSISTANT_AFTER597_BINDING);
@@ -2079,7 +2092,7 @@ test('after597 fixed native profile keeps genuine597 CODE/native identities and 
   if(AFTER597_ISSUED){
     assert.equal(p.requireBinding(),source.ASSISTANT_AFTER597_BINDING);
     assert.equal(p.requireOutput(),source.ASSISTANT_AFTER597_OUTPUT);
-    if(AFTER598_ACTIVE){
+    if(HISTORICAL598_INPUT_REQUIRED){
       const old=await genuineIssued598SourceData();
       assert.equal(source.requireAssistantAfter597Release(),old.pkg.version);
       assert.equal(old.sourcePhase,source.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR.sourcePhase);
@@ -2118,8 +2131,8 @@ test('after597 normal routing selects only the fixed source-owned active command
   assert.deepEqual(native.ASSISTANT_AFTER597_COMMANDS,
     ['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after597-successor']);
   assert.equal(native.ASSISTANT_AFTER597_SCRIPT,'set -euo pipefail\n'+native.ASSISTANT_AFTER597_COMMANDS[0]+'\n');
-  assert.equal(native.ACTIVE_COMMANDS,AFTER598_ACTIVE?native.ASSISTANT_AFTER598_COMMANDS:AFTER597_ISSUED?native.ASSISTANT_AFTER597_COMMANDS:native.SCALAR597_LATER_H0_COMMANDS);
-  assert.equal(native.ACTIVE_NATIVE_SCRIPT,AFTER598_ACTIVE?native.ASSISTANT_AFTER598_SCRIPT:AFTER597_ISSUED?native.ASSISTANT_AFTER597_SCRIPT:native.SCALAR597_LATER_H0_SCRIPT);
+  assert.equal(native.ACTIVE_COMMANDS,AFTER599_ACTIVE?native.ASSISTANT_AFTER599_COMMANDS:AFTER598_ACTIVE?native.ASSISTANT_AFTER598_COMMANDS:AFTER597_ISSUED?native.ASSISTANT_AFTER597_COMMANDS:native.SCALAR597_LATER_H0_COMMANDS);
+  assert.equal(native.ACTIVE_NATIVE_SCRIPT,AFTER599_ACTIVE?native.ASSISTANT_AFTER599_SCRIPT:AFTER598_ACTIVE?native.ASSISTANT_AFTER598_SCRIPT:AFTER597_ISSUED?native.ASSISTANT_AFTER597_SCRIPT:native.SCALAR597_LATER_H0_SCRIPT);
   const caller=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
   const guard=caller.indexOf('if(assistantAfter597Native){'),first=caller.indexOf('requireAssistantAfter597Output();',guard);
   assert(guard>=0&&first>guard&&first<caller.indexOf('const PART_COUNT ='));
@@ -2151,7 +2164,7 @@ test('after597 normal PG entry and report collector enforce real admission befor
 });
 
 test('after597 actual normal CLI checks issued source or refuses unissued before PostgreSQL',async()=>{
-  if(AFTER598_ACTIVE){
+  if(HISTORICAL598_INPUT_REQUIRED){
     // This existing authenticated CODE822 reader already executes the genuine
     // after597 --check and validates its complete original stdout before callback.
     const historical=await genuineIssued598SourceData();
@@ -2160,12 +2173,15 @@ test('after597 actual normal CLI checks issued source or refuses unissued before
   }
   const {execFile}=await import('node:child_process');
   const result=await new Promise(resolve=>execFile(process.execPath,
-    AFTER598_ACTIVE?['scripts/build-assistant-later-h0-successor.mjs','--active','--check']
+    HISTORICAL598_INPUT_REQUIRED?['scripts/build-assistant-later-h0-successor.mjs','--active','--check']
       :AFTER597_ISSUED?['scripts/build-assistant-later-h0-successor.mjs','--assistant-after597','--check']
       :['scripts/test-protected-ravscore-continuation-checkpoint.mjs','--assistant-after597-successor'],
     {env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot},timeout:10000,maxBuffer:16384},
     (error,stdout,stderr)=>resolve({code:error?.code??0,stdout,stderr})));
-  if(AFTER598_ACTIVE){
+  if(AFTER599_ACTIVE){
+    assert.equal(result.code,0);assert.equal(result.stderr,'');
+    assert.match(result.stdout,/Præcis assistentkilde efter599 kontrolleret/);
+  }else if(AFTER598_ACTIVE){
     assert.equal(result.code,0);assert.equal(result.stderr,'');
     assert.match(result.stdout,/Præcis assistentkilde efter598 kontrolleret/);
   }else if(AFTER597_ISSUED){
@@ -2183,10 +2199,10 @@ test('after597 nationalreader keeps exact issued source and old unissued input b
   const normal=await import('./national584-source-evidence.mjs');
   const profile=await import('./lib/assistant-later-h0-successor-source.mjs');
   if(AFTER597_ISSUED){
-    const pkg=AFTER598_ACTIVE?(await genuineIssued598SourceData()).pkg:JSON.parse(await fs.readFile('package.json','utf8'));
-    if(!AFTER598_ACTIVE)assert.equal(profile.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,ASSISTANT_AFTER597_PHASE);
+    const pkg=HISTORICAL598_INPUT_REQUIRED?(await genuineIssued598SourceData()).pkg:JSON.parse(await fs.readFile('package.json','utf8'));
+    if(!HISTORICAL598_INPUT_REQUIRED)assert.equal(profile.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,ASSISTANT_AFTER597_PHASE);
     assert.equal(profile.requireAssistantAfter597Release(),pkg.version);
-    if(AFTER598_ACTIVE){normal.verifyAssistantAfter597Package(pkg);normal.verifyAssistantAfter597NativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version);
+    if(HISTORICAL598_INPUT_REQUIRED){normal.verifyAssistantAfter597Package(pkg);normal.verifyAssistantAfter597NativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version);
       assert.throws(()=>normal.verifyCurrentNativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version));
     }else{normal.verifyPackage(pkg);normal.verifyCurrentNativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version);}
     const previous=normal.inverseAssistantAfter597Package(pkg);
@@ -2194,7 +2210,7 @@ test('after597 nationalreader keeps exact issued source and old unissued input b
     const tampered=copy(pkg);tampered.scripts['test:assistant-later-h0-source']+=' --write';
     assert.throws(()=>normal.inverseAssistantAfter597Package(tampered));
     assert.throws(()=>normal.verifyCurrentNativeCommands(SCALAR597_LATER_H0_COMMANDS,pkg.version));
-    if(AFTER598_ACTIVE){await assert.rejects(normal.verifyAssistantAfter597SourceTarget());}else{
+    if(HISTORICAL598_INPUT_REQUIRED){await assert.rejects(normal.verifyAssistantAfter597SourceTarget());}else{
     const checked=await normal.verifyAssistantAfter597SourceTarget();
     assert.equal(checked.release,pkg.version);
     assert.equal(checked.canonicalSha256,profile.requireAssistantAfter597Output().canonicalSha256);
@@ -2241,7 +2257,10 @@ test('after597 actual source-package CLI checks issued source only or refuses NU
   const result=spawnSync(process.execPath,[script,'assistant-after597-source'],{
     cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
   assert.equal(result.error,undefined);
-  if(AFTER598_ACTIVE){
+  if(AFTER599_ACTIVE){
+    assert.equal(result.status,1);assert.equal(result.stdout,'');assert.match(result.stderr,/assistant-after599-successor/);
+    assert.match(result.stderr,/assistant-mixed-after597-successor/);assert.doesNotMatch(result.stderr,/ENOENT|not a git repository/);
+  }else if(AFTER598_ACTIVE){
     assert.equal(result.status,1);assert.equal(result.stdout,'');assert.match(result.stderr,/assistant-after598-successor/);
     assert.match(result.stderr,/assistant-mixed-after597-successor/);assert.doesNotMatch(result.stderr,/ENOENT|not a git repository/);
   }else if(AFTER597_ISSUED){
@@ -2691,3 +2710,267 @@ test('native app fixture database ownership survives Auth timestamp shadowing wi
     assert.deepEqual(calls,['LISTEN','OWNER','CREATE',...(stop==='BOOTSTRAP'?['BOOTSTRAP','DROP']:[])]);
   }
 });
+
+if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
+  test('after599 typed native ledger keeps synthetic prefix separate from whole executed SQL',async t=>{
+    const native=await import('./native-postgres-evidence.mjs'),source=await import('./lib/assistant-later-h0-successor-source.mjs');
+    const {assistantAfter599RequiredMigrations}=await import('./integrated-cutover-readiness.mjs');
+    const rows=assistantAfter599RequiredMigrations(),runtime=v2Runtime(),binding=source.requireAssistantAfter599Binding();
+    const canonical=await source.readAssistantAfter599CanonicalSource();
+    const contract=source.assistantLaterH0Definition(canonical.canonicalSource,'ravradar_ravscore_checkpoint_contract');
+    const array=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contract);assert(array);
+    const inventory=await Promise.all(rows.map(async row=>({version:row.version,filename:row.filename,
+      sha256:cryptoHash('sha256').update(await fs.readFile('supabase/migrations/'+row.filename)).digest('hex')})));
+    const ledgerFixture={kind:'SYNTHETIC_PRIOR_LEDGER_AND_EXECUTED_SUFFIX_V1',
+      priorFixtureVersions:rows.slice(0,45).map(row=>row.version),wholeExecutedMigrationVersions:rows.slice(45).map(row=>row.version),
+      sourceInventorySha256:cryptoHash('sha256').update(JSON.stringify(inventory)).digest('hex')};
+    assert.equal(ledgerFixture.priorFixtureVersions.length,45);assert.equal(ledgerFixture.wholeExecutedMigrationVersions.length,21);
+    assert.equal(ledgerFixture.priorFixtureVersions.at(-1),'20261010130000');
+    assert.equal(ledgerFixture.wholeExecutedMigrationVersions.at(-2),'20261116181500');
+    const observed={kind:'ASSISTANT_AFTER599_SUCCESSOR',sourceMigrationInventory:66,databaseBeforeVersion:'20261116181500',
+      originalStateRelease:599,migrationVersion:binding.version,partCount:673,checkpointOidSlots:(array[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,
+      contractBodies:(contract.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,productionSeedAuthenticated:false,
+      parentCodeHead:'9d67207fbbec0f6bcf7819048f72e57535e9615d',predecessorSetupMigrationCount:11,
+      app600InstalledInCheckpointDatabase:true,app600CatalogPreserved:true,beforeGuardCases:14,
+      allHistoricalMigrationsExecuted:false,productionInstalledHistoryEvidence:false,ledgerFixture};
+    for(const key of ['sqlExecuted','wholeMigrationExecuted','oldFunctionsAndOidsPreserved','allOriginalDefinitionsPreserved','exactCheckpointContract','exactTripContract','schema2Catalog',
+      'normalProtectedJsonbRoundtrip','originalDigestsPreserved','trueOld599Fixtures','currentNormalFixtures','old599ModelNotRetagged','wholeMetadataInverse','strictlyLater599ToNextOnly','sqlIsNotOriginAuthentication','predecessorExecutedInSameHost'])observed[key]=true;
+    observed.intermediateRuntime=Object.fromEntries(['old599ActiveAfterSql','nextRefusedBeforeActivation','pendingBothRefused','nextActiveAfterCompletion','old599RefusedAfterCompletion','wholeHistoryAndDocumentsPreserved','quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking'].map(key=>[key,true]));
+    // Public schema expressions only, reused as SYNTHETIC protocol data.
+    // Their old76-source qualification is never a qualification of this77-source receipt.
+    const schema=await import('./verify-account-erasure-schema.mjs');
+    const checkReference=schema.accountErasureCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor:16,
+      definitions:[["account_erasure_operations_auth_attempt_ids_check", "CHECK (((COALESCE(array_ndims(auth_attempt_ids), 1) = 1) AND (COALESCE(array_lower(auth_attempt_ids, 1), 1) = 1) AND (array_position(auth_attempt_ids, NULL::uuid) IS NULL) AND (NOT ('00000000-0000-0000-0000-000000000000'::uuid = ANY (auth_attempt_ids)))))"], ["account_erasure_operations_auth_user_created_at_check", "CHECK (((auth_user_created_at IS NULL) OR (auth_user_created_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$'::text)))"], ["account_erasure_operations_check", "CHECK ((target_user_id <> requested_by))"], ["account_erasure_operations_check1", "CHECK (((activity_first IS NULL) = (activity_last IS NULL)))"], ["account_erasure_operations_check10", "CHECK (((auth_user_created_at IS NOT NULL) = (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check11", "CHECK (((state <> 'AUTH_ATTEMPTED'::text) OR (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check12", "CHECK (((auth_claimed_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND isfinite(auth_claimed_at) AND (auth_claimed_at >= pg_staged_at))))"], ["account_erasure_operations_check13", "CHECK (((state = ANY (ARRAY['AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (auth_absent_at IS NOT NULL)))"], ["account_erasure_operations_check14", "CHECK (((auth_absent_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND (d1_owner_subject IS NOT NULL) AND isfinite(auth_absent_at) AND (auth_absent_at >= COALESCE(auth_claimed_at, pg_staged_at)))))"], ["account_erasure_operations_check15", "CHECK (((state = 'COMPLETE'::text) = (d1_ack_at IS NOT NULL)))"], ["account_erasure_operations_check16", "CHECK (((d1_ack_at IS NOT NULL) = (d1_deleted_count IS NOT NULL)))"], ["account_erasure_operations_check17", "CHECK (((d1_ack_at IS NULL) OR (isfinite(d1_ack_at) AND (d1_ack_at >= auth_absent_at))))"], ["account_erasure_operations_check18", "CHECK (((auth_attempt_id IS NULL) OR ((pg_staged_at IS NOT NULL) AND (d1_owner_subject IS NOT NULL))))"], ["account_erasure_operations_check2", "CHECK (((activity_first IS NULL) OR (isfinite(activity_first) AND isfinite(activity_last) AND (activity_first <= activity_last))))"], ["account_erasure_operations_check3", "CHECK ((isfinite(prepared_at) AND isfinite(updated_at) AND (prepared_at <= updated_at)))"], ["account_erasure_operations_check4", "CHECK (((state = ANY (ARRAY['PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (pg_staged_at IS NOT NULL)))"], ["account_erasure_operations_check5", "CHECK (((pg_staged_at IS NULL) OR (isfinite(pg_staged_at) AND (pg_staged_at >= prepared_at))))"], ["account_erasure_operations_check6", "CHECK (((state <> ALL (ARRAY['HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text])) OR (hold_reason IS NOT NULL)))"], ["account_erasure_operations_check7", "CHECK (((state <> ALL (ARRAY['PREPARED'::text, 'COMPLETE'::text])) OR (hold_reason IS NULL)))"], ["account_erasure_operations_check8", "CHECK (((pg_staged_at IS NOT NULL) OR (pg_rows_removed = 0)))"], ["account_erasure_operations_check9", "CHECK ((NOT (auth_attempt_id IS DISTINCT FROM auth_attempt_ids[cardinality(auth_attempt_ids)])))"], ["account_erasure_operations_d1_deleted_count_check", "CHECK (((d1_deleted_count >= 0) AND (d1_deleted_count <= '9007199254740991'::bigint)))"], ["account_erasure_operations_d1_owner_subject_check", "CHECK (((d1_owner_subject IS NULL) OR (d1_owner_subject ~ '^usr_v1_[A-Za-z0-9_-]{43}$'::text)))"], ["account_erasure_operations_hold_reason_check", "CHECK ((hold_reason = ANY (ARRAY['ACTIVITY_CHANGED'::text, 'PRIVILEGED_TARGET'::text, 'REFERENCE_POLICY'::text, 'REFERENCE_CATALOG_UNKNOWN'::text, 'TARGET_MISSING'::text, 'STORAGE_CATALOG_UNKNOWN'::text, 'STORAGE_POLICY_UNQUALIFIED'::text, 'STORAGE_OWNERSHIP'::text, 'AUTH_GENERATION_CHANGED'::text])))"], ["account_erasure_operations_mode_check", "CHECK ((mode = 'MANUAL_OWNER'::text))"], ["account_erasure_operations_operation_id_check", "CHECK ((operation_id <> '00000000-0000-0000-0000-000000000000'::uuid))"], ["account_erasure_operations_pg_rows_removed_check", "CHECK (((pg_rows_removed >= 0) AND (pg_rows_removed <= '9007199254740991'::bigint)))"], ["account_erasure_operations_state_check", "CHECK ((state = ANY (ARRAY['PREPARED'::text, 'HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text, 'PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])))"]]});
+    const sourceSqlFileCount=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).length;
+    assert.equal(sourceSqlFileCount,77,'Actual current source inventory, never a77 flag on76 files');
+    const accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
+      migrationVersion:'20261116181500',migrationSQLSha256:schema.readAccountErasureSource().sha256,sourceSqlFileCount,
+      passed:true,cases:49,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+      serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
+      authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,postPgStorageClaimHeld:true,
+      observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,serializableNoLateCommit:true,
+      actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
+    const report={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,normalModelPartCount:673,
+      postgresMajorVersion:16,nativeProgramIdentity:runtime.selectedPrograms,assistantAfter599Successor:observed,accountErasure};
+    assert.deepEqual(await native.assistantAfter599NativeReportProjection(report,{selectedPrograms:runtime.selectedPrograms}),report);
+    const collector=native.assistantAfter599NativeReportCollector({selectedPrograms:runtime.selectedPrograms});collector.write(JSON.stringify(report)+'\n');
+    assert.deepEqual(await collector.finish(),report);
+    const receipt={schemaVersion:1,kind:native.ASSISTANT_AFTER599_PHASE_KIND,phase:'ASSISTANT_AFTER599_SUCCESSOR',
+      sourcePhase:native.ASSISTANT_AFTER599_PHASE,releaseVersion:source.requireAssistantAfter599Release(),binding,output:source.requireAssistantAfter599Output(),
+      databaseBefore:{...source.ASSISTANT_AFTER599_BEFORE,version:source.ASSISTANT_AFTER599_DATABASE_LEDGER.maximumVersion},
+      current:installed594Receipt().current,commands:[...native.ASSISTANT_AFTER599_COMMANDS],status:'EXECUTED',executedInThisRun:true,
+      origin:null,eligibleForReuse:false,runtime,report};
+    assert.equal(await native.verifyAssistantAfter599PhaseReceipt(receipt,receipt.current),receipt);
+    // Exercise the complete raw normal consumer, including its real package,
+    // workflow, command and current77-file native validators. Transport is DATA.
+    const normal=await import('./national584-source-evidence.mjs');
+    const caller=await fs.readFile('scripts/national584-source-evidence.mjs','utf8');
+    const begin=caller.indexOf('async function currentContext() {'),end=caller.indexOf('async function authenticatedReuse(ctx) {',begin);
+    assert(begin>=0&&end>begin);
+    const currentContextSource=caller.slice(begin,end).trim();
+    const packageData=JSON.parse(await fs.readFile('package.json','utf8'));
+    const workflow=await fs.readFile(normal.WORKFLOW,'utf8');
+    const path=await import('node:path'),root=path.resolve('synthetic-national-consumer');
+    const contentHash='sha256:'+'c'.repeat(64),context=receipt.current;
+    const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:normal.ORIGIN.repository,
+      SOURCE_GATE_HEAD_SHA:context.head,GITHUB_EVENT_PATH:'synthetic-event.json',GITHUB_RUN_ID:String(context.run),
+      GITHUB_RUN_ATTEMPT:String(context.attempt),PULL_REQUEST_NUMBER:String(context.pullRequest)};
+    const event={pull_request:{number:context.pullRequest,head:{sha:context.head,ref:context.branch,repo:{full_name:normal.ORIGIN.repository}}}};
+    const proof={headSha:context.head,repository:normal.ORIGIN.repository,contractId:'weather-source-gate-content-v2',
+      privatePayloadIncluded:false,sourceTreeSha256:contentHash,nativePostgres:receipt};
+    const runContext=async(value=proof,phase=source.ACTIVE_ASSISTANT_SUCCESSOR)=>{
+      const calls=[];
+      const dependencies={assert,path,ROOT:root,WORKFLOW:normal.WORKFLOW,ORIGIN:normal.ORIGIN,ACTIVE:phase,
+        process:{env},fs:{async readFile(file){
+          if(file===env.GITHUB_EVENT_PATH)return JSON.stringify(event);
+          if(file===path.join(root,normal.WORKFLOW))return workflow;
+          if(file===path.join(root,'package.json'))return JSON.stringify(packageData);
+          assert.equal(file,path.join(root,'.cache/source-tree-content-proof.json'));return JSON.stringify(value);
+        }},git(...args){
+          if(args[0]==='rev-parse'){assert.deepEqual(args,['rev-parse','HEAD^{commit}']);return context.head;}
+          if(args[0]==='status'){assert.deepEqual(args,['status','--porcelain','--untracked-files=no']);return '';}
+          assert.deepEqual(args,['merge-base','--is-ancestor',normal.ORIGIN.head,context.head]);return '';
+        },content(ref){assert.equal(ref,'HEAD');return contentHash;},verifyWorkflow:normal.verifyWorkflow,verifyPackage:normal.verifyPackage,
+        ASSISTANT_AFTER599_PHASE:native.ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE:native.ASSISTANT_AFTER598_PHASE,
+        ASSISTANT_AFTER597_PHASE:native.ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE:native.SCALAR597_LATER_H0_PHASE,
+        ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE:source.ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
+        requireAssistantAfter599Release:source.requireAssistantAfter599Release,
+        requireAssistantAfter598Release:source.requireAssistantAfter598Release,
+        async verifyAssistantAfter599NativeContext(...args){calls.push('after599');return normal.verifyAssistantAfter599NativeContext(...args);},
+        verifyAssistantAfter598NativeContext:normal.verifyAssistantAfter598NativeContext,
+        verifyAssistantAfter597NativeContext:normal.verifyAssistantAfter597NativeContext,
+        verifyScalar597LaterH0NativeContext:normal.verifyScalar597LaterH0NativeContext,
+        verifyInstalled593Original591NativeContext:normal.verifyInstalled593Original591NativeContext,
+        verifyAssistantPublic591SuccessorNativeContext:normal.verifyAssistantPublic591SuccessorNativeContext,
+        verifyAssistantPublic590SuccessorNativeContext:normal.verifyAssistantPublic590SuccessorNativeContext,
+        verifyAssistantPublic588SuccessorNativeContext:normal.verifyAssistantPublic588SuccessorNativeContext,
+        verifyCurrent586PhaseReceipt:native.verifyCurrent586PhaseReceipt,
+        verifyAssistantLaterH0PhaseReceipt:native.verifyAssistantLaterH0PhaseReceipt,
+        verifyAssistantPublic587SuccessorPhaseReceipt:native.verifyAssistantPublic587SuccessorPhaseReceipt,
+        verifyCurrentNativeCommands:normal.verifyCurrentNativeCommands};
+      const execute=Function(...Object.keys(dependencies),'return ('+currentContextSource+');')(...Object.values(dependencies));
+      const result=await execute();assert.deepEqual(calls,['after599']);return result;
+    };
+    const accepted=await runContext();assert.deepEqual(accepted.proof,proof);assert.equal(accepted.head,context.head);
+    for(const mutate of [p=>p.nativePostgres.phase='ASSISTANT_PUBLIC587_SUCCESSOR',p=>p.nativePostgres.current.head='d'.repeat(40),
+      p=>p.nativePostgres.commands=[...native.ASSISTANT_AFTER598_COMMANDS],p=>delete p.nativePostgres.report.accountErasure,
+      p=>p.nativePostgres.report.accountErasure.sourceSqlFileCount=76,p=>p.sourceTreeSha256='sha256:'+'d'.repeat(64),
+      p=>p.historical584National={status:'EXECUTED'}]){
+      const changed=copy(proof);mutate(changed);await assert.rejects(runContext(changed));
+    }
+    await assert.rejects(runContext(proof,{sourcePhase:'unknown-current-phase'}));
+    for(const mutate of [r=>delete r.accountErasure,r=>r.accountErasure=undefined,
+      r=>r.accountErasure.sourceSqlFileCount=76,r=>r.accountErasure.sourceSqlFileCount=75,
+      r=>r.accountErasure.migrationVersion='20261115060000',r=>r.accountErasure.migrationSQLSha256='0'.repeat(64),
+      r=>r.accountErasure.cases=48,r=>r.accountErasure.checkReference.definitions.pop(),
+      r=>r.accountErasure.checkReference.definitionsSha256='0'.repeat(64),r=>r.accountErasure.checkExpressionDriftRefused=false]){
+      const changed=copy(receipt);mutate(changed.report);
+      await assert.rejects(native.assistantAfter599NativeReportProjection(changed.report,{selectedPrograms:runtime.selectedPrograms}));
+      await assert.rejects(native.verifyAssistantAfter599PhaseReceipt(changed,changed.current));
+    }
+
+    for(const mutate of [r=>delete r.ledgerFixture,r=>r.allHistoricalMigrationsExecuted=true,r=>r.productionInstalledHistoryEvidence=true,
+      r=>r.ledgerFixture.priorFixtureVersions.shift(),r=>r.ledgerFixture.wholeExecutedMigrationVersions.push(r.ledgerFixture.priorFixtureVersions.shift()),
+      r=>r.ledgerFixture.wholeExecutedMigrationVersions.pop(),r=>r.ledgerFixture.sourceInventorySha256='0'.repeat(64),
+      r=>r.ledgerFixture.extra=true,r=>r.beforeGuardCases=12,r=>r.app600InstalledInCheckpointDatabase=false,r=>r.app600CatalogPreserved=false]){
+      const changed=copy(report);mutate(changed.assistantAfter599Successor);
+      await assert.rejects(native.assistantAfter599NativeReportProjection(changed,{selectedPrograms:runtime.selectedPrograms}));
+    }
+    // The original V1 is an immutable fact, not rewritten as a reused run.
+    const {execFileSync}=await import('node:child_process');
+    const actualHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+    const parentHead=execFileSync('git',['rev-parse','HEAD^'],{encoding:'utf8'}).trim();
+    const actualInput=await native.captureAssistantAfter599PgInput();
+    assert.equal(actualInput.sqlFiles,77);assert.equal(actualInput.complete,true);
+    const currentReuse={run:ORIGIN.run+900,attempt:1,head:actualHead,pullRequest:947,branch:'synthetic-after599-same-pr'};
+    const originRun={...copy(run),id:ORIGIN.run+800,run_attempt:1,head_sha:parentHead,head_branch:currentReuse.branch,
+      repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},pull_requests:[{number:947}],
+      created_at:'2026-11-17T10:00:00Z',status:'completed',conclusion:'failure'};
+    const currentRun={...copy(originRun),id:currentReuse.run,head_sha:actualHead,created_at:'2026-11-17T12:00:00Z',status:'in_progress',conclusion:null};
+    const originalReceipt={...copy(receipt),current:{run:originRun.id,attempt:1,head:parentHead,pullRequest:947,branch:currentReuse.branch}};
+    const originalBytes=JSON.stringify(originalReceipt);
+    const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false}={})=>{
+      const zip=Buffer.from('bounded after599 synthetic ZIP'),calls=[],origin=copy(originRun),active=copy(currentRun);
+      const laterRun={...copy(origin),id:origin.id+1,head_sha:unrelatedLater?'c'.repeat(40):actualHead};
+      const jobsFor=r=>({total_count:1,jobs:[{id:r.id+1000,name:JOB,run_id:r.id,run_attempt:1,head_sha:r.head_sha,
+        status:'completed',conclusion:'failure',steps:Array.from({length:17},(_,i)=>({number:i+1,
+          name:i===14?'Validate source contracts and release governance':i===15?STEP:i===16?CURRENT586_PHASE_UPLOAD:'setup'+i,
+          status:'completed',conclusion:'success',started_at:'2026-11-17T10:00:00Z',
+          completed_at:i<15?'2026-11-17T10:00:00Z':'2026-11-17T10:02:00Z'}))}]});
+      const metadata=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,size_in_bytes:zip.length,
+        digest:'sha256:'+v2Hash(zip),created_at:'2026-11-17T10:01:00Z',workflow_run:{id:r.id,head_sha:r.head_sha}});
+      const rows=[active,...(locator||later||unrelatedLater?[laterRun]:[]),origin];let decoding=origin,pullReads=0;
+      const proofFor=r=>({schemaVersion:r.id===laterRun.id&&locator?2:1,kind:r.id===laterRun.id&&locator?native.ASSISTANT_AFTER599_REUSE_KIND:native.ASSISTANT_AFTER599_PHASE_KIND,
+        repository:ORIGIN.repository,headSha:r.head_sha,sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,
+        nativePostgres:r.id===laterRun.id&&locator?{...copy(locator),current:{...currentReuse,run:r.id}}:copy(originalReceipt)});
+      const get=async(route,options={})=>{
+        calls.push(route);if(mutate.unavailable)throw Error('SYNTHETIC_UNAVAILABLE');
+        if(route.endsWith('/pulls/947')){pullReads++;return {number:947,state:'open',draft:false,base:{ref:'main',repo:{full_name:ORIGIN.repository}},
+          head:{sha:mutate.prHead?'f'.repeat(40):mutate.originPrHead&&pullReads>1?normal.ORIGIN.head:actualHead,ref:currentReuse.branch,repo:{full_name:ORIGIN.repository}}};}
+        if(route.includes('/workflows/'))return {total_count:rows.length,workflow_runs:copy(rows)};
+        for(const r of rows){
+          if(route.endsWith('/runs/'+r.id))return {...copy(r),...(mutate.attempt&&r.id===origin.id?{run_attempt:2}:{})};
+          if(route.includes('/runs/'+r.id+'/attempts/1/jobs')){
+            const value=jobsFor(r);if((mutate.pgFailure&&r.id===origin.id)||((later||unrelatedLater)&&!locator&&r.id===laterRun.id))value.jobs[0].steps[15].conclusion='failure';
+            if(mutate.sourceFailure&&r.id===origin.id)value.jobs[0].steps[14].conclusion='failure';
+            if(mutate.uploadFailure&&r.id===origin.id)value.jobs[0].steps[16].conclusion='failure';return value;
+          }
+          if(route.endsWith('/runs/'+r.id+'/artifacts?per_page=100'))return {total_count:1,artifacts:[{...metadata(r),...(mutate.expired?{expired:true}:{})}]};
+          if(route.endsWith('/artifacts/'+(r.id+2000)+'/zip')){decoding=r;return mutate.zip?Buffer.from('wrong'):zip;}
+          if(route.endsWith('/artifacts/'+(r.id+2000)))return {...metadata(r),...(mutate.finalArtifact?{expired:true}:{})};
+        }
+        throw Error('UNEXPECTED_SYNTHETIC_ROUTE');
+      };
+      let inputCalls=0,runtimeCalls=0;
+      const options={env:{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:ORIGIN.repository,GITHUB_RUN_ATTEMPT:'1',
+        SOURCE_GATE_HEAD_SHA:actualHead,GITHUB_RUN_ID:String(currentReuse.run),PULL_REQUEST_NUMBER:'947',GITHUB_HEAD_REF:currentReuse.branch},
+        get,getInput:async({ref='HEAD'}={})=>{
+          inputCalls++;const result=copy(actualInput);
+          if((mutate.input&&ref===parentHead)||(mutate.freshInput&&inputCalls>2))result.inputSha256='f'.repeat(64);
+          if(mutate.sql79&&ref===parentHead||unrelatedLater&&ref===laterRun.head_sha){result.sqlFiles=79;result.inputSha256='d'.repeat(64);}return result;
+        },getRuntime:async()=>{runtimeCalls++;return {...v2Runtime(),...(mutate.runtime||mutate.freshRuntime&&runtimeCalls>1?{imageVersion:'20261117.999'}:{})};},
+        readGit:args=>{
+          if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return actualHead+'\n';
+          if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
+          if(args[0]==='status'||args[0]==='for-each-ref')return '';
+          if(args[0]==='ls-tree'||args[0]==='cat-file'&&args[1]==='blob')return execFileSync('git',args);
+          return execFileSync('git',args,{encoding:'utf8'});
+        },decode:()=>{const proof=proofFor(decoding);if(mutate.receipt)mutate.receipt(proof.nativePostgres);return Buffer.from(JSON.stringify(proof));}};
+      return {options,calls};
+    };
+    const positive=makeAfter599Fixture();
+    const reused=await native.decideAssistantAfter599Reuse(positive.options);
+    assert(reused,'The genuine after599 V1 phase survives its later national failure');
+    assert.equal(reused.kind,native.ASSISTANT_AFTER599_REUSE_KIND);assert.equal(reused.status,'REUSED');
+    assert.equal(reused.executedInThisRun,false);assert.equal(reused.origin.run,originRun.id);assert.equal(reused.origin.head,parentHead);
+    assert.equal(reused.eligibleForReuse,false);assert.equal(JSON.stringify(originalReceipt),originalBytes);
+    assert.equal(await native.verifyAssistantAfter599PhaseReceipt(reused,currentReuse),reused);
+    const claims=await normal.assistantAfter599NativeClaims(reused,currentReuse);
+    assert.equal(claims.currentAssistantAfter599Native.status,'REUSED');assert.equal(claims.currentAssistantAfter599Native.executedInThisRun,false);
+    const located=await native.decideAssistantAfter599Reuse(makeAfter599Fixture({locator:reused}).options);
+    assert(located);assert.equal(located.origin.run,originRun.id,'A reused locator is never a SQL origin');
+    for(const key of ['unavailable','prHead','originPrHead','attempt','pgFailure','sourceFailure','uploadFailure','expired','zip','finalArtifact','input','sql79','freshInput','runtime','freshRuntime']){
+      const f=makeAfter599Fixture({mutate:{[key]:true}});assert.equal(await native.decideAssistantAfter599Reuse(f.options),null,key);
+    }
+    assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({later:true}).options),null,'Later relevant native failure executes normally');
+    const unrelated=await native.decideAssistantAfter599Reuse(makeAfter599Fixture({unrelatedLater:true}).options);
+    assert(unrelated,'A proved different79-SQL failure cannot invalidate the unchanged77-SQL phase');
+    let clock=0;const clockMock=t.mock.method(performance,'now',()=>clock);
+    try{const late=makeAfter599Fixture(),transport=late.options.get;
+      late.options.get=async(...args)=>{const value=await transport(...args);clock=60001;return value;};
+      assert.equal(await native.decideAssistantAfter599Reuse(late.options),null,'Expired qualification never grants reuse');
+    }finally{clockMock.mock.restore();}
+    for(const mutate of [r=>r.eligibleForReuse=true,r=>r.status='REUSED',r=>r.executedInThisRun=false,
+      r=>r.report.assistantAfter599Successor.sqlExecuted=false,r=>r.report.accountErasure.sourceSqlFileCount=76,
+      r=>r.report.accountErasure.cases=48,r=>r.report.accountErasure.checkReference.definitions.pop()]){
+      assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({mutate:{receipt:mutate}}).options),null);
+    }
+    // The actual ESM CLI, main, reuse-return and record bodies run unchanged.
+    // Only the already qualified decision and file transport are synthetic.
+    const os=await import('node:os'),{pathToFileURL}=await import('node:url');
+    const nativeSource=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+    const executeStart=nativeSource.indexOf('export async function executeAssistantAfter599Native(){');
+    const recordStart=nativeSource.indexOf('async function record(receipt) {',executeStart);
+    const mainStart=nativeSource.indexOf('async function main() {',recordStart);
+    const entryStart=nativeSource.lastIndexOf('if(process.argv[1]');
+    assert(executeStart>=0&&recordStart>executeStart&&mainStart>recordStart&&entryStart>mainStart);
+    const owned=await fs.mkdtemp(path.join(os.tmpdir(),'rr-after599-reuse-cli-'));
+    try{
+      const entry=path.join(owned,'normal-entry.mjs');
+      const nativeDriverNames=["CURRENT586_PHASE_FILE","ASSISTANT_AFTER599_PHASE","ASSISTANT_AFTER598_PHASE","ASSISTANT_AFTER597_PHASE","SCALAR597_LATER_H0_PHASE","ASSISTANT_AFTER599_PHASE_KIND","ASSISTANT_AFTER598_PHASE_KIND","ASSISTANT_AFTER597_PHASE_KIND","SCALAR597_LATER_H0_PHASE_KIND","INSTALLED593_ORIGINAL591_V2_KIND","INSTALLED593_ORIGINAL591_PHASE_KIND","CURRENT586_PHASE_KIND","ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND","ASSISTANT_LATER_H0_PHASE_KIND","ACTIVE_NATIVE_SCRIPT","ACTIVE_COMMANDS","ASSISTANT_AFTER599_SCRIPT","executeAssistantAfter598Native","executeAssistantAfter597Native","captureInstalled593Original591Input","captureAssistantPublic591Input","verifyInstalled593Original591Input","verifyAssistantPublic591Input","verifyInstalled593Original591V2PhaseReceipt","verifyAssistantPublic591V2PhaseReceipt","decideInstalled593Original591Reuse","decideAssistantPublic591Reuse","completeInstalled593Original591Execution","assistantPublic591Runtime","verifyAssistantPublic591Runtime","assistantAfter599NativeReportCollector","verifyAssistantAfter599PhaseReceipt","verifyAssistantAfter598PhaseReceipt","verifyAssistantAfter597PhaseReceipt","verifyScalar597LaterH0PhaseReceipt","verifyInstalled593Original591PhaseReceipt","verifyCurrent586PhaseReceipt","verifyAssistantPublic591SuccessorPhaseReceipt","verifyAssistantPublic590SuccessorPhaseReceipt","verifyAssistantPublic588SuccessorPhaseReceipt","verifyAssistantPublic587SuccessorPhaseReceipt","verifyAssistantLaterH0PhaseReceipt"];
+      const sourceDriverNames=["requireInstalled593Original591Release","requireInstalled593Original591Binding","requireInstalled593Original591Output","INSTALLED593_ORIGINAL591_DATABASE_BEFORE","requireAssistantPublic591SuccessorRelease","requireAssistantPublic590SuccessorRelease","requireAssistantPublic588SuccessorRelease","requireAssistantPublic587SuccessorRelease","requireAssistantLaterH0Release"];
+      for(const name of nativeDriverNames)assert(Object.hasOwn(native,name),'Actual native export '+name);
+      for(const name of sourceDriverNames)assert(Object.hasOwn(source,name),'Actual source export '+name);
+      const driver=`import assert from 'node:assert/strict';import path from 'node:path';import {fileURLToPath} from 'node:url';
+const native=await import(${JSON.stringify(pathToFileURL(path.resolve('scripts/native-postgres-evidence.mjs')).href)});
+const source=await import(${JSON.stringify(pathToFileURL(path.resolve('scripts/lib/assistant-later-h0-successor-source.mjs')).href)});
+const ORIGIN=native.ORIGIN,ACTIVE=source.ACTIVE_ASSISTANT_SUCCESSOR;
+const {${nativeDriverNames.join(',')}}=native;
+const {${sourceDriverNames.join(',')}}=source;
+const unselectedSql=()=>{throw Error('SYNTHETIC_CLI_UNSELECTED_SQL_BRANCH');};
+const assistantAfter599PhaseIdentity=unselectedSql,accountErasureSourceIdentity=unselectedSql,executeMarkedNative=unselectedSql,
+installed593Original591LocalProof=unselectedSql,assistantPublic591LocalProof=unselectedSql,
+executeAssistantPublic591Native=unselectedSql,executeScalar597LaterH0=unselectedSql,spawnSync=unselectedSql;
+const receipt=${JSON.stringify(reused)},writes=[];let decisions=0;
+const proof={headSha:receipt.current.head,repository:ORIGIN.repository,contractId:'weather-source-gate-content-v2',privatePayloadIncluded:false,sourceTreeSha256:'sha256:'+'e'.repeat(64)};
+const fs={async readFile(file){assert.equal(file,'.cache/source-tree-content-proof.json');return JSON.stringify(proof);},async writeFile(file,text,options){writes.push({file,value:JSON.parse(text),options});}};
+const git=args=>{assert.deepEqual(args,['rev-parse','HEAD^{commit}']);return receipt.current.head;};
+const assertCurrentAccountErasureNativeReport=async report=>{assert.deepEqual(await native.assistantAfter599NativeReportProjection(report,{selectedPrograms:receipt.runtime.selectedPrograms}),report);};
+async function decideAssistantAfter599Reuse(){assert.equal(process.env.RAVRADAR_SOURCE_NODE24,undefined);decisions++;return receipt;}
+${nativeSource.slice(executeStart,recordStart).replace(/^export /,'')}
+${nativeSource.slice(recordStart,mainStart)}
+${nativeSource.slice(mainStart,entryStart)}
+${nativeSource.slice(entryStart)}
+assert.equal(decisions,1);assert.equal(writes.length,2);const phase=writes.find(row=>row.file===CURRENT586_PHASE_FILE);
+assert.equal(phase.value.schemaVersion,2);assert.equal(phase.value.kind,native.ASSISTANT_AFTER599_REUSE_KIND);
+assert.equal(phase.value.nativePostgres.status,'REUSED');assert.equal(phase.value.nativePostgres.executedInThisRun,false);
+console.log(JSON.stringify({scope:'SYNTHETIC_NORMAL_CLI_WIRING',decisions,writes:writes.length,sqlExecuted:false}));`;
+      await fs.writeFile(entry,driver);
+      const stdout=execFileSync(process.execPath,[entry],{encoding:'utf8',timeout:65000,maxBuffer:32768,
+        env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,GITHUB_RUN_ID:String(currentReuse.run),GITHUB_RUN_ATTEMPT:'1',
+          PULL_REQUEST_NUMBER:String(currentReuse.pullRequest),GITHUB_HEAD_REF:currentReuse.branch,RAVRADAR_SOURCE_NODE24:'synthetic-earlier-sdk-hint'}});
+      assert.deepEqual(JSON.parse(stdout),{scope:'SYNTHETIC_NORMAL_CLI_WIRING',decisions:1,writes:2,sqlExecuted:false});
+    }finally{await fs.rm(owned,{recursive:true,force:true});}
+    t.diagnostic('Typed DATA fixture only; no PostgreSQL, full historical installation or production receipt claimed.');
+  });
+}

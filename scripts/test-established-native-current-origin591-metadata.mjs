@@ -3,10 +3,10 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {withAuthenticated591PredecessorSource,withSource594CodeParent,withSource597CodeParent,withSource598CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated591PredecessorSource,withSource594CodeParent,withSource597CodeParent,withSource598CodeParent,withSource599CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,
-  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597,INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as AFTER598} from './lib/assistant-later-h0-successor-source.mjs';
+  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597,INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as AFTER598,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR as AFTER599} from './lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen591LaterOriginMetadata} from './lib/established-native-current-origin.mjs';
 import {assertAssistantOriginalRuntimeContracts} from './assistant-later-h0-runtime-transition.mjs';
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
@@ -21,12 +21,23 @@ await withAuthenticated591PredecessorSource(async root=>{
   const descriptor={contractHashes:originalContracts};
   const checkpoint={modelBinding:originalI,candidateGRollbackCompanion:{modelBinding:originalC}};
   const currentContracts=await privateRuntimeContractHashes();
-  if ([SCALAR,AFTER597,AFTER598].includes(ACTIVE)) {
+  if ([SCALAR,AFTER597,AFTER598,AFTER599].includes(ACTIVE)) {
     await withSource594CodeParent(async root594 => {
       const original594 = await import(pathToFileURL(path.join(root594,'scripts/private-production-runtime-workflow.mjs')).href);
       const frozen594Contracts = await original594.privateRuntimeContractHashes({repositoryRoot:root594});
       assert.equal(assertFrozen591CompactRuntimeContracts(originalContracts,frozen594Contracts),true);
-      if(ACTIVE===AFTER598){
+      if(ACTIVE===AFTER599){
+        await withSource599CodeParent(async root599=>{
+          const original599=await import(pathToFileURL(path.join(root599,'scripts/private-production-runtime-workflow.mjs')).href);
+          const frozen599Contracts=await original599.privateRuntimeContractHashes({repositoryRoot:root599});
+          assert.equal(frozen599Contracts.continuationStateContractSha256,AFTER598.requireBinding().T);
+          assert.equal(ACTIVE.before.T,frozen599Contracts.continuationStateContractSha256);
+          assert.deepEqual({...frozen594Contracts,continuationStateContractSha256:frozen599Contracts.continuationStateContractSha256},frozen599Contracts,
+            'Whole genuine594/599 persisted ABI retains the old599 metadata transition');
+          assert.notEqual(currentContracts.continuationStateContractSha256,frozen599Contracts.continuationStateContractSha256);
+          assert.equal(assertAssistantOriginalRuntimeContracts(frozen599Contracts,currentContracts),true);
+        });
+      }else if(ACTIVE===AFTER598){
         await withSource598CodeParent(async root598=>{
           const original598=await import(pathToFileURL(path.join(root598,'scripts/private-production-runtime-workflow.mjs')).href);
           const frozen598Contracts=await original598.privateRuntimeContractHashes({repositoryRoot:root598});

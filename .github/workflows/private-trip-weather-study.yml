@@ -1,6 +1,8 @@
 name: Private RavRadar trip weather study
 
 on:
+  schedule:
+    - cron: '47 6 1 * *'
   workflow_dispatch:
     inputs:
       operation:
@@ -61,9 +63,11 @@ jobs:
   validate-operation:
     runs-on: ubuntu-latest
     env:
-      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}
+      PRIVATE_STUDY_OPERATION: ${{ github.event_name == 'schedule' && 'export' || inputs.operation }}
+      PRIVATE_STUDY_EVENT_NAME: ${{ github.event_name }}
+      PRIVATE_STUDY_EVENT_SCHEDULE: ${{ github.event.schedule || '' }}
       PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}
-      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}
+      PRIVATE_STUDY_EXPORT_MODE: ${{ github.event_name == 'schedule' && 'ordinary' || inputs.export_mode }}
       PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}
       PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}
       PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}
@@ -71,6 +75,12 @@ jobs:
       - name: Validate fixed private study operation
         shell: bash
         run: |
+          if [[ "$PRIVATE_STUDY_EVENT_NAME" == schedule ]]; then
+            test "$PRIVATE_STUDY_EVENT_SCHEDULE" = '47 6 1 * *'
+            test "$PRIVATE_STUDY_OPERATION" = export
+            test "${PRIVATE_STUDY_EXPORT_MODE:-ordinary}" = ordinary
+            test -z "$PRIVATE_STUDY_ENABLE_CONFIRMATION$PRIVATE_STUDY_FROZEN_MONTH$PRIVATE_STUDY_FROZEN_BINDING_SHA256$PRIVATE_STUDY_FROZEN_REPORT_SHA256"
+          fi
           case "$PRIVATE_STUDY_OPERATION" in
             plan|deliver|export) ;;
             enable) test "$PRIVATE_STUDY_ENABLE_CONFIRMATION" = ENABLE_PRIVATE_UNISSUED_STUDY_ONLY ;;
@@ -134,7 +144,7 @@ jobs:
 
   private-study-export:
     needs: validate-operation
-    if: ${{ inputs.operation == 'export' }}
+    if: ${{ inputs.operation == 'export' || github.event_name == 'schedule' }}
     concurrency:
       group: ravradar-trip-storage-production
       cancel-in-progress: false
@@ -144,7 +154,12 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ github.token }}
       TRIP_STORAGE_OPERATION: private-study-export
-      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ github.event_name == 'schedule' && secrets.CLOUDFLARE_API_TOKEN || '' }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      PRIVATE_STUDY_EVENT_SCHEDULE: ${{ github.event.schedule || '' }}
+      PRIVATE_STUDY_EXPORT_MODE: ${{ github.event_name == 'schedule' && 'ordinary' || inputs.export_mode }}
       PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}
       PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}
       PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}

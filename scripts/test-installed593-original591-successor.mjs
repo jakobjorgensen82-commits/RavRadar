@@ -7,7 +7,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withSource594CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as HISTORICAL,
   INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597,
-  INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as AFTER598,
+  INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as AFTER598,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR as AFTER599,
   ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as DB593,
   ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT as OUTPUT593,ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE as ORIGINAL591,
   readAssistantPublic591SuccessorCanonicalSource,readInstalled593Original591CanonicalSource}
@@ -19,13 +19,13 @@ import {installed593Original591RequiredMigrations,assistantPublic591SuccessorReq
   prepareTemporarySupabaseCutoverWorkdir} from './integrated-cutover-readiness.mjs';
 import {assertAssistantBindingPrewriteCaller} from './assistant-later-h0-binding-prewrite.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-assert([HISTORICAL,SCALAR,AFTER597,AFTER598].includes(ACTIVE));
+assert([HISTORICAL,SCALAR,AFTER597,AFTER598,AFTER599].includes(ACTIVE));
 assert.equal(HISTORICAL.sourcePhase,'assistant-installed593-origin591-successor');
 assert.equal(HISTORICAL.requireRelease(),'4.0.594');
 assert.deepEqual(HISTORICAL.before,ORIGINAL591);
 assert.deepEqual(HISTORICAL.databaseBefore,{...DB593,canonicalSha256:OUTPUT593.canonicalSha256});
 const current=HISTORICAL.requireBinding(),output=HISTORICAL.requireOutput(),migration=HISTORICAL.migration();
-const laterThan594=[SCALAR,AFTER597,AFTER598].includes(ACTIVE);
+const laterThan594=[SCALAR,AFTER597,AFTER598,AFTER599].includes(ACTIVE);
 const result=laterThan594?await withSource594CodeParent(async frozen=>{
   const historical=await import(pathToFileURL(path.join(frozen,'scripts/build-assistant-later-h0-successor.mjs')).href);
   return historical.buildInstalled593Original591BindingSuccessor({version:current.version});
@@ -74,6 +74,19 @@ const previous=Object.fromEntries(Object.keys(env).map(key=>[key,process.env[key
 try{Object.assign(process.env,env);assert.deepEqual(assertAssistantBindingPrewriteCaller(),ACTIVE.requireBinding());
   process.env.GITHUB_RUN_ATTEMPT='2';assert.throws(()=>assertAssistantBindingPrewriteCaller());
 }finally{for(const key of Object.keys(env))if(previous[key]===undefined)delete process.env[key];else process.env[key]=previous[key];}
+if(ACTIVE===AFTER599){
+  // Runtime transition authority is separate from the unchanged SQL-prewrite caller above.
+  const caller={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',
+    GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ATTEMPT:'1',OPERATIONAL_ACTION:'integrated-historical-maintenance'};
+  for(const name of ['Run current RavRadar weather once','Update weather and deploy RavRadar']){
+    const normal={...caller,GITHUB_WORKFLOW:name};
+    assert.doesNotThrow(()=>ACTIVE.assertCaller(normal));
+    for(const key of ['CHECKPOINT_ONLY','COMPLETED_PRIVATE_RUNTIME','PUBLISH_NEWEST_SAVED_WEATHER','RESTART_ARCHIVED_WEATHER'])
+      assert.throws(()=>ACTIVE.assertCaller({...normal,[key]:'true'}));
+  }
+  for(const name of ['Apply RavRadar backend bindings without weather','Deploy RavRadar code-only repair'])
+    assert.throws(()=>ACTIVE.assertCaller({...caller,GITHUB_WORKFLOW:name}));
+}
 assert.deepEqual((await assertInstalled593Original591MigrationPlan({migrationListText:list(),dryRunText:dry,migrationsDirectory:prepared.migrationsDirectory})).pendingVersions,[migration.version]);
 console.log(JSON.stringify({kind:'NORMAL_INSTALLED593_ORIGINAL591_ROLLEPROEVE',status:'PASS',requiredMigrations:61,
   oldSqlPreserved:71,aliasesAdded:0,databaseBeforeRelease:593,originalStateFamily:591,sameH0Refused:true,

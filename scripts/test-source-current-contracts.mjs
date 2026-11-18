@@ -11,8 +11,8 @@ import vm from 'node:vm';
 import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
-import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24} from './lib/source-impact-workflow-review.mjs';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
+import {CURRENT_CONTRACT_COMMANDS,currentWorkflowTargets,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
   PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
@@ -157,11 +157,9 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
   const files=['supabase/functions/ravradar-assistant/index.ts',
     'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-    'scripts/test-fixed-assistant-failure-log-20261101.mjs',
     'supabase/functions/_shared/rav-assistant-contract.ts'];
   const commands=['node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
-    'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-    'node scripts/test-fixed-assistant-failure-log-20261101.mjs'];
+    'node scripts/test-rav-assistant-main-edge-roundtrip.mjs'];
   assert.deepEqual(CURRENT_CONTRACT_COMMANDS.assistantEdge,commands);
   const roundtrip=commands[1],results=[];
   const select=(label,paths)=>{
@@ -352,6 +350,60 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
     refuse(select(prior,tree,[...changes,['config.js',Buffer.concat([protectedBefore,Buffer.from('\n// Changed protected input\n')])]],'protected input'),
       'CURRENT_PROTECTED_INPUT_CHANGED');
     return passed;
+  }finally{checkoutCommit(restoreHead);}
+}
+
+
+// Existing whole account target also owns its normally imported month/controller modules.
+function assertPrivateStudyPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
+  const paths=[".github/workflows/private-trip-weather-study.yml","scripts/publish-private-trip-weather-study.mjs","scripts/deploy-private-trip-study.mjs","scripts/test-trip-aggregate-month-rollover.mjs","scripts/test-private-trip-study-categorical-controller.mjs","scripts/test-account-statistics-assistant-callers.mjs"],command='node --test scripts/test-account-statistics-assistant-callers.mjs';
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.privateStudy,[command]);
+  // The one normal account target executes its imported month/controller cases.
+  // Planning checks owner scope and refusal boundaries, not source spelling.
+  const owner=currentWorkflowTargets(paths[0]);
+  assert.deepEqual(owner,{path:paths[0],owners:[{area:'privateStudy',commands:[command]}]});
+  const original=paths.map(file=>[file,fixtureControlBytes(file)]),tree=rewriteTree(baselineTree,original);
+  const prior=makeCommit(tree,[baselineCommit],'synthetic existing private-study callers'),results=[];
+  const select=(files,extra=[])=>{
+    const changes=files.map(file=>[file,Buffer.concat([git(root,['cat-file','blob',prior+':'+file]),Buffer.from('\n// Synthetic private-study owner delta\n')])]);
+    const candidate=makeCommit(rewriteTree(tree,[...changes,...extra]),[prior],'synthetic private-study scope');
+    checkoutCommit(candidate);const result=plan({baselineCommit:prior,candidateCommit:candidate,expectedHead:candidate});results.push(result);return result;
+  };
+  const safe=result=>{
+    assert.equal(result.selection,'CURRENT_CONTRACTS',JSON.stringify(result));
+    assert.deepEqual(result.areas.privateStudy.commands,[command]);
+    assert.equal(result.controlQualificationRequired,true);
+    assert.deepEqual(result.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    assert.equal(result.commands.filter(value=>value===command).length,1);
+    assert.equal(result.authority,'PLANNING_ONLY');
+    for(const field of ['baselineQualified','skipAuthorized','productionAuthority'])assert.equal(result[field],false);
+  };
+  const refused=result=>{assert.equal(result.selection,'FULL',JSON.stringify(result));assert.deepEqual(result.commands,[]);};
+  try{
+    for(const file of paths){const result=select([file]);safe(result);assert.deepEqual(result.areas.privateStudy.changedPaths,[file]);}
+    const together=select(paths);safe(together);assert.deepEqual(together.areas.privateStudy.changedPaths,[...paths].sort());
+    assert.deepEqual(together.commands,[...CURRENT_CONTRACT_COMMANDS.core,command]);
+    for(const neighbour of ['scripts/publish-private-trip-weather-study-extra.mjs','.github/workflows/private-trip-weather-study-extra.yml']){
+      const result=select([paths[0]],[[neighbour,Buffer.from('// Unknown adjacent owner\n')]]);refused(result);
+      assert.deepEqual(result.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);
+    }
+    const protectedFile='config.js',before=git(root,['cat-file','blob',prior+':'+protectedFile]);
+    const protectedResult=select([paths[0]],[[protectedFile,Buffer.concat([before,Buffer.from('\n// Protected drift\n')])]]);
+    refused(protectedResult);assert.deepEqual(protectedResult.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+    for(const file of paths.slice(0,3)){
+      checkoutCommit(prior);git(root,['update-index','--force-remove','--',file]);
+      const absent=makeCommit(text(root,['write-tree']),[prior],'synthetic absent private-study caller');
+      checkoutCommit(absent);const deleted=plan({baselineCommit:prior,candidateCommit:absent,expectedHead:absent});refused(deleted);
+      assert.deepEqual(deleted.reasonCodes,['CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE']);
+      const added=makeCommit(tree,[absent],'synthetic added private-study caller');checkoutCommit(added);
+      const addPlan=plan({baselineCommit:absent,candidateCommit:added,expectedHead:added});refused(addPlan);
+      assert.deepEqual(addPlan.reasonCodes,['CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE']);
+      checkoutCommit(prior);git(root,['update-index','--chmod=+x','--',file]);
+      const executable=makeCommit(text(root,['write-tree']),[prior],'synthetic private-study mode');checkoutCommit(executable);
+      const modePlan=plan({baselineCommit:prior,candidateCommit:executable,expectedHead:executable});refused(modePlan);
+      assert.deepEqual(modePlan.reasonCodes,['CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE']);
+    }
+    return results.length+9;
   }finally{checkoutCommit(restoreHead);}
 }
 
@@ -747,12 +799,33 @@ const historicalControlSources=new Set(['scripts/native-postgres-evidence.mjs',
 const {assertSource598CodeSourceSelected}=await import(pathToFileURL(path.join(SOURCE,'scripts/check-assistant-later-h0-predecessor-source.mjs')).href);
 const fixedCode598=assertSource598CodeSourceSelected();
 assert.equal(text(SOURCE,['rev-parse',fixedCode598.head+'^{tree}']),fixedCode598.tree);
+// Current planner DATA is distinct from the unchanged protected historical PG module.
+const currentDomainFamily=(await import(pathToFileURL(path.join(SOURCE,'scripts/lib/assistant-later-h0-successor-source.mjs')).href)).ASSISTANT_AFTER599_BINDING;
+assert(currentDomainFamily&&Object.isFrozen(currentDomainFamily));
+assert.deepEqual(Object.keys(currentDomainFamily).sort(),['C','I','T','version']);
+const currentDomainFamilyImport="import {ASSISTANT_AFTER599_BINDING as FAMILY601} from './lib/assistant-later-h0-successor-source.mjs';";
+function currentDomainFixtureBytes(bytes){
+  const body=bytes.toString('utf8');
+  const imports=[...body.matchAll(/^import\b[^;]*?\bfrom\s*['"]\.\/lib\/assistant-later-h0-successor-source\.mjs['"];$/gm)].map(match=>match[0]);
+  assert.deepEqual(imports,[currentDomainFamilyImport],'Only the actual current binding DATA import is materialized');
+  return Buffer.from(body.replace(currentDomainFamilyImport,'const FAMILY601=Object.freeze('+JSON.stringify(currentDomainFamily)+');'));
+}
+const currentDomainBytes=fs.readFileSync(path.join(SOURCE,'scripts/source-impact-domain-inputs.mjs'));
+assert.throws(()=>currentDomainFixtureBytes(Buffer.from(currentDomainBytes.toString('utf8').replace(currentDomainFamilyImport,''))));
+assert.throws(()=>currentDomainFixtureBytes(Buffer.concat([currentDomainBytes,Buffer.from('\n'+currentDomainFamilyImport+'\n')])));
+assert.throws(()=>currentDomainFixtureBytes(Buffer.from(currentDomainBytes.toString('utf8').replace('ASSISTANT_AFTER599_BINDING as FAMILY601','ASSISTANT_AFTER599_BINDING as FAMILY601,ASSISTANT_AFTER599_OUTPUT'))));
 const fixtureControlOrigin=file=>protectedFiles.has(file)?'REFERENCE':historicalControlSources.has(file)?'CODE598':'SOURCE';
 function fixtureControlBytes(file){
   const origin=fixtureControlOrigin(file);
-  return origin==='REFERENCE'?sourceBlob(file):origin==='CODE598'
+  const bytes=origin==='REFERENCE'?sourceBlob(file):origin==='CODE598'
     ?git(SOURCE,['cat-file','blob',fixedCode598.head+':'+file]):fs.readFileSync(path.join(SOURCE,file));
+  if(file!=='scripts/source-impact-domain-inputs.mjs')return bytes;
+  assert.equal(origin,'SOURCE');return currentDomainFixtureBytes(bytes);
 }
+const historicalSuccessor='scripts/lib/assistant-later-h0-successor-source.mjs';
+assert.equal(fixtureControlOrigin(historicalSuccessor),'REFERENCE');
+assert(fixtureControlBytes(historicalSuccessor).equals(sourceBlob(historicalSuccessor)),
+  'Whole historical FULL/PG helper remains authentic; no current exports or behavior added');
 const controlSources=new Set();
 function collect(file){
   if(controlSources.has(file))return;
@@ -792,6 +865,7 @@ let base,head,main,baseContent,content,baselinePlan,coordinate,decide,discover,a
 let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBody;
 let immutableFullZip,immutablePhaseZip;
 let actualCurrentAfter598SourceVerified=false;
+let actualCurrentAfter599SourceVerified=false;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
   baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
@@ -1090,7 +1164,8 @@ try{
   }
 
   if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
-    const ownerCases=assertSmallUserContractPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base});
+    const ownerCases=assertSmallUserContractPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base})
+      +assertPrivateStudyPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base});
     const prerequisiteCases=assertSelectedProgressCopernicusPrerequisite();
     cases+=ownerCases+prerequisiteCases;
     scenarios.push('Exact sharing/erasure/progress owners retain whole tests and refusal boundaries; selected CP prerequisite is bounded and credential-free');
@@ -1350,20 +1425,21 @@ try{
   scenarios.push('normal Git transport-only selection keeps four full Pages targets, fresh control review, protected inputs and broad/FULL mixed fallbacks');
   // Slut på de nye normale Gittransportcases.
 
-  // Aktuel helefilsejer samt præcis workflowbootstrap; kun normale Git-/planlæsninger.
+  // The reviewed SDK-only addition uses its historical setup. Current planning
+  // still owns the actual Python fixture and decides which prerequisite to run.
   if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
     const restore=text(root,['rev-parse','HEAD']),tree=text(root,['rev-parse',base+'^{tree}']);
     const nativeFile='scripts/test-owned-dmi-grib-save-native.py',workflow='.github/workflows/validate-pull-request.yml';
     const source=git(root,['show',base+':'+nativeFile]);
-    const currentWorkflow=fs.readFileSync(path.join(SOURCE,workflow),'utf8');
-    const predecessor=inverseOwnedCacheNativeWorkflow(currentWorkflow);
+    const sdkWorkflow=readHistoricalSourceSetupWorkflow();
+    const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);
     try{
       const beforeTree=rewrite(tree,[[workflow,Buffer.from(predecessor)]]);
       const before=commit(beforeTree,[base],'synthetic normal SDK environment predecessor');
       const frontierTree=rewrite(beforeTree,[['docs/rdks/90_INDEX/SYNTHETIC-NATIVE-FRONTIER.md',Buffer.from('Synthetic ordinary documentation frontier\n')]]);
       const frontier=commit(frontierTree,[before],'synthetic qualified current frontier');
       const afterTree=rewrite(frontierTree,[[nativeFile,Buffer.concat([source,Buffer.from('\n# Synthetic native test delta\n')])],
-        [workflow,Buffer.from(currentWorkflow)]]);
+        [workflow,Buffer.from(sdkWorkflow)]]);
       const after=commit(afterTree,[frontier],'synthetic whole native owner with normal environment');checkout(after);
       const nativePlans=new Map();
       for(const baselineCommit of [frontier,before]){
@@ -1536,6 +1612,28 @@ try{
     assert.throws(()=>actualNational.verifyAssistantAfter598Package(omitted));
     actualCurrentAfter598SourceVerified=true;cases++;
     scenarios.push('actual current after598 source namespace/package is distinct from authentic historical FULL598; old receipt refused, no PG execution');
+  }
+  if(actualSuccessor.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'){
+    const actualNational=await import(pathToFileURL(path.join(SOURCE,'scripts/national584-source-evidence.mjs')).href);
+    const actualNative=await import(pathToFileURL(path.join(SOURCE,'scripts/native-postgres-evidence.mjs')).href);
+    const currentOutput=actualSuccessor.requireAssistantAfter599Output(),currentBinding=actualSuccessor.requireAssistantAfter599Binding();
+    const currentPackage=JSON.parse(fs.readFileSync(path.join(SOURCE,'package.json'),'utf8'));
+    actualNational.verifyAssistantAfter599Package(currentPackage);
+    const checked=await actualNational.verifyAssistantAfter599SourceTarget();
+    assert.equal(checked.sourcePhase,'assistant-after599-successor');assert.equal(checked.canonicalSha256,currentOutput.canonicalSha256);
+    assert.equal(checked.release,actualSuccessor.requireAssistantAfter599Release());
+    assert.deepEqual([checked.sourceOnly,checked.sqlExecuted,checked.originalsAuthenticated,checked.productionProof],[true,false,false,false]);
+    assert.notDeepEqual(actualNative.ASSISTANT_AFTER599_COMMANDS,nativeReceipt.commands);
+    assert.notDeepEqual(currentBinding,nativeReceipt.binding);
+    actualNational.verifyAssistantAfter599NativeCommands(actualNative.ASSISTANT_AFTER599_COMMANDS,actualSuccessor.requireAssistantAfter599Release());
+    assert.throws(()=>actualNational.verifyAssistantAfter599NativeCommands(nativeReceipt.commands,actualSuccessor.requireAssistantAfter599Release()));
+    await assert.rejects(actualNative.verifyAssistantAfter599PhaseReceipt(nativeReceipt,nativeCurrent));
+    await assert.rejects(actualNational.verifyAssistantAfter599NativeContext(nativeReceipt,nativeCurrent,actualSuccessor.requireAssistantAfter599Release()));
+    const omitted=structuredClone(currentPackage);omitted.scripts['test:assistant-later-h0-source']=
+      omitted.scripts['test:assistant-later-h0-source'].replace(actualNational.ASSISTANT_AFTER599_CURRENT_SOURCE_COMMANDS[0]+' && ','');
+    assert.throws(()=>actualNational.verifyAssistantAfter599Package(omitted));
+    actualCurrentAfter599SourceVerified=true;cases++;
+    scenarios.push('actual current after599 source namespace/package is distinct from authentic historical FULL599; old receipt refused, no PG execution');
   }
 
 
@@ -2110,8 +2208,9 @@ try{
       maps,zips,state:clone(state),priorMaps:new Map(priorMaps),priorZips:new Map(priorZips),gitHead:text(root,['rev-parse','HEAD'])};
     try{
       const workflow='.github/workflows/validate-pull-request.yml';
-      const sdkWorkflow=git(SOURCE,['cat-file','blob','HEAD:'+workflow]).toString('utf8');
-      assert.equal(sdkWorkflow,fixtureControlBytes(workflow).toString('utf8').replaceAll('\r\n','\n'));
+      // This exercise qualifies the historical SDK-only change and its former
+      // FULL producer. The dependency-only workflow has its own current test.
+      const sdkWorkflow=readHistoricalSourceSetupWorkflow();
       const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);assert.notEqual(predecessor,sdkWorkflow);
       const seedTree=rewrite(baselineTree,[[workflow,Buffer.from(predecessor)]]);
       base=commit(seedTree,[saved.base],'synthetic same genuine PG seed with normal DMI environment');
@@ -2193,7 +2292,7 @@ try{
 console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V4_PRODUCER_CONSUMER_INTEGRATION',cases,passed:cases,failed:0,scenarios,
   actualTargetProcesses:actualProcesses,syntheticTransportCalls:calls,realIsolatedGit:true,
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
-  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,
+  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,actualCurrentAfter599SourceVerified,
   network:false,production:false,deliveryAuthority:false}));
 
 // BEGIN FOCUSED WEATHER OPERATION OWNER CASES
@@ -2229,7 +2328,8 @@ function collect(file){
   assert(relative&&!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep));
   controlSources.add(file);
   const body=fixtureControlBytes(file).toString('utf8'),url=pathToFileURL(sourceFile);
-  for(const match of body.matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm)){
+  // Static re-exports also load their real module before any reader is called.
+  for(const match of body.matchAll(/^(?:import\b|export\s+(?:\*|\{))[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm)){
     const dep=fileURLToPath(new URL(match[1],url)),name=path.relative(SOURCE,dep).split(path.sep).join('/');
     collect(name);
   }
@@ -2245,6 +2345,8 @@ function collect(file){
     assert.equal(text(root,['cat-file','-t',sourceHead]),'commit');
     collect('scripts/source-current-contract-plan.mjs');
     collect('scripts/source-current-contract-receipt.mjs');
+    for(const file of ['scripts/verify-account-assistant-schema.mjs','scripts/verify-account-erasure-schema.mjs'])
+      assert(controlSources.has(file),'Actual app schema import/re-export closure: '+file);
     for(const file of [...controlSources,'package.json','version.json',
       ...['594','597','598'].map(version=>'scripts/lib/source-impact-domain-inputs-'+version+'.json'),
       'scripts/test-source-current-contracts.mjs']){
