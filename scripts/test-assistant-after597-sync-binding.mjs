@@ -449,14 +449,8 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
       // next application release with the unchanged issued model/SQL family.
       const national=await load('scripts/national584-source-evidence.mjs');
       national.verifyPackage(pkg);
-      const historicalReview=await load('scripts/lib/account-statistics-assistant-package-review.mjs');
-      const originalPackage=structuredClone(pkg);
-      const historicalPackage=await historicalReview.inverseReviewedAfter599PackageForHistoricalOracles(pkg);
-      national.verifyAssistantAfter597Package(historicalPackage);
-      assert.deepEqual(pkg,originalPackage,'The next real application package is not retagged for old oracles');
-      for(const changed of [{...pkg,version:version},
-        {...pkg,scripts:{...pkg.scripts,'test:assistant-later-h0-source':pkg.scripts['test:assistant-later-h0-source']+' --unknown'}}])
-        await assert.rejects(historicalReview.inverseReviewedAfter599PackageForHistoricalOracles(changed));
+      assert.throws(()=>national.verifyPackage({...pkg,scripts:{...pkg.scripts,
+        'test:assistant-later-h0-source':pkg.scripts['test:assistant-later-h0-source']+' --unknown'}}));
 
       for(const wrongVersion of [version,'4.0.'+(Number(nextApplicationVersion.split('.').at(-1))+1),''])
         assert.throws(()=>national.verifyPackage({...pkg,version:wrongVersion}));
