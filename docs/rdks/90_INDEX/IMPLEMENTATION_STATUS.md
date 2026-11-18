@@ -187,7 +187,7 @@ Den lokale app602-kandidat omfatter nu direkte åbning af den allerede kontrolle
 
 ## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
 
-Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends.
+Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends. Kildekontrollen vælger de eksisterende prøver af delingsdata, Pages-pakkens privatliv, kontoschema og turlog, når de tilhørende filer ændres. Database- og produktionskontrollerne kører fortsat på deres egne trin.
 
 Én samlet faktisk 79-kilde-/PostgreSQL-kvalifikation skal dække de nye SQL- og katalogkontrakter samt de berørte normale kaldere. Uændrede lokale beviser genbruges med deres oprindelige input; gammel 77-kvalifikation ommærkes ikke til79. Samlingen reducerer leveringsrunder, ikke relevante sikkerheds- eller datakrav.
 

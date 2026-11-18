@@ -52,6 +52,18 @@ assert(!sourceCommandsForChangedPaths(['supabase/functions/ravradar-assistant/in
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-assistant-failure-log-20261101.mjs']),
   ['node scripts/test-fixed-assistant-failure-log-20261101.mjs']);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/lib/pages-closure-historical-test-input.mjs']),[]);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/audit-pages-artifact-privacy.mjs',
+  'scripts/build-forecast-share-projection.mjs','scripts/verify-ravscore-operational-pages-deployment.mjs']),
+  ['node scripts/test-pages-artifact-privacy.mjs','node scripts/test-forecast-share-projection.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/verify-code-only-migration-plan.mjs',
+  'scripts/lib/account-erasure-outbox-native-fixture.mjs','scripts/test-account-erasure-outbox.mjs']),
+  ['node --test scripts/test-account-erasure-outbox.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths(['supabase/functions/trip-log/index.ts',
+  'supabase/functions/_shared/account-lifecycle.js','supabase/functions/_shared/inactivity-notice-mail.mjs']),
+  ['node --test scripts/test-user-account-trip-log-4.0.264.mjs',
+    'node --test scripts/test-delete-trip-owner-data-readback.mjs']);
+for(const path of ['scripts/audit-pages-artifact-unreviewed.mjs','supabase/functions/trip-log/unreviewed.ts'])
+  assert.throws(()=>sourceCommandsForChangedPaths([path]),/SOURCE_CHANGED_OWNER_REQUIRED/);
 assert.throws(()=>sourceCommandsForChangedPaths(['../arbitrary.mjs']));
 assert.throws(()=>sourceCommandsForChangedPaths(['unowned-source.mjs']),/SOURCE_CHANGED_OWNER_REQUIRED/);
 assert.equal(isOnlyReleaseVersionChange('import x from "a?v=4.0.600"','import x from "a?v=4.0.601"','4.0.600','4.0.601'),true);

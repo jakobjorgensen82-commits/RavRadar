@@ -16,7 +16,7 @@ Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_
 
 ## 17. november — én faktisk kvalifikation af samlet app602
 
-De gennemgåede apprettelser til deling/LF7 og inaktiv kontoopsætning samles før næste kildekvalifikation for at undgå endnu en versions- og databasekontrolrunde alene ved senere sammenføring. Kombinationen har 79 SQL-filer og kræver en ny faktisk kvalifikation af de to nye appends og deres normale kaldere. Gamle77-/manuelle beviser bevares med deres eget katalog; de ommærkes ikke. Uændrede mål gentages kun ved relevante nye input. Dette giver ingen undtagelse fra konkret relevant fejl eller ukendt påvirkning.
+De gennemgåede apprettelser til deling/LF7 og inaktiv kontoopsætning samles før næste kildekvalifikation for at undgå endnu en versions- og databasekontrolrunde alene ved senere sammenføring. Kombinationen har 79 SQL-filer og kræver en ny faktisk kvalifikation af de to nye appends og deres normale kaldere. Gamle77-/manuelle beviser bevares med deres eget katalog; de ommærkes ikke. Uændrede mål gentages kun ved relevante nye input. Dette giver ingen undtagelse fra konkret relevant fejl eller ukendt påvirkning. Kildekontrollen vælger de eksisterende prøver af delingsdata, Pages-pakkens privatliv, kontoschema og turlog, når de tilhørende filer ændres. Database- og produktionskontrollerne kører fortsat på deres egne trin.
 
 ## LF7-audit læser den autentiske gemte timeprojektion
 

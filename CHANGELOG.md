@@ -4,6 +4,7 @@
 - GitHubs afhængighedstrin installerer kun pakker. De otte tidligere faste teststarter er fjernet, og aktuelle og historiske arbejdsgange kontrolleres på deres egne input.
 - Kildekontrollen vælger den aktuelle assistentprøve, bruger historiske input til den daterede diagnostik og bevarer Pages-kontrollens afvisning af afvigende kildeinput.
 - Historiske npm-scriptkort er ikke længere adgangskrav for den aktuelle app. Edge-kontrollen og prøven af næste appversion følger deres aktuelle kaldere. Gamle orakler læser deres egne autentiske kilder.
+- De berørte 602-filer får målrettede prøver af prognosedeling, Pages-pakkens privatliv, kontoschema og turlog.
 - App-ejede lokale hjælpe- og praktiske ravkese-/strandsvar med hele spørgsmålets vagter, uændret numerisk service og ingen AI-provenienspåstand.
 - Præcis kildekvalifikation, offentlig levering og resterende samlet AI-/Free-accept er fortsat åbne.
 
