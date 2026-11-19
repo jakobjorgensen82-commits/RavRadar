@@ -35,16 +35,22 @@ function fixture(kind = 'proof') {
   const jobs = { total_count: 1, jobs: [job] };
   const calls = [];
   let onPause;
+  let failNextJobRead = false;
   const getJson = async path => {
     calls.push(path);
     if (path === `${route}/artifacts?name=${name}&per_page=2`) return listing;
     if (path === `${route}/attempts/1`) return run;
     assert.equal(path, `${route}/attempts/1/jobs?per_page=100`);
+    if (failNextJobRead) {
+      failNextJobRead = false;
+      throw new Error('Synthetic job metadata timeout');
+    }
     return jobs;
   };
   const find = () => findRawRotationArtifact({...context, getJson, pause: async () => onPause?.()});
   const recheck = expected => readRawRotationArtifactOnce({...context, getJson, ...expected});
-  return { find, recheck, calls, run, job, jobs, artifact, listing, afterPause: callback => { onPause = callback; } };
+  return { find, recheck, calls, run, job, jobs, artifact, listing, afterPause: callback => { onPause = callback; },
+    failNextJobRead: () => { failNextJobRead = true; } };
 }
 
 test('same-run proof and result come only from their exact completed upload steps', async () => {
@@ -129,6 +135,19 @@ test('initial rotation stops when the exact builder has failed without uploading
   });
   assert.deepEqual(await subject.find(), { status: 'HOLD', reason: 'producer-finished-without-proof' });
   assert.equal(subject.calls.length, 13);
+});
+
+test('an unavailable optional builder status does not stop an arriving proof', async () => {
+  const subject = fixture();
+  subject.listing.total_count = 0;
+  subject.listing.artifacts.length = 0;
+  subject.failNextJobRead();
+  subject.afterPause(() => {
+    subject.listing.total_count = 1;
+    subject.listing.artifacts.push(subject.artifact);
+  });
+  assert.deepEqual(await subject.find(), { status: 'FOUND', artifactId: 14, digest });
+  assert.equal(subject.calls.length, 5);
 });
 
 test('an exact pre-write recheck never substitutes another artifact or waits for the producer', async () => {

@@ -115,7 +115,13 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
         || listing.total_count > 1) return hold('artifact-not-unique');
     if (!listing.total_count) {
       if (kind === 'proof' && inspectMissingProofProducer) {
-        const response = await getJson(`${attemptPath}/jobs?per_page=100`);
+        let response;
+        try {
+          response = await getJson(`${attemptPath}/jobs?per_page=100`);
+        } catch {
+          // A failed optional observation says nothing about an absent proof.
+          return pending();
+        }
         if (Array.isArray(response?.jobs) && response.total_count === response.jobs.length
             && response.jobs.length <= 100) {
           const producers = response.jobs.filter(job => job?.name === DMI_PRODUCER_JOB);
