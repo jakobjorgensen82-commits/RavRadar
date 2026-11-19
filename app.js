@@ -602,7 +602,7 @@ async function reevaluateConditionRuntime(){
 }
 
 // Applying the stored mode during initial map loading is not a user action.
-function setMode(mode,{render=true}={}){if(render)resetAssistantTopic();state.mode=mode;state.currentScores.clear();mapScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;refreshMapDisplay();renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast().then(completed=>{if(completed)performance.mark?.('ravradar:forecast-ready');}).catch(error=>{console.error('5-dages prognosen kunne ikke beregnes',error);nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.loadFailed')}</p>`;});renderSelectedZone();}
+function setMode(mode,{render=true,initial=false}={}){if(!initial)resetAssistantTopic();state.mode=mode;state.currentScores.clear();mapScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;refreshMapDisplay();renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast().then(completed=>{if(completed)performance.mark?.('ravradar:forecast-ready');}).catch(error=>{console.error('5-dages prognosen kunne ikke beregnes',error);nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.loadFailed')}</p>`;});renderSelectedZone();}
 
 async function resumePublicView() {
   await yieldToBrowser();
@@ -797,7 +797,7 @@ try {
   scheduleConditionRuntimeGate();
   performance.mark?.('ravradar:conditions-loaded');
   // 4: vælg jagtform før den første scoreberegning, så cachen ikke bygges to gange.
-  setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders',{render:false});
+  setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders',{render:false,initial:true});
   configureMapTimeline();
   refreshZoneStyles(state.zoneLayer,id=>mapScoreFor(zones.features.find(item=>item.properties.id===id).properties));
   performance.mark?.('ravradar:zone-colors-ready');

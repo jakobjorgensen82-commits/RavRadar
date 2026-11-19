@@ -213,7 +213,7 @@ test('accepted find identification keeps a full weak-UV followup on the actual U
     // The header can be used while the normal public map data is still loading.
     ui.state.zones = [];
     ui.state.conditions = { zones: {} };
-    vm.runInContext("setMode('beach', {render:false})", ui.context);
+    vm.runInContext("setMode('beach', {render:false,initial:true})", ui.context);
     finishAnswer('SYNTHETIC_FIRST_ANSWER');
     await pendingFirst;
     assert.equal(ui.topic(), topic);
