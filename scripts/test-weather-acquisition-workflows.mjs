@@ -30,6 +30,25 @@ function step(source, name) {
   return found[0];
 }
 
+test('normal DMI save uses its measured allowance and must actually finalize before fresh weather', () => {
+  const admission = step(actualNormalWorkflow, 'Measure room for the next DMI RAW cache');
+  const save = step(actualNormalWorkflow, 'Save progressed DMI GRIB download cache');
+  const finalization = step(actualNormalWorkflow, 'Require finalized RAW storage before using newly acquired DMI data');
+  const scoring = step(actualNormalWorkflow, 'Update central weather cache');
+  for (const block of [admission, save]) {
+    assert.match(block, /dmi-grib-v4-\$\{\{ runner\.os \}\}-\$\{\{ steps\.dmi-cache-generation\.outputs\.generation \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/);
+  }
+  assert.match(admission, /node scripts\/observe-github-raw-cache-stock\.mjs --admit-upload/);
+  assert.match(admission, /steps\.dmi-progress-write-authority\.outcome == 'success'/);
+  assert.match(save, /steps\.dmi-raw-upload-admission\.outputs\.raw_upload_budget_bytes != ''/);
+  assert.match(save, /RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: \$\{\{ steps\.dmi-raw-upload-admission\.outputs\.raw_upload_budget_bytes \}\}/);
+  assert.match(finalization, /\(steps\.dmi-bulk\.outcome == 'success' \|\| steps\.dmi-bulk\.outcome == 'failure'\) && steps\.dmi-raw-save\.outputs\.saved != 'true'/);
+  assert.match(finalization, /exit 1/);
+  assert.doesNotMatch(scoring.match(/^        if:.*$/m)?.[0] ?? '', /always\(|!cancelled\(/);
+  const order = [admission, save, finalization, scoring].map(block => actualNormalWorkflow.indexOf(block));
+  assert.deepEqual(order, [...order].sort((a, b) => a - b));
+});
+
 function epochCheckpointPreflightGuard(source) {
   const preflight = step(source, 'Decide whether weather needs updating before private runtime download');
   const run = preflight.match(/        run: \|\n([\s\S]*)$/)?.[1]?.replace(/^          /gm, '');

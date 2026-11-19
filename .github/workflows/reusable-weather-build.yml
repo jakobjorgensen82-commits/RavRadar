@@ -2587,12 +2587,31 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      - name: Measure room for the next DMI RAW cache
+        id: dmi-raw-upload-admission
+        if: ${{ !cancelled() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true' }}
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_EXPECTED_RAW_SAVE_KEY: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+        run: node scripts/observe-github-raw-cache-stock.mjs --admit-upload
+
       - name: Save progressed DMI GRIB download cache
-        if: inputs.completed_private_runtime != true && (always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true')
+        id: dmi-raw-save
+        if: ${{ !cancelled() && steps.dmi-raw-upload-admission.outcome == 'success' && steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes != '' }}
+        env:
+          RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: ${{ steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes }}
         uses: ./.github/actions/save-owned-dmi-grib
         with:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Require finalized RAW storage before using newly acquired DMI data
+        if: ${{ !cancelled() && inputs.completed_private_runtime != true && steps.preflight.outputs.should_run == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure') && steps.dmi-raw-save.outputs.saved != 'true' }}
+        shell: bash
+        run: |
+          echo '::error::New DMI inputs cannot become a protected baseline without a finalized RAW cache.'
+          exit 1
 
       - name: Classify DMI readiness before current supplement
         id: dmi-terminal-gate
