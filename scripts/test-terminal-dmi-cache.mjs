@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { projectPublicRawRotationProof, rawRotationPairDigest } from './lib/raw-rotation-handoff.mjs';
 import { preparePreDmiRawSuccessorProof } from './prove-pre-dmi-restored-raw-successor.mjs';
 import {
   DMI_CACHE_SAVE_STEP,
@@ -633,6 +634,33 @@ assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
   matchedKey: rawCaches[0].key}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
   run: {...bridgeInputs.run, targetReferenceAt: '2026-09-05T05:00:00Z'}}), /RETENTION_SUCCESSOR_TARGET/);
+const privateHandoff = {
+  schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline,
+  boundary: successorBoundary, coverage: bootProof,
+};
+const privateBytes = Buffer.from(JSON.stringify(privateHandoff));
+const privateSha256 = createHash('sha256').update(privateBytes).digest('hex');
+const publicHandoff = projectPublicRawRotationProof(privateBytes, privateSha256);
+assert.deepEqual(publicHandoff, {
+  schemaVersion: 1, kind: 'DMI_RAW_RESTORED_COVERAGE_HANDOFF_V1',
+  ...bridgeInputs.run, cacheIdentitySha256: bootProof.cacheIdentitySha256,
+  protectedPairSha256: rawRotationPairDigest({...successorBoundary, ...pairedBaseline}),
+  privateProofSha256: privateSha256, verifiedCaptureCount: 1,
+});
+const publicBytes = JSON.stringify(publicHandoff);
+for (const privateValue of [successorBoundary.datasetId, successorBoundary.bundleContentSha256,
+  successorBoundary.conditionsSha256, successorBoundary.checkpointGenerationSha256,
+  bootProof.planSha256, capture.itemId]) assert.ok(!publicBytes.includes(privateValue));
+assert.throws(() => projectPublicRawRotationProof(privateBytes, '2'.repeat(64)), /HANDOFF_EVIDENCE_INVALID/);
+const invalidPrivateBytes = Buffer.from(JSON.stringify({...privateHandoff,
+  coverage: {...bootProof, protectedFiles: 0, unavailableCaptures: 1},
+}));
+assert.throws(() => projectPublicRawRotationProof(invalidPrivateBytes,
+  createHash('sha256').update(invalidPrivateBytes).digest('hex')), /HANDOFF_EVIDENCE_INVALID/);
+assert.notEqual(rawRotationPairDigest({...successorBoundary, ...pairedBaseline, sVersion: 48}),
+  publicHandoff.protectedPairSha256);
+console.log('OK: cross-job RAW evidence contains only the exact run, count and commitments.');
+
 const restoredSuccessor = {receipt: bootProof, planBytes};
 const bootPlan = {...savePlan, saved: undefined, restoredSuccessor};
 assert.deepEqual(planRawDmiCacheRotation(bootPlan).retire, [rawIdentity(rawCaches[0])]);

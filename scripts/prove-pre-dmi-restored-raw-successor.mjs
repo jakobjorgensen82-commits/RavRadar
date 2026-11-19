@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { buildRawSuccessorPlanBytes } from './lib/verified-raw-cache-rotation.mjs';
+import { projectPublicRawRotationProof } from './lib/raw-rotation-handoff.mjs';
 import { RAVSCORE_CURRENT_HISTORY_DEMAND_PATH } from './plan-ravscore-current-history.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -95,12 +96,14 @@ async function main(env) {
   // Keep the complete handoff in runner-private scratch. The job output is
   // only its digest and grants no deletion. A writer must authenticate this job and
   // reconfirm the same protected B/S, producer archive and reader/pin inventory.
-  const output = JSON.stringify({
+  const output = Buffer.from(JSON.stringify({
     schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline, boundary, coverage,
-  });
-  requireProof(Buffer.byteLength(output) <= 4096);
+  }));
+  const proofSha256 = digest(output);
+  const handoff = projectPublicRawRotationProof(output, proofSha256);
   await fs.writeFile(path.join(work, 'proof.json'), output, {mode: 0o600, flag: 'wx'});
-  await fs.appendFile(env.GITHUB_OUTPUT, 'raw_bootstrap_coverage_sha256=' + digest(output) + '\n');
+  await fs.writeFile(path.join(work, 'handoff.json'), JSON.stringify(handoff), {mode: 0o600, flag: 'wx'});
+  await fs.appendFile(env.GITHUB_OUTPUT, 'raw_bootstrap_coverage_sha256=' + proofSha256 + '\n');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

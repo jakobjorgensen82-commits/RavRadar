@@ -2446,6 +2446,16 @@ jobs:
           RAW_MATCHED_CACHE_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
         run: node scripts/prove-pre-dmi-restored-raw-successor.mjs
 
+      - name: Publish the bounded RAW rotation handoff before DMI
+        if: steps.raw-bootstrap-pre-dmi-proof.outcome == 'success' && steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage_sha256 != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: raw-rotation-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-raw-rotation/handoff.json
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Bind causal OLD current reconstruction to the materialized saved inputs
         id: legacy-current-requests
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success')
