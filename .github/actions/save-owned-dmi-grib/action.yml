@@ -16,8 +16,6 @@ inputs:
 outputs:
   saved:
     description: True only after v2 finalization, physical cohort closure and own claim release.
-  saved_membership:
-    description: Cache ID, key and bound digest for verified RAW members, after owned SAVE and release.
   archive_capacity_skipped:
     description: True only after the local RAW archive exceeded its configured budget before any cache write.
   uploaded:

@@ -5,7 +5,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
-import { prepareRawPublicationStepReceipt } from './lib/raw-publication-step-receipt.mjs';
 import { createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,
   PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 
@@ -111,7 +110,6 @@ async function main() {
   const parsed = privateWeatherPublicationArguments(process.argv.slice(2));
   const { expectedPath, migrationReportPath, predecessorManifestPath, ...options } = parsed;
   const expected = await readJson(expectedPath, 'EXPECTED');
-  const writeReceipt = prepareRawPublicationStepReceipt('b', expected.targetReferenceAt);
   const sameReferenceSuccessorEvidence = migrationReportPath ? {
     migrationReport: await readJson(migrationReportPath, 'MIGRATION_REPORT'),
     predecessorManifest: await readJson(predecessorManifestPath, 'PREDECESSOR_MANIFEST'),
@@ -125,8 +123,6 @@ async function main() {
     request: clients.documentRequest,
     ...(sameReferenceSuccessorEvidence ? { sameReferenceSuccessorEvidence } : {}),
   });
-  await writeReceipt?.({ centralVersion: result.centralVersion, productionReferenceAt: result.productionReferenceAt,
-    digest: result.bundleContentSha256 });
   console.log(JSON.stringify({ status: result.reason, published: result.published,
     rollbackAvailable: result.rollbackAvailable, objectCount: result.objectCount,
     retentionCleanupComplete: result.retentionCleanupComplete,

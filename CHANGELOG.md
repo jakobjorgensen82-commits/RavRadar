@@ -1,3 +1,8 @@
+## Drift — rotation af DMI-råcacher
+
+- Arbejdsforløbet er lokalt ændret til at kontrollere den næste låste times behov og fjerne én ældre kopi ad gangen efter verificeret genlæsning.
+- Når funktionen er aktiveret, måles hele GitHub-cachebestanden før en ny upload. Den første driftsprøve gennemføres i observationstilstand.
+
 ## 4.0.602 — spørgsmål om ravfund
 
 - Korte opfølgninger om svag UV-glød og gennemsigtighed beholder fundet som samtaleemne.

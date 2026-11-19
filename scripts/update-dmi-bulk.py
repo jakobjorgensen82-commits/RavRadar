@@ -4097,7 +4097,6 @@ def reserved_current_replay_files(document: dict[str, Any], now_epoch: float | N
 
 
 _RAW_CURRENT_PROTECTED: dict[str, dict[str, Any]] | None = None
-_RAW_CURRENT_BOUNDARY: dict[str, str] | None = None
 _RAW_CURRENT_IDENTITIES: dict[str, tuple] = {}
 _RAW_CURRENT_UNPROVED_NAMES: set[str] = set()
 _RAW_CURRENT_SESSION_PROTECTED: dict[str, dict[str, Any]] = {}
@@ -4126,9 +4125,8 @@ def _raw_current_capture_key(capture):
         if key != "acquiredAt"}, sort_keys=True, separators=(",", ":"))
 
 
-def _raw_current_inventory(*, require_existing=False):
-    if not require_existing:
-        RAW_DIR.mkdir(parents=True, exist_ok=True)
+def _raw_current_inventory():
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
     if not stat.S_ISDIR(RAW_DIR.lstat().st_mode) or RAW_DIR.is_symlink():
         _raw_cache_protection_refuse("DIRECTORY_INVALID")
     files = {}
@@ -4270,13 +4268,13 @@ def _validate_archive_isolated_raw_retention(retention):
         _raw_cache_protection_refuse("ARCHIVE_CHECKPOINT_CHANGED")
 
 
-def configure_raw_current_retention(retention, *, require_existing=False):
+def configure_raw_current_retention(retention):
     """Eviction only. The fixed JS caller binds the immutable committed B/S.
 
     No manifest/capture here can admit a vector or issue a native receipt.
     A local successful decode/score never releases this process's boundary.
     """
-    global _RAW_CURRENT_PROTECTED, _RAW_CURRENT_BOUNDARY
+    global _RAW_CURRENT_PROTECTED
     archive_isolated = isinstance(retention, dict) and retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION"
     expected_keys = {"schemaVersion", "kind", "boundary", "captures"} | ({"archive"} if archive_isolated else set())
     if not isinstance(retention, dict) or set(retention) != expected_keys:
@@ -4293,7 +4291,7 @@ def configure_raw_current_retention(retention, *, require_existing=False):
         _raw_cache_protection_refuse("RETENTION_INVALID")
     if archive_isolated:
         _validate_archive_isolated_raw_retention(retention)
-    manifest, files = _raw_current_inventory(require_existing=require_existing)
+    manifest, files = _raw_current_inventory()
     by_capture = {}
     for name, asset in manifest["assets"].items():
         if pathlib.Path(name).name != name or not isinstance(asset, dict):
@@ -4334,7 +4332,7 @@ def configure_raw_current_retention(retention, *, require_existing=False):
     _RAW_CURRENT_UNPROVED_NAMES.clear()
     _RAW_CURRENT_UNPROVED_NAMES.update(str((RAW_DIR / name).absolute()) for name in unproved)
     try:
-        _raw_current_inventory(require_existing=require_existing)
+        _raw_current_inventory()
         if archive_isolated:
             _validate_archive_isolated_raw_retention(retention)
     except BaseException:
@@ -4342,7 +4340,6 @@ def configure_raw_current_retention(retention, *, require_existing=False):
         _RAW_CURRENT_IDENTITIES.clear()
         _RAW_CURRENT_IDENTITIES.update(previous_identities)
         raise
-    _RAW_CURRENT_BOUNDARY = boundary.copy() if not archive_isolated and not unavailable else None
     return {"evictionAllowed": not unavailable, "protectedFiles": len(protected), "unavailableCaptures": unavailable}
 
 
@@ -4478,99 +4475,6 @@ def prepare_raw_cache_space(incoming_bytes=0, *, metadata_reserve=0, max_bytes=N
 
 def prune_raw_cache(max_bytes: int = RAW_CACHE_MAX_BYTES) -> dict[str, int]:
     return prepare_raw_cache_space(max_bytes=max_bytes)
-
-
-def observe_raw_save_membership():
-    """Record verified committed and acquired RAW members for the owned cache save."""
-    cache = ROOT / ".cache"
-    raw_root_path = RAW_DIR.absolute()
-    execution = {key: os.getenv("GITHUB_" + key) for key in ("RUN_ID", "RUN_ATTEMPT", "SHA")}
-    if (not _RAW_CURRENT_BOUNDARY or not _RAW_CURRENT_PROTECTED
-            or len(_RAW_CURRENT_PROTECTED) > 4096
-            or not all(re.fullmatch(r"[1-9][0-9]{0,19}", execution[key] or "")
-                       for key in ("RUN_ID", "RUN_ATTEMPT"))
-            or not re.fullmatch(r"[a-f0-9]{40}", execution["SHA"] or "")
-            or raw_root_path != cache / "dmi-grib"):
-        return
-
-    def encoded(value):
-        return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
-
-    def digest(raw):
-        return hashlib.sha256(raw).hexdigest()
-
-    def identity(info):
-        return [str(value) for value in _OwnedGribRead._identity(info)]
-
-    try:
-        if cache.resolve(strict=True) != cache or raw_root_path.resolve(strict=True) != raw_root_path:
-            return
-        raw_root = raw_root_path.lstat()
-        if not stat.S_ISDIR(raw_root.st_mode):
-            return
-        manifest_path = raw_cache_manifest_path()
-        manifest_info = manifest_path.lstat()
-        if (not stat.S_ISREG(manifest_info.st_mode) or manifest_info.st_nlink != 1
-                or not 1 <= manifest_info.st_size <= 16 * 1024 * 1024):
-            return
-        manifest_identity = identity(manifest_info)
-        with manifest_path.open("rb") as handle:
-            opened_identity = identity(os.fstat(handle.fileno()))
-            # Match the actual Linux snapshot; the local Windows verifier sees
-            # separate ctime clocks for the path and handle.
-            if (opened_identity[:5] != manifest_identity[:5]
-                    or (os.name != "nt" and opened_identity != manifest_identity)):
-                return
-            manifest_bytes = handle.read(manifest_info.st_size + 1)
-            if (len(manifest_bytes) != manifest_info.st_size
-                    or identity(os.fstat(handle.fileno())) != opened_identity):
-                return
-        manifest = json.loads(manifest_bytes, object_pairs_hook=_exact_unique_fields)
-        if (manifest["schemaVersion"] != RAW_CACHE_MANIFEST_SCHEMA_VERSION
-                or not isinstance(manifest["assets"], dict)):
-            return
-        captures_by_name = _raw_current_session_files()
-        for name, capture in _RAW_CURRENT_PROTECTED.items():
-            if (name in captures_by_name
-                    and _raw_current_capture_key(captures_by_name[name]) != _raw_current_capture_key(capture)):
-                return
-            captures_by_name[name] = capture
-        if len(captures_by_name) > 4096:
-            return
-        rows, captures = [], []
-        for name, capture in sorted(captures_by_name.items()):
-            file = RAW_DIR / name
-            info = file.lstat()
-            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
-                    or _RAW_CURRENT_IDENTITIES.get(str(file.absolute())) != (
-                        capture["contentSha256"], _OwnedGribRead._identity(info))):
-                return
-            capture_key = _raw_current_capture_key(capture)
-            if capture_key is None or capture_key != _raw_current_capture_key(manifest["assets"].get(name)):
-                return
-            # Use canonical UTF-8 for cross-runtime membership. The cache's
-            # existing Python capture comparison above keeps its own encoding.
-            capture_bytes = json.dumps(json.loads(capture_key), sort_keys=True,
-                separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-            capture_digest = digest(capture_bytes)
-            rows.append([name, identity(info), capture_digest])
-            captures.append(capture_digest)
-        if (identity(raw_root_path.lstat()) != identity(raw_root)
-                or identity(manifest_path.lstat()) != manifest_identity):
-            return
-        observation = encoded({"schemaVersion": 2, "execution": execution,
-            "boundarySha256": digest(encoded(_RAW_CURRENT_BOUNDARY)),
-            "captureSetSha256": digest(encoded(sorted(set(captures)))),
-            "manifestSha256": digest(manifest_bytes), "manifest": manifest_identity,
-            "directory": identity(raw_root), "files": rows})
-        if len(observation) > 1024 * 1024:
-            return
-        output = cache / "dmi-raw-save-membership.json"
-        with os.fdopen(os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as handle:
-            handle.write(observation)
-    except (OSError, ValueError, TypeError, KeyError, RecursionError):
-        # An unavailable observation has no authority and cannot stop weather.
-        return
 
 
 def cached_asset_path(href: str) -> pathlib.Path:
@@ -18841,8 +18745,6 @@ def main() -> int:
         {"removedFiles": 0, "removedBytes": 0}
         if CACHE_ONLY else prune_raw_cache()
     )
-    if not CACHE_ONLY:
-        observe_raw_save_membership()
     cache_after = raw_cache_inventory()
     write_cache_audit(cache_before, cache_after, prune_stats["removedFiles"], prune_stats["removedBytes"])
     result["diagnostics"]["rawCache"] = {"before": cache_before, "after": cache_after, **prune_stats, "maxBytes": RAW_CACHE_MAX_BYTES}

@@ -5,7 +5,10 @@ import {fileURLToPath} from 'node:url';
 import {readRawRotationArtifactOnce} from './find-raw-rotation-artifact.mjs';
 import {projectRawRotationDecision, requireRawRotationDecision} from './lib/raw-rotation-handoff.mjs';
 import {closeRawCacheOverlapFromHandoff} from './lib/verified-raw-cache-rotation.mjs';
-import {createRawRotationProtectedMetadataReaders} from './read-published-raw-rotation-runtime.mjs';
+import {createProtectedPrivateRuntimeClients, describeCurrentProtectedPrivateProductionRuntime}
+  from './protected-private-production-runtime.mjs';
+import {createProtectedRavScoreCheckpointVersionRequester, PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY}
+  from './protected-ravscore-continuation-checkpoint.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPOSITORY = 'jakobjorgensen82-commits/RavRadar';
@@ -13,6 +16,31 @@ const WORKFLOW = REPOSITORY + '/.github/workflows/run-current-weather-once.yml@r
 
 function requireScope(ok) {
   if (!ok) throw new Error('RAW_CACHE_ROTATION_SAME_RUN_REFUSED');
+}
+
+const KEY = PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;
+const VERSION_QUERY = '?document_key=eq.' + encodeURIComponent(KEY) + '&select=document_key,version&limit=2';
+
+function createRawRotationProtectedMetadataReaders() {
+  const {documentRequest} = createProtectedPrivateRuntimeClients({storageBackend: 'supabase'});
+  const requestVersion = createProtectedRavScoreCheckpointVersionRequester();
+  const readProtectedB = async () => {
+    let centralVersion;
+    const identity = await describeCurrentProtectedPrivateProductionRuntime({request: async (...args) => {
+      const rows = await documentRequest(...args);
+      centralVersion = Number(rows?.[0]?.version);
+      return rows;
+    }});
+    requireScope(Number.isSafeInteger(centralVersion) && centralVersion > 0);
+    return {...identity, centralVersion};
+  };
+  const readProtectedSVersion = async () => {
+    const rows = await requestVersion(VERSION_QUERY);
+    requireScope(rows.length === 1 && rows[0].document_key === KEY
+      && Number.isSafeInteger(rows[0].version) && rows[0].version > 0);
+    return rows[0].version;
+  };
+  return {readProtectedB, readProtectedSVersion};
 }
 
 async function readReceivedFile(parent, name) {

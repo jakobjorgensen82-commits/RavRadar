@@ -235,44 +235,6 @@ test('current weather publisher preserves protected authority and refuses caller
     {code:'PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID'});
 });
 
-test('protected weather publish receipts bind the exact locked hour and expose only fixed step metadata', async () => {
-  const {prepareRawPublicationStepReceipt} = await import('./lib/raw-publication-step-receipt.mjs');
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-publish-receipt-'));
-  const output = path.join(directory, 'github-output');
-  const expected = path.join(directory, 'expected');
-  const target = '2026-11-19T08:00:00.000Z';
-  const other = '2026-11-19T09:00:00.000Z';
-  const env = {Path: process.env.Path, PATH: process.env.PATH, SystemRoot: process.env.SystemRoot,
-    RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: 'r2', RAVRADAR_RAW_PUBLICATION_RECEIPT: 'true',
-    RAVRADAR_PRODUCTION_TARGET_HOUR: target.replace('.000Z', 'Z'), GITHUB_OUTPUT: output};
-  const digest = '2'.repeat(64);
-  try {
-    await fs.writeFile(output, '');
-    await fs.writeFile(expected, JSON.stringify({targetReferenceAt: other}));
-    const assertRefuses = (script, args) => assert.throws(() => execFileSync(process.execPath, [script, ...args], {
-      env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10000,
-    }), error => error.status === 1 && error.stderr.includes('RAW_PUBLICATION_RECEIPT_TARGET_INVALID'));
-    assertRefuses('scripts/publish-private-weather-runtime.mjs', ['--publish', '--private-root', directory,
-      '--bundle', directory, '--repository-root', directory, '--expected', expected, '--source-head', 'a'.repeat(40)]);
-    assertRefuses('scripts/protected-ravscore-continuation-checkpoint.mjs', ['--publish', '--target-reference', other]);
-    assert.equal(prepareRawPublicationStepReceipt('b', target, {}), null);
-    const writeB = prepareRawPublicationStepReceipt('b', target, env);
-    const writeS = prepareRawPublicationStepReceipt('s', target, env);
-    const proof = {centralVersion: 7, productionReferenceAt: target, digest, payload: 'private-fixture'};
-    await assert.rejects(writeB({...proof, digest: digest + '\nother=bad'}), /RAW_PUBLICATION_RECEIPT_RESULT_INVALID/);
-    await assert.rejects(writeS({...proof, productionReferenceAt: other}), /RAW_PUBLICATION_RECEIPT_RESULT_INVALID/);
-    assert.equal(await fs.readFile(output, 'utf8'), '');
-    await writeB(proof);
-    await writeS({...proof, centralVersion: 12});
-    assert.equal(await fs.readFile(output, 'utf8'), `raw_b_central_version=7\nraw_b_production_reference_at=${target}\nraw_b_bundle_content_sha256=${digest}\n`
-      + `raw_s_central_version=12\nraw_s_production_reference_at=${target}\nraw_s_generation_sha256=${digest}\n`);
-  } finally {
-    await fs.unlink(output);
-    await fs.unlink(expected);
-    await fs.rmdir(directory);
-  }
-});
-
 test('current Pages workflow keeps completed-runtime B S gates and provider exclusion on raw callers', async () => {
   const [build, once] = await Promise.all(['../.github/workflows/reusable-weather-build.yml', '../.github/workflows/run-current-weather-once.yml'].map(rawWorkflow));
   assertCurrentCompletedRuntimeWorkflow(build, once);

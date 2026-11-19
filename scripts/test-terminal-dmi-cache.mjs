@@ -250,7 +250,7 @@ assert.deepEqual(planRawDmiCacheRotation({
   ...plan, after: snapshot([...plan.before.inventory.actions_caches].reverse()
     .map(row => ({ ...row, last_accessed_at: '2026-09-05T00:00:00Z' }))),
 }), {
-  status: 'HOLD', reason: 'retirement-requires-successor-save', retire: [],
+  status: 'HOLD', reason: 'retirement-requires-successor-coverage', retire: [],
 });
 const checkHold = (replacement, reason) => {
   assert.deepEqual(planRawDmiCacheRotation({ ...plan, ...replacement }), { status: 'HOLD', reason, retire: [] });
@@ -301,26 +301,6 @@ const capture = {
   itemCreatedAt: null, itemUpdatedAt: null,
 };
 // From Python json.dumps with ensure_ascii=False over the capture without acquiredAt.
-const pythonCaptureHash = '1448859a916c19d6297ab09387b79bc6a75b40576aa24b6728a93c711735ec95';
-const captureSetSha256 = hashJson([pythonCaptureHash]);
-const membership = {
-  schemaVersion: 2,
-  execution: { RUN_ID: String(runId + 4), RUN_ATTEMPT: '1', SHA: headSha },
-  boundarySha256: observation.baselineBoundarySha256,
-  captureSetSha256, manifestSha256: '9'.repeat(64),
-  files: [['0'.repeat(24) + '.grib', {}, pythonCaptureHash]],
-};
-const membershipBytes = Buffer.from(JSON.stringify(membership));
-const saved = {
-  receipt: {
-    schemaVersion: 2, kind: 'DMI_RAW_SAVE_COMMITTED_MEMBERSHIP', key: retained[0].key, cacheId: retained[0].id,
-    observationSha256: createHash('sha256').update(membershipBytes).digest('hex'),
-    boundarySha256: membership.boundarySha256, captureSetSha256, manifestSha256: membership.manifestSha256,
-    verifiedCaptureCount: 1,
-  },
-  membershipBytes,
-  predecessorBoundary: boundary,
-};
 const successorBoundary = {
   datasetId: 'rr-20260905000000-210', productionReferenceAt: '2026-09-05T00:00:00.000Z',
   bundleContentSha256: '6'.repeat(64), checkpointGenerationSha256: '7'.repeat(64), conditionsSha256: '8'.repeat(64),
@@ -335,38 +315,6 @@ const successor = {
     },
   },
 };
-const savePlan = { ...plan, current: successor, observation: undefined, saved };
-assert.deepEqual(planRawDmiCacheRotation(savePlan).retire, [rawIdentity(rawCaches[0])]);
-const withCapture = next => ({
-  ...successor, successorPlan: {
-    ...successor.successorPlan, retention: {...successor.successorPlan.retention, captures: [next]},
-  },
-});
-assert.equal(planRawDmiCacheRotation({
-  ...savePlan, current: withCapture({ ...capture, acquiredAt: '2026-09-05T02:30:00Z' }),
-}).status, 'READY');
-for (const condition of [
-  {current: withCapture({ ...capture, contentSha256: '3'.repeat(64) })},
-  {current: withCapture({ ...capture, itemId: 'Different provider object' })},
-  {current: {...successor, requiredCaptures: 2}},
-  {current: {...successor, requiredCaptures: 0, successorPlan: {
-    ...successor.successorPlan, retention: {...successor.successorPlan.retention, captures: []},
-  }}},
-  {current: {...successor, targetReferenceAt: '2026-09-05T00:00:00Z'}},
-  {current: {...successor, targetReferenceAt: '2026-09-05T05:00:00Z'}},
-  {current: {...successor, boundary}},
-  {current: {...successor, sourceHead: '5'.repeat(40)}},
-  {saved: {...saved, membershipBytes: Buffer.from(JSON.stringify({...membership, files: []}))}},
-  {saved: {...saved, receipt: {...saved.receipt, verifiedCaptureCount: 2}}},
-  {saved: {...saved, receipt: {...saved.receipt, cacheId: retained[1].id}}},
-  {saved: {...saved, predecessorBoundary: successorBoundary}},
-]) {
-  assert.deepEqual(planRawDmiCacheRotation({...savePlan, ...condition}), {
-    status: 'HOLD', reason: 'successor-raw-save-coverage-unverified', retire: [],
-  });
-}
-console.log('OK: finalized RAW membership must cover the authenticated successor plan.');
-
 const ordinaryOwner = {
   id: 111, path: '.github/workflows/run-current-weather-once.yml', status: 'in_progress',
   conclusion: null, head_branch: 'main', head_sha: headSha, run_attempt: 1, event: 'workflow_dispatch',
@@ -474,6 +422,59 @@ assert.deepEqual(await readActivity([ordinaryOwner, {...queuedAudit, path: '.git
 });
 console.log('OK: fixed historical RAW dependencies are retained and legacy B/S never permits rotation.');
 
+const normalDemand = {
+  schemaVersion: 2, kind: 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND',
+  productionReferenceAt: successor.successorPlan.targetReferenceAt,
+  demands: Array.from({length: 673}, (_, index) => ({partId: 'synthetic-' + index})),
+  rawRetention: successor.successorPlan.retention,
+};
+const planBytes = buildRawSuccessorPlanBytes({
+  demand: normalDemand, targetReferenceAt: successor.targetReferenceAt, boundary: successorBoundary,
+});
+assert.deepEqual(JSON.parse(planBytes.toString()), successor.successorPlan);
+assert.throws(() => buildRawSuccessorPlanBytes({
+  demand: normalDemand, targetReferenceAt: '2026-09-05T07:00:00Z', boundary: successorBoundary,
+}), /RETENTION_SUCCESSOR_TARGET/);
+assert.throws(() => buildRawSuccessorPlanBytes({
+  demand: normalDemand, targetReferenceAt: successor.targetReferenceAt, boundary,
+}), /RETENTION_SUCCESSOR_BOUNDARY/);
+assert.throws(() => buildRawSuccessorPlanBytes({
+  demand: {...normalDemand, demands: Array(673).fill({partId: 'duplicate'})},
+  targetReferenceAt: successor.targetReferenceAt, boundary: successorBoundary,
+}), /RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED/);
+const bootProof = {
+  schemaVersion: 1, kind: 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1',
+  runId: successor.runId, runAttempt: successor.runAttempt, sourceHead: successor.sourceHead,
+  targetReferenceAt: successor.targetReferenceAt,
+  cacheIdentitySha256: observation.cacheIdentitySha256,
+  baselineBoundarySha256: hashJson(Object.fromEntries(Object.entries(successorBoundary)
+    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0))),
+  planSha256: createHash('sha256').update(planBytes).digest('hex'),
+  allRequiredVerified: true, requiredCaptures: 1, protectedFiles: 1, unavailableCaptures: 0,
+};
+const pairedBaseline = {
+  schemaVersion: 1, kind: 'DMI_PAIRED_RAW_BASELINE_V1', bVersion: 31, sVersion: 47,
+  bSourceHead: headSha, boundarySha256: bootProof.baselineBoundarySha256,
+};
+const {id, key, version} = rawCaches.at(-1);
+const bridgeInputs = {
+  demand: normalDemand, pairedBaseline, identity: {id, key, version}, matchedKey: key,
+  run: {runId: bootProof.runId, runAttempt: '1', sourceHead: bootProof.sourceHead,
+    targetReferenceAt: bootProof.targetReferenceAt},
+};
+assert.deepEqual(preparePreDmiRawSuccessorProof(bridgeInputs),
+  {planBytes, expected: bootProof, boundary: successorBoundary});
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  pairedBaseline: {...pairedBaseline, boundarySha256: '3'.repeat(64)}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  pairedBaseline: {...pairedBaseline, sVersion: 0}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  matchedKey: rawCaches[0].key}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  run: {...bridgeInputs.run, targetReferenceAt: '2026-09-05T05:00:00Z'}}), /RETENTION_SUCCESSOR_TARGET/);
+const restoredSuccessor = {receipt: bootProof, planBytes};
+const bootPlan = {...plan, current: successor, observation: undefined, restoredSuccessor};
+
 const productionRepo = 'jakobjorgensen82-commits/RavRadar';
 const retirementUrl = 'https://api.github.com/repos/' + productionRepo + '/actions/caches/' + rawCaches[0].id;
 const verifyRetirement = async (testCase) => {
@@ -481,7 +482,7 @@ const verifyRetirement = async (testCase) => {
   const deletes = [];
   const result = await retireVerifiedRawCache({
     repository: productionRepo, githubToken: 'synthetic-token',
-    current: successor, saved, retained,
+    current: successor, restoredSuccessor, retained,
     verifyOwner: async () => {
       locks += 1;
       if (locks === testCase.loseOwnershipAt) throw new Error('synthetic owner lost');
@@ -518,8 +519,8 @@ for (const [response, last] of [
     reads: 3, locks: 3, deletes: [retirementUrl]});
 }
 assert.deepEqual(await verifyRetirement({
-  snapshots: [snapshot(), snapshot()], response: acknowledged, inputs: {saved: undefined},
-}), {result: {status: 'HOLD', reason: 'retirement-requires-successor-save', retire: []},
+  snapshots: [snapshot(), snapshot()], response: acknowledged, inputs: {restoredSuccessor: undefined},
+}), {result: {status: 'HOLD', reason: 'retirement-requires-successor-coverage', retire: []},
   reads: 0, locks: 0, deletes: []});
 assert.deepEqual(await verifyRetirement({
   snapshots: [snapshot(), snapshot(undefined, [retained[1], rawIdentity(rawCaches[0])])],
@@ -534,7 +535,7 @@ for (const uncertainWrite of [null, ...firstTwoRaw]) {
   const requested = [];
   const checkedRawCounts = [];
   const result = await closeRawCacheOverlap({
-    repository: productionRepo, githubToken: 'synthetic-token', current: successor, saved, retained,
+    repository: productionRepo, githubToken: 'synthetic-token', current: successor, restoredSuccessor, retained,
     verifyOwner: async () => {},
     readSnapshot: async () => {
       checkedRawCounts.push(rows.length - 1);
@@ -586,56 +587,6 @@ assert.equal(await finalized({jobs:[{...sourceJob, steps:[sourceJob.steps[0],
   {...sourceJob.steps[1], conclusion:'skipped'}]}]}), null);
 console.log('OK: RAW archive finalization matches an exact successful save step, even if a later stage failed.');
 
-const normalDemand = {
-  schemaVersion: 2, kind: 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND',
-  productionReferenceAt: successor.successorPlan.targetReferenceAt,
-  demands: Array.from({length: 673}, (_, index) => ({partId: 'synthetic-' + index})),
-  rawRetention: successor.successorPlan.retention,
-};
-const planBytes = buildRawSuccessorPlanBytes({
-  demand: normalDemand, targetReferenceAt: successor.targetReferenceAt, boundary: successorBoundary,
-});
-assert.deepEqual(JSON.parse(planBytes.toString()), successor.successorPlan);
-assert.throws(() => buildRawSuccessorPlanBytes({
-  demand: normalDemand, targetReferenceAt: '2026-09-05T07:00:00Z', boundary: successorBoundary,
-}), /RETENTION_SUCCESSOR_TARGET/);
-assert.throws(() => buildRawSuccessorPlanBytes({
-  demand: normalDemand, targetReferenceAt: successor.targetReferenceAt, boundary,
-}), /RETENTION_SUCCESSOR_BOUNDARY/);
-assert.throws(() => buildRawSuccessorPlanBytes({
-  demand: {...normalDemand, demands: Array(673).fill({partId: 'duplicate'})},
-  targetReferenceAt: successor.targetReferenceAt, boundary: successorBoundary,
-}), /RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED/);
-const bootProof = {
-  schemaVersion: 1, kind: 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1',
-  runId: successor.runId, runAttempt: successor.runAttempt, sourceHead: successor.sourceHead,
-  targetReferenceAt: successor.targetReferenceAt,
-  cacheIdentitySha256: observation.cacheIdentitySha256,
-  baselineBoundarySha256: hashJson(Object.fromEntries(Object.entries(successorBoundary)
-    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0))),
-  planSha256: createHash('sha256').update(planBytes).digest('hex'),
-  allRequiredVerified: true, requiredCaptures: 1, protectedFiles: 1, unavailableCaptures: 0,
-};
-const pairedBaseline = {
-  schemaVersion: 1, kind: 'DMI_PAIRED_RAW_BASELINE_V1', bVersion: 31, sVersion: 47,
-  bSourceHead: headSha, boundarySha256: bootProof.baselineBoundarySha256,
-};
-const {id, key, version} = rawCandidate;
-const bridgeInputs = {
-  demand: normalDemand, pairedBaseline, identity: {id, key, version}, matchedKey: key,
-  run: {runId: bootProof.runId, runAttempt: '1', sourceHead: bootProof.sourceHead,
-    targetReferenceAt: bootProof.targetReferenceAt},
-};
-assert.deepEqual(preparePreDmiRawSuccessorProof(bridgeInputs),
-  {planBytes, expected: bootProof, boundary: successorBoundary});
-assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
-  pairedBaseline: {...pairedBaseline, boundarySha256: '3'.repeat(64)}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
-assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
-  pairedBaseline: {...pairedBaseline, sVersion: 0}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
-assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
-  matchedKey: rawCaches[0].key}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
-assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
-  run: {...bridgeInputs.run, targetReferenceAt: '2026-09-05T05:00:00Z'}}), /RETENTION_SUCCESSOR_TARGET/);
 const privateHandoff = {
   schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline,
   boundary: successorBoundary, coverage: bootProof,
@@ -663,8 +614,6 @@ assert.notEqual(rawRotationPairDigest({...successorBoundary, ...pairedBaseline, 
   publicHandoff.protectedPairSha256);
 console.log('OK: cross-job RAW evidence contains only the exact run, count and commitments.');
 
-const restoredSuccessor = {receipt: bootProof, planBytes};
-const bootPlan = {...savePlan, saved: undefined, restoredSuccessor};
 assert.deepEqual(planRawDmiCacheRotation(bootPlan).retire, [rawIdentity(rawCaches[0])]);
 assert.deepEqual(planRawDmiCacheRotation({...bootPlan,
   current: {...successor, targetReferenceAt: '2026-09-05T04:00:00.000Z'},
@@ -682,13 +631,6 @@ for (const proof of [
     status: 'HOLD', reason: 'restored-successor-coverage-unverified', retire: [],
   });
 }
-assert.deepEqual(planRawDmiCacheRotation({...bootPlan, saved}), {
-  status: 'HOLD', reason: 'ambiguous-successor-coverage', retire: [],
-});
-assert.deepEqual(await verifyRetirement({
-  snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged,
-  inputs: {saved: undefined, restoredSuccessor},
-}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id, remainingRawCopies: 3}, reads: 3, locks: 4, deletes: [retirementUrl]});
 console.log('OK: an exact restored archive covering the verified successor plan can bootstrap retirement.');
 
 // The receiver binds the wire form to an independently observed next owner;

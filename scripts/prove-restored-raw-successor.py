@@ -71,7 +71,12 @@ def prove_restored_raw_successor(producer, environment):
             or producer.epoch(retention["boundary"]["productionReferenceAt"]) >= producer.epoch(target)):
         raise ValueError("protected demand")
     required = len(retention["captures"])
-    verified = producer.configure_raw_current_retention(retention, require_existing=True)
+    raw_identity = producer._OwnedGribRead._identity(raw.lstat())
+    # The upstream normal restore is complete and no RAW producer has started.
+    # The existing inventory helper's mkdir on this directory is a no-op.
+    verified = producer.configure_raw_current_retention(retention)
+    if producer._OwnedGribRead._identity(raw.lstat()) != raw_identity:
+        raise ValueError("restored directory moved")
     if verified != {"evictionAllowed": True, "protectedFiles": required, "unavailableCaptures": 0}:
         raise ValueError("missing original")
     if (read(plan_path, PLAN_MAX_BYTES, plan_digest) != plan or read(identity_path, 512) != identity

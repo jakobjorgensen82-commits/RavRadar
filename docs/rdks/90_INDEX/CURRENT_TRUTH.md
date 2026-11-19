@@ -1,5 +1,11 @@
 ## 18. november — ravfund og korte opfølgninger
 
+## 19. november — begrænset RAW-rotation før ny vejrhentning
+
+Den lokale kandidat genbruger den normale låste time samt det autentificerede vejrgrundlag. Den kontrollerer de nødvendige originaler i den nyeste faktisk gendannede kopi, mens det afgrænsede skrivejob verificerer de to nyeste uploads, aktuelle læsere og hver sletning særskilt. Planen kan først udføres, når den almindelige builder venter og samme vejrgrundlag stadig er aktuelt.
+
+Målet er to færdige RAW-kopier og højst én nyere kopi under overgangen. Måling og oprydning omfatter hele repositoryets cachebestand. Det lokale kildearbejde beviser endnu hverken faktisk oprydning eller sikker Free-drift. Første driftstrin er ren observation. Se håndbog 89.356.
+
 Den eksterne AI er målt gennem den normale offentlige brugerflade på tre sprog i en afgrænset prøve. Den særskilte appopdatering på 602 er en lokal kildekandidat, der bruger den samme validerede faktavej for det kendte skånsomme identifikationsspørgsmål og husker fundet ved en snæver opfølgning. Den næste leveringsprøve omfatter den tidligere fejlede tyske formulering.
 
 ## 18. november — original backup gendannet og skrivefri lagerkontrol klargjort

@@ -5,6 +5,13 @@
   "updatedAt": "2026-11-17",
   "sections": [
     {
+      "id": "github-raw-weather-cache-rotation-2026-11-19",
+      "chapter": "89.356",
+      "title": "To gendannelige råvejrkopier i GitHub",
+      "summary": "Behold de to nyeste verificerede råvejrkopier, og mål den samlede GitHub-cache før en ny upload.",
+      "body": "<div class=\"reader-guide\"><p>Behold de to nyeste verificerede råvejrkopier, og mål den samlede GitHub-cache før en ny upload.</p></div><p>En almindelig vejrkørsel gendanner den seneste kompatible DMI-råcache. Før næste hentning kan den afprøve, om kopien har alle de originale filer, som den låste prognosetime kræver ifølge den gemte vejrpakke og beregningstilstand. Prøven læser de eksisterende filer og kontrollerer størrelse, SHA-256 og filidentitet.</p><p>Et særskilt GitHub-job må kun udføre oprydningen, når den almindelige kørsel venter på dens afgørelse, de to nyeste uploads er verificeret, og ingen anden mulig læser bruger de ældre kopier. Hver sletning bekræftes med en ny aflæsning. Ukendte svar eller afvigelser stopper oplægget til yderligere sletning.</p><p>Den næste RAW-upload afpasses efter den samlede cachebestand i GitHub og en reserve til andre cachefiler. En tredje kopi beholdes frem til den er verificeret for den næste faktisk låste prognosetime. Den første driftsafprøvning foretages i observationstilstand. Ved denne dokumentationsændring afventes både den faktiske GitHub-afprøvning og aktivering.</p>"
+    },
+    {
       "id": "assistant-find-identification-2026-11-18",
       "chapter": "89.355",
       "title": "Når et fund kan ligne rav",

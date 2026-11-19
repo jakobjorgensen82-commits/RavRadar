@@ -1,5 +1,12 @@
 ## 18. november — Spørg RavRadar om et muligt ravfund
 
+## 19. november — RAW-rotation og plads til næste upload
+
+- [x] Lokal prøve af den normale kalder, fysisk læsning af gendannede originaler, afgrænset GitHub-job og stop efter uklart sletteudfald.
+- [ ] Præcis kilde- og Linux-kontrol for den samlede kandidat.
+- [ ] Verificér den næste normale observationskørsel, før oprydning aktiveres.
+- [ ] Verificér faktisk overgang til to kopier, gentagen rotation og margin under målt almindelig drift.
+
 - [x] Verificér eksternt AI-svar for afgrænset identifikationsspørgsmål på dansk, tysk og engelsk gennem den normale brugerflade på 4.0.601.
 - [x] Reproducér generisk svar på den danske opfølgning og afgræns den længere tyske fejl til udlæsning af svaret.
 - [ ] Kvalificér den nye præcise kilde, lever og gentag det oprindelige spørgsmål og opfølgningen i den offentlige brugerflade.

@@ -15,7 +15,6 @@ const CIPHER_PATH = '.cache/weather-private-progress.encrypted';
 const MAX_CIPHER_BYTES = 384 * 1024 * 1024; // Same existing local SAVE/RESTORE cap.
 const API_VERSION = '6.1.0';
 const MAX_RECEIPT_BYTES = 4096;
-const MAX_RAW_MEMBERSHIP_BYTES = 1024 * 1024;
 const LOCK_SHA256 = '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5';
 
 function refused(code) { return new Error(code); }
@@ -456,72 +455,6 @@ function rawMembershipIdentity(stat) {
   return [stat.dev, stat.ino, stat.mode, stat.size, stat.mtimeNs, stat.ctimeNs].map(String);
 }
 
-function sameRawMembershipIdentity(stat, expected) {
-  return Array.isArray(expected) && expected.length === 6
-    && rawMembershipIdentity(stat).every((value, index) => value === expected[index]);
-}
-
-function readRawSaveMembership() {
-  // A missing, changed or malformed observation denies this evidence only.
-  try {
-    const cache = path.join(ROOT, '.cache');
-    const raw = path.join(ROOT, CACHE_PATH);
-    if (!process.env.GITHUB_WORKSPACE || path.resolve(process.env.GITHUB_WORKSPACE) !== ROOT
-        || fs.realpathSync(cache) !== cache || fs.realpathSync(raw) !== raw) return null;
-    const observationPath = path.join(cache, 'dmi-raw-save-membership.json');
-    const fd = fs.openSync(observationPath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW
-      | fs.constants.O_NONBLOCK);
-    let bytes;
-    try {
-      const stat = fs.fstatSync(fd, { bigint: true });
-      if (!stat.isFile() || stat.nlink !== 1n || stat.size < 1n
-          || stat.size > BigInt(MAX_RAW_MEMBERSHIP_BYTES)) return null;
-      const buffer = Buffer.alloc(Number(stat.size) + 1);
-      let length = 0;
-      while (length < buffer.length) {
-        const read = fs.readSync(fd, buffer, length, buffer.length - length, length);
-        if (read === 0) break;
-        length += read;
-      }
-      const identity = rawMembershipIdentity(stat);
-      if (length !== buffer.length - 1
-          || !sameRawMembershipIdentity(fs.fstatSync(fd, { bigint: true }), identity)
-          || !sameRawMembershipIdentity(fs.lstatSync(observationPath, { bigint: true }), identity)) return null;
-      bytes = buffer.subarray(0, length);
-    } finally {
-      fs.closeSync(fd);
-    }
-    const value = JSON.parse(bytes.toString('utf8'));
-    if (value.schemaVersion !== 2
-        || !['RUN_ID', 'RUN_ATTEMPT', 'SHA'].every(
-          key => value.execution?.[key] === process.env['GITHUB_' + key] && value.execution[key])
-        || ![value.boundarySha256, value.captureSetSha256, value.manifestSha256]
-          .every(digest => typeof digest === 'string' && /^[a-f0-9]{64}$/.test(digest))
-        || !Array.isArray(value.files) || !value.files.length || value.files.length > 4096) return null;
-    const directory = fs.lstatSync(raw, { bigint: true });
-    if (!directory.isDirectory() || !sameRawMembershipIdentity(directory, value.directory)) return null;
-    const names = new Set();
-    if (value.files.some(row => !Array.isArray(row) || row.length !== 3
-        || typeof row[2] !== 'string' || !/^[a-f0-9]{64}$/.test(row[2]))) return null;
-    const captures = [...new Set(value.files.map(row => row[2]))].sort();
-    const captureSetSha256 = crypto.createHash('sha256').update(JSON.stringify(captures)).digest('hex');
-    if (captureSetSha256 !== value.captureSetSha256) return null;
-    for (const [name, identity] of [['asset-manifest.json', value.manifest], ...value.files]) {
-      if (names.has(name)
-          || (name !== 'asset-manifest.json' && !/^[a-f0-9]{24}\.[a-z0-9]{1,20}$/i.test(name))) return null;
-      names.add(name);
-      const stat = fs.lstatSync(path.join(raw, name), { bigint: true });
-      if (!stat.isFile() || stat.nlink !== 1n || !sameRawMembershipIdentity(stat, identity)) return null;
-    }
-    if (!sameRawMembershipIdentity(fs.lstatSync(raw, { bigint: true }), value.directory)) return null;
-    return { observationSha256: crypto.createHash('sha256').update(bytes).digest('hex'),
-      boundarySha256: value.boundarySha256, captureSetSha256,
-      manifestSha256: value.manifestSha256, verifiedCaptureCount: captures.length };
-  } catch {
-    return null;
-  }
-}
-
 async function runOwnedOperation(operation) {
   if (require.main === module) cliPhase = 'INPUT';
   const input = operation === 'save' ? fixedInputs()
@@ -534,7 +467,6 @@ async function runOwnedOperation(operation) {
   let firstFailure = null;
   let interrupted = false;
   let archiveCapacitySkipped = false;
-  let finalizedMembership = null;
   const interrupt = () => {
     interrupted = true;
     // Request only. The Python owner must still prove its entire group absent.
@@ -547,7 +479,6 @@ async function runOwnedOperation(operation) {
     lease = await owner.acquireWeatherAcquisitionWriter();
     await owner.assertWeatherAcquisitionWriter(lease);
     if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
-    const before = operation === 'save' ? readRawSaveMembership() : null;
     if (require.main === module) cliPhase = 'SPAWN';
     child = spawn('python3', ['-B', path.join(ROOT, 'scripts/run-owned-dmi-grib-save.py'),
       ...(operation === 'distribution' ? ['--prepare-distribution']
@@ -605,10 +536,6 @@ async function runOwnedOperation(operation) {
     }
     if (require.main === module) cliPhase = 'LEASE';
     await owner.assertWeatherAcquisitionWriter(lease);
-    if (before && !archiveCapacitySkipped && before.observationSha256 === readRawSaveMembership()?.observationSha256) {
-      finalizedMembership = { schemaVersion: 2, kind: 'DMI_RAW_SAVE_COMMITTED_MEMBERSHIP',
-        cacheId: receipt.cacheId, key: receipt.key, ...before };
-    }
   } catch (error) {
     firstFailure = { value: error };
   } finally {
@@ -641,13 +568,7 @@ async function runOwnedOperation(operation) {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'archive_capacity_skipped=true\n');
     return { archiveCapacitySkipped: true };
   }
-  const membershipOutput = finalizedMembership ? JSON.stringify(finalizedMembership) : null;
-  if (process.env.GITHUB_OUTPUT) {
-    const output = membershipOutput === null
-      ? 'saved=true\n'
-      : 'saved=true\nsaved_membership=' + membershipOutput + '\n';
-    fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
-  }
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'saved=true\n');
   return { saved: true };
 }
 

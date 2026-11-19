@@ -417,10 +417,10 @@ def check_raw_current_retention():
     from unittest.mock import patch
     p = producer
     old = (p.ROOT, p.RAW_DIR, p.RAW_CACHE_MAX_BYTES, p.DOWNLOAD_SESSION,
-           p._RAW_CURRENT_PROTECTED, p._RAW_CURRENT_BOUNDARY)
+           getattr(p, "_RAW_CURRENT_PROTECTED", None))
     old_policies = (dict(p._RAW_CURRENT_IDENTITIES), set(p._RAW_CURRENT_UNPROVED_NAMES), dict(p._RAW_CURRENT_SESSION_PROTECTED))
     with tempfile.TemporaryDirectory(prefix="rr-raw-retention-") as directory:
-        p.ROOT = Path(directory).resolve()
+        p.ROOT = Path(directory)
         p.RAW_DIR = p.ROOT / ".cache/dmi-grib"
         p.RAW_DIR.mkdir(parents=True)
         body = b"synthetic cache bytes, not a GRIB or native admission".ljust(32768, b"x")
@@ -560,8 +560,7 @@ def check_raw_current_retention():
             if sys.argv[1:] == ["--raw-restored-observation-only"]:
                 print("Normal B/S RAW observation: independently matchable cache and baseline, actual target, complete restore only")
                 raise SystemExit(0)
-            if sys.argv[1:] != ["--raw-saved-membership-only"]:
-                check_raw_current_b_conditions_capacity(p, read, write, history)
+            check_raw_current_b_conditions_capacity(p, read, write, history)
             write(".cache/ravscore-current-history-demand.json", sparse)
             assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is None, 'unselected missing RAW disables eviction, not replay'
             bad_path = p.cached_asset_path(missing_href)
@@ -583,61 +582,6 @@ def check_raw_current_retention():
             p.save_raw_cache_manifest(original_manifest)
             write(".cache/ravscore-current-history-demand.json", history)
             assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is not None
-        observation = p.ROOT / ".cache/dmi-raw-save-membership.json"
-        with patch.dict(os.environ, {"GITHUB_RUN_ID": "42", "GITHUB_RUN_ATTEMPT": "1", "GITHUB_SHA": "f" * 40}):
-            with patch.object(p, "file_content_sha256", side_effect=AssertionError("GRIB was reread")):
-                with patch.object(p.json, "loads", side_effect=RecursionError):
-                    p.observe_raw_save_membership()
-                assert not observation.exists(), "malformed optional evidence cannot stop normal saving"
-                p.observe_raw_save_membership()
-                receipt = json.loads(observation.read_bytes())
-                raw_manifest = p.raw_cache_manifest_path().read_bytes()
-                assert receipt["manifestSha256"] == hashlib.sha256(raw_manifest).hexdigest()
-                assert [row[0] for row in receipt["files"]] == [required.name]
-                observation.unlink()
-                with patch.dict(p._RAW_CURRENT_IDENTITIES, clear=True):
-                    p.observe_raw_save_membership()
-                assert not observation.exists(), "unknown physical byte identity cannot be observed"
-
-            session_href = "https://owned-fixture.invalid/new-session.grib"
-            session_path = p.cached_asset_path(session_href)
-            session_bytes = b"distinct captured marine original"
-            old_manifest = p.load_raw_cache_manifest()
-            try:
-                session_path.write_bytes(session_bytes)
-                with patch.dict(p._RAW_CURRENT_SESSION_PROTECTED, clear=True):
-                    p.register_raw_cache_asset(session_path, session_href, "dkss_nsbs", valid_time, valid_time,
-                        item_id="session-\u00f8", item_created_at=valid_time, expected_size=len(session_bytes),
-                        acquired_at=valid_time, content_sha256=hashlib.sha256(session_bytes).hexdigest())
-                    session_capture = p._raw_current_session_files()[session_path.name]
-                    assert session_path.name not in p._RAW_CURRENT_PROTECTED
-                    p.observe_raw_save_membership()
-                    assert not observation.exists(), "an unverified acquired member must not be advertised"
-                    p._raw_current_inventory()
-                    with patch.object(p, "file_content_sha256", side_effect=AssertionError("GRIB was reread")):
-                        p.observe_raw_save_membership()
-                    receipt = json.loads(observation.read_bytes())
-                    def membership_digest(capture):
-                        fields = {key: value for key, value in capture.items() if key != "acquiredAt"}
-                        return hashlib.sha256(json.dumps(fields, sort_keys=True,
-                            separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
-
-                    expected = {file.name: membership_digest(capture)
-                        for file, capture in [(required, required_capture), (session_path, session_capture)]}
-                    assert receipt["schemaVersion"] == 2 and {row[0]: row[2] for row in receipt["files"]} == expected
-                    expected_set = json.dumps(sorted(expected.values()), separators=(",", ":")).encode()
-                    assert receipt["captureSetSha256"] == hashlib.sha256(expected_set).hexdigest()
-                    observation.unlink()
-                    session_path.write_bytes(b"changed before the owned save")
-                    p.observe_raw_save_membership()
-                    assert not observation.exists(), "a changed acquired original denies membership"
-            finally:
-                session_path.unlink()
-                p._RAW_CURRENT_IDENTITIES.pop(str(session_path.absolute()), None)
-                p.save_raw_cache_manifest(old_manifest)
-        if sys.argv[1:] == ["--raw-saved-membership-only"]:
-            print("RAW SAVE membership: verified retained and acquired members, unknown or changed members refuse")
-            raise SystemExit(0)
         p.RAW_CACHE_MAX_BYTES = 2 * len(body) + 12000
         calls = []
         class Response:
@@ -736,8 +680,7 @@ def check_raw_current_retention():
                 raise AssertionError("corrupt protected local input was not a stop")
             assert len(calls) == 2 and damaged == {path.name: path.read_bytes() for path in p.RAW_DIR.iterdir()}
         finally:
-            (p.ROOT, p.RAW_DIR, p.RAW_CACHE_MAX_BYTES, p.DOWNLOAD_SESSION,
-                p._RAW_CURRENT_PROTECTED, p._RAW_CURRENT_BOUNDARY) = old
+            p.ROOT, p.RAW_DIR, p.RAW_CACHE_MAX_BYTES, p.DOWNLOAD_SESSION, p._RAW_CURRENT_PROTECTED = old
             if hasattr(p, "_RAW_CURRENT_IDENTITIES"):
                 p._RAW_CURRENT_IDENTITIES.clear()
                 p._RAW_CURRENT_IDENTITIES.update(old_policies[0])

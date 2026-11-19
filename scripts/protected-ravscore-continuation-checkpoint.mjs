@@ -17,7 +17,6 @@ import {
 } from './ravscore-continuation-checkpoint.mjs';
 import { CANDIDATE_G_CONTINUATION_FIELDS }
   from './lib/ravscore-candidate-g-rollback-runtime.mjs';
-import { prepareRawPublicationStepReceipt } from './lib/raw-publication-step-receipt.mjs';
 
 export const PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY =
   'ravscore-continuation-checkpoint';
@@ -958,7 +957,7 @@ async function invokeProtectedCheckpointRpc(rpcRequest, body) {
   }
 }
 
-async function publishCheckpointWithReceipt({
+export async function publishProtectedRavScoreContinuationCheckpoint({
   checkpointPath = PROTECTED_RAVSCORE_CHECKPOINT_PATH,
   targetReference,
   request,
@@ -1021,7 +1020,7 @@ async function publishCheckpointWithReceipt({
     { local, expectedVersion },
   );
   const changed = metadata.disposition !== 'unchanged';
-  const result = {
+  return {
     published: changed,
     reason: changed
       ? `protected-checkpoint-${metadata.disposition}`
@@ -1033,11 +1032,6 @@ async function publishCheckpointWithReceipt({
     preexistingHistoricalVersionsPreserved: true,
     newHistoricalVersionsRetained: false,
   };
-  return { result, generationSha256: metadata.generationSha256 };
-}
-
-export async function publishProtectedRavScoreContinuationCheckpoint(options) {
-  return (await publishCheckpointWithReceipt(options)).result;
 }
 
 export async function restoreProtectedRavScoreContinuationCheckpoint({
@@ -1181,9 +1175,6 @@ function parseArgs(argv) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const writeReceipt = options.mode === 'publish'
-    ? prepareRawPublicationStepReceipt('s', options.targetReference)
-    : null;
   const request = options.mode === 'publish'
     ? createProtectedRavScoreCheckpointVersionRequester()
     : createProtectedRavScoreCheckpointRequester();
@@ -1194,15 +1185,11 @@ async function main() {
     ? createProtectedRavScoreCheckpointDiagnosticRequester()
     : null;
   const result = options.mode === 'publish'
-    ? await publishCheckpointWithReceipt({
+    ? await publishProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,
       request,
       rpcRequest,
       diagnosticRequest,
-    }).then(async ({ result, generationSha256 }) => {
-      await writeReceipt?.({ centralVersion: result.centralVersion, productionReferenceAt: result.checkpointAt,
-        digest: generationSha256 });
-      return result;
     })
     : await restoreProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,
