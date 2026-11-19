@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import { authenticateRawRotationHandoff, isAuthenticatedRawRotationHandoff,
   projectPublicRawRotationProof, projectRawRotationDecision, rawRotationPairDigest, requireRawRotationDecision } from './lib/raw-rotation-handoff.mjs';
 import { preparePreDmiRawSuccessorProof } from './prove-pre-dmi-restored-raw-successor.mjs';
@@ -713,3 +714,13 @@ for (const change of [{status: 'HOLD'}, {sourceHead: '2'.repeat(40)}, {runAttemp
     Buffer.from(JSON.stringify({...confirmed, ...change})), nextScope, privateSha256), /HANDOFF_EVIDENCE_INVALID/);
 }
 console.log('OK: only the same-run positive confirmation releases the waiting acquisition.');
+
+// The actual hosted Linux source run also exercises the native physical reader.
+if (process.platform === 'linux') {
+  const proof = spawnSync('python3', ['-B', 'scripts/test-prove-restored-raw-successor.py'], {
+    encoding: 'utf8', timeout: 20_000, maxBuffer: 16 * 1024,
+  });
+  assert.equal(proof.error, undefined);
+  assert.equal(proof.status, 0, proof.stderr);
+  assert.match(proof.stderr, /Ran 2 tests/);
+}
