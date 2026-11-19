@@ -27,6 +27,7 @@
 - [x] Første ordinære kørsel #353 gendannede den aktuelle RAW-cache. Ingen kopi blev fjernet efter afslaget i kontrollen af de krævede originaler.
 - [ ] Kvalificér den afgrænsede rapportering af fejlkategorier og fastslå den konkrete årsag til afslaget.
 - [x] Bekræft to stabile kopier uden at blokere på en anden cachelæser. En sådan læser spærrer stadig, hvis en gammel kopi skal fjernes.
+- [x] Lokalt afprøvet kontrol af det samlede behov for originaler til den låste time og senere genoptagelse.
 - [ ] Verificér originalerne og første overgang til to kopier i et ledigt ordinært vejrvindue før en ny upload.
 - [ ] Verificér faktisk overgang til to kopier, gentagen rotation og margin under målt almindelig drift.
 

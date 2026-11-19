@@ -65,7 +65,7 @@ def prove_restored_raw_successor(producer, environment):
     retention = plan["retention"]
     if (not isinstance(retention, dict) or type(retention.get("schemaVersion")) is not int
             or retention.get("kind") != "COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION"
-            or not isinstance(retention.get("captures"), list) or not 0 < len(retention["captures"]) <= 4096
+            or not isinstance(retention.get("captures"), list) or len(retention["captures"]) > 4096
             or not isinstance(retention.get("boundary"), dict)
             or not producer.canonical_time(retention["boundary"].get("productionReferenceAt"))
             or producer.epoch(retention["boundary"]["productionReferenceAt"]) >= producer.epoch(target)):
@@ -75,6 +75,24 @@ def prove_restored_raw_successor(producer, environment):
     # The upstream normal restore is complete and no RAW producer has started.
     # The existing inventory helper's mkdir on this directory is a no-op.
     verified = producer.configure_raw_current_retention(retention)
+    if required == 0:
+        # An independently empty dependency set is meaningful only if the
+        # matching archive was actually restored. The general inventory reader
+        # can return an empty default for a missing manifest.
+        manifest, files = producer._raw_current_inventory()
+        if producer.CACHE_MANIFEST_NAME not in files:
+            raise ValueError("restored archive manifest missing")
+        for name, entry in manifest["assets"].items():
+            capture = producer.canonical_current_source_asset(entry)
+            if capture is not None and name in files:
+                file, before = files[name]
+                if (before.st_size != capture["contentLengthBytes"]
+                        or producer.file_content_sha256(file) != capture["contentSha256"]
+                        or producer._OwnedGribRead._identity(file.lstat()) != producer._OwnedGribRead._identity(before)):
+                    raise ValueError("restored cache member mismatch")
+                break
+        else:
+            raise ValueError("empty restored archive")
     if producer._OwnedGribRead._identity(raw.lstat()) != raw_identity:
         raise ValueError("restored directory moved")
     if verified != {"evictionAllowed": True, "protectedFiles": required, "unavailableCaptures": 0}:

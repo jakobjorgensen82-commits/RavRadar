@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { buildRawSuccessorPlanBytes } from './lib/verified-raw-cache-rotation.mjs';
 import { projectPublicRawRotationProof } from './lib/raw-rotation-handoff.mjs';
-import { RAVSCORE_CURRENT_HISTORY_DEMAND_PATH } from './plan-ravscore-current-history.mjs';
+import { RAVSCORE_CURRENT_HISTORY_DEMAND_PATH, withInstalledCoherentRawTransportRetention }
+  from './plan-ravscore-current-history.mjs';
+import { collectPublishedRawCurrentCaptureUnion, savedRawPhysicalKey } from './lib/committed-raw-current-capture-union.mjs';
+import { readRetainedRawRotationInputs } from './read-published-raw-rotation-runtime.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = 'jakobjorgensen82-commits/RavRadar';
@@ -25,7 +28,7 @@ function requireProof(ok, reason) {
 
 // These are independent outputs minted by the already completed normal B/S
 // reconciliation, never a digest minted by re-reading demand.rawRetention.
-export function preparePreDmiRawSuccessorProof({ demand, pairedBaseline, identity, run, matchedKey }) {
+export function preparePreDmiRawSuccessorProof({ demand, retainedGeneration, pairedBaseline, identity, run, matchedKey }) {
   const boundary = demand?.rawRetention?.boundary;
   requireProof(pairedBaseline?.schemaVersion === 1 && pairedBaseline.kind === 'DMI_PAIRED_RAW_BASELINE_V1'
     && Object.keys(pairedBaseline).length === 6
@@ -39,10 +42,16 @@ export function preparePreDmiRawSuccessorProof({ demand, pairedBaseline, identit
     && typeof identity.version === 'string' && SHA256.test(identity.version)
     && NUM.test(run?.runId ?? '') && run.runAttempt === '1' && HEAD.test(run.sourceHead)
     && HOUR.test(run.targetReferenceAt), 'CACHE_OR_TARGET_BINDING');
-  requireProof(Array.isArray(demand.rawRetention.captures), 'DEMAND_CAPTURE_LIST');
-  requireProof(demand.rawRetention.captures.length > 0, 'DEMAND_NO_REQUIRED_CAPTURES');
-  const planBytes = buildRawSuccessorPlanBytes({demand, targetReferenceAt: run.targetReferenceAt, boundary});
-  const required = demand.rawRetention.captures.length;
+  requireProof(retainedGeneration?.schemaVersion === 1
+    && retainedGeneration.kind === 'PUBLISHED_ORDINARY_RAW_CAPTURE_UNION'
+    && isDeepStrictEqual(retainedGeneration.boundary, boundary), 'RETAINED_GENERATION_BINDING');
+  const combined = withInstalledCoherentRawTransportRetention(demand.rawRetention, retainedGeneration.captures);
+  const files = new Map(combined.captures.map(capture => [savedRawPhysicalKey(capture), capture]));
+  const rawRetention = {...combined, captures: [...files.values()]};
+  const planBytes = buildRawSuccessorPlanBytes({
+    demand: {...demand, rawRetention}, targetReferenceAt: run.targetReferenceAt, boundary,
+  });
+  const required = rawRetention.captures.length;
   const expected = {
     schemaVersion: 1, kind: 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1',
     ...run, cacheIdentitySha256: flatDigest(identity), baselineBoundarySha256: pairedBaseline.boundarySha256,
@@ -86,9 +95,11 @@ async function main(env) {
     readJson(path.join(ROOT, RAVSCORE_CURRENT_HISTORY_DEMAND_PATH), 8 * 1024 * 1024),
     readJson(path.join(ROOT, '.cache/dmi-restored-raw-identity.json'), 512),
   ]);
+  phase = 'READ_RETAINED_GENERATION';
+  const retainedGeneration = await collectPublishedRawCurrentCaptureUnion(await readRetainedRawRotationInputs({demand}));
   phase = 'BIND_INPUTS';
   const { planBytes, expected, boundary } = preparePreDmiRawSuccessorProof({
-    demand, pairedBaseline, identity, run, matchedKey: env.RAW_MATCHED_CACHE_KEY,
+    demand, retainedGeneration, pairedBaseline, identity, run, matchedKey: env.RAW_MATCHED_CACHE_KEY,
   });
   phase = 'WRITE_PRIVATE_PLAN';
   const work = path.join(env.RUNNER_TEMP, 'ravradar-raw-rotation');
@@ -107,7 +118,7 @@ async function main(env) {
   // reconfirm the same protected B/S, producer archive and reader/pin inventory.
   phase = 'PUBLISH_HANDOFF';
   const output = Buffer.from(JSON.stringify({
-    schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline, boundary, coverage,
+    schemaVersion: 2, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V2', pairedBaseline, boundary, coverage,
   }));
   const proofSha256 = digest(output);
   const handoff = projectPublicRawRotationProof(output, proofSha256);
@@ -117,7 +128,11 @@ async function main(env) {
 }
 
 const fixedReasons = new Set([
-  'BASELINE_BINDING', 'CACHE_OR_TARGET_BINDING', 'DEMAND_CAPTURE_LIST', 'DEMAND_NO_REQUIRED_CAPTURES', 'DEMAND_PLAN_SIZE',
+  'BASELINE_BINDING', 'CACHE_OR_TARGET_BINDING', 'RETAINED_GENERATION_BINDING', 'DEMAND_PLAN_SIZE',
+  'RAW_ROTATION_PUBLISHED_PAIR_BASELINE_INPUT', 'RAW_ROTATION_PUBLISHED_PAIR_MANIFEST_REQUIRED',
+  'RAW_ROTATION_PUBLISHED_PAIR_MANIFEST_GENERATION', 'RAW_ROTATION_PUBLISHED_PAIR_REGISTRY_SCOPE',
+  'RAW_ROTATION_PUBLISHED_PAIR_PART_CONTINUITY', 'RAW_CAPTURE_UNION_SAVED_ENDPOINT_UNPROVED',
+  'RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_BOUND', 'RAVSCORE_CURRENT_HISTORY_DEMAND_RETENTION_CAPTURE_REQUIRED',
   'INPUT_FILE_SCOPE', 'INPUT_FILE_MOVED', 'RUN_ENVIRONMENT', 'CHECKOUT_IDENTITY', 'COVERAGE_RESPONSE',
   'RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED', 'RETENTION_SUCCESSOR_TARGET', 'RETENTION_SUCCESSOR_BOUNDARY',
   'ENOENT', 'EEXIST', 'EACCES', 'ETIMEDOUT',
