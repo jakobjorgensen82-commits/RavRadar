@@ -1,3 +1,7 @@
+## 18. november — ravfund og korte opfølgninger
+
+Den eksterne AI er målt gennem den normale offentlige brugerflade på tre sprog i en afgrænset prøve. Den særskilte appopdatering på 602 er en lokal kildekandidat, der bruger den samme validerede faktavej for det kendte skånsomme identifikationsspørgsmål og husker fundet ved en snæver opfølgning. Den næste leveringsprøve omfatter den tidligere fejlede tyske formulering.
+
 ## 18. november — original backup gendannet og skrivefri lagerkontrol klargjort
 
 Den isolerede prøve #50 gendannede det originale Supabase-arkiv. Data blev sammenlignet med de autentiske SQL-filer, login blev verificeret, og det midlertidige miljø blev lukket. Rotation kræver fortsat et aktuelt arkivindeks og målt lagerplads. Den lokale læser bruger kun det godkendte indeks og lagerets metadata. Ekstra objekter giver uafklaret status. Ugentlig backup og Free-overgang afventer deres egne beviser.

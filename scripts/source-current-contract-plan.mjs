@@ -250,6 +250,7 @@ const PATH_AREAS=freeze({
   assistantDiagnostic:[FIXED_ASSISTANT_LOG_TEST,'scripts/read-fixed-assistant-failure-log-20261101.mjs'],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
+    'js/services/rav-assistant-public-help.js','scripts/test-assistant-ui-error-boundary.mjs',
     'scripts/test-ravscore-public-data-service-binding.mjs',
     'scripts/test-ravscore-public-browser-closure.mjs',
     'scripts/test-map-forecast-timeline.mjs',

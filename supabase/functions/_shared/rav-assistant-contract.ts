@@ -519,6 +519,11 @@ export function assistantSystemInstruction() {
 
 // Closed whole-clause family: membership in the full bank is not relevance.
 // Every clause must match; a recognised prefix never certifies an unknown tail.
+const FIND_IDENTIFICATION_QUESTIONS = Object.freeze({
+  da: /^jeg har fundet en (?:gul )?sten(?: med hvide striber)?[.!] hvordan (?:undersøger|tester) jeg den uden at ridse den,? og hvad (?:ville|kan) få dig til at tvivle på,? at den er rav(?=$|[\s,.;!?])/iu,
+  de: /^ich habe einen (?:gelben )?stein(?: mit weißen streifen)? gefunden[.!] wie (?:prüfe|untersuche) ich ihn ohne kratzer,? und welche (?:merkmale|hinweise) sprechen gegen bernstein(?=$|[\s,.;!?])/iu,
+  en: /^(?:i found|i have found|i['’]ve found) a (?:yellow )?stone(?: with white stripes)?[.!] how (?:can|do) i (?:check|examine|test) it without scratching it,? and what would make you doubt (?:that )?it is amber(?=$|[\s,.;!?])/iu,
+});
 const IDENTIFICATION_CLAUSES = Object.freeze({
   da: Object.freeze([
     { facet:"magnifier", pattern:/^kan (?:en |min |et |mit )?(?:almindelig(?:t)? )?(?:lup|forstørrelsesglas) (?:hjælpe(?: mig)? med at|bruges til at) (?:skelne|kende forskel på) (?:rav (?:fra|og) (?:kopal|copal|plast|glas)|(?:kopal|copal|plast|glas) fra rav)(?=$|[\s,.;!?])/iu },
@@ -556,9 +561,12 @@ export function assistantIdentificationPolicy(question, locale) {
   if (typeof question !== "string" || !IDENTIFICATION_CLAUSES[locale]
       || routeAssistantQuestion(question) !== "provider") return null;
   const text = question.trim().normalize("NFKC").replace(/\s+/gu," ").replace(/[?!.]+$/u,"");
-  const clauses = text.split(/(?:[?;.!]\s*|,?\s+(?:og|und|and)\s+(?=(?:hvilke|hvad|hvordan|kan|welche|was|wie|kann|what|which|how|can)\b))/iu);
-  const facets = new Set(); let recognised = false;
-  let complete = question.length <= 600 && clauses.length > 0 && clauses.length <= 6;
+  const findQuestion = FIND_IDENTIFICATION_QUESTIONS[locale]?.exec(text);
+  const clauses = findQuestion ? [] : text.split(/(?:[?;.!]\s*|,?\s+(?:og|und|and)\s+(?=(?:hvilke|hvad|hvordan|kan|welche|was|wie|kann|what|which|how|can)\b))/iu);
+  const facets = new Set(findQuestion ? ["identification", "damage"] : []);
+  let recognised = Boolean(findQuestion);
+  let complete = question.length <= 600
+    && (findQuestion ? findQuestion[0].length === text.length : clauses.length > 0 && clauses.length <= 6);
   for (const clause of clauses) {
     const matches = IDENTIFICATION_CLAUSES[locale].map(rule => ({rule,match:rule.pattern.exec(clause)})).filter(row => row.match);
     if (!matches.length) { complete = false; continue; }

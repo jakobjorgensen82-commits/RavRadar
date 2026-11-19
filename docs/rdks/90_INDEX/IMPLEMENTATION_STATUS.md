@@ -1,3 +1,9 @@
+## 18. november — Spørg RavRadar om et muligt ravfund
+
+- [x] Verificér eksternt AI-svar for afgrænset identifikationsspørgsmål på dansk, tysk og engelsk gennem den normale brugerflade på 4.0.601.
+- [x] Reproducér generisk svar på den danske opfølgning og afgræns den længere tyske fejl til udlæsning af svaret.
+- [ ] Kvalificér den nye præcise kilde, lever og gentag det oprindelige spørgsmål og opfølgningen i den offentlige brugerflade.
+
 ## 18. november — backup og plan for automatisk rotation
 
 - [x] Gendan det autentiske databasearkiv isoleret og bekræft data og login. Hosted #50 bestod.
