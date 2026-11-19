@@ -20,7 +20,8 @@ import { createWeatherStateEpochCaptureStorage, saveWeatherStateEpochArchive,
   materializeWeatherStateEpochArchive, rehydrateLocalWeatherStateEpochArchive,
   assertVerifiedWeatherStateEpochArchive, WEATHER_STATE_EPOCH_PUBLIC_FILES }
   from './lib/weather-state-epoch-archive.mjs';
-import { assertWeatherStateEpochCheckpointRequest } from './weather-state-epoch-budget.mjs';
+import { assertWeatherStateEpochCheckpointRequest, WEATHER_STATE_EPOCH_ORIGINAL_DATASET as OLD_DATASET }
+  from './weather-state-epoch-budget.mjs';
 import { createWeatherStateEpochInputView } from './lib/weather-state-epoch-input-view.mjs';
 import { migrateOwnedI71NativeIdentityWorkingRuntime } from './migrate-post-cutover-private-runtime.mjs';
 import { rebindNativeIdentityStagingWorkingCopy } from './lib/native-identity-staging-working-copy.mjs';
@@ -29,7 +30,6 @@ import { installComponents, weatherComponentProgressCache } from './weather-comp
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const exec = promisify(execFile), SHA = /^[a-f0-9]{64}$/;
-const OLD_DATASET = 'rr-20261013181135-210';
 export const WEATHER_STATE_EPOCH_MAX_START_AGE_MINUTES = 90;
 export const WEATHER_STATE_EPOCH_STAGES = Object.freeze(['prepare', 'verify-230-plan',
   'verify-230-installed', 'verify-binding-plan', 'verify-binding-installed', 'install', 'verify']);

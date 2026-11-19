@@ -9,7 +9,7 @@ import {
   selectTerminalDmiCache,
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
-import {planRawDmiCacheRotation, readRawCacheReaderActivity} from './lib/verified-raw-cache-rotation.mjs';
+import {planRawDmiCacheRotation, readRawCacheProtection, readRawCacheReaderActivity} from './lib/verified-raw-cache-rotation.mjs';
 
 const repository = 'owner/repository';
 const runId = 33990516150;
@@ -409,3 +409,29 @@ assert.deepEqual(await readActivity([ordinaryOwner, {...queuedAudit, path: '.git
   status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
 });
 console.log('OK: queued RAW readers hold retirement; exact jobless legacy identities alone can be excluded.');
+
+const fixedHistoricalRaw = {
+  ...rawCaches[0], key: 'dmi-grib-v4-Linux-2026-W43-39520623069-1',
+};
+const options = {
+  inventory: snapshot([fixedHistoricalRaw, ...rawCaches.slice(1)]).inventory,
+  boundary: successorBoundary,
+  repository, sourceHead: headSha, ownerRunId: ordinaryOwner.id,
+  getJson: async route => {
+    const run = route.includes('status=in_progress') ? [ordinaryOwner] : [];
+    return {total_count: run.length, workflow_runs: run};
+  },
+};
+assert.deepEqual(await readRawCacheProtection(options), {
+  complete: true, caches: [rawIdentity(fixedHistoricalRaw)],
+});
+assert.deepEqual(await readRawCacheProtection({
+  ...options, boundary: {...successorBoundary, datasetId: 'rr-20261013181135-210'},
+}), {complete: false, reason: 'legacy-exact-raw-request-admissible', caches: []});
+assert.deepEqual(await readRawCacheProtection({
+  ...options, boundary: {...successorBoundary, conditionsSha256: null},
+}), {complete: false, reason: 'protected-baseline-unconfirmed', caches: []});
+assert.deepEqual(await readActivity([ordinaryOwner, {...queuedAudit, path: '.github/workflows/new-reader.yml'}]), {
+  status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
+});
+console.log('OK: fixed historical RAW dependencies are retained and legacy B/S never permits rotation.');

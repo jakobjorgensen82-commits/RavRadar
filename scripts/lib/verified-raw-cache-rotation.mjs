@@ -1,6 +1,8 @@
 import {createHash} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
 import {isInertLegacyQueue} from '../check-weather-cadence-watchdog.mjs';
 import {requirePublishedRawRotationRetention} from '../plan-ravscore-current-history.mjs';
+import {WEATHER_STATE_EPOCH_ORIGINAL_DATASET} from '../weather-state-epoch-budget.mjs';
 import {isMainRawCache} from './github-actions-cache-stock.mjs';
 import {canonicalSavedDmiOriginalCapture} from './saved-dmi-original-capture.mjs';
 
@@ -193,13 +195,10 @@ export function planRawDmiCacheRotation({ before, after, retained, current, obse
 const ACTIVE_ACTIONS_STATES = ['queued', 'in_progress', 'waiting', 'requested', 'pending'];
 const LEGACY_WEATHER = '.github/workflows/update-and-deploy.yml';
 const ORDINARY_WEATHER = '.github/workflows/run-current-weather-once.yml';
-const RAW_READERS = new Set([
-  LEGACY_WEATHER,
-  ORDINARY_WEATHER,
-  '.github/workflows/audit-saved-weather-inputs.yml',
-  '.github/workflows/recover-saved-dmi-originals.yml',
-  '.github/workflows/validate-copernicus-current-pilot.yml',
-]);
+const FIXED_RAW_CACHE_WORKFLOWS = [
+  'audit-saved-weather-inputs.yml',
+  'recover-saved-dmi-originals.yml',
+];
 
 // The caller holds the production queue and supplies the exact running owner.
 // This is a read-only census. It cannot reserve a queued request or replace the
@@ -243,9 +242,9 @@ export async function readRawCacheReaderActivity({repository, sourceHead, ownerR
       potentialLegacy.push(run);
       continue;
     }
-    if (RAW_READERS.has(run.path) || run.head_sha !== sourceHead || run.head_branch !== 'main') {
-      return hold('possible-raw-reader-active-or-queued');
-    }
+    // Until a caller is positively known to be independent of this stock,
+    // new workflows on main are also a reason to keep the existing copies.
+    return hold('possible-raw-reader-active-or-queued');
   }
   const legacyJobs = await Promise.all(potentialLegacy.map(run =>
     getJson(actions + '/runs/' + run.id + '/attempts/1/jobs?per_page=1')));
@@ -253,4 +252,26 @@ export async function readRawCacheReaderActivity({repository, sourceHead, ownerR
     return hold('legacy-reader-not-proved-inert');
   }
   return {status: 'CLEAR', checkedRuns: runs.size, inertLegacy: potentialLegacy.length};
+}
+
+// The caller supplies the locked, authenticated protected B/S and the full
+// stock on exact main. The shared production lock is required for admission;
+// this metadata census does not reserve cache entries or give write authority.
+export async function readRawCacheProtection({inventory, boundary, repository, sourceHead, ownerRunId, getJson}) {
+  const hold = reason => ({complete: false, reason, caches: []});
+  const rows = completeCacheInventory(inventory);
+  if (!rows || !validRawBoundary(boundary)) return hold('protected-baseline-unconfirmed');
+  if (boundary.datasetId === WEATHER_STATE_EPOCH_ORIGINAL_DATASET) {
+    return hold('legacy-exact-raw-request-admissible');
+  }
+  const activity = await readRawCacheReaderActivity({repository, sourceHead, ownerRunId, getJson});
+  if (activity.status !== 'CLEAR') return hold(activity.reason);
+
+  // The fixed exact keys are already declared in these checked-out workflows.
+  // Retain every literal key that is still present, irrespective of its age.
+  const sources = await Promise.all(FIXED_RAW_CACHE_WORKFLOWS.map(file =>
+    readFile(new URL('../../.github/workflows/' + file, import.meta.url), 'utf8')));
+  const fixedKeys = new Set(sources.flatMap(text => text.match(/dmi-grib-v4-Linux-\d{4}-W\d{2}-\d+-\d+\b/g) ?? []));
+  if (fixedKeys.size === 0) return hold('fixed-raw-pin-catalogue-unavailable');
+  return {complete: true, caches: rows.filter(row => fixedKeys.has(row.key)).map(cacheIdentity)};
 }
