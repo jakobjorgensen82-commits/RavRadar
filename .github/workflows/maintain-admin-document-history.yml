@@ -60,6 +60,7 @@ jobs:
         id: admission
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
           REQUESTED_OPERATION: ${{ inputs.operation }}
           REQUESTED_CONFIRMATION: ${{ inputs.confirmation }}
@@ -82,6 +83,7 @@ jobs:
           TRIGGER_STATUS: ${{ github.event.workflow_run.status }}
           TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           TRIGGER_CREATED_AT: ${{ github.event.workflow_run.created_at }}
+          TRIGGER_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = refs/heads/main
@@ -141,6 +143,22 @@ jobs:
                 echo '{"status":"DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW","privateAccessStarted":false}'
                 exit 0
               fi
+              [[ "$TRIGGER_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,5}$ ]]
+              terminal=$(timeout --signal=KILL 10s gh api --method GET \
+                -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+                "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/attempts/$TRIGGER_RUN_ATTEMPT/jobs?per_page=100" \
+                | jq -er --argjson run "$TRIGGER_RUN_ID" --argjson attempt "$TRIGGER_RUN_ATTEMPT" --arg head "$TRIGGER_HEAD_SHA" '
+                  select(.total_count == (.jobs | length) and .total_count <= 100)
+                  | [.jobs[] | select(.name == "Require a verified current-weather deployment")]
+                  | select(length == 1) | .[0]
+                  | select(.run_id == $run and .run_attempt == $attempt and .head_sha == $head and .status == "completed")
+                  | .conclusion')
+              if [ "$terminal" = skipped ]; then
+                echo 'proceed=false' >> "$GITHUB_OUTPUT"
+                echo '{"status":"DOCUMENT_HISTORY_SKIPPED_NO_VERIFIED_WEATHER","privateAccessStarted":false}'
+                exit 0
+              fi
+              test "$terminal" = success
               ;;
             *) exit 1 ;;
           esac

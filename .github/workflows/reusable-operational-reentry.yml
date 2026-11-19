@@ -14,6 +14,9 @@ on:
       SUPABASE_SERVICE_ROLE_KEY:
         required: true
     outputs:
+      closure_deferred:
+        description: "Public recovery verified; current Pages writer still requires terminal closure"
+        value: ${{ jobs.operational-recovery-gate.outputs.closure_deferred }}
       recovery_action:
         description: "Exact recovered recovery_action"
         value: ${{ jobs.reconcile-operational-pending.outputs.recovery_action }}
@@ -672,6 +675,8 @@ jobs:
     if: needs.reconcile-operational-pending.result == 'success' && needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      actual_action: ${{ steps.prepare-recovery.outputs.action }}
     permissions:
       contents: read
       actions: read
@@ -1449,15 +1454,17 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+  # Only routes that did not become this run's writer can close a phase here.
   complete-pre-activation:
-    needs: [reconcile-operational-pending, recover-operational-pages-target, finalize-operational-pages-recovery, resume-pre-activation, resume-pre-activation-pages]
+    needs: [reconcile-operational-pending, recover-operational-pages-target, finalize-operational-pages-recovery]
     if: >-
       always() && !cancelled() && needs.reconcile-operational-pending.result == 'success' &&
       needs.reconcile-operational-pending.outputs.pre_activation == 'true' &&
       (needs.reconcile-operational-pending.outputs.recovery_action == 'COMPLETED_PRE_ACTIVATION' ||
        needs.reconcile-operational-pending.outputs.recovery_action == 'TARGET_RECONCILE' ||
-       (needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY' && needs.finalize-operational-pages-recovery.result == 'success') ||
-       (needs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME' && needs.resume-pre-activation-pages.result == 'success'))
+       (needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY' &&
+        needs.recover-operational-pages-target.outputs.actual_action == 'TARGET_RECONCILE' &&
+        needs.finalize-operational-pages-recovery.result == 'success'))
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
@@ -1496,16 +1503,21 @@ jobs:
     timeout-minutes: 2
     permissions:
       contents: read
+    outputs:
+      closure_deferred: ${{ steps.outcome.outputs.closure_deferred }}
     steps:
       - name: Prove reconciliation or exact-target redeploy completed
+        id: outcome
         shell: bash
         env:
           RECONCILE_RESULT: ${{ needs.reconcile-operational-pending.result }}
           RECOVERY_ACTION: ${{ needs.reconcile-operational-pending.outputs.recovery_action }}
           EXACT_TARGET_RESULT: ${{ needs.recover-operational-pages-target.result }}
+          ACTUAL_RECOVERY_ACTION: ${{ needs.recover-operational-pages-target.outputs.actual_action }}
           FINALIZE_RESULT: ${{ needs.finalize-operational-pages-recovery.result }}
           RESUME_RESULT: ${{ needs.resume-pre-activation.result }}
           RESUME_PAGES_RESULT: ${{ needs.resume-pre-activation-pages.result }}
+          RESUME_PAGES_VERIFIED: ${{ needs.resume-pre-activation-pages.outputs.deployed_verified }}
           PHASE_COMPLETE_RESULT: ${{ needs.complete-pre-activation.result }}
           HAS_PHASE: ${{ needs.reconcile-operational-pending.outputs.pre_activation }}
           GEOMETRY_ONLY: ${{ inputs.geometry_only }}
@@ -1516,16 +1528,20 @@ jobs:
             test "$EXACT_TARGET_RESULT" = "skipped"
             test "$FINALIZE_RESULT" = "skipped"
             test -z "$RECOVERY_ACTION"
+            echo 'closure_deferred=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           test "$RECONCILE_RESULT" = "success"
-          if test "$HAS_PHASE" = true; then test "$PHASE_COMPLETE_RESULT" = success; fi
+          closure_deferred=false
           case "$RECOVERY_ACTION" in
             PRE_ACTIVATION_RESUME)
+              test "$HAS_PHASE" = true
               test "$RESUME_RESULT" = success
               test "$RESUME_PAGES_RESULT" = success
+              test "$RESUME_PAGES_VERIFIED" = true
               test "$EXACT_TARGET_RESULT" = skipped
               test "$FINALIZE_RESULT" = skipped
+              closure_deferred=true
               ;;
             COMPLETED_PRE_ACTIVATION)
               test "$RESUME_RESULT" = skipped
@@ -1536,6 +1552,11 @@ jobs:
             EXACT_TARGET_REDEPLOY)
               test "$EXACT_TARGET_RESULT" = "success"
               test "$FINALIZE_RESULT" = "success"
+              case "$ACTUAL_RECOVERY_ACTION" in
+                EXACT_TARGET_REDEPLOY) closure_deferred=true ;;
+                TARGET_RECONCILE) ;;
+                *) echo "Unknown revalidated Pages recovery action." >&2; exit 1 ;;
+              esac
               ;;
             NONE|SAFE_SOURCE_ABORT|TARGET_RECONCILE)
               test "$EXACT_TARGET_RESULT" = "skipped"
@@ -1543,3 +1564,10 @@ jobs:
               ;;
             *) echo "Unknown operational recovery result." >&2; exit 1 ;;
           esac
+          if [ "$closure_deferred" = true ]; then
+            test "$PHASE_COMPLETE_RESULT" = skipped
+            echo 'Exact forecast recovered and publicly verified. New writes wait for a separate run to verify this writer is terminal.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$HAS_PHASE" = true ]; then
+            test "$PHASE_COMPLETE_RESULT" = success
+          fi
+          echo "closure_deferred=$closure_deferred" >> "$GITHUB_OUTPUT"

@@ -96,7 +96,7 @@ jobs:
 
   current-main-target:
     needs: operational-recovery-gate
-    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
+    if: ${{ !cancelled() && needs.operational-recovery-gate.outputs.closure_deferred != 'true' && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1051,8 +1051,8 @@ jobs:
 
   terminal-outcome:
     name: Require a verified current-weather deployment
-    needs: [current-main-target, native-identity-prewrite, state-epoch-prewrite, build-and-prepare, deploy-pages]
-    if: always()
+    needs: [operational-recovery-gate, current-main-target, native-identity-prewrite, state-epoch-prewrite, build-and-prepare, deploy-pages]
+    if: always() && needs.operational-recovery-gate.outputs.closure_deferred != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
