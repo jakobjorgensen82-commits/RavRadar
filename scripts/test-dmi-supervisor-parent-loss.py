@@ -159,8 +159,10 @@ state = pathlib.Path("/proc/self/stat").read_text().rsplit(")", 1)[1].split()
 identity = {"pid": os.getpid(), "ppid": os.getppid(), "pgid": os.getpgrp(),
             "sid": os.getsid(0), "start": int(state[19])}
 if os.environ.get("OWN_PROCESS_DESCENDANT") == "1":
+    detached = os.environ.get("OWN_HOSTED_CGROUP_PROBE") == "1"
+    output = subprocess.DEVNULL if detached and os.environ.get("OWN_HOSTED_RETAIN_PIPE") != "1" else None
     subprocess.Popen([sys.executable, "-u", str(root / "descendant.py")],
-                     start_new_session=os.environ.get("OWN_HOSTED_CGROUP_PROBE") == "1")
+                     start_new_session=detached, stdout=output, stderr=output)
 with (root / "heartbeat").open("wb", buffering=0) as output:
     output.write(b".")
     (root / "ready.new").write_text(json.dumps(identity), encoding="ascii")
@@ -795,7 +797,29 @@ def hosted_cgroup_probe():
                               text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                               stdin=subprocess.DEVNULL, timeout=3, check=False)
 
-    def run_case(test, caller, interruption):
+    def unit_state(unit):
+        properties = ("Id,LoadState,ActiveState,Transient,MainPID,ControlGroup,InvocationID,"
+                      "Result,ExecMainCode,ExecMainStatus")
+        result = control("show", f"--property={properties}", unit)
+        if result.returncode != 0:
+            raise RuntimeError("HOSTED_TRANSIENT_SERVICE_STATE_UNAVAILABLE")
+        return dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+
+    def same_unit(state, unit, invocation):
+        return (invocation is not None and state.get("Id") == unit
+                and state.get("Transient") == "yes" and state.get("InvocationID") == invocation)
+
+    def group_empty(test, events, identity):
+        try:
+            test.assertIn(b"populated 0", read_small(events).splitlines())
+            test.assertTrue(os.path.samestat(identity, events.parent.stat()))
+            return "EMPTY"
+        except FileNotFoundError:
+            # Kernel removal requires absence of live processes or child cgroups.
+            test.assertFalse(events.parent.exists())
+            return "RETIRED_EMPTY"
+
+    def run_case(test, caller, interruption=None, *, retained_pipe=False):
         root = Path(tempfile.mkdtemp(prefix="rr-provider-cgroup-", dir=base))
         unit = root.name + ".service"
         descriptors = []
@@ -803,13 +827,17 @@ def hosted_cgroup_probe():
         parent, original = root / "supervisor.py", root / "original-BS"
         launch = None
         owned = False
+        invocation = None
+        events = group_identity = None
+        physical_closed = False
         try:
             parent.write_text(SUPERVISOR, encoding="utf-8")
             producer.write_text(PRODUCER, encoding="utf-8")
             descendant.write_text(DESCENDANT, encoding="utf-8")
             original.write_bytes(b"own unchanged synthetic B/S\n")
             test.assertEqual(stat.S_IMODE(root.stat().st_mode), 0o700)
-            properties = ("ExitType=main", "KillMode=mixed", "TimeoutStopSec=2s",
+            properties = ("ExitType=main", "KillMode=mixed",
+                          "TimeoutStopSec=500ms" if retained_pipe else "TimeoutStopSec=2s",
                           "RuntimeMaxSec=12s", "Restart=no", "UMask=0077",
                           f"WorkingDirectory={ROOT}", "NoNewPrivileges=yes",
                           "StandardOutput=null", "StandardError=null")
@@ -817,9 +845,10 @@ def hosted_cgroup_probe():
                 "PATH=/usr/bin:/bin", "LANG=C.UTF-8", "PYTHONNOUSERSITE=1", "PYTHONUTF8=1",
                 "PYTHONDONTWRITEBYTECODE=1",
                 "OWN_HOSTED_CGROUP_PROBE=1", "OWN_PROCESS_DESCENDANT=1",
+                f"OWN_HOSTED_RETAIN_PIPE={int(retained_pipe)}",
                 f"OWN_PROCESS_CALLER={caller}", f"OWN_SUPERVISOR_LOSS_ROOT={root}",
             )
-            test.assertNotEqual(control("is-active", unit).returncode, 0)
+            test.assertEqual(unit_state(unit).get("LoadState"), "not-found")
             launch = subprocess.Popen(
                 ["/usr/bin/systemd-run", "--user", "--quiet", "--wait", "--service-type=exec",
                  "--expand-environment=no",
@@ -834,13 +863,15 @@ def hosted_cgroup_probe():
                 test.assertIsNone(launch.poll(), "HOSTED_TRANSIENT_SERVICE_START_REFUSED")
                 test.assertLess(time.monotonic(), deadline, "HOSTED_TRANSIENT_SERVICE_START_TIMEOUT")
                 time.sleep(0.01)
-            show = control("show", "--property=MainPID,ControlGroup,ActiveState", unit)
-            test.assertEqual(show.returncode, 0, "HOSTED_TRANSIENT_SERVICE_IDENTITY_UNAVAILABLE")
-            props = dict(line.split("=", 1) for line in show.stdout.splitlines())
+            props = unit_state(unit)
+            test.assertEqual((props.get("Id"), props.get("Transient"), props.get("ActiveState")),
+                             (unit, "yes", "active"), "HOSTED_TRANSIENT_SERVICE_IDENTITY_UNAVAILABLE")
+            invocation = props.get("InvocationID", "")
+            test.assertRegex(invocation, r"^[a-f0-9]{32}$")
+            test.assertNotEqual(invocation, "0" * 32)
             main = int(props["MainPID"])
             group = Path(props["ControlGroup"])
             user_group = Path(f"/user.slice/user-{uid}.slice/user@{uid}.service")
-            test.assertEqual(props["ActiveState"], "active")
             test.assertTrue(group.is_relative_to(user_group) and group.name == unit
                             and ".." not in group.parts)
             events = cgroups.joinpath(*group.parts[1:], "cgroup.events")
@@ -863,16 +894,40 @@ def hosted_cgroup_probe():
                                                           str(parent), str(TEST_SEAM), str(producer))])
             test.assertEqual(process_identity(first["pid"]), first)
             test.assertEqual(process_identity(last["pid"]), last)
+            for fd_number in (1, 2):
+                output = Path(f"/proc/{last['pid']}/fd/{fd_number}").stat()
+                if retained_pipe:
+                    test.assertTrue(stat.S_ISFIFO(output.st_mode))
+                    test.assertEqual((output.st_dev, output.st_ino),
+                                     (reader["pipeDevice"], reader["pipeInode"]),
+                                     "HOSTED_RETAINED_OUTPUT_IS_NOT_DMI_PIPE")
+                else:
+                    test.assertTrue(os.path.samestat(output, Path("/dev/null").stat()),
+                                    "HOSTED_DETACHED_OUTPUT_NOT_ISOLATED")
             heartbeats = [root / "heartbeat", root / "descendant-heartbeat"]
             test.assertTrue(all(path.stat().st_uid == uid and stat.S_IMODE(path.stat().st_mode) == 0o600
                                 for path in heartbeats))
             before = [path.stat().st_size for path in heartbeats]
             time.sleep(0.05)
             test.assertTrue(all(path.stat().st_size > size for path, size in zip(heartbeats, before)))
-            stop_at = time.monotonic()
-            if interruption is None:
+            if retained_pipe:
+                (root / "finish-own-producer").touch()
+                test.assertTrue(exited(descriptors[1], 1.5), "HOSTED_DMI_PRODUCER_DID_NOT_EXIT")
+                detached_size = heartbeats[1].stat().st_size
+                time.sleep(0.35)
+                test.assertFalse(exited(descriptors[0]), "HOSTED_DMI_RETURNED_WITH_UNCLOSED_PIPE")
+                test.assertFalse(exited(descriptors[2]), "HOSTED_PIPE_WRITER_DIED_BEFORE_EXTERNAL_STOP")
+                test.assertGreater(heartbeats[1].stat().st_size, detached_size)
+                test.assertFalse((root / "supervisor-completed").exists())
+                test.assertIn(b"populated 1", read_small(events).splitlines())
+                stop_at = time.monotonic()
+                test.assertEqual(control("--no-block", "stop", unit).returncode, 0,
+                                 "HOSTED_EXTERNAL_STOP_REQUEST_REFUSED")
+            elif interruption is None:
+                stop_at = time.monotonic()
                 (root / "finish-own-producer").touch()
             else:
+                stop_at = time.monotonic()
                 signal.pidfd_send_signal(descriptors[0], interruption)
             for descriptor in descriptors:
                 test.assertTrue(exited(descriptor, max(0, stop_at + 3 - time.monotonic())),
@@ -880,42 +935,63 @@ def hosted_cgroup_probe():
             closure_ms = round((time.monotonic() - stop_at) * 1000)
             test.assertLessEqual(closure_ms, 3000)
             code = launch.wait(timeout=2)
-            if interruption == signal.SIGTERM:
+            disposition = group_empty(test, events, group_identity)
+            physical_closed = True
+            state = unit_state(unit)
+            if retained_pipe:
+                test.assertNotEqual(code, 0)
+                test.assertEqual(tuple(state.get(key) for key in ("Result", "ExecMainCode", "ExecMainStatus")),
+                                 ("timeout", str(os.CLD_KILLED), str(signal.SIGKILL.value)),
+                                 "HOSTED_RETAINED_PIPE_DID_NOT_REQUIRE_EXTERNAL_TIMEOUT")
+            elif interruption == signal.SIGTERM:
                 test.assertEqual(code, 128 + signal.SIGTERM)
             else:
                 test.assertEqual(code == 0, interruption is None)
-            test.assertEqual((root / "supervisor-completed").exists(), interruption != signal.SIGKILL)
-            try:
-                test.assertIn(b"populated 0", read_small(events).splitlines())
-                test.assertTrue(os.path.samestat(group_identity, events.parent.stat()))
-                disposition = "EMPTY"
-            except FileNotFoundError:
-                # The kernel permits removal only without live tasks or child groups.
-                test.assertFalse(events.parent.exists())
-                disposition = "RETIRED_EMPTY"
+            test.assertEqual((root / "supervisor-completed").exists(),
+                             not retained_pipe and interruption != signal.SIGKILL)
             sizes = [path.stat().st_size for path in heartbeats]
             time.sleep(0.05)
             test.assertEqual([path.stat().st_size for path in heartbeats], sizes)
             test.assertEqual(original.read_bytes(), b"own unchanged synthetic B/S\n")
-            mode = interruption.name if interruption else "NORMAL"
-            print(f"HOSTED_PROVIDER_CGROUP {caller} {mode} {disposition} closure_ms={closure_ms}")
+            mode = "RETAINED_PIPE_TIMEOUT" if retained_pipe else (
+                interruption.name if interruption else "NORMAL"
+            )
+            terminal = state.get("ActiveState")
+            test.assertIn(terminal, {"inactive", "failed"})
+            print(f"HOSTED_PROVIDER_CGROUP {caller} {mode} {disposition} "
+                  f"closure_ms={closure_ms} unit_state={terminal}")
         finally:
             primary = sys.exc_info()[1]
             try:
                 if owned:
-                    stopped = control("stop", unit)
+                    state = unit_state(unit)
+                    if not physical_closed and state.get("ActiveState") not in {"inactive", "failed"}:
+                        if not same_unit(state, unit, invocation):
+                            raise RuntimeError("HOSTED_ACTIVE_UNIT_OWNERSHIP_UNPROVED")
+                        control("stop", unit)
                     if launch.poll() is None:
                         launch.wait(timeout=3)
-                    state = control("show", "--property=ActiveState,LoadState", unit).stdout.splitlines()
-                    disappeared = "LoadState=not-found" in state and "ActiveState=inactive" in state
-                    known_stopped = stopped.returncode == 0 and "ActiveState=inactive" in state
-                    if (not (disappeared or known_stopped) or any(not exited(fd) for fd in descriptors)):
+                    if any(not exited(fd) for fd in descriptors):
+                        raise RuntimeError("HOSTED_SYNTHETIC_CLEANUP_UNPROVED")
+                    state = unit_state(unit)
+                    if events is not None and group_identity is not None:
+                        group_empty(test, events, group_identity)
+                    if state.get("ActiveState") == "failed":
+                        if (events is None or group_identity is None or invocation is None
+                                or not same_unit(state, unit, invocation) or state.get("MainPID") != "0"):
+                            raise RuntimeError("HOSTED_FAILED_UNIT_OWNERSHIP_UNPROVED")
+                        control("reset-failed", unit)
+                        state = unit_state(unit)
+                    disappeared = (state.get("LoadState"), state.get("ActiveState")) == ("not-found", "inactive")
+                    same_inactive = (same_unit(state, unit, invocation) and state.get("MainPID") == "0"
+                                     and state.get("ActiveState") == "inactive")
+                    if not (disappeared or same_inactive):
                         raise RuntimeError("HOSTED_SYNTHETIC_CLEANUP_UNPROVED")
                 shutil.rmtree(root)
-            except BaseException:
+            except BaseException as cleanup_error:
                 if primary is None:
                     raise
-                primary.add_note("HOSTED_SYNTHETIC_CLEANUP_UNPROVED")
+                primary.add_note(f"HOSTED_SYNTHETIC_CLEANUP_UNPROVED:{type(cleanup_error).__name__}")
             finally:
                 for descriptor in descriptors:
                     os.close(descriptor)
@@ -926,6 +1002,9 @@ def hosted_cgroup_probe():
                 for interruption in (None, signal.SIGTERM, signal.SIGKILL):
                     with self.subTest(caller=caller, interruption=interruption):
                         run_case(self, caller, interruption)
+
+        def test_external_owner_stops_real_retained_dmi_pipe(self):
+            run_case(self, "supervised", retained_pipe=True)
 
     result = unittest.TextTestRunner().run(unittest.defaultTestLoader.loadTestsFromTestCase(HostedCgroup))
     raise SystemExit(not result.wasSuccessful())
