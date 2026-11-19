@@ -8,7 +8,7 @@ import { buildRawSuccessorPlanBytes } from './lib/verified-raw-cache-rotation.mj
 import { projectPublicRawRotationProof } from './lib/raw-rotation-handoff.mjs';
 import { RAVSCORE_CURRENT_HISTORY_DEMAND_PATH, withInstalledCoherentRawTransportRetention }
   from './plan-ravscore-current-history.mjs';
-import { collectPublishedRawCurrentCaptureUnion } from './lib/committed-raw-current-capture-union.mjs';
+import { collectPublishedRawCurrentCaptureUnion, savedRawPhysicalKey } from './lib/committed-raw-current-capture-union.mjs';
 import { readRetainedRawRotationInputs } from './read-published-raw-rotation-runtime.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,12 +46,7 @@ export function preparePreDmiRawSuccessorProof({ demand, retainedGeneration, pai
     && retainedGeneration.kind === 'PUBLISHED_ORDINARY_RAW_CAPTURE_UNION'
     && isDeepStrictEqual(retainedGeneration.boundary, boundary), 'RETAINED_GENERATION_BINDING');
   const combined = withInstalledCoherentRawTransportRetention(demand.rawRetention, retainedGeneration.captures);
-  const files = new Map();
-  for (const capture of combined.captures) {
-    // Python's physical RAW identity omits the observation's acquisition time.
-    const {acquiredAt, ...file} = capture;
-    files.set(flatDigest(file), capture);
-  }
+  const files = new Map(combined.captures.map(capture => [savedRawPhysicalKey(capture), capture]));
   const rawRetention = {...combined, captures: [...files.values()]};
   const planBytes = buildRawSuccessorPlanBytes({
     demand: {...demand, rawRetention}, targetReferenceAt: run.targetReferenceAt, boundary,
