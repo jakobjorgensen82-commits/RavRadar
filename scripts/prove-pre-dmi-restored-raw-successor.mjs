@@ -95,9 +95,13 @@ async function main(env) {
   // This is a typed step handoff, neither a transported RAW list, an artifact,
   // nor permission to retire. A writer must authenticate the producing job and
   // reconfirm the same protected B/S, producer archive and reader/pin inventory.
-  const output = JSON.stringify({pairedBaseline, boundary, coverage});
+  const output = JSON.stringify({
+    schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline, boundary, coverage,
+  });
   requireProof(Buffer.byteLength(output) <= 4096);
-  await fs.appendFile(env.GITHUB_OUTPUT, 'raw_bootstrap_coverage=' + output + '\n');
+  await fs.writeFile(path.join(work, 'proof.json'), output, {mode: 0o600, flag: 'wx'});
+  await fs.appendFile(env.GITHUB_OUTPUT, 'raw_bootstrap_coverage=' + output + '\n'
+    + 'raw_bootstrap_coverage_sha256=' + digest(output) + '\n');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -126,6 +126,9 @@ on:
       raw_bootstrap_coverage:
         description: "Opt-in pre-DMI RAW coverage receipt; no RAW captures or deletion authority"
         value: ${{ jobs.build-and-prepare.outputs.raw_bootstrap_coverage }}
+      raw_bootstrap_coverage_sha256:
+        description: "SHA-256 of the exact UTF-8 proof.json bytes"
+        value: ${{ jobs.build-and-prepare.outputs.raw_bootstrap_coverage_sha256 }}
       should_deploy:
         description: "Forwarded build-and-prepare should_deploy contract"
         value: ${{ jobs.build-and-prepare.outputs.should_deploy }}
@@ -270,6 +273,7 @@ jobs:
       RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD: ${{ github.sha }}
     outputs:
       raw_bootstrap_coverage: ${{ steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage }}
+      raw_bootstrap_coverage_sha256: ${{ steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage_sha256 }}
       should_deploy: ${{ steps.deployment-decision.outputs.should_deploy }}
       preflight_should_run: ${{ steps.preflight.outputs.should_run }}
       operational_action: ${{ steps.operational-action.outputs.action }}
