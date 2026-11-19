@@ -30,6 +30,13 @@ function catalogue(){const metadata={rls:true,ownerRestricted:true,anonSelect:fa
   {name:'ravradar_ravscore_checkpoint_no_direct_read',permissive:'RESTRICTIVE',roles:['authenticated'],command:'SELECT',qual:"document_key <> 'ravscore-continuation-checkpoint'"}],functions:clone(PRIVATE_STUDY_ADMIN_FUNCTIONS)};
   const version=clone(metadata);version.policies[0].name='ravradar_admin_document_versions_read';version.policies[1].name='ravradar_ravscore_checkpoint_versions_no_direct_read';
   return[{metadata,version_metadata:version,current_access:true}];}
+const databaseStorage={
+  projectDatabaseBytes:420_000_000,
+  clusterDatabaseBytes:440_000_000,
+  adminCurrentBytes:20_000_000,
+  adminHistoryBytes:300_000_000,
+  adminHistoryToastBytes:295_000_000,
+};
 function fixture(temp,behavior={}){
   const env={RUNNER_TEMP:temp,PATH:'synthetic-normal-cli-path',SUPABASE_ACCESS_TOKEN:'synthetic-access-never-real',SUPABASE_DB_PASSWORD:'synthetic-password-never-real',
     SUPABASE_SERVICE_ROLE_KEY:'synthetic-existing-db-backup-master-never-real',SUPABASE_URL:P.project,GITHUB_ACTIONS:'true',RUNNER_ENVIRONMENT:'github-hosted',RUNNER_OS:'Linux',
@@ -52,7 +59,22 @@ function fixture(temp,behavior={}){
   };
   const fetchImpl=async(url,options={})=>{
     const u=new URL(url),method=options.method||'GET',headers=new Headers(options.headers),body=options.body;calls.push({url,method,headers,body,childrenAtRequest:children.length});
-    if(u.hostname==='api.supabase.com'){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(method,'POST');assert.ok(JSON.parse(body).query.includes('has_table_privilege'));return json(behavior.catalogue?.()??catalogue(),behavior.catalogueStatus??200);}
+    if(u.hostname==='api.supabase.com'){
+      assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(method,'POST');
+      const request=JSON.parse(body);
+      if(request.read_only===true){
+        assert.equal(u.pathname,'/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+        assert.deepEqual(Object.keys(request),['query','read_only']);
+        assert.match(request.query,/pg_catalog.pg_database_size\(oid\)/);
+        assert.match(request.query,/pg_total_relation_size\('public.admin_document_versions'::regclass\)/);
+        const row={...Object.fromEntries(Object.entries(databaseStorage).map(([name,value])=>[name,String(value)])),
+          completeDatabaseInventory:true};
+        behavior.changeDatabaseInventory?.(row);
+        return json([row],201);
+      }
+      assert.ok(request.query.includes('has_table_privilege'));
+      return json(behavior.catalogue?.()??catalogue(),behavior.catalogueStatus??200);
+    }
     if(u.origin===P.project&&u.pathname==='/rest/v1/admin_document_versions'){
       assert.ok(!behavior.denySupabase,'receipt/bootstrap never contacts database');assert.equal(method,'GET');
       assert.equal(u.searchParams.get('document_key'),'eq.'+P.locatorKey);
@@ -841,7 +863,7 @@ test('hosted stock plan reads only current archive metadata and listing; extra o
   const plan=await inspectDatabaseBackupPlan(options);
   assert.deepEqual(plan,{status:'DATABASE_BACKUP_STOCK_INSPECTED',expectedArchiveCurrent:true,
     locatorVersion:locator.version,archiveCompletedAt:JSON.parse(archivedReceipt).completedAt,
-    objectCount,usedBytes,bucketLimitBytes:2_000_000_000,reservedCaptureBytes:300_000_000,
+    objectCount,databaseStorage,usedBytes,bucketLimitBytes:2_000_000_000,reservedCaptureBytes:300_000_000,
     captureHeadroomAvailable:true,rotationState:'SINGLE_CURRENT_ARCHIVE',durableRestoreReceipt:false,nextEligibleWeeklyAction:'restore'});
   assert.equal(historyReads.length,2);
   assert.equal(mainChecks,2);
@@ -864,6 +886,16 @@ test('hosted stock plan reads only current archive metadata and listing; extra o
   assert(objectReads.every(call=>new URL(call.url).pathname==='/'+P.bucket+'/'+locator.payload.index.path));
   assert(reads.every(call=>['GET','HEAD'].includes(call.method)||call.method==='POST'&&new URL(call.url).hostname==='api.supabase.com'));
   assert(!JSON.stringify(plan).includes(locator.payload.index.sha256));
+  assert.equal(reads.filter(call=>call.method==='POST'&&JSON.parse(call.body).read_only===true).length,2);
+
+  const writesBeforeRefusals=writeCalls(f).length;
+  f.behavior.changeDatabaseInventory=row=>{row.completeDatabaseInventory=false;};
+  await rejectCode(()=>inspectDatabaseBackupPlan(options),'BACKUP_STOCK_DATABASE_SIZE_FIELDS');
+  f.behavior.changeDatabaseInventory=row=>{row.adminHistoryToastBytes='301000000';};
+  await rejectCode(()=>inspectDatabaseBackupPlan(options),'BACKUP_STOCK_DATABASE_SIZE_PARITY');
+  assert.equal(f.children.length,children);
+  assert.deepEqual(f.locator,locator);
+  assert.equal(writeCalls(f).length,writesBeforeRefusals);
 });
 
 test('stock plan refuses a wrong commitment, missing body, or locator changed during listing',async t=>{

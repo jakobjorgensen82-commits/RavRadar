@@ -214,7 +214,9 @@ Diagnostikken er under kildeforberedelse. Den opretter ingen ny prøve, åbner i
 
 ## 89.347 — Databasebackup med sikker, løbende oprydning
 
-**Klargjort, ikke aktiveret.** Forberedt automatik gendanner først, beskytter en verificeret reserve og rydder kun dokumenterede gamle backups op.
+**Ugentlig backup er aktiveret.** Første automatiske gendannelse med en varig kvittering skal stadig bekræftes.
+
+Den skrivefri lagerkontrol måler nu også den fysiske databasestørrelse. Den viser det samlede antal bytes for alle databaser i klyngen og størrelsen på den aktuelle database. Den viser særskilt plads til aktuelle administrationsdokumenter og deres historik. Historikkens store værdier ligger i et særskilt lager i PostgreSQL, som allerede er medregnet i historiktallet. Målingen viser derfor, om oprydning af gamle versioner har frigivet fysisk plads. Free kræver også, at forbrug og gendannelse er verificeret.
 
 Ny optagelse, isoleret gendannelse og rotation er tre forskellige handlinger. Den forberedte automatik udfører højst én af dem i et almindeligt vedligeholdelsesvindue. Den starter ikke en ekstra vejrhentning og ændrer hverken RavScore eller de indsamlede vejrdata.
 

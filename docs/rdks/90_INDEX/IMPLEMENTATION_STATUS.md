@@ -1,7 +1,14 @@
+## 19. november — fysisk plads i Supabase
+
+- [x] Afgrænsede prøver af den skrivefri resultatmåling og afvisning af ufuldstændige tal består.
+- [ ] Kvalificér og mål de aktuelle fysiske tal efter automatisk historikoprydning.
+- [ ] Verificér gendannelse af den seneste automatiske backup og sikker overgang til Free.
+
 ## 19. november — frisk vejr efter afsluttet genudgivelse
 
 - [x] Klargør afgrænset overdragelse til eksisterende vejrvagt. Målrettet lokal prøvning dækker afsluttet ejer, afslag og dubletter.
-- [ ] Gennemfør GitHub-kontrol og verificér det normale forløb ved en reel genudgivelse.
+- [x] Bestå kontrol for den præcise kilde og lever den på main.
+- [ ] Verificér det normale forløb ved en reel genudgivelse.
 
 ## 18. november — Spørg RavRadar om et muligt ravfund
 

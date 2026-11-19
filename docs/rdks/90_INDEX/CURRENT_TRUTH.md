@@ -1,6 +1,10 @@
+## 19. november — fysisk plads i Supabase
+
+Den skrivefri lagerkontrol måler nu også den fysiske databasestørrelse. Den viser det samlede antal bytes for alle databaser i klyngen og størrelsen på den aktuelle database. Den viser særskilt plads til aktuelle administrationsdokumenter og deres historik. Historikkens store værdier ligger i et særskilt lager i PostgreSQL, som allerede er medregnet i historiktallet. Målingen viser derfor, om oprydning af gamle versioner har frigivet fysisk plads. Free kræver også, at forbrug og gendannelse er verificeret. Kildeændringen afventer faktisk kørsel.
+
 ## 19. november — frisk vejr efter afsluttet genudgivelse
 
-Hvis en planlagt kørsel skal genudgive en gemt prognose, skal den først verificere udgivelsen og afslutte. Den eksisterende vejrvagt venter på den afsluttede kørsel og kontrollerer dens udgivelsesbevis. Derefter bestiller den én almindelig vejrhentning, hvis der ikke allerede er startet eller køet en. Den nye kørsel afslutter registreringen for den genudgivne prognose og henter så frisk vejr på det normale tidspunkt. Den faste tidsplan ændres ikke. Kildekontrol og første faktiske genudgivelse med frisk efterfølgende vejrhentning afventer.
+Hvis en planlagt kørsel skal genudgive en gemt prognose, skal den først verificere udgivelsen og afslutte. Den eksisterende vejrvagt venter på den afsluttede kørsel og kontrollerer dens udgivelsesbevis. Derefter bestiller den én almindelig vejrhentning, hvis der ikke allerede er startet eller køet en. Den nye kørsel afslutter registreringen for den genudgivne prognose og henter så frisk vejr på det normale tidspunkt. Den faste tidsplan ændres ikke. Kildekontrollen er bestået, og rettelsen er leveret på main. Første faktiske genudgivelse med frisk efterfølgende vejrhentning afventer.
 
 ## 18. november — ravfund og korte opfølgninger
 

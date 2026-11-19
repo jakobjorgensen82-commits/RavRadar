@@ -1,6 +1,11 @@
+## 4.0.602 — fysisk måling til Supabase Free
+
+- Den skrivefri backupkontrol viser databaseplads og administrationshistorikkens fysiske størrelse uden at læse brugerdata.
+- Kildekvalifikation og måling i produktionen afventer.
+
 ## 4.0.602 — frisk vejr efter afsluttet genudgivelse
 
-- En planlagt kørsel, der genudgiver en gemt prognose, kan bestille én selvstændig frisk vejrhentning efter sin afslutning. Kildekvalifikation og faktiske kørsler afventer.
+- En planlagt kørsel, der genudgiver en gemt prognose, kan bestille én selvstændig frisk vejrhentning efter sin afslutning. Rettelsen er i drift. Første faktiske genudgivelse med frisk vejrhentning afventer.
 
 ## 4.0.602 — spørgsmål om ravfund
 
