@@ -65,12 +65,16 @@ function validRawBoundary(boundary) {
 }
 
 function matchesRawRestore(observation, current, cache) {
+  return observation?.kind === 'DMI_RESTORED_RAW_OBSERVATION_V2'
+    && matchesRawCoverageReport(observation, current, cache);
+}
+
+function matchesRawCoverageReport(observation, current, cache) {
   const boundary = current?.boundary;
   const captures = current?.requiredCaptures;
   if (!validRawBoundary(boundary) || !Number.isInteger(captures) || captures < 1 || captures > 4096) return false;
   const { id, key, version } = cache;
-  return observation?.kind === 'DMI_RESTORED_RAW_OBSERVATION_V2'
-    && typeof current.runId === 'string' && /^[1-9][0-9]{0,19}$/.test(current.runId)
+  return typeof current.runId === 'string' && /^[1-9][0-9]{0,19}$/.test(current.runId)
     && typeof current.runAttempt === 'string' && /^[1-9][0-9]{0,19}$/.test(current.runAttempt)
     && typeof current.sourceHead === 'string' && /^[0-9a-f]{40}$/.test(current.sourceHead)
     && typeof current.targetReferenceAt === 'string' && EXACT_HOUR.test(current.targetReferenceAt)
@@ -83,6 +87,48 @@ function matchesRawRestore(observation, current, cache) {
     && observation.protectedFiles === captures && observation.unavailableCaptures === 0;
 }
 
+
+// The normal pre-DMI planner already derived this demand from the installed
+// protected B/S at the actual next lock. Reuse it; do not restore B/S again.
+export function buildRawSuccessorPlanBytes({demand, targetReferenceAt, boundary}) {
+  if (demand?.schemaVersion !== 2 || demand.kind !== 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND'
+      || !Array.isArray(demand.demands) || demand.demands.length !== 673
+      || demand.demands.some(row => typeof row?.partId !== 'string' || !row.partId)
+      || new Set(demand.demands.map(row => row.partId)).size !== 673) {
+    throw new Error('RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED');
+  }
+  const plan = {
+    schemaVersion: 1, kind: 'PUBLISHED_RAW_ROTATION_SUCCESSOR_PLAN',
+    targetReferenceAt: demand.productionReferenceAt, retention: demand.rawRetention,
+  };
+  const retention = requirePublishedRawRotationRetention(plan, {targetReferenceAt, boundary});
+  const bytes = Buffer.from(JSON.stringify(plan) + '\n', 'utf8');
+  if (retention.captures.length === 0 || bytes.length > 1024 * 1024) {
+    throw new Error('RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED');
+  }
+  return bytes;
+}
+
+function matchesRestoredSuccessor(restoredSuccessor, current, cache) {
+  const receipt = restoredSuccessor?.receipt;
+  const bytes = restoredSuccessor?.planBytes;
+  if (receipt?.schemaVersion !== 1 || receipt.kind !== 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1'
+      || !Buffer.isBuffer(bytes) || bytes.length < 1 || bytes.length > 1024 * 1024
+      || createHash('sha256').update(bytes).digest('hex') !== receipt.planSha256) return false;
+  let retention;
+  try {
+    const plan = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
+    retention = requirePublishedRawRotationRetention(plan, {
+      targetReferenceAt: current?.targetReferenceAt, boundary: current?.boundary,
+    });
+  } catch {
+    return false;
+  }
+  if (retention.captures.length !== current.requiredCaptures) return false;
+  return matchesRawCoverageReport(receipt, {
+    ...current, targetReferenceAt: current.targetReferenceAt.replace(/\.000Z$/, 'Z'),
+  }, cache);
+}
 
 function matchesRawSave(saved, current, cache) {
   const receipt = saved?.receipt;
@@ -145,13 +191,16 @@ function isoHour(value) {
 // inventories under the production lock, the current B/S and capture plan, and
 // the exact next target's capture demand calculated from the authentic
 // published B/S. Retirement requires a finalized SAVE receipt with SHA-bound
-// membership covering that demand. A current restore can confirm the two
-// existing copies without authorizing a retirement. The caller must
+// membership covering that demand, or a separately authenticated physical
+// check of the restored archive against that same exact successor demand. A
+// current-hour restore alone cannot authorize retirement. The caller must
 // also independently verify both finalized keep identities in order, and every
 // RAW dependency of any still-admissible checkpoint, including exact/parked
 // requests. A complete protection snapshot promises that entire scope.
 // Reacquire fresh state before any mutation if the lock or evidence may change.
-export function planRawDmiCacheRotation({ before, after, retained, current, observation, saved } = {}) {
+export function planRawDmiCacheRotation({
+  before, after, retained, current, observation, saved, restoredSuccessor,
+} = {}) {
   const hold = reason => ({ status: 'HOLD', reason, retire: [] });
   const original = completeCacheInventory(before?.inventory);
   const latest = completeCacheInventory(after?.inventory);
@@ -175,16 +224,25 @@ export function planRawDmiCacheRotation({ before, after, retained, current, obse
       || !matchesCache(raw[0], retained[0]) || !matchesCache(raw[1], retained[1])) {
     return hold('raw-cache-order-or-identity-mismatch');
   }
-  if (saved === undefined) {
-    if (!matchesRawRestore(observation, current, raw[0])) return hold('current-raw-restore-coverage-unverified');
-  } else if (!matchesRawSave(saved, current, raw[0])) return hold('successor-raw-save-coverage-unverified');
+  if (saved !== undefined && restoredSuccessor !== undefined) return hold('ambiguous-successor-coverage');
+  if (saved !== undefined) {
+    if (!matchesRawSave(saved, current, raw[0])) return hold('successor-raw-save-coverage-unverified');
+  } else if (restoredSuccessor !== undefined) {
+    if (!matchesRestoredSuccessor(restoredSuccessor, current, raw[0])) {
+      return hold('restored-successor-coverage-unverified');
+    }
+  } else if (!matchesRawRestore(observation, current, raw[0])) {
+    return hold('current-raw-restore-coverage-unverified');
+  }
 
   for (const pin of latestProtection) {
     const row = raw.find(candidate => matchesCache(candidate, pin));
     if (!row) return hold('protected-raw-cache-unavailable');
     if (!matchesCache(row, retained[0]) && !matchesCache(row, retained[1])) return hold('protected-raw-cache-outside-newest-two');
   }
-  if (raw.length > 2 && saved === undefined) return hold('retirement-requires-successor-save');
+  if (raw.length > 2 && saved === undefined && restoredSuccessor === undefined) {
+    return hold('retirement-requires-successor-save');
+  }
   return {
     status: 'READY',
     reason: raw.length === 2 ? 'already-two-raw-caches' : 'newest-two-raw-caches-verified',
@@ -282,18 +340,18 @@ export async function readRawCacheProtection({inventory, boundary, repository, s
 // recompute stock and pins, and verifyOwner must fail on loss of the lock
 // or movement of that versioned B/S. The read-only builder cannot call this.
 export async function retireVerifiedRawCache({
-  repository, githubToken, readSnapshot, verifyOwner, current, saved, retained, request = fetch,
+  repository, githubToken, readSnapshot, verifyOwner, current, saved, restoredSuccessor, retained, request = fetch,
 }) {
   const hold = reason => ({status: 'HOLD', reason, retire: []});
   if (repository !== 'jakobjorgensen82-commits/RavRadar' || typeof githubToken !== 'string' || !githubToken
       || typeof readSnapshot !== 'function' || typeof verifyOwner !== 'function' || typeof request !== 'function') {
     throw new Error('RAW_CACHE_RETIREMENT_SCOPE');
   }
-  if (!saved) return hold('retirement-requires-successor-save');
+  if (!saved && !restoredSuccessor) return hold('retirement-requires-successor-save');
   await verifyOwner();
   const before = await readSnapshot();
   const after = await readSnapshot();
-  const plan = planRawDmiCacheRotation({before, after, current, saved, retained});
+  const plan = planRawDmiCacheRotation({before, after, current, saved, restoredSuccessor, retained});
   if (plan.status !== 'READY' || plan.retire.length !== 1) return plan;
 
   const [oldest] = plan.retire;

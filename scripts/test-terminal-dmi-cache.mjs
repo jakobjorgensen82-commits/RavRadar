@@ -9,7 +9,10 @@ import {
   selectTerminalDmiCache,
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
-import {planRawDmiCacheRotation, readFinalizedRawCache, readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache} from './lib/verified-raw-cache-rotation.mjs';
+import {
+  buildRawSuccessorPlanBytes, planRawDmiCacheRotation, readFinalizedRawCache,
+  readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache,
+} from './lib/verified-raw-cache-rotation.mjs';
 
 const repository = 'owner/repository';
 const runId = 33990516150;
@@ -514,3 +517,61 @@ assert.equal(await finalized({jobs:[{...sourceJob, steps:[...sourceJob.steps, so
 assert.equal(await finalized({jobs:[{...sourceJob, steps:[sourceJob.steps[0],
   {...sourceJob.steps[1], conclusion:'skipped'}]}]}), null);
 console.log('OK: RAW archive finalization matches an exact successful save step, even if a later stage failed.');
+
+const normalDemand = {
+  schemaVersion: 2, kind: 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND',
+  productionReferenceAt: successor.successorPlan.targetReferenceAt,
+  demands: Array.from({length: 673}, (_, index) => ({partId: 'synthetic-' + index})),
+  rawRetention: successor.successorPlan.retention,
+};
+const planBytes = buildRawSuccessorPlanBytes({
+  demand: normalDemand, targetReferenceAt: successor.targetReferenceAt, boundary: successorBoundary,
+});
+assert.deepEqual(JSON.parse(planBytes.toString()), successor.successorPlan);
+assert.throws(() => buildRawSuccessorPlanBytes({
+  demand: normalDemand, targetReferenceAt: '2026-09-05T07:00:00Z', boundary: successorBoundary,
+}), /RETENTION_SUCCESSOR_TARGET/);
+assert.throws(() => buildRawSuccessorPlanBytes({
+  demand: normalDemand, targetReferenceAt: successor.targetReferenceAt, boundary,
+}), /RETENTION_SUCCESSOR_BOUNDARY/);
+assert.throws(() => buildRawSuccessorPlanBytes({
+  demand: {...normalDemand, demands: Array(673).fill({partId: 'duplicate'})},
+  targetReferenceAt: successor.targetReferenceAt, boundary: successorBoundary,
+}), /RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED/);
+const bootProof = {
+  schemaVersion: 1, kind: 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1',
+  runId: successor.runId, runAttempt: successor.runAttempt, sourceHead: successor.sourceHead,
+  targetReferenceAt: successor.targetReferenceAt,
+  cacheIdentitySha256: observation.cacheIdentitySha256,
+  baselineBoundarySha256: hashJson(Object.fromEntries(Object.entries(successorBoundary)
+    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0))),
+  planSha256: createHash('sha256').update(planBytes).digest('hex'),
+  allRequiredVerified: true, requiredCaptures: 1, protectedFiles: 1, unavailableCaptures: 0,
+};
+const restoredSuccessor = {receipt: bootProof, planBytes};
+const bootPlan = {...savePlan, saved: undefined, restoredSuccessor};
+assert.deepEqual(planRawDmiCacheRotation(bootPlan).retire, [rawIdentity(rawCaches[0])]);
+assert.deepEqual(planRawDmiCacheRotation({...bootPlan,
+  current: {...successor, targetReferenceAt: '2026-09-05T04:00:00.000Z'},
+}).retire, [rawIdentity(rawCaches[0])]);
+for (const proof of [
+  {...bootProof, protectedFiles: 0},
+  {...bootProof, unavailableCaptures: 1},
+  {...bootProof, cacheIdentitySha256: '3'.repeat(64)},
+  {...bootProof, planSha256: '3'.repeat(64)},
+  {...bootProof, targetReferenceAt: '2026-09-05T05:00:00Z'},
+  {...bootProof, runAttempt: '2'},
+  {...bootProof, kind: 'DMI_RESTORED_RAW_OBSERVATION_V2'},
+]) {
+  assert.deepEqual(planRawDmiCacheRotation({...bootPlan, restoredSuccessor: {receipt:proof, planBytes}}), {
+    status: 'HOLD', reason: 'restored-successor-coverage-unverified', retire: [],
+  });
+}
+assert.deepEqual(planRawDmiCacheRotation({...bootPlan, saved}), {
+  status: 'HOLD', reason: 'ambiguous-successor-coverage', retire: [],
+});
+assert.deepEqual(await verifyRetirement({
+  snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged,
+  inputs: {saved: undefined, restoredSuccessor},
+}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id}, reads: 3, locks: 4, deletes: [retirementUrl]});
+console.log('OK: an exact restored archive covering the verified successor plan can bootstrap retirement.');
