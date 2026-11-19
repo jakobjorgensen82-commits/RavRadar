@@ -1104,7 +1104,7 @@ function syntheticAccountErasureAuthFenceReadbackSql(intent){
 }
 // Observed generic app bootstrap. Its CR bytes and two triggers are fixture data;
 // no privilege edits, production hook configuration or catalogue authority.
-function syntheticNativeProfileBootstrapSql(){return "CREATE OR REPLACE FUNCTION public.handle_new_ravradar_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nbegin\r\n  insert into public.profiles(id,email,display_name)\r\n  values(\r\n    new.id,\r\n    new.email,\r\n    coalesce(new.raw_user_meta_data->>'display_name', split_part(coalesce(new.email,''),'@',1))\r\n  )\r\n  on conflict(id) do update\r\n    set email=excluded.email,\r\n        display_name=coalesce(public.profiles.display_name, excluded.display_name),\r\n        updated_at=now();\r\n  return new;\r\nend;\r\n$function$\nCREATE TRIGGER on_auth_user_created_ravradar AFTER INSERT OR UPDATE OF email ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user();\nCREATE TRIGGER on_auth_user_created_ravradar_role AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user();\n";}
+function syntheticNativeProfileBootstrapSql(){return "CREATE OR REPLACE FUNCTION public.handle_new_ravradar_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nbegin\r\n  insert into public.profiles(id,email,display_name)\r\n  values(\r\n    new.id,\r\n    new.email,\r\n    coalesce(new.raw_user_meta_data->>'display_name', split_part(coalesce(new.email,''),'@',1))\r\n  )\r\n  on conflict(id) do update\r\n    set email=excluded.email,\r\n        display_name=coalesce(public.profiles.display_name, excluded.display_name),\r\n        updated_at=now();\r\n  return new;\r\nend;\r\n$function$\n;\nCREATE TRIGGER on_auth_user_created_ravradar AFTER INSERT OR UPDATE OF email ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user();\nCREATE TRIGGER on_auth_user_created_ravradar_role AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user();\n";}
 const NATIVE_ACTIVITY_SQL='supabase/migrations/20261117180100_account_native_activity_capture_off.sql';
 const NOTICE_SQL='supabase/migrations/20261117180000_account_inactivity_notice_off.sql';
 async function syntheticNativeActivitySource(){
@@ -2872,7 +2872,10 @@ ${syntheticNativeActivityInstrumentationSql()}`);
   });
   test('native signup bootstrap preserves the actual CR body and both enabled app triggers without privilege changes',()=>{
     const bootstrap=syntheticNativeProfileBootstrapSql();
-    const definition=bootstrap.slice(0,bootstrap.indexOf('CREATE TRIGGER '));
+    const triggerBoundary='\n;\nCREATE TRIGGER ';
+    const transition=bootstrap.indexOf(triggerBoundary);
+    assert(transition>0);
+    const definition=bootstrap.slice(0,transition+1);
     assert.equal(sha(Buffer.from(definition)),"f89129374eb5fe4d69b67ec60a58693c89c656f3aa0f4882cea43c74995aaa19");
     assert.equal([...definition.matchAll(/\r/g)].length,14);
     assert.equal(bootstrap.split('CREATE TRIGGER ').length,3);
