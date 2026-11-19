@@ -315,7 +315,10 @@ export async function retireVerifiedRawCache({
     const observed = await readSnapshot();
     const same = JSON.stringify(completeCacheInventory(observed?.inventory)) === JSON.stringify(expected)
       && JSON.stringify(completeProtectedCaches(observed?.protection)) === JSON.stringify(protectedRows);
-    if (acknowledged && same) return {status: 'RETIRED', cacheId: oldest.id};
+    if (acknowledged && same) {
+      await verifyOwner();
+      return {status: 'RETIRED', cacheId: oldest.id};
+    }
   } catch {
     // Preserve uncertainty and never move on to a second deletion.
   }

@@ -444,7 +444,10 @@ const verifyRetirement = async (testCase) => {
   const result = await retireVerifiedRawCache({
     repository: productionRepo, githubToken: 'synthetic-token',
     current: successor, saved, retained,
-    verifyOwner: async () => { locks += 1; },
+    verifyOwner: async () => {
+      locks += 1;
+      if (locks === testCase.loseOwnershipAt) throw new Error('synthetic owner lost');
+    },
     readSnapshot: async () => testCase.snapshots[reads++],
     request: async (url, init) => {
       assert.equal(url, retirementUrl);
@@ -461,7 +464,11 @@ const withoutOldest = snapshot([...rawCaches.slice(1), otherRefCache]);
 const acknowledged = () => ({status: 204, redirected: false});
 assert.deepEqual(await verifyRetirement({
   snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged,
-}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id}, reads: 3, locks: 3, deletes: [retirementUrl]});
+}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id}, reads: 3, locks: 4, deletes: [retirementUrl]});
+assert.deepEqual(await verifyRetirement({
+  snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged, loseOwnershipAt: 4,
+}), {result: {status: 'HOLD', reason: 'cache-retirement-not-confirmed', retire: []},
+  reads: 3, locks: 4, deletes: [retirementUrl]});
 for (const [response, last] of [
   [() => { throw new Error('synthetic network interruption'); }, withoutOldest],
   [acknowledged, snapshot([...rawCaches.slice(1, -1), otherRefCache])],
