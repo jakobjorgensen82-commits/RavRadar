@@ -180,6 +180,16 @@ test('current installed code-only plan uses the normal active migration contract
   const options={environment:installedCodeOnlyCaller(),migrationListText:full,dryRunText:noop,
     migrationsDirectory:path.join(ROOT,'supabase/migrations')};
   assert.deepEqual((await verifyCurrentInstalledCodeOnlyPlan(options)).pendingVersions,[]);
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'){
+    const {ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS}=await import('./verify-account-erasure-schema.mjs');
+    const noticeRows=ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+    const beforeHydration=full+noticeRows.map(({version})=>'\n | '+version+' | off-remote-only').join('');
+    await assert.rejects(verifyCurrentInstalledCodeOnlyPlan({...options,migrationListText:beforeHydration}),
+      /Applied OFF app requires its actual source/);
+    const afterHydration=full+noticeRows.map(({version})=>'\n'+version+' | '+version+' | off-installed').join('');
+    const installed=await verifyCurrentInstalledCodeOnlyPlan({...options,migrationListText:afterHydration});
+    assert.deepEqual(installed.pendingVersions,[]);
+  }
   for(const changed of [
     {...options,migrationListText:full.replace(`${next.version} | ${next.version}`,`${next.version} | `)},
     {...options,migrationListText:full+'\n20990101000000 | 20990101000000 | unknown'},
@@ -230,6 +240,10 @@ test('current installed code-only normal workflow keeps read-only SQL, hard curr
   assert.equal(activeCondition('Deploy exact rebound trip Edges without Worker or D1 replay'),false);
   const installed=step('Require the current exact installed source and empty SQL plan before private work');
   assert.match(installed,/--verify-current-installed-plan/);assert.match(installed,/integrated-cutover-readiness\.mjs verify-db/);
+  assert.ok(source.indexOf(step('Hydrate only already-applied migration identities'))
+    <source.indexOf(installed),'Read the installed list after preparing the exact local migration view');
+  assert.match(installed,/supabase migration list --linked[^\n]*code-only-current-installed-list\.txt[\s\S]*--migration-list "\$RUNNER_TEMP\/code-only-current-installed-list\.txt"/);
+  assert.doesNotMatch(installed,/code-only-migrations-before\.txt/);
   assert.match(installed,/verify-statistics-preference-revision-schema\.mjs/);
   assert.doesNotMatch(installed,/supabase db push --linked --skip-vault/);
   const readback=step('Read back migration and database binding');

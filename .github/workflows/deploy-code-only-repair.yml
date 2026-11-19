@@ -818,9 +818,11 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
+          # Read both columns after the already-installed sources have been hydrated.
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase migration list --linked) | tee "$RUNNER_TEMP/code-only-current-installed-list.txt"
           (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-current-installed-dry-run.txt"
           node scripts/select-native-original-continuity-code-only-source.mjs --verify-current-installed-plan \
-            --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt" \
+            --migration-list "$RUNNER_TEMP/code-only-current-installed-list.txt" \
             --dry-run "$RUNNER_TEMP/code-only-current-installed-dry-run.txt" \
             --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
           env -u SUPABASE_DB_PASSWORD node scripts/integrated-cutover-readiness.mjs verify-db
