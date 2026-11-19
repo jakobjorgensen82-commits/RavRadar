@@ -1,3 +1,11 @@
+## 19. november — manuel start af almindelig vejrhentning ved RAW-håndhævelse
+
+En direkte start med standardvalg mangler botkaldets kontrol af RAW-lageret. Den lokale rettelse stopper derfor en almindelig direkte start via begge GitHub-indgange før ny vejrhentning, når RAW-håndhævelsen er aktiv. Godkendte checkpoint- og særlige forløb beholder deres egne adgangs- og datakontroller.
+
+Brug den eksisterende vejrvagt **Guard external RavRadar weather cadence** med `external_watchdog=true` til manuel bestilling i dens normale tidsvindue. Vejrvagten kan først bestille efter vinduets begyndelse og efter kontrol af samme interval, aktive kørsler og kvalificeret kilde. Den eksisterende start uden for tidsvinduet kræver en faktisk, verificeret bot-genopretning, der har udpeget netop sin modtager. Der er ingen almindelig straksstart uden for dette vindue i den nuværende kode.
+
+Kandidaten ændrer ikke den eksisterende kø, cron-tid eller botkaldets øvrige opgaver. Kildekvalifikation og faktisk virkning afventer.
+
 ## 19. november — cachekontrollen skjulte årsagen i #353
 
 Vejrkørsel #353 gendannede råcachen og planlagde de krævede historiktimer for 673 kystdele. Kontrollen stoppede ved overdragelsen til cacheoprydning. Loggen viste ét fælles afslag. De tre kopier blev bevaret, og leverandørhentningen startede aldrig. Oprydningsjobbet ventede på et bevis fra en allerede afsluttet kørsel.

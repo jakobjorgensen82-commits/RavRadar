@@ -346,6 +346,22 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      - name: Require the protected RAW caller for fresh ordinary weather
+        if: >-
+          vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'enforce' && inputs.enforce_raw_cache_rotation != true &&
+          inputs.completed_private_runtime != true && inputs.checkpoint_only != true &&
+          inputs.current_family_cold_start != true &&
+          !(inputs.weather_state_epoch_bootstrap == true && inputs.weather_state_epoch_archive_key != '' &&
+            inputs.weather_state_epoch_archive_catalog_sha256 != '') &&
+          !(inputs.produce_weather_handoff == true && inputs.produce_weather_handoff_confirmation == 'PRODUCE-VERIFIED-WEATHER-SOURCE-HANDOFF') &&
+          !(inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id != '' &&
+            inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE') &&
+          !(inputs.ravscore_integrated_return == true && inputs.ravscore_integrated_return_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-RETURN')
+        shell: bash
+        run: |
+          echo '::error::DIRECT_FRESH_WEATHER_REQUIRES_RAW_ROTATION: Use Guard external RavRadar weather cadence with external_watchdog=true during its allowed slot.' >&2
+          exit 1
+
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:

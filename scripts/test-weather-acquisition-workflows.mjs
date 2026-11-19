@@ -76,6 +76,67 @@ test('Copernicus closure gates the ordinary provider handoff and encrypted SAVE'
   }
 });
 
+test('both direct standard weather callers fail closed under RAW enforcement before weather work', () => {
+  const guard = step(actualNormalWorkflow, 'Require the protected RAW caller for fresh ordinary weather');
+  const condition = block => {
+    const match = /^        if: >-\n((?:          .*\n)+)/m.exec(block);
+    assert.ok(match);
+    return match[1].trim().replaceAll(/\s*\n\s*/g, ' ');
+  };
+  assert.match(guard, /DIRECT_FRESH_WEATHER_REQUIRES_RAW_ROTATION[\s\S]*?^          exit 1$/m);
+  assert.doesNotMatch(guard, /continue-on-error|always\(/);
+  const position = actualNormalWorkflow.indexOf(guard);
+  assert(position > actualNormalWorkflow.indexOf(step(actualNormalWorkflow, 'Require checked-out HEAD to equal current origin/main')));
+  assert(position < actualNormalWorkflow.indexOf(step(actualNormalWorkflow, 'Decide whether weather needs updating before private runtime download')));
+
+  const current = read('.github/workflows/run-current-weather-once.yml');
+  const currentBuild = current.split('\n  build-and-prepare:\n')[1].split('\n  deploy-pages:\n')[0];
+  const legacyBuild = orchestrator.split('\n  build-and-prepare:\n')[1].split('\n  geometry-v2-national:\n')[0];
+  for (const caller of [currentBuild, legacyBuild]) assert.match(caller, /uses: \.\/\.github\/workflows\/reusable-weather-build\.yml/);
+  assert.doesNotMatch(legacyBuild, /^      enforce_raw_cache_rotation:/m);
+  assert.match(actualNormalWorkflow, /enforce_raw_cache_rotation:\n        required: false\n        type: boolean\n        default: false/);
+  const enforce = currentBuild.match(/^      enforce_raw_cache_rotation: \$\{\{ (.+) \}\}$/m)?.[1];
+  assert.ok(enforce);
+  const vars = { RAVRADAR_RAW_BOOTSTRAP_PROOF: 'enforce' };
+  const defaults = { completed_private_runtime: false, current_family_cold_start: false, quick_confirmation: false,
+    weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
+    native_sampling_identity_original_recovery: false, completed_stage_source: '', quick_progress_source: '',
+    checkpoint_target_hour: '', weather_state_epoch_archive_key: '', weather_state_epoch_archive_catalog_sha256: '',
+    weather_state_epoch_raw_cache_key: '' };
+  const blocksFresh = (input, selectedVars = vars) => runInNewContext(condition(guard), {
+    vars: selectedVars, inputs: { ...defaults, checkpoint_only: false,
+      ravscore_integrated_weather_handoff_run_id: '', ...input },
+  });
+  for (const [actor, triggering_actor, run_attempt, expectedStop] of [
+    ['github-actions[bot]', 'github-actions[bot]', 1, false],
+    ['manual-owner', 'manual-owner', 1, true],
+    ['github-actions[bot]', 'manual-owner', 2, true],
+  ]) {
+    const scheduled = runInNewContext(condition(step(current, 'Identify the default scheduled weather caller')), {
+      github: { actor, triggering_actor, run_attempt }, inputs: defaults,
+    });
+    const protectedRaw = runInNewContext(enforce.replaceAll('needs.current-main-target.', 'needs["current-main-target"].'), {
+      vars, needs: { 'current-main-target': { outputs: { ordinary_scheduled: scheduled ? 'true' : '', completed_private_runtime: 'false' } } },
+    });
+    assert.equal(blocksFresh({ enforce_raw_cache_rotation: protectedRaw }), expectedStop);
+  }
+  assert.equal(blocksFresh({ enforce_raw_cache_rotation: false }), true, 'old direct caller');
+  for (const alternate of [{ force: true }, { extended_provider_bootstrap: true }, { quick_confirmation: true },
+    { quick_progress_source: '123-1' }, { native_sampling_identity_original_recovery: true },
+    { weather_state_epoch_bootstrap: true }, { produce_weather_handoff: true },
+    { ravscore_integrated_first_cutover: true }, { ravscore_integrated_return: true }])
+    assert.equal(blocksFresh(alternate), true, JSON.stringify(alternate));
+  for (const explicit of [{ completed_private_runtime: true }, { checkpoint_only: true }, { current_family_cold_start: true },
+    { weather_state_epoch_bootstrap: true, weather_state_epoch_archive_key: 'a'.repeat(64),
+      weather_state_epoch_archive_catalog_sha256: 'b'.repeat(64) },
+    { produce_weather_handoff: true, produce_weather_handoff_confirmation: 'PRODUCE-VERIFIED-WEATHER-SOURCE-HANDOFF' },
+    { ravscore_integrated_first_cutover: true, ravscore_integrated_weather_handoff_run_id: '123',
+      ravscore_integrated_first_cutover_confirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' },
+    { ravscore_integrated_return: true, ravscore_integrated_return_confirmation: 'EXECUTE-INTEGRATED-RAVSCORE-RETURN' }])
+    assert.equal(blocksFresh(explicit), false);
+  assert.equal(blocksFresh({}, { RAVRADAR_RAW_BOOTSTRAP_PROOF: 'observe' }), false);
+});
+
 test('normal DMI save uses its measured allowance and must actually finalize before fresh weather', () => {
   const admission = step(actualNormalWorkflow, 'Measure room for the next DMI RAW cache');
   const save = step(actualNormalWorkflow, 'Save progressed DMI GRIB download cache');
