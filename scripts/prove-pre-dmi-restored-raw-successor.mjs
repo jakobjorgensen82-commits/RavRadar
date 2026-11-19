@@ -19,8 +19,8 @@ const CACHE_KEY = /^dmi-grib-v4-Linux-\d{4}-W(?:0[1-9]|[1-4][0-9]|5[0-3])-[1-9][
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const flatDigest = value => digest(JSON.stringify(value, Object.keys(value).sort()));
 
-function requireProof(ok) {
-  if (!ok) throw new Error('RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED');
+function requireProof(ok, reason) {
+  if (!ok) throw new Error('RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED', {cause: reason});
 }
 
 // These are independent outputs minted by the already completed normal B/S
@@ -32,13 +32,15 @@ export function preparePreDmiRawSuccessorProof({ demand, pairedBaseline, identit
     && typeof pairedBaseline.bSourceHead === 'string' && HEAD.test(pairedBaseline.bSourceHead)
     && typeof pairedBaseline.boundarySha256 === 'string' && SHA256.test(pairedBaseline.boundarySha256)
     && [pairedBaseline.bVersion, pairedBaseline.sVersion].every(version => Number.isSafeInteger(version) && version > 0)
-    && boundary && flatDigest(boundary) === pairedBaseline.boundarySha256);
+    && boundary && flatDigest(boundary) === pairedBaseline.boundarySha256, 'BASELINE_BINDING');
   requireProof(identity && Object.keys(identity).length === 3
     && Number.isSafeInteger(identity.id) && identity.id > 0
     && CACHE_KEY.test(matchedKey ?? '') && identity.key === matchedKey
     && typeof identity.version === 'string' && SHA256.test(identity.version)
     && NUM.test(run?.runId ?? '') && run.runAttempt === '1' && HEAD.test(run.sourceHead)
-    && HOUR.test(run.targetReferenceAt));
+    && HOUR.test(run.targetReferenceAt), 'CACHE_OR_TARGET_BINDING');
+  requireProof(Array.isArray(demand.rawRetention.captures), 'DEMAND_CAPTURE_LIST');
+  requireProof(demand.rawRetention.captures.length > 0, 'DEMAND_NO_REQUIRED_CAPTURES');
   const planBytes = buildRawSuccessorPlanBytes({demand, targetReferenceAt: run.targetReferenceAt, boundary});
   const required = demand.rawRetention.captures.length;
   const expected = {
@@ -53,15 +55,17 @@ export function preparePreDmiRawSuccessorProof({ demand, pairedBaseline, identit
 async function readJson(file, maximum) {
   const before = await fs.lstat(file, {bigint: true});
   requireProof(before.isFile() && !before.isSymbolicLink() && before.nlink === 1n
-    && before.size > 0n && before.size <= BigInt(maximum));
+    && before.size > 0n && before.size <= BigInt(maximum), 'INPUT_FILE_SCOPE');
   const bytes = await fs.readFile(file);
   const after = await fs.lstat(file, {bigint: true});
   requireProof(BigInt(bytes.length) === before.size
-    && ['dev', 'ino', 'mode', 'size', 'mtimeNs', 'ctimeNs'].every(field => before[field] === after[field]));
+    && ['dev', 'ino', 'mode', 'size', 'mtimeNs', 'ctimeNs'].every(field => before[field] === after[field]), 'INPUT_FILE_MOVED');
   return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
 }
 
+let phase = 'ENTRY';
 async function main(env) {
+  phase = 'RUN_SCOPE';
   const run = { runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, sourceHead: env.GITHUB_SHA,
     targetReferenceAt: env.RAVRADAR_PRODUCTION_TARGET_HOUR };
   requireProof(process.platform === 'linux' && env.GITHUB_ACTIONS === 'true' && env.RUNNER_ENVIRONMENT === 'github-hosted'
@@ -71,31 +75,37 @@ async function main(env) {
     && env.GITHUB_TRIGGERING_ACTOR === 'github-actions[bot]' && run.runAttempt === '1'
     && env.RAW_NORMAL_PRE_DMI_STEPS_VERIFIED === 'true' && env.GITHUB_WORKSPACE === ROOT
     && env.OPERATIONAL_ACTION === 'integrated' && path.isAbsolute(env.RUNNER_TEMP ?? '')
-    && path.isAbsolute(env.GITHUB_OUTPUT ?? ''));
+    && path.isAbsolute(env.GITHUB_OUTPUT ?? ''), 'RUN_ENVIRONMENT');
+  phase = 'CHECKOUT_SCOPE';
   requireProof(execFileSync('git', ['rev-parse', 'HEAD^{commit}'], {cwd: ROOT, encoding: 'utf8'}).trim() === run.sourceHead
     && await fs.realpath(env.RUNNER_TEMP) === env.RUNNER_TEMP && await fs.realpath(ROOT) === ROOT
-    && await fs.realpath(path.join(ROOT, '.cache')) === path.join(ROOT, '.cache'));
+    && await fs.realpath(path.join(ROOT, '.cache')) === path.join(ROOT, '.cache'), 'CHECKOUT_IDENTITY');
+  phase = 'READ_INPUTS';
   const [pairedBaseline, demand, identity] = await Promise.all([
     readJson(path.join(env.RUNNER_TEMP, 'ravradar-raw-baseline-evidence.json'), 512),
     readJson(path.join(ROOT, RAVSCORE_CURRENT_HISTORY_DEMAND_PATH), 8 * 1024 * 1024),
     readJson(path.join(ROOT, '.cache/dmi-restored-raw-identity.json'), 512),
   ]);
+  phase = 'BIND_INPUTS';
   const { planBytes, expected, boundary } = preparePreDmiRawSuccessorProof({
     demand, pairedBaseline, identity, run, matchedKey: env.RAW_MATCHED_CACHE_KEY,
   });
+  phase = 'WRITE_PRIVATE_PLAN';
   const work = path.join(env.RUNNER_TEMP, 'ravradar-raw-rotation');
   await fs.mkdir(work, {mode: 0o700});
   const planPath = path.join(work, 'successor-plan.json');
   await fs.writeFile(planPath, planBytes, {mode: 0o600, flag: 'wx'});
+  phase = 'VERIFY_RESTORED_BYTES';
   const result = execFileSync('python3', ['-B', path.join(ROOT, 'scripts/prove-restored-raw-successor.py')], {
     cwd: ROOT, env: { ...env, RAVRADAR_RAW_SUCCESSOR_PLAN_SHA256: expected.planSha256 },
     timeout: 75_000, encoding: 'utf8', maxBuffer: 16 * 1024,
   });
   const coverage = JSON.parse(result);
-  requireProof(isDeepStrictEqual(coverage, expected));
+  requireProof(isDeepStrictEqual(coverage, expected), 'COVERAGE_RESPONSE');
   // Keep the complete handoff in runner-private scratch. The job output is
   // only its digest and grants no deletion. A writer must authenticate this job and
   // reconfirm the same protected B/S, producer archive and reader/pin inventory.
+  phase = 'PUBLISH_HANDOFF';
   const output = Buffer.from(JSON.stringify({
     schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline, boundary, coverage,
   }));
@@ -106,12 +116,20 @@ async function main(env) {
   await fs.appendFile(env.GITHUB_OUTPUT, 'raw_bootstrap_coverage_sha256=' + proofSha256 + '\n');
 }
 
+const fixedReasons = new Set([
+  'BASELINE_BINDING', 'CACHE_OR_TARGET_BINDING', 'DEMAND_CAPTURE_LIST', 'DEMAND_NO_REQUIRED_CAPTURES', 'DEMAND_PLAN_SIZE',
+  'INPUT_FILE_SCOPE', 'INPUT_FILE_MOVED', 'RUN_ENVIRONMENT', 'CHECKOUT_IDENTITY', 'COVERAGE_RESPONSE',
+  'RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED', 'RETENTION_SUCCESSOR_TARGET', 'RETENTION_SUCCESSOR_BOUNDARY',
+  'ENOENT', 'EEXIST', 'EACCES', 'ETIMEDOUT',
+]);
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     requireProof(process.argv.length === 2);
     await main(process.env);
-  } catch {
-    console.error('RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED');
+  } catch (error) {
+    const reason = [error?.cause, error?.code, error?.message].find(value => fixedReasons.has(value)) ?? 'UNCLASSIFIED';
+    console.error(`RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED phase=${phase} reason=${reason}`);
     process.exitCode = 2;
   }
 }

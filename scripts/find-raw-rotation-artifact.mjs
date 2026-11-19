@@ -19,6 +19,7 @@ const SHA40 = /^[a-f0-9]{40}$/;
 const ARTIFACT_DIGEST = /^sha256:[a-f0-9]{64}$/;
 const MAX_ARTIFACT_BYTES = 16 * 1024;
 const POLL_MS = 3000;
+const MISSING_PROOF_PRODUCER_POLL_INTERVAL = 10;
 const DEADLINE_MS = { proof: 15 * 60_000, 'observe-proof': 90_000, result: 180_000, 'saved-coverage': 30_000 };
 const positive = value => Number.isSafeInteger(value) && value > 0;
 const timestamp = value => typeof value === 'string' ? Date.parse(value) : NaN;
@@ -96,7 +97,7 @@ function publicationStep(response, { kind, runId, attempt, head }) {
 // Use the same authenticated read again immediately before each retirement.
 // The receiver must also authenticate the downloaded contents independently.
 export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, attempt, head, getJson,
-  expectedArtifactId, expectedDigest, now = Date.now } = {}) {
+  expectedArtifactId, expectedDigest, now = Date.now, inspectMissingProofProducer = false } = {}) {
   if (!Object.hasOwn(DEADLINE_MS, kind) || !positive(repositoryId) || !positive(runId) || attempt !== 1
       || typeof head !== 'string' || !SHA40.test(head) || typeof getJson !== 'function'
       || (expectedArtifactId !== undefined && !positive(expectedArtifactId))
@@ -112,7 +113,32 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
     const listing = await getJson(`${runPath}/artifacts?name=${name}&per_page=2`);
     if (!Array.isArray(listing?.artifacts) || listing.total_count !== listing.artifacts.length
         || listing.total_count > 1) return hold('artifact-not-unique');
-    if (!listing.total_count) return pending();
+    if (!listing.total_count) {
+      if (kind === 'proof' && inspectMissingProofProducer) {
+        let response;
+        try {
+          response = await getJson(`${attemptPath}/jobs?per_page=100`);
+        } catch {
+          // A failed optional observation says nothing about an absent proof.
+          return pending();
+        }
+        if (Array.isArray(response?.jobs) && response.total_count === response.jobs.length
+            && response.jobs.length <= 100) {
+          const producers = response.jobs.filter(job => job?.name === DMI_PRODUCER_JOB);
+          const [producer] = producers;
+          if (producers.length === 1 && positive(producer.id) && producer.run_id === runId
+              && producer.run_attempt === attempt && producer.head_sha === head && producer.head_branch === 'main'
+              && producer.status === 'completed') {
+            const upload = Array.isArray(producer.steps) ? producer.steps.filter(step => step?.name === PROOF_UPLOAD) : [];
+            if (['failure', 'cancelled', 'timed_out', 'skipped'].includes(producer.conclusion)
+                || (upload.length === 1 && upload[0].status === 'completed' && upload[0].conclusion === 'skipped')) {
+              return hold('producer-finished-without-proof');
+            }
+          }
+        }
+      }
+      return pending();
+    }
     const [artifact] = listing.artifacts;
     if (!exactArtifact(artifact, context, now())
         || (expectedArtifactId !== undefined && artifact.id !== expectedArtifactId)
@@ -140,7 +166,9 @@ export async function findRawRotationArtifact({ pause = wait, signal, ...context
   try {
     for (let poll = 0; poll < lookups && !signal?.aborted; poll += 1) {
       if (poll) await pause(POLL_MS, undefined, { signal });
-      const finding = await readRawRotationArtifactOnce(context);
+      const finding = await readRawRotationArtifactOnce({
+        ...context, inspectMissingProofProducer: poll % MISSING_PROOF_PRODUCER_POLL_INTERVAL === 0,
+      });
       if (signal?.aborted) break;
       if (finding.status !== 'PENDING') return finding;
     }

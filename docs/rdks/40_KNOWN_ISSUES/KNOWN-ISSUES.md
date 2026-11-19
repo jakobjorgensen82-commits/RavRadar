@@ -1,3 +1,9 @@
+## 19. november — cachekontrollen skjulte årsagen i #353
+
+Vejrkørsel #353 gendannede råcachen og planlagde de krævede historiktimer for 673 kystdele. Kontrollen stoppede ved overdragelsen til cacheoprydning. Loggen viste ét fælles afslag. De tre kopier blev bevaret, og leverandørhentningen startede aldrig. Oprydningsjobbet ventede på et bevis fra en allerede afsluttet kørsel.
+
+Lokalt viser kontrollen nu trin og fejlkategori. Oprydningsjobbet stopper inden for næste statusaflæsning, når det tilhørende byggejob er afsluttet uden at udgive bevis. Den konkrete afvisningsgrund og en vellykket almindelig rotation er fortsat åbne.
+
 ## 19. november — adskil cachekvittering fra RavScores modelaftryk
 
 Et tidligere forslag ændrede checkpointudgiveren, som indgår i RavScores modelaftryk. Kildekontrollen stoppede på den afvigelse. Den lokale rettelse henter nu cachekvitteringen fra det validerede svar fra den uændrede udgiver. Den eksisterende modelidentitet er genverificeret. Den samlede kildekontrol og første kontrollerede rotation i drift udestår.

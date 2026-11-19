@@ -1,5 +1,6 @@
 ## Drift — rotation af DMI-råcacher
 
+- Cachekontrollen angiver nu trin og fejlkategori. Oprydningsjobbet stopper med at vente, når det tilhørende byggejob er afsluttet uden at udgive et bevis.
 - Arbejdsforløbet er lokalt ændret til at kontrollere den næste låste times behov og fjerne én ældre kopi ad gangen efter verificeret genlæsning.
 - Når en normal kørsel har gemt og verificeret den nye kopi og udgivet prognosen, kan den afslutte rotationen samme gang. En gyldig genoptagelse, som bruger den ældste kopi, bevarer den.
 - Kontrollen får samme måltime, versionsnummer og fingeraftryk fra den eksisterende checkpointudgiver, når den har valideret svaret. RavScores modelaftryk er uændret.

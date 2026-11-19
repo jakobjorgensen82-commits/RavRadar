@@ -120,8 +120,11 @@ export function buildRawSuccessorPlanBytes({demand, targetReferenceAt, boundary}
   };
   const retention = requirePublishedRawRotationRetention(plan, {targetReferenceAt, boundary});
   const bytes = Buffer.from(JSON.stringify(plan) + '\n', 'utf8');
-  if (retention.captures.length === 0 || bytes.length > 1024 * 1024) {
+  if (retention.captures.length === 0) {
     throw new Error('RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED');
+  }
+  if (bytes.length > 1024 * 1024) {
+    throw new Error('RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED', {cause: 'DEMAND_PLAN_SIZE'});
   }
   return bytes;
 }

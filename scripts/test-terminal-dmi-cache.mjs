@@ -466,7 +466,11 @@ const bridgeInputs = {
 assert.deepEqual(preparePreDmiRawSuccessorProof(bridgeInputs),
   {planBytes, expected: bootProof, boundary: successorBoundary});
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
-  pairedBaseline: {...pairedBaseline, boundarySha256: '3'.repeat(64)}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
+  pairedBaseline: {...pairedBaseline, boundarySha256: '3'.repeat(64)}}),
+  {message: 'RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED', cause: 'BASELINE_BINDING'});
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  demand: {...normalDemand, rawRetention: {...normalDemand.rawRetention, captures: []}}}),
+  {message: 'RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED', cause: 'DEMAND_NO_REQUIRED_CAPTURES'});
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
   pairedBaseline: {...pairedBaseline, sVersion: 0}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,

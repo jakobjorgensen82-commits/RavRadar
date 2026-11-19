@@ -23,7 +23,9 @@
 - [x] Lokal prøve af den normale kalder, fysisk læsning af gendannede originaler, afgrænset GitHub-job og stop efter uklart sletteudfald.
 - [x] Lokal adfærdsprøve binder sletning af den ene ældste kopi til nøjagtig afsluttet upload og verificerede originaler efter leveret prognose. Beskyttelse af den ældste kopi stopper sletning.
 - [x] Brug den eksisterende checkpointudgiver til cachekvitteringen. Målrettet prøve afviser manglende og modstridende kvitteringer, og de aktuelle modelbindinger består.
-- [ ] Præcis kilde- og Linux-kontrol for den samlede kandidat.
+- [x] Præcis kilde- og Linux-kontrol for den første samlede kandidat.
+- [x] Første ordinære kørsel #353 gendannede den aktuelle RAW-cache. Ingen kopi blev fjernet efter afslaget i kontrollen af de krævede originaler.
+- [ ] Kvalificér den afgrænsede rapportering af fejlkategorier og fastslå den konkrete årsag til afslaget.
 - [x] Bekræft to stabile kopier uden at blokere på en anden cachelæser. En sådan læser spærrer stadig, hvis en gammel kopi skal fjernes.
 - [ ] Verificér originalerne og første overgang til to kopier i et ledigt ordinært vejrvindue før en ny upload.
 - [ ] Verificér faktisk overgang til to kopier, gentagen rotation og margin under målt almindelig drift.
