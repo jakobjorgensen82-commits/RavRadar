@@ -13,7 +13,8 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { collectPostH0DmiOriginalDependencies as collect, POST_H0_DMI_ENDPOINT_DIAGNOSTICS } from './lib/post-h0-dmi-original-dependencies.mjs';
 import { buildRavScoreRawCurrentRetention, describeRavScoreCurrentHistoryFailure,
-  withInstalledCoherentRawTransportRetention, planRavScoreCurrentHistoryForPart } from './plan-ravscore-current-history.mjs';
+  withInstalledCoherentRawTransportRetention, planRavScoreCurrentHistoryForPart,
+  requirePublishedRawRotationRetention } from './plan-ravscore-current-history.mjs';
 import { buildRavScoreProductionPartSeries, ravScoreOwnerCurrentHistoryStartAt,
   selectRavScoreProductionInitialState }
   from './lib/ravscore-production-part-pipeline.mjs';
@@ -472,8 +473,23 @@ test('committed B/S retention uses normal priority and UNKNOWN endpoints, never 
     boundary: { ...boundary, datasetId: successor.datasetId, productionReferenceAt: at(4),
       bundleContentSha256: sha('synthetic-new-B'), conditionsSha256: sha(JSON.stringify(successor)),
       checkpointGenerationSha256: nextCheckpoint.generationSha256 } };
-  assert.deepEqual(buildRavScoreRawCurrentRetention(next).captures.map(c => c.validTime).sort(),
+  const nextRetention = buildRavScoreRawCurrentRetention(next);
+  assert.deepEqual(nextRetention.captures.map(c => c.validTime).sort(),
     [captureAt(3), captureAt(6), captureAt(9)], 'only the separately selected matching B/S releases older possible support');
+  const successorPlan = JSON.parse(JSON.stringify({
+    schemaVersion: 1, kind: 'PUBLISHED_RAW_ROTATION_SUCCESSOR_PLAN',
+    targetReferenceAt: next.productionReferenceAt, retention: nextRetention,
+  }));
+  const expected = { boundary: next.boundary, targetReferenceAt: captureAt(6) };
+  assert.deepEqual(requirePublishedRawRotationRetention(successorPlan, expected), nextRetention);
+  assert.deepEqual(requirePublishedRawRotationRetention(successorPlan, { ...expected, targetReferenceAt: at(6) }),
+    nextRetention);
+  assert.throws(() => requirePublishedRawRotationRetention(successorPlan, { ...expected, targetReferenceAt: at(7) }),
+    /RETENTION_SUCCESSOR_TARGET/, 'same B/S with a different later locked hour is not the planned successor');
+  assert.throws(() => requirePublishedRawRotationRetention({ ...successorPlan, targetReferenceAt: at(4) },
+    { ...expected, targetReferenceAt: at(4) }), /RETENTION_SUCCESSOR_TARGET/, 'the B/S hour is not a successor');
+  assert.throws(() => requirePublishedRawRotationRetention(successorPlan, { ...expected, boundary }),
+    /RETENTION_SUCCESSOR_BOUNDARY/, 'the previous B/S does not own the successor plan');
   const coherent = fixture({ coherent: [-3, 0, 3, 6, 9] });
   assert.deepEqual(buildRavScoreRawCurrentRetention({ ...options, protectedBulk: coherent.document }).captures, []);
   const merged = buildRavScoreRawCurrentRetention({ ...options, protectedBulk: coherent.document,

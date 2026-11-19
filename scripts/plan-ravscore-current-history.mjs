@@ -589,7 +589,6 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
     if (!isDeepStrictEqual(checkpoint, checkpointFile.json)) refuse('RETENTION_B_S_DIFFER');
   } finally { await fs.rm(work, { recursive: true }); }
   const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, originalConditions ?? conditions);
-  const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));
   const preamble = prepareCachedNativeOriginals
     ? await import('./prepare-cached-coherent-current-work.mjs') : null;
   const workingInputs = preamble === null ? null : await preamble.snapshotCoherentCurrentWorkInputs();
@@ -623,6 +622,19 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
     // happens only after the complete recursive reader and BEFORE demand SAVE.
     return withInstalledCoherentRawTransportRetention(retention, transportCaptures);
   }
+  return collectCommittedRawCurrentRetention({
+    registry, conditions, checkpoint, productionReferenceAt, boundary, protectedBulk,
+    progressCandidate: candidate ?? active, progressActive: active, historicalBulk,
+    protectedCompanionContexts, liveCurrentPilot, forecast, zones,
+  }, verify);
+}
+
+// Both B/S parity and each source role must be authenticated by the fixed
+// caller before collection. Recheck that same authority after streaming.
+async function collectCommittedRawCurrentRetention({ registry, conditions, checkpoint,
+  productionReferenceAt, boundary, protectedBulk, progressCandidate, progressActive,
+  historicalBulk, protectedCompanionContexts, liveCurrentPilot, forecast, zones }, verify) {
+  const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));
   const all = new Map(), byPart = new Map(parts.map(part => [part.partId, part]));
   const collect = (part, persistedHourlyByPart) => {
     const result = buildRavScoreRawCurrentRetention({
@@ -630,7 +642,7 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
       conditions: { ...conditions, coastalParts: { ...conditions.coastalParts,
         parts: { [part.partId]: conditions.coastalParts.parts[part.partId] } } },
       checkpoint: { ...checkpoint, states: { [part.partId]: checkpoint.states[part.partId] } },
-      productionReferenceAt, boundary, protectedBulk, progressCandidate: candidate ?? active, progressActive: active,
+      productionReferenceAt, boundary, protectedBulk, progressCandidate, progressActive,
       historicalBulk, protectedCompanionContexts, persistedHourlyByPart, liveCurrentPilot, zones });
     for (const capture of result.captures) all.set(canonical(capture), capture);
     if (all.size > 4096) refuse('RETENTION_BOUND');
@@ -653,6 +665,46 @@ async function readCommittedRawCurrentRetention(registry, checkpointFile, produc
   await verify();
   return { schemaVersion: 1, kind: 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION', boundary,
     captures: [...all].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };
+}
+
+const RAW_ROTATION_SUCCESSOR_KIND = 'PUBLISHED_RAW_ROTATION_SUCCESSOR_PLAN';
+
+function assertRawRotationSuccessorHour(boundary, targetReferenceAt) {
+  const horizonHours = (Date.parse(targetReferenceAt) - Date.parse(exactHour(boundary.productionReferenceAt))) / HOUR;
+  if (horizonHours < 1 || horizonHours > RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS) {
+    refuse('RETENTION_SUCCESSOR_TARGET');
+  }
+}
+
+export async function planPublishedRawRotationRetention(nextReferenceAt) {
+  const targetReferenceAt = workflowTargetHour(nextReferenceAt);
+  const { readPublishedRawRotationInputs } = await import('./read-published-raw-rotation-runtime.mjs');
+  const { verify, ...view } = await readPublishedRawRotationInputs();
+  assertRawRotationSuccessorHour(view.boundary, targetReferenceAt);
+  const retention = await collectCommittedRawCurrentRetention({
+    ...view, productionReferenceAt: targetReferenceAt,
+  }, verify);
+  return { schemaVersion: 1, kind: RAW_ROTATION_SUCCESSOR_KIND, targetReferenceAt, retention };
+}
+
+// Expected inputs come from the independent target lock and authenticated B/S.
+// The returned retention is a demand list; the archive must be proved separately.
+export function requirePublishedRawRotationRetention(plan, { targetReferenceAt, boundary } = {}) {
+  const target = workflowTargetHour(targetReferenceAt);
+  if (plan?.schemaVersion !== 1 || plan.kind !== RAW_ROTATION_SUCCESSOR_KIND
+    || plan.targetReferenceAt !== target) refuse('RETENTION_SUCCESSOR_TARGET');
+  const { retention } = plan;
+  if (!object(boundary) || Object.keys(boundary).length !== 5
+    || typeof boundary.datasetId !== 'string' || !boundary.datasetId
+    || ![boundary.bundleContentSha256, boundary.checkpointGenerationSha256, boundary.conditionsSha256]
+      .every(value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value))
+    || !isDeepStrictEqual(retention?.boundary, boundary)
+    || retention.schemaVersion !== 1 || retention.kind !== 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION'
+    || !Array.isArray(retention.captures) || retention.captures.length > 4096) {
+    refuse('RETENTION_SUCCESSOR_BOUNDARY');
+  }
+  assertRawRotationSuccessorHour(boundary, target);
+  return retention;
 }
 
 const LEGACY_SIGNATURE = /^parser:20\|params:4\|grid:9\|eccodes-api:2\.48\.(?:0|2)\|eccodes-binding:2\.48\.0\|zones:[a-f0-9]{16}$/;
