@@ -62,6 +62,11 @@ assert.deepEqual(sourceCommandsForChangedPaths(['supabase/functions/trip-log/ind
   'supabase/functions/_shared/account-lifecycle.js','supabase/functions/_shared/inactivity-notice-mail.mjs']),
   ['node --test scripts/test-user-account-trip-log-4.0.264.mjs',
     'node --test scripts/test-delete-trip-owner-data-readback.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/run-dmi-bulk-supervised.py',
+  'scripts/test-dmi-bulk-supervised.py','scripts/test-dmi-supervisor-parent-loss.py',
+  'scripts/run-copernicus-current-pilot-with-retry.py','scripts/test-copernicus-bounded-retry-4.0.289.py']),
+  ['node scripts/test-dmi-budget-rotation-4.0.189.mjs',
+    'node --test scripts/test-current-operational-python-contracts.mjs']);
 for(const path of ['scripts/audit-pages-artifact-unreviewed.mjs','supabase/functions/trip-log/unreviewed.ts'])
   assert.throws(()=>sourceCommandsForChangedPaths([path]),/SOURCE_CHANGED_OWNER_REQUIRED/);
 assert.throws(()=>sourceCommandsForChangedPaths(['../arbitrary.mjs']));
