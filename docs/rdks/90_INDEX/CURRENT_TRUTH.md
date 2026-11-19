@@ -1,3 +1,7 @@
+## 19. november — kildekontrol før driftsfiler
+
+Vejrkørsel #352 nåede kildekontrollen, hvor kontrol af Pages-genoptagelse afviste den kørende Git-kopi. Det almindelige vejrjob havde allerede lagt geometri, administration og gemt vejr ind i arbejdskopien. Derfor køres den eksisterende kildekontrol og gemmes dens faktiske udfald lige efter den billige forprøve, før de aktive filer overlejres. Kørsel #352 nåede hverken nye leverandørdata eller udgivelse. Rettelsens normale virkning afventer ny GitHub-kontrol og vejrhentning.
+
 ## 19. november — fysisk plads i Supabase
 
 Den skrivefri lagerkontrol måler nu også den fysiske databasestørrelse. Den viser det samlede antal bytes for alle databaser i klyngen og størrelsen på den aktuelle database. Den viser særskilt plads til aktuelle administrationsdokumenter og deres historik. Historikkens store værdier ligger i et særskilt lager i PostgreSQL, som allerede er medregnet i historiktallet. Målingen viser derfor, om oprydning af gamle versioner har frigivet fysisk plads. Free kræver også, at forbrug og gendannelse er verificeret. Kildeændringen afventer faktisk kørsel.

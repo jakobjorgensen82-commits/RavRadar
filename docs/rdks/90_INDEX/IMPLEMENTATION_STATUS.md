@@ -1,3 +1,8 @@
+## 19. november — kildekontrol før driftsfiler
+
+- [x] Find årsagen til kildeafslaget i #352 og flyt den uændrede kontrol til den rene Git-kilde efter forprøven.
+- [ ] Bestå kildekontrollen på den præcise revision og bekræft en almindelig vejrhentning med leveret prognose.
+
 ## 19. november — fysisk plads i Supabase
 
 - [x] Afgrænsede prøver af den skrivefri resultatmåling og afvisning af ufuldstændige tal består.

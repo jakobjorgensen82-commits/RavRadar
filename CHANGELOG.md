@@ -1,3 +1,8 @@
+## 4.0.602 — vejrets kildekontrol før driftsklargøring
+
+- Den eksisterende kildekontrol køres på den rene Git-kilde, før de aktive driftsfiler lægges ind. Kørsel #352 stoppede, da kontrollen fandt driftsændringer i sin kildekopi.
+- Den hurtige forprøve kan fortsat springe en overflødig vejropdatering over. Den færdige prognose kontrolleres efter beregning som hidtil.
+
 ## 4.0.602 — fysisk måling til Supabase Free
 
 - Den skrivefri backupkontrol viser databaseplads og administrationshistorikkens fysiske størrelse uden at læse brugerdata.

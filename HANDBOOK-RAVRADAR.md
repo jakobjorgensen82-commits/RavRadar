@@ -1,3 +1,11 @@
+## 89.357 — Kildekontrol før driftsfiler
+
+Den tidlige kontrol af programkoden læser den rene kopi fra GitHub.
+
+Det almindelige vejrjob afgør først hurtigt, om en opdatering er nødvendig. Derefter genbruger det et verificeret resultat for præcis samme kode eller kører kildekontrollen. Først derefter lægger jobbet godkendt geometri, administration og gemte vejrdata ind i arbejdskopien. Den færdige prognose kontrolleres efter beregningen.
+
+Kørsel #352 standsede under den tidlige kontrol, fordi driftsfiler allerede var lagt ind. Et nyt almindeligt forløb skal bekræfte den rettede rækkefølge og offentlig udgivelse.
+
 ## 89.355 — Når et fund kan ligne rav
 
 En kort opfølgning om glød eller gennemsigtighed beholder fundet som emne.

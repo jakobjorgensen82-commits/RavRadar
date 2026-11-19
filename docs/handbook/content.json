@@ -5,6 +5,13 @@
   "updatedAt": "2026-11-17",
   "sections": [
     {
+      "id": "weather-source-before-overlays-2026-11-19",
+      "chapter": "89.357",
+      "title": "Kildekontrol før driftsfiler",
+      "summary": "Den tidlige kontrol af programkoden læser den rene kopi fra GitHub.",
+      "body": "<div class=\"reader-guide\"><p>Den tidlige kontrol af programkoden læser den rene kopi fra GitHub.</p></div><p>Det almindelige vejrjob afgør først hurtigt, om en opdatering er nødvendig. Derefter genbruger det et verificeret resultat for præcis samme kode eller kører kildekontrollen. Først derefter lægger jobbet godkendt geometri, administration og gemte vejrdata ind i arbejdskopien. Den færdige prognose kontrolleres efter beregningen.</p><p>Kørsel #352 standsede under den tidlige kontrol, fordi driftsfiler allerede var lagt ind. Et nyt almindeligt forløb skal bekræfte den rettede rækkefølge og offentlig udgivelse.</p>"
+    },
+    {
       "id": "assistant-find-identification-2026-11-18",
       "chapter": "89.355",
       "title": "Når et fund kan ligne rav",
