@@ -658,6 +658,11 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_archive_finalize_17_closes_cohort_before_saved(self):
         self.official_chain(finalize_ok=True)
 
+    def test_official_sdk_archive_file_limit_closes_before_cache_reservation(self):
+        # One identical incompressible input and the real SDK for both limits.
+        self.official_chain(finalize_ok=True, archive_limit=64 * 1024)
+        self.official_chain(finalize_ok=True, archive_limit=1024, expect_capacity_refusal=True)
+
     def test_official_sdk_finalize_http_200_false_never_saves(self):
         self.official_chain(finalize_ok=False)
 
@@ -673,11 +678,15 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         self.assertEqual(self._cipher_sdk_parent_loss,
                          ['ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP'])
 
-    def official_chain(self, *, finalize_ok, ciphertext=False):
+    def official_chain(self, *, finalize_ok, ciphertext=False, archive_limit=None,
+                       expect_capacity_refusal=False):
         import hashlib
+        import random
+        import resource
         from http.server import BaseHTTPRequestHandler, HTTPServer
 
         self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
+        self.assertFalse(ciphertext and archive_limit is not None)
         for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
             self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_REQUIRED:{name}')
         self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
@@ -703,7 +712,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         finished = False
         server_failure = []
         old_alarm = signal.getsignal(signal.SIGALRM)
-        own_raw = b'synthetic raw original\n'
+        own_raw = (b'synthetic raw original\n' if archive_limit is None
+                   else random.Random(349).randbytes(16 * 1024))
         key = ('weather-private-progress-encrypted-v2-Linux-main-17-1'
                if ciphertext else 'dmi-grib-v4-Linux-2026-W41-17-1')
         cipher_path = '.cache/weather-private-progress.encrypted'
@@ -892,6 +902,9 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 case.assertEqual(calls, ['create'])
                 case.assertEqual(self.headers.get('x-ms-blob-type'), 'BlockBlob')
                 archive_bytes = self.body(1024 * 1024)
+                if archive_limit is not None:
+                    case.assertGreater(len(archive_bytes), 1024)
+                    case.assertLessEqual(len(archive_bytes), archive_limit)
                 case.assertTrue(archive_bytes.startswith(b'\x1f\x8b')
                                 or archive_bytes.startswith(b'\x28\xb5\x2f\xfd'),
                                 'Actual official gzip/zstd archive required')
@@ -968,14 +981,36 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 'ACTIONS_RUNTIME_TOKEN': 'own-synthetic-token', 'GITHUB_OUTPUT': str(output)})
             for name in ('stdout', 'stderr'):
                 logs.append((root / name).open('wb'))
+            # Fixture-only inherited limit. The cache action has no product
+            # capacity policy yet. The reservation and all network I/O are loopback.
+            def set_archive_limit():
+                resource.setrlimit(resource.RLIMIT_FSIZE, (archive_limit, archive_limit))
+
             parent = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root, env=environment,
-                stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
+                stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1],
+                preexec_fn=set_archive_limit if archive_limit is not None else None)
             fds['action'] = retain_pidfd(parent.pid)
             while not finished:
-                self.assertFalse(exited(fds['action']), 'Official SDK exited before complete protocol')
+                if exited(fds['action']):
+                    self.assertTrue(expect_capacity_refusal, 'Official SDK exited before complete protocol')
+                    break
                 server.handle_request()
                 if server_failure:
                     raise server_failure[0]
+            if expect_capacity_refusal:
+                # Drain a queued connection as well as requests observed before exit.
+                server.handle_request()
+                if server_failure:
+                    raise server_failure[0]
+                self.assertEqual(parent.wait(timeout=1.0), 1)
+                self.assertEqual(calls, [])
+                self.assertEqual(small(output), b'')
+                self.assertEqual(small(root / 'stderr'), b'DMI_RAW_SAVE_REFUSED\n'
+                    b'DMI_RAW_SAVE_DIAGNOSTIC stage=API reason=DMI_RAW_SAVE_API_FAILED\n')
+                self.assertFalse((root / CLAIM).exists())
+                self.assertEqual(raw.read_bytes(), own_raw)
+                no_children()
+                return
             if getattr(self, '_cipher_sdk_parent_loss', None) is not None:
                 self.assertEqual(self._cipher_sdk_parent_loss,
                                  ['ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP'])
