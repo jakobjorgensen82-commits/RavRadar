@@ -119,6 +119,18 @@ test('empty artifact listing polls to its fixed bound and reports a hold', async
   assert.equal(absent.calls.length, 60);
 });
 
+test('initial rotation stops when the exact builder has failed without uploading proof', async () => {
+  const subject = fixture();
+  subject.listing.total_count = 0;
+  subject.listing.artifacts.length = 0;
+  subject.afterPause(() => {
+    subject.job.status = 'completed';
+    subject.job.conclusion = 'failure';
+  });
+  assert.deepEqual(await subject.find(), { status: 'HOLD', reason: 'producer-finished-without-proof' });
+  assert.equal(subject.calls.length, 13);
+});
+
 test('an exact pre-write recheck never substitutes another artifact or waits for the producer', async () => {
   const subject = fixture();
   const expected = {expectedArtifactId: 14, expectedDigest: digest};
