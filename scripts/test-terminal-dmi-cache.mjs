@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   DMI_CACHE_SAVE_STEP,
   DMI_PRODUCER_JOB,
@@ -8,6 +9,7 @@ import {
   selectTerminalDmiCache,
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
+import {planRawDmiCacheRotation} from './lib/verified-raw-cache-rotation.mjs';
 
 const repository = 'owner/repository';
 const runId = 33990516150;
@@ -195,3 +197,163 @@ await assert.rejects(
 );
 
 console.log('OK: only the newest exact-main legacy cache with producer, save and terminal evidence is selectable.');
+
+const rawCaches = [1, 2, 3, 4].map(day => ({
+  ...cache,
+  id: cache.id + day,
+  key: `dmi-grib-v4-Linux-2026-W36-${runId + day}-1`,
+  created_at: `2026-09-0${day}T20:45:22Z`,
+}));
+const rawIdentity = ({ id, key, ref, version }) => ({ id, key, ref, version });
+const retained = rawCaches.slice(-2).reverse().map(rawIdentity);
+const boundary = {
+  datasetId: 'rr-20260904190000-210',
+  productionReferenceAt: '2026-09-04T19:00:00.000Z',
+  bundleContentSha256: 'c'.repeat(64),
+  checkpointGenerationSha256: 'd'.repeat(64),
+  conditionsSha256: 'e'.repeat(64),
+};
+const current = {
+  runId: String(runId + 5), runAttempt: '1', sourceHead: headSha,
+  targetReferenceAt: '2026-09-05T00:00:00Z', boundary, requiredCaptures: 52,
+};
+const hashJson = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const observation = {
+  kind: 'DMI_RESTORED_RAW_OBSERVATION_V2',
+  runId: current.runId, runAttempt: current.runAttempt, sourceHead: current.sourceHead,
+  targetReferenceAt: current.targetReferenceAt,
+  // The Python producer serializes these before hashing with sorted keys.
+  baselineBoundarySha256: hashJson({
+    bundleContentSha256: boundary.bundleContentSha256,
+    checkpointGenerationSha256: boundary.checkpointGenerationSha256,
+    conditionsSha256: boundary.conditionsSha256,
+    datasetId: boundary.datasetId,
+    productionReferenceAt: boundary.productionReferenceAt,
+  }),
+  cacheIdentitySha256: hashJson({ id: retained[0].id, key: retained[0].key, version: retained[0].version }),
+  allRequiredVerified: true, requiredCaptures: 52, protectedFiles: 52, unavailableCaptures: 0,
+};
+const otherRefCache = { ...cache, ref: 'refs/pull/99/merge', size_in_bytes: 0 };
+const snapshot = (caches = [...rawCaches, otherRefCache], protectedCaches = [retained[1]]) => ({
+  inventory: { total_count: caches.length, actions_caches: caches },
+  protection: { complete: true, caches: protectedCaches },
+});
+const plan = { before: snapshot(), after: snapshot(), retained, current, observation };
+assert.deepEqual(planRawDmiCacheRotation({
+  ...plan, after: snapshot([...plan.before.inventory.actions_caches].reverse()
+    .map(row => ({ ...row, last_accessed_at: '2026-09-05T00:00:00Z' }))),
+}), {
+  status: 'READY', reason: 'newest-two-raw-caches-verified', retain: retained,
+  retire: [rawIdentity(rawCaches[0])],
+});
+const checkHold = (replacement, reason) => {
+  assert.deepEqual(planRawDmiCacheRotation({ ...plan, ...replacement }), { status: 'HOLD', reason, retire: [] });
+};
+const sameSnapshots = (caches, protectedCaches) => ({
+  before: snapshot(caches, protectedCaches), after: snapshot(caches, protectedCaches),
+});
+
+checkHold({ after: { ...plan.after, inventory: { ...plan.after.inventory, total_count: 6 } } }, 'incomplete-cache-inventory');
+checkHold(sameSnapshots([...rawCaches, rawCaches[0]]), 'incomplete-cache-inventory');
+checkHold({ after: snapshot([...rawCaches, { ...otherRefCache, size_in_bytes: 1 }]) }, 'cache-inventory-changed');
+checkHold({ after: { ...plan.after, protection: { caches: [] } } }, 'incomplete-raw-cache-protection');
+checkHold({ after: snapshot(undefined, []) }, 'raw-cache-protection-changed');
+
+checkHold(sameSnapshots(rawCaches, [rawIdentity(rawCaches[0])]), 'protected-raw-cache-outside-newest-two');
+checkHold(sameSnapshots(rawCaches, [{ ...retained[1], version: 'f'.repeat(64) }]), 'protected-raw-cache-unavailable');
+checkHold(sameSnapshots(rawCaches, [{ ...retained[1], id: 1 }]), 'protected-raw-cache-unavailable');
+checkHold(sameSnapshots([...rawCaches, { ...rawCaches[0], id: 1 }]), 'ambiguous-raw-cache-key');
+for (const [otherRaw, reason] of [
+  [{ ...rawCaches[0], ref: 'refs/pull/99/merge' }, 'other-raw-cache-conflicts-with-newest-two'],
+  [{ ...rawCaches[0], key: rawCaches[0].key.replace('-v4-', '-v3-') }, 'other-raw-cache-conflicts-with-newest-two'],
+  [{ ...rawCaches[0], size_in_bytes: 0 }, 'raw-cache-upload-not-finalized'],
+  [{ ...rawCaches[0], version: 'f'.repeat(64) }, 'raw-cache-version-conflict'],
+]) checkHold(sameSnapshots([otherRaw, ...rawCaches.slice(1)]), reason);
+checkHold({ retained: [...retained].reverse() }, 'raw-cache-order-or-identity-mismatch');
+checkHold(sameSnapshots([...rawCaches.slice(0, 3), { ...rawCaches[3], created_at: rawCaches[2].created_at }]),
+  'raw-cache-order-or-identity-mismatch');
+checkHold(sameSnapshots(rawCaches.slice(-1)), 'two-finalized-raw-caches-required');
+
+for (const incorrectObservation of [
+  { ...observation, runAttempt: '2' },
+  { ...observation, unavailableCaptures: 1 },
+  { ...observation, baselineBoundarySha256: 'f'.repeat(64) },
+  { ...observation, cacheIdentitySha256: hashJson({ id: retained[1].id, key: retained[1].key, version: retained[1].version }) },
+]) checkHold({ observation: incorrectObservation }, 'current-raw-restore-coverage-unverified');
+checkHold({ current: { ...current, boundary: { ...boundary, datasetId: 'rr-superseding-dataset' } } },
+  'current-raw-restore-coverage-unverified');
+checkHold({ current: { ...current, requiredCaptures: 53 } }, 'current-raw-restore-coverage-unverified');
+assert.deepEqual(planRawDmiCacheRotation({ ...plan, ...sameSnapshots(rawCaches.slice(-2)) }), {
+  status: 'READY', reason: 'already-two-raw-caches', retain: retained, retire: [],
+});
+console.log('OK: exact RAW cache rotation holds on changed, unverified or pinned evidence.');
+
+const capture = {
+  collection: 'dkss_idw', modelRun: '2026-09-04T12:00:00Z', validTime: '2026-09-04T19:00:00Z',
+  itemId: 'Synthetic \u00f8 \ud83c\udf0a', assetIdentitySha256: '1'.repeat(64), assetSizeBytes: 51,
+  acquiredAt: '2026-09-05T00:14:58Z', contentLengthBytes: 51, contentSha256: '2'.repeat(64),
+  itemCreatedAt: null, itemUpdatedAt: null,
+};
+// From Python json.dumps with ensure_ascii=False over the capture without acquiredAt.
+const pythonCaptureHash = '1448859a916c19d6297ab09387b79bc6a75b40576aa24b6728a93c711735ec95';
+const captureSetSha256 = hashJson([pythonCaptureHash]);
+const membership = {
+  schemaVersion: 2,
+  execution: { RUN_ID: String(runId + 4), RUN_ATTEMPT: '1', SHA: headSha },
+  boundarySha256: observation.baselineBoundarySha256,
+  captureSetSha256, manifestSha256: '9'.repeat(64),
+  files: [['0'.repeat(24) + '.grib', {}, pythonCaptureHash]],
+};
+const membershipBytes = Buffer.from(JSON.stringify(membership));
+const saved = {
+  receipt: {
+    schemaVersion: 2, kind: 'DMI_RAW_SAVE_COMMITTED_MEMBERSHIP', key: retained[0].key, cacheId: retained[0].id,
+    observationSha256: createHash('sha256').update(membershipBytes).digest('hex'),
+    boundarySha256: membership.boundarySha256, captureSetSha256, manifestSha256: membership.manifestSha256,
+    verifiedCaptureCount: 1,
+  },
+  membershipBytes,
+  predecessorBoundary: boundary,
+};
+const successorBoundary = {
+  datasetId: 'rr-20260905000000-210', productionReferenceAt: '2026-09-05T00:00:00.000Z',
+  bundleContentSha256: '6'.repeat(64), checkpointGenerationSha256: '7'.repeat(64), conditionsSha256: '8'.repeat(64),
+};
+const successor = {
+  runId: String(runId + 4), runAttempt: '1', sourceHead: headSha,
+  targetReferenceAt: '2026-09-05T04:00:00Z', boundary: successorBoundary, requiredCaptures: 1,
+  successorPlan: {
+    schemaVersion: 1, kind: 'PUBLISHED_RAW_ROTATION_SUCCESSOR_PLAN', targetReferenceAt: '2026-09-05T04:00:00.000Z',
+    retention: {
+      schemaVersion: 1, kind: 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION', boundary: successorBoundary, captures: [capture],
+    },
+  },
+};
+const savePlan = { ...plan, current: successor, observation: undefined, saved };
+assert.deepEqual(planRawDmiCacheRotation(savePlan).retire, [rawIdentity(rawCaches[0])]);
+const withCapture = next => ({
+  ...successor, successorPlan: {
+    ...successor.successorPlan, retention: {...successor.successorPlan.retention, captures: [next]},
+  },
+});
+assert.equal(planRawDmiCacheRotation({
+  ...savePlan, current: withCapture({ ...capture, acquiredAt: '2026-09-05T02:30:00Z' }),
+}).status, 'READY');
+for (const condition of [
+  {current: withCapture({ ...capture, contentSha256: '3'.repeat(64) })},
+  {current: withCapture({ ...capture, itemId: 'Different provider object' })},
+  {current: {...successor, requiredCaptures: 2}},
+  {current: {...successor, targetReferenceAt: '2026-09-05T00:00:00Z'}},
+  {current: {...successor, targetReferenceAt: '2026-09-05T05:00:00Z'}},
+  {current: {...successor, boundary}},
+  {current: {...successor, sourceHead: '5'.repeat(40)}},
+  {saved: {...saved, membershipBytes: Buffer.from(JSON.stringify({...membership, files: []}))}},
+  {saved: {...saved, receipt: {...saved.receipt, verifiedCaptureCount: 2}}},
+  {saved: {...saved, receipt: {...saved.receipt, cacheId: retained[1].id}}},
+  {saved: {...saved, predecessorBoundary: successorBoundary}},
+]) {
+  assert.deepEqual(planRawDmiCacheRotation({...savePlan, ...condition}), {
+    status: 'HOLD', reason: 'successor-raw-save-coverage-unverified', retire: [],
+  });
+}
+console.log('OK: finalized RAW membership must cover the authenticated successor plan.');
