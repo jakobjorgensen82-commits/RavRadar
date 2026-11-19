@@ -280,6 +280,7 @@ const PATH_AREAS=freeze({
     'scripts/test-release-contract-metadata.mjs',
   ],
   ownedCacheNative:[
+    '.github/actions/save-owned-dmi-grib/action.yml',
     '.github/actions/save-owned-dmi-grib/index.cjs',
     'scripts/run-owned-dmi-grib-save.py',
     'scripts/test-owned-dmi-grib-save-native.py',
@@ -1052,6 +1053,15 @@ export function planSourceCurrentContractsFromGit(input){
       if(pathAreas.get(file)?.includes('ownedCacheNative')
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_OWNED_CACHE_NATIVE_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(file==='.github/actions/save-owned-dmi-grib/action.yml'){
+        const before=readCommittedText(input.baselineCommit,file);
+        const after=readCommittedText(input.candidateCommit,file);
+        const archiveCapacityOutput='  archive_capacity_skipped:\n'
+          +'    description: True only after the local RAW archive exceeded its configured budget before any cache write.\n';
+        if(before.includes('  archive_capacity_skipped:\n')||!before.includes('  uploaded:\n')
+          ||after!==before.replace('  uploaded:\n',archiveCapacityOutput+'  uploaded:\n'))
+          return refuse('CURRENT_OWNED_CACHE_ACTION_METADATA_REQUIRES_FULL');
+      }
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
