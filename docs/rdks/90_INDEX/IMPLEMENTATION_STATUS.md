@@ -10,7 +10,8 @@
 - [x] Lokal prøve af den normale kalder, fysisk læsning af gendannede originaler, afgrænset GitHub-job og stop efter uklart sletteudfald.
 - [x] Lokal adfærdsprøve binder sletning af den ene ældste kopi til nøjagtig afsluttet upload og verificerede originaler efter leveret prognose. Beskyttelse af den ældste kopi stopper sletning.
 - [ ] Præcis kilde- og Linux-kontrol for den samlede kandidat.
-- [ ] Verificér den næste normale observationskørsel, før oprydning aktiveres.
+- [x] Bekræft to stabile kopier uden at blokere på en anden cachelæser. En sådan læser spærrer stadig, hvis en gammel kopi skal fjernes.
+- [ ] Verificér originalerne og første overgang til to kopier i et ledigt ordinært vejrvindue før en ny upload.
 - [ ] Verificér faktisk overgang til to kopier, gentagen rotation og margin under målt almindelig drift.
 
 - [x] Verificér eksternt AI-svar for afgrænset identifikationsspørgsmål på dansk, tysk og engelsk gennem den normale brugerflade på 4.0.601.

@@ -4,9 +4,9 @@ Behold de to nyeste verificerede råvejrkopier, og mål den samlede GitHub-cache
 
 En almindelig vejrkørsel gendanner den seneste kompatible DMI-råcache. Før næste hentning kan den afprøve, om kopien har alle de originale filer, som den låste prognosetime kræver ifølge den gemte vejrpakke og beregningstilstand. Prøven læser de eksisterende filer og kontrollerer størrelse, SHA-256 og filidentitet.
 
-Før en ny upload må et særskilt GitHub-job rydde gamle rester op, mens den almindelige kørsel venter. Det kræver verificerede uploads, tilstrækkelig dækning for den næste låste prognosetime og kontrol af andre mulige læsere. Hver sletning bekræftes med en ny aflæsning.
+Før en ny upload må et særskilt GitHub-job rydde gamle rester op, mens den almindelige kørsel venter. Det kræver verificerede uploads, tilstrækkelig dækning for den næste låste prognosetime og kontrol af andre mulige læsere. Hver sletning bekræftes med en ny aflæsning. Ved to allerede bekræftede kopier kan vejrhentningen fortsætte, mens andre bruger cachen.
 
-Den næste RAW-upload afpasses efter den samlede cachebestand i GitHub og en reserve til andre cachefiler. To færdige kopier bevares, mens den tredje gemmes. Samme kørsel kan derefter fjerne den ældste, når den nye kopi er færdig, de nødvendige originale vejrfiler er verificeret, den nye prognose er kontrolleret på RavRadar, og ingen genoptagelse stadig kan bruge den gamle kopi. Ved ukendt udfald bevares kopierne. Første ordinære driftsprøve sker i observationstilstand. Den lokale kandidat afventer kontrol i GitHub og aktivering.
+Den næste RAW-upload afpasses efter den samlede cachebestand i GitHub og en reserve til andre cachefiler. To færdige kopier bevares, mens den tredje gemmes. Samme kørsel kan derefter fjerne den ældste, når den nye kopi er færdig, de nødvendige originale vejrfiler er verificeret, den nye prognose er kontrolleret på RavRadar, og ingen genoptagelse stadig kan bruge den gamle kopi. Ved ukendt udfald bevares kopierne. Første ordinære driftsprøve med tre eksisterende kopier skal have plads og rotation kontrolleret før den næste upload. Den lokale kandidat afventer kontrol i GitHub og aktivering.
 
 ## 89.355 — Når et fund kan ligne rav
 

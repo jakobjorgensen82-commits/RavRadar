@@ -665,14 +665,15 @@ const sourceRuns = Object.fromEntries(rawCaches.map(row => {
   return [sourceId, {row, run: {...liveOwner, id: sourceId, status: 'completed', conclusion: 'success'}}];
 }));
 const apiRoot = '/repos/' + productionRepo;
-function rotationApi(owner, readRows) {
+function rotationApi(owner, readRows, otherRuns = []) {
   return async route => {
     const rows = readRows();
     if (route === apiRoot + '/git/ref/heads/main') return main;
     if (route.includes('/actions/caches?')) return {total_count: rows.length, actions_caches: rows};
     if (route.endsWith('/actions/cache/usage')) return {active_caches_count: rows.length, active_caches_size_in_bytes: 0};
     if (route.includes('/actions/runs?status=')) {
-      const workflow_runs = route.includes('status=in_progress') ? [owner] : [];
+      const status = new URL('https://api.github.com' + route).searchParams.get('status');
+      const workflow_runs = [owner, ...otherRuns].filter(run => run.status === status);
       return {total_count: workflow_runs.length, workflow_runs};
     }
     const match = route.match(/\/actions\/runs\/(\d+)\/attempts\/1(\/jobs\?per_page=100)?$/);
@@ -742,13 +743,19 @@ assert.equal((await evaluateSaved({}, {complete: true, caches: [rawIdentity(save
 console.log('OK: same-run retirement requires the exact newly saved archive and preserves any pinned third copy.');
 
 const savingOwner = {...productionOwner, id: sourceRunId};
-for (const count of [2, 3, 4]) {
+const queuedReader = {...savingOwner, id: savingOwner.id + 81, status: 'queued'};
+for (const {count, otherRuns, status, retire} of [
+  {count: 2, otherRuns: [queuedReader], status: 'READY', retire: false},
+  {count: 3, otherRuns: [], status: 'READY', retire: true},
+  {count: 3, otherRuns: [queuedReader], status: 'HOLD', retire: false},
+  {count: 4, otherRuns: [], status: 'HOLD', retire: false},
+]) {
   let rows = rawCaches.slice(-count);
   const removed = [];
   const outcome = await closeRawCacheOverlapFromHandoff({
     ...authenticateArgs, scope: savedScope, bytes: Buffer.from(JSON.stringify(savedReceipt)),
     readProtectedB: async () => savedB, githubToken: 'synthetic-token', savedCoverage: true,
-    getJson: rotationApi(savingOwner, () => rows),
+    getJson: rotationApi(savingOwner, () => rows, otherRuns),
     request: async url => {
       const cacheId = Number(url.split('/').at(-1));
       removed.push(cacheId);
@@ -756,12 +763,12 @@ for (const count of [2, 3, 4]) {
       return acknowledged();
     },
   });
-  assert.equal(outcome.status, count === 4 ? 'HOLD' : 'READY');
-  assert.equal(outcome.retiredCount, count === 3 ? 1 : 0);
-  assert.deepEqual(removed, count === 3 ? [savedRows[0].id] : []);
-  assert.equal(rows.length, count === 4 ? 4 : 2);
+  assert.equal(outcome.status, status);
+  assert.equal(outcome.retiredCount, retire ? 1 : 0);
+  assert.deepEqual(removed, retire ? [savedRows[0].id] : []);
+  assert.equal(rows.length, retire ? 2 : count);
 }
-console.log('OK: post-publication closes exactly one overlap and holds unexpected fourth copies.');
+console.log('OK: verified two-copy stock needs no write, while a possible reader holds actual retirement.');
 
 const confirmed = projectRawRotationDecision(nextScope, privateSha256, {status: 'READY', retiredCount: 2});
 assert.deepEqual(requireRawRotationDecision(Buffer.from(JSON.stringify(confirmed)), nextScope, privateSha256), confirmed);

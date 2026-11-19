@@ -443,6 +443,19 @@ export async function closeRawCacheOverlapFromHandoff({bytes, scope, githubToken
   if (retained.some(identity => identity === null)) {
     return {status: 'HOLD', reason: 'the-newest-two-raw-saves-are-unconfirmed', retiredCount: 0};
   }
+  if (raw.length === 2) {
+    // Two verified copies already satisfy this stage. A reader or an unrelated
+    // workflow only needs to block retirement when a cache would be deleted.
+    await verifyOwner();
+    const fresh = rawCacheStockRows(await readStock());
+    if (fresh.length !== 2 || raw[0].version !== raw[1].version || raw[0].key === raw[1].key
+        || Date.parse(raw[0].created_at) === Date.parse(raw[1].created_at)
+        || !retained.every(keep => fresh.some(row => matchesCache(row, keep)))
+        || !matchesRestoredSuccessor(restoredSuccessor, current, raw[0])) {
+      return {status: 'HOLD', reason: 'the-newest-two-raw-saves-are-unconfirmed', retiredCount: 0};
+    }
+    return {status: 'READY', reason: 'two-verified-raw-caches', retiredCount: 0};
+  }
   const readSnapshot = async () => {
     const snapshot = await readStock();
     if (savedCoverage && rawCacheStockRows(snapshot).length > maxRawCopies) {
