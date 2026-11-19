@@ -55,6 +55,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Measure physical stop of synthetic provider processes on Linux
+        if: github.event.pull_request.draft && github.event.pull_request.head.ref == 'codex/hosted-cgroup-synthetic-probe-20261119'
+        timeout-minutes: 2
+        run: python -B scripts/test-dmi-supervisor-parent-loss.py --hosted-cgroup-probe
+
       - name: Install declared DMI dependencies before source planning
         timeout-minutes: 2
         run: >-
