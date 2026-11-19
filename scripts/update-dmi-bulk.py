@@ -4343,6 +4343,58 @@ def configure_raw_current_retention(retention):
     return {"evictionAllowed": not unavailable, "protectedFiles": len(protected), "unavailableCaptures": unavailable}
 
 
+def observe_restored_raw_retention(retention, verified, target_reference):
+    """Report only a fully verified first restore before mutation of RAW."""
+    required = len(retention["captures"])
+    if (not required or FINALIZE_ONLY or os.getenv("DMI_BULK_SUPERVISOR_SKIPPED_ASSETS") != "[]"
+            or os.getenv("DMI_BULK_RAW_RESTORE_IDENTITY_OBSERVED") != "true"
+            or retention["kind"] != "COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION"
+            or type(retention["schemaVersion"]) is not int
+            or verified != {"evictionAllowed": True, "protectedFiles": required, "unavailableCaptures": 0}):
+        return
+    run, attempt = os.getenv("GITHUB_RUN_ID", ""), os.getenv("GITHUB_RUN_ATTEMPT", "")
+    head = os.getenv("GITHUB_SHA", "")
+    target = canonical_time(target_reference)
+    if (not all(re.fullmatch(r"[1-9][0-9]{0,19}", value) for value in (run, attempt))
+            or not re.fullmatch(r"[0-9a-f]{40}", head)
+            or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z", target or "")):
+        return
+    try:
+        identity = _archive_raw_retention_json(ROOT / ".cache/dmi-restored-raw-identity.json", 512)
+        if (not isinstance(identity, dict) or set(identity) != {"key", "id", "version"}
+                or not isinstance(identity["key"], str)
+                or not re.fullmatch(
+                    r"dmi-grib-v4-Linux-[0-9]{4}-W(?:0[1-9]|[1-4][0-9]|5[0-3])-[1-9][0-9]*-[1-9][0-9]*",
+                    identity["key"],
+                )
+                or type(identity["id"]) is not int or not 0 < identity["id"] <= 2**53 - 1
+                or not isinstance(identity["version"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", identity["version"])):
+            return
+        # A terminal reader can recompute each digest from its own authenticated
+        # input. Publish neither the cache tuple nor the raw B/S boundary.
+        cache_digest = hashlib.sha256(
+            json.dumps(identity, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        baseline_digest = hashlib.sha256(
+            json.dumps(retention["boundary"], ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        report = {
+            "kind": "DMI_RESTORED_RAW_OBSERVATION_V2",
+            "runId": run, "runAttempt": attempt, "sourceHead": head, "targetReferenceAt": target,
+            "cacheIdentitySha256": cache_digest, "baselineBoundarySha256": baseline_digest,
+            "allRequiredVerified": True, "requiredCaptures": required,
+            "protectedFiles": verified["protectedFiles"], "unavailableCaptures": verified["unavailableCaptures"],
+        }
+        path = ROOT / "data/diagnostics/dmi-restored-raw-observation.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(report) + "\n")
+    except (OSError, ValueError, AssetDownloadCleanupUnproven):
+        # Cache identity telemetry must never affect weather or retention policy.
+        return
+
+
 def prepare_raw_cache_space(incoming_bytes=0, *, metadata_reserve=0, max_bytes=None):
     """Plan all deletions before any deletion; hard dependencies never evict.
 
@@ -11626,6 +11678,7 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
     if required and document.get("rawRetention") is None:
         _raw_cache_protection_refuse("RETENTION_REQUIRED")
     archive_isolated_cold_start = False
+    verified_raw_retention = None
     if not CACHE_ONLY and "rawRetention" in document and document["rawRetention"] is not None:
         retention = document["rawRetention"]
         if isinstance(retention, dict) and retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION":
@@ -11657,7 +11710,7 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
                 or file_content_sha256(b_conditions_path) != boundary.get("conditionsSha256")
                 or s_checkpoint.get("generationSha256") != boundary.get("checkpointGenerationSha256")):
             _raw_cache_protection_refuse("B_BOUNDARY_CHANGED")
-        configure_raw_current_retention(document["rawRetention"])
+        verified_raw_retention = configure_raw_current_retention(document["rawRetention"])
         # Only the complete fixed archive/catalog/B/S validation above can
         # select target-only acquisition. An env flag or CACHE_ONLY cannot.
         archive_isolated_cold_start = retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION"
@@ -11684,6 +11737,8 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
         row.get("zoneId") != owner_by_part.get(row.get("partId")) for row in document["demands"]
     ):
         raise ValueError("DMI_CURRENT_HISTORY_DEMAND_TARGET_INVALID")
+    if required and verified_raw_retention is not None:
+        observe_restored_raw_retention(document["rawRetention"], verified_raw_retention, reference)
     return demands
 
 

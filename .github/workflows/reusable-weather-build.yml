@@ -2237,7 +2237,9 @@ jobs:
       - name: Resolve bounded DMI cache generation
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')
         id: dmi-cache-generation
-        run: echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+          echo "before_restore_epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
 
       - name: Measure runner storage immediately before RAW cache restoration
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
@@ -2255,6 +2257,35 @@ jobs:
             ${{ !inputs.weather_state_epoch_checkpoint_reentry && format('dmi-grib-v4-{0}-', runner.os) || '' }}
             ${{ !inputs.weather_state_epoch_checkpoint_reentry && format('dmi-grib-v3-{0}-', runner.os) || '' }}
           fail-on-cache-miss: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
+
+      - name: Observe the actually restored RAW cache identity
+        id: dmi-raw-restore-identity
+        if: github.ref == 'refs/heads/main' && steps.dmi-grib-cache-restore.outcome == 'success' && steps.dmi-grib-cache-restore.outputs.cache-matched-key != '' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.current_family_cold_start != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true
+        continue-on-error: true
+        timeout-minutes: 1
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MATCHED_RAW_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
+          BEFORE_RESTORE_EPOCH: ${{ steps.dmi-cache-generation.outputs.before_restore_epoch }}
+        run: |
+          set -euo pipefail
+          [[ "$MATCHED_RAW_KEY" =~ ^dmi-grib-v4-Linux-[0-9]{4}-W[0-9]{2}-[0-9]+-[0-9]+$ ]] || exit 0
+          if identity="$(timeout --kill-after=2s 8s gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+            -f key="$MATCHED_RAW_KEY" -f ref=refs/heads/main -f per_page=100 2>/dev/null \
+            | jq -ce --arg key "$MATCHED_RAW_KEY" --argjson before "$BEFORE_RESTORE_EPOCH" '
+              def epoch: sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;
+              select(.total_count == 1 and (.actions_caches | length) == 1)
+              | .actions_caches[0]
+              | select(.key == $key and .ref == "refs/heads/main"
+                and (.version | type == "string" and length == 64 and test("^[0-9a-f]{64}$"))
+                and (.id | type == "number" and . > 0 and . == floor)
+                and (.size_in_bytes | type == "number" and . > 0)
+                and (.created_at | epoch) < $before and (.last_accessed_at | epoch) >= $before)
+              | {key, id, version}' 2>/dev/null)"; then
+            (umask 077; set -o noclobber; printf '%s\n' "$identity" > .cache/dmi-restored-raw-identity.json)
+            echo 'observed=true' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Require exact same-producer RAW cache for epoch checkpoint reuse
         if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_checkpoint_reentry == true)
@@ -2495,6 +2526,7 @@ jobs:
           DMI_BULK_SCALAR_SNAPSHOT_PATH: ${{ steps.dmi-recovery-budget.outputs.cache_path }}
           DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
           DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}
+          DMI_BULK_RAW_RESTORE_IDENTITY_OBSERVED: ${{ steps.dmi-raw-restore-identity.outputs.observed == 'true' }}
           DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION: ${{ steps.private-runtime-install.outcome == 'success' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && inputs.weather_state_epoch_bootstrap != true && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && steps.historical-wave-transition.outputs.required != 'true' && 'true' || 'false' }}
           DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH: ${{ steps.legacy-current-requests.outcome == 'success' && '.cache/dmi-legacy-current-original-requests.json' || '' }}
           DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256: ${{ steps.legacy-current-requests.outputs.requests_sha256 }}
@@ -2809,6 +2841,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             data/diagnostics/weather-acquisition-plan-before-dmi.json
+            data/diagnostics/dmi-restored-raw-observation.json
             data/diagnostics/weather-acquisition-plan-before-copernicus.json
             data/diagnostics/copernicus-current-source-stage-safe.env
             data/diagnostics/open-meteo-current-fetch.json

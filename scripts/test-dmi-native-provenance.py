@@ -514,12 +514,53 @@ def check_raw_current_retention():
             else: raise AssertionError("changed immutable input was silently ignored")
             write(".cache/ravscore-current-history-demand.json", history)
             assert len(read()) == 1
-            check_raw_current_b_conditions_capacity(p, read, write, history)
+            receipt = p.ROOT / "data/diagnostics/dmi-restored-raw-observation.json"
+            assert not receipt.exists()
+            identity = {"key": "dmi-grib-v4-Linux-2026-W47-125-1", "id": 256, "version": "b" * 64}
+            identity_path = ".cache/dmi-restored-raw-identity.json"
+            observed = {"DMI_BULK_RAW_RESTORE_IDENTITY_OBSERVED": "true",
+                        "DMI_BULK_SUPERVISOR_SKIPPED_ASSETS": "[]",
+                        "GITHUB_RUN_ID": "128", "GITHUB_RUN_ATTEMPT": "1", "GITHUB_SHA": "a" * 40}
             missing_href = "https://owned-fixture.invalid/unselected-missing.grib"
             missing_capture = {**required_capture, "assetIdentitySha256": p.asset_identity_sha256(missing_href),
                 "itemId": "unselected-missing"}
             sparse = copy.deepcopy(history)
             sparse["rawRetention"]["captures"].append(missing_capture)
+            with patch.dict(os.environ, observed):
+                assert len(read()) == 1 and not receipt.exists(), "missing metadata must not stop normal weather"
+                write(identity_path, {**identity, "id": True})
+                assert len(read()) == 1 and not receipt.exists(), "malformed cache identity cannot attest restore"
+                write(identity_path, {**identity, "version": identity["version"].upper()})
+                assert len(read()) == 1 and not receipt.exists(), "cache version must be canonical"
+                write(identity_path, identity)
+                empty = {**history, "rawRetention": {**retention, "captures": []}}
+                write(".cache/ravscore-current-history-demand.json", empty)
+                assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED == {} and not receipt.exists()
+                write(".cache/ravscore-current-history-demand.json", history)
+                with patch.dict(os.environ, {"DMI_BULK_SUPERVISOR_SKIPPED_ASSETS": "[{}]"}):
+                    assert len(read()) == 1 and not receipt.exists(), "a restart cannot attest restored contents"
+                write(".cache/ravscore-current-history-demand.json", sparse)
+                assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is None and not receipt.exists()
+                malformed = copy.deepcopy(history)
+                malformed["demands"][0]["zoneId"] = "wrong-zone"
+                write(".cache/ravscore-current-history-demand.json", malformed)
+                try: read()
+                except ValueError: assert not receipt.exists()
+                else: raise AssertionError("malformed demand gained a restore receipt")
+                write(".cache/ravscore-current-history-demand.json", history)
+                assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED == {required.name: required_capture}
+                # Known digests from the repository's JavaScript sha256CanonicalJson reader.
+                assert json.loads(receipt.read_text("utf-8")) == {
+                    "kind": "DMI_RESTORED_RAW_OBSERVATION_V2", "runId": "128", "runAttempt": "1",
+                    "sourceHead": "a" * 40, "targetReferenceAt": target,
+                    "cacheIdentitySha256": "af3a7ac1cfe38949d3c933052e36671b2a949ff657d7329fef875d8570e762b9",
+                    "baselineBoundarySha256": "62f76205b8bafc0b6ffc8901174a87b091621991108d671f432d67953dc4d92b",
+                    "allRequiredVerified": True, "requiredCaptures": 1, "protectedFiles": 1, "unavailableCaptures": 0,
+                }
+            if sys.argv[1:] == ["--raw-restored-observation-only"]:
+                print("Normal B/S RAW observation: independently matchable cache and baseline, actual target, complete restore only")
+                raise SystemExit(0)
+            check_raw_current_b_conditions_capacity(p, read, write, history)
             write(".cache/ravscore-current-history-demand.json", sparse)
             assert len(read()) == 1 and p._RAW_CURRENT_PROTECTED is None, 'unselected missing RAW disables eviction, not replay'
             bad_path = p.cached_asset_path(missing_href)
