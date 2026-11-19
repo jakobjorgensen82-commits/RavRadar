@@ -10,7 +10,7 @@ import {
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
 import {
-  buildRawSuccessorPlanBytes, planRawDmiCacheRotation, readFinalizedRawCache,
+  buildRawSuccessorPlanBytes, closeRawCacheOverlap, planRawDmiCacheRotation, readFinalizedRawCache,
   readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache, verifyRawCacheRotationOwner,
 } from './lib/verified-raw-cache-rotation.mjs';
 
@@ -498,7 +498,7 @@ const withoutOldest = snapshot([...rawCaches.slice(1), otherRefCache]);
 const acknowledged = () => ({status: 204, redirected: false});
 assert.deepEqual(await verifyRetirement({
   snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged,
-}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id}, reads: 3, locks: 4, deletes: [retirementUrl]});
+}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id, remainingRawCopies: 3}, reads: 3, locks: 4, deletes: [retirementUrl]});
 assert.deepEqual(await verifyRetirement({
   snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged, loseOwnershipAt: 4,
 }), {result: {status: 'HOLD', reason: 'cache-retirement-not-confirmed', retire: []},
@@ -523,6 +523,39 @@ assert.deepEqual(await verifyRetirement({
 }), {result: {status: 'HOLD', reason: 'raw-cache-protection-changed', retire: []},
   reads: 2, locks: 1, deletes: []});
 console.log('OK: one exact DELETE at most; confirmed only when expected retained inventory agrees.');
+
+const firstTwoRaw = rawCaches.slice(0, 2).map(row => row.id);
+for (const uncertainWrite of [null, ...firstTwoRaw]) {
+  let rows = [...rawCaches, otherRefCache];
+  const requested = [];
+  const checkedRawCounts = [];
+  const result = await closeRawCacheOverlap({
+    repository: productionRepo, githubToken: 'synthetic-token', current: successor, saved, retained,
+    verifyOwner: async () => {},
+    readSnapshot: async () => {
+      checkedRawCounts.push(rows.length - 1);
+      return snapshot(rows);
+    },
+    request: async url => {
+      const id = Number(url.split('/').at(-1));
+      requested.push(id);
+      rows = rows.filter(row => row.id !== id);
+      if (id === uncertainWrite) throw new Error('synthetic unknown write outcome');
+      return acknowledged();
+    },
+  });
+  if (uncertainWrite === firstTwoRaw[0]) {
+    assert.deepEqual(requested, firstTwoRaw.slice(0, 1));
+    assert.deepEqual(result.retired, []);
+    assert.deepEqual(checkedRawCounts, [4, 4, 3]);
+  } else {
+    assert.deepEqual(requested, firstTwoRaw);
+    assert.deepEqual(result.retired, uncertainWrite === null ? firstTwoRaw : firstTwoRaw.slice(0, 1));
+    assert.deepEqual(checkedRawCounts, [4, 4, 3, 3, 3, 2]);
+  }
+  assert.equal(result.lastDecision.status, uncertainWrite === null ? 'RETIRED' : 'HOLD');
+}
+console.log('OK: an initial fourth RAW copy requires two independently confirmed retirements.');
 
 const rawCandidate = rawCaches.at(-1);
 const sourceRunId = Number(rawCandidate.key.split('-').at(-2));
@@ -604,5 +637,5 @@ assert.deepEqual(planRawDmiCacheRotation({...bootPlan, saved}), {
 assert.deepEqual(await verifyRetirement({
   snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged,
   inputs: {saved: undefined, restoredSuccessor},
-}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id}, reads: 3, locks: 4, deletes: [retirementUrl]});
+}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id, remainingRawCopies: 3}, reads: 3, locks: 4, deletes: [retirementUrl]});
 console.log('OK: an exact restored archive covering the verified successor plan can bootstrap retirement.');

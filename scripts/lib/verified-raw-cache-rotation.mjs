@@ -409,12 +409,24 @@ export async function retireVerifiedRawCache({
       && JSON.stringify(completeProtectedCaches(observed?.protection)) === JSON.stringify(protectedRows);
     if (acknowledged && same) {
       await verifyOwner();
-      return {status: 'RETIRED', cacheId: oldest.id};
+      const remainingRawCopies = expected.filter(row => isMainRawCache(row)).length;
+      return {status: 'RETIRED', cacheId: oldest.id, remainingRawCopies};
     }
   } catch {
     // Preserve uncertainty and never move on to a second deletion.
   }
   return hold('cache-retirement-not-confirmed');
+}
+
+// Resolve the initial four-copy overlap without treating one DELETE as a
+// batch. The second decision must rebuild its own inventory and protection.
+export async function closeRawCacheOverlap(options) {
+  const first = await retireVerifiedRawCache(options);
+  if (first.status !== 'RETIRED') return {retired: [], lastDecision: first};
+  if (first.remainingRawCopies !== 3) return {retired: [first.cacheId], lastDecision: first};
+  const second = await retireVerifiedRawCache(options);
+  return {retired: second.status === 'RETIRED' ? [first.cacheId, second.cacheId] : [first.cacheId],
+    lastDecision: second};
 }
 
 // This verifies a completed upload, not the set of originals inside it.
