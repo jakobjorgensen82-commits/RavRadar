@@ -41,7 +41,8 @@ test('normal DMI save uses its measured allowance and must actually finalize bef
   assert.match(admission, /node scripts\/observe-github-raw-cache-stock\.mjs --admit-upload/);
   assert.match(admission, /steps\.dmi-progress-write-authority\.outcome == 'success'/);
   assert.match(save, /steps\.dmi-raw-upload-admission\.outputs\.raw_upload_budget_bytes != ''/);
-  assert.match(save, /RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: \$\{\{ steps\.dmi-raw-upload-admission\.outputs\.raw_upload_budget_bytes \}\}/);
+  assert.match(save, /archive_limit: \$\{\{ steps\.dmi-raw-upload-admission\.outputs\.raw_upload_budget_bytes \}\}/);
+  assert.match(save, /inputs\.enforce_raw_cache_rotation != true \|\| \(steps\.dmi-raw-upload-admission\.outcome == 'success'/);
   assert.match(finalization, /\(steps\.dmi-bulk\.outcome == 'success' \|\| steps\.dmi-bulk\.outcome == 'failure'\) && steps\.dmi-raw-save\.outputs\.saved != 'true'/);
   assert.match(finalization, /exit 1/);
   assert.doesNotMatch(scoring.match(/^        if:.*$/m)?.[0] ?? '', /always\(|!cancelled\(/);

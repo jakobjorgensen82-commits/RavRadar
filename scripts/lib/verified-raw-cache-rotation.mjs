@@ -3,7 +3,8 @@ import {readFile} from 'node:fs/promises';
 import {isInertLegacyQueue} from '../check-weather-cadence-watchdog.mjs';
 import {requirePublishedRawRotationRetention} from '../plan-ravscore-current-history.mjs';
 import {WEATHER_STATE_EPOCH_ORIGINAL_DATASET} from '../weather-state-epoch-budget.mjs';
-import {isMainRawCache} from './github-actions-cache-stock.mjs';
+import {isMainRawCache, rawCacheStockRows, readGithubActionsCacheStock} from './github-actions-cache-stock.mjs';
+import {authenticateRawRotationHandoff, isAuthenticatedRawRotationHandoff} from './raw-rotation-handoff.mjs';
 import {canonicalSavedDmiOriginalCapture} from './saved-dmi-original-capture.mjs';
 import {DMI_PRODUCER_JOB, DMI_PRODUCER_STEP, successfulStep} from './terminal-dmi-cache.mjs';
 
@@ -111,6 +112,14 @@ export function buildRawSuccessorPlanBytes({demand, targetReferenceAt, boundary}
 
 function matchesRestoredSuccessor(restoredSuccessor, current, cache) {
   const receipt = restoredSuccessor?.receipt;
+  if (isAuthenticatedRawRotationHandoff(restoredSuccessor)) {
+    const {id, key, version} = cache;
+    return current?.boundary === restoredSuccessor.boundary
+      && receipt.targetReferenceAt === current.targetReferenceAt
+      && receipt.runId === current.runId && receipt.runAttempt === current.runAttempt
+      && receipt.sourceHead === current.sourceHead && receipt.verifiedCaptureCount === current.requiredCaptures
+      && receipt.cacheIdentitySha256 === flatDigest({id, key, version});
+  }
   const bytes = restoredSuccessor?.planBytes;
   if (receipt?.schemaVersion !== 1 || receipt.kind !== 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1'
       || !Buffer.isBuffer(bytes) || bytes.length < 1 || bytes.length > 1024 * 1024
@@ -322,10 +331,14 @@ export async function readRawCacheReaderActivity({repository, sourceHead, ownerR
 // The caller supplies the locked, authenticated protected B/S and the full
 // stock on exact main. The shared production lock is required for admission;
 // this metadata census does not reserve cache entries or give write authority.
-export async function readRawCacheProtection({inventory, boundary, repository, sourceHead, ownerRunId, getJson}) {
+export async function readRawCacheProtection({inventory, boundary, repository, sourceHead, ownerRunId, getJson,
+  restoredSuccessor}) {
   const hold = reason => ({complete: false, reason, caches: []});
   const rows = completeCacheInventory(inventory);
-  if (!rows || !validRawBoundary(boundary)) return hold('protected-baseline-unconfirmed');
+  const boundHandoff = isAuthenticatedRawRotationHandoff(restoredSuccessor)
+    && boundary === restoredSuccessor.boundary && sourceHead === restoredSuccessor.receipt.sourceHead
+    && String(ownerRunId) === restoredSuccessor.receipt.runId;
+  if (!rows || (!validRawBoundary(boundary) && !boundHandoff)) return hold('protected-baseline-unconfirmed');
   if (boundary.datasetId === WEATHER_STATE_EPOCH_ORIGINAL_DATASET) {
     return hold('legacy-exact-raw-request-admissible');
   }
@@ -345,10 +358,14 @@ export async function readRawCacheProtection({inventory, boundary, repository, s
 // Rechecking the exact numbered documents avoids restoring either payload at
 // each cache mutation boundary. Owner head and B source may differ on bootstrap.
 export async function verifyRawCacheRotationOwner({sourceHead, ownerRunId, publishedSourceHead,
-  boundary, bVersion, sVersion, getJson, readProtectedB, readProtectedSVersion}) {
+  boundary, bVersion, sVersion, getJson, readProtectedB, readProtectedSVersion, restoredSuccessor}) {
+  const boundHandoff = isAuthenticatedRawRotationHandoff(restoredSuccessor) && boundary === restoredSuccessor.boundary
+    && bVersion === restoredSuccessor.published.bVersion && sVersion === restoredSuccessor.published.sVersion
+    && publishedSourceHead === restoredSuccessor.published.bSourceHead
+    && sourceHead === restoredSuccessor.receipt.sourceHead && String(ownerRunId) === restoredSuccessor.receipt.runId;
   if (![sourceHead, publishedSourceHead].every(sha => /^[a-f0-9]{40}$/.test(sha ?? ''))
       || ![ownerRunId, bVersion, sVersion].every(value => Number.isSafeInteger(value) && value > 0)
-      || !validRawBoundary(boundary)) throw new Error('RAW_ROTATION_OWNER_SCOPE');
+      || (!validRawBoundary(boundary) && !boundHandoff)) throw new Error('RAW_ROTATION_OWNER_SCOPE');
   const repo = '/repos/' + PRODUCTION_REPOSITORY;
   const [ref, run, currentB, currentSVersion] = await Promise.all([
     getJson(repo + '/git/ref/heads/main'), getJson(repo + '/actions/runs/' + ownerRunId + '/attempts/1'),
@@ -427,6 +444,51 @@ export async function closeRawCacheOverlap(options) {
   const second = await retireVerifiedRawCache(options);
   return {retired: second.status === 'RETIRED' ? [first.cacheId, second.cacheId] : [first.cacheId],
     lastDecision: second};
+}
+
+// Called only by the cache-write job of the same ordinary workflow. Recheck
+// that its reader is still waiting and that main and the exact B/S have not
+// advanced before doing anything irreversible.
+export async function closeRawCacheOverlapFromHandoff({bytes, scope, githubToken, getJson,
+  verifyArtifactProducer, readProtectedB, readProtectedSVersion, request = fetch}) {
+  const restoredSuccessor = await authenticateRawRotationHandoff({bytes, scope, verifyArtifactProducer,
+    readProtectedB, readProtectedSVersion});
+  const {receipt, boundary, published} = restoredSuccessor;
+  const ownerRunId = Number(receipt.runId);
+  if (!Number.isSafeInteger(ownerRunId)) throw new Error('RAW_ROTATION_OWNER_SCOPE');
+  const repository = PRODUCTION_REPOSITORY;
+  const sourceHead = receipt.sourceHead;
+  const current = {runId: receipt.runId, runAttempt: receipt.runAttempt, sourceHead,
+    targetReferenceAt: receipt.targetReferenceAt, boundary, requiredCaptures: receipt.verifiedCaptureCount};
+  const verifyOwner = async () => {
+    await verifyArtifactProducer();
+    await verifyRawCacheRotationOwner({sourceHead, ownerRunId, publishedSourceHead: published.bSourceHead,
+      boundary, bVersion: published.bVersion, sVersion: published.sVersion, restoredSuccessor,
+      getJson, readProtectedB, readProtectedSVersion});
+  };
+  const readStock = () => readGithubActionsCacheStock(repository, getJson);
+  const stock = await readStock();
+  const raw = rawCacheStockRows(stock);
+  if (raw.length < 2 || raw.length > 4 || raw.some(row => !isMainRawCache(row))) {
+    return {status: 'HOLD', reason: 'raw-cache-count-or-identity-unconfirmed', retiredCount: 0};
+  }
+  raw.sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at) || right.id - left.id);
+  const retained = await Promise.all(raw.slice(0, 2).map(cache => readFinalizedRawCache({cache, repository, getJson})));
+  if (retained.some(identity => identity === null)) {
+    return {status: 'HOLD', reason: 'the-newest-two-raw-saves-are-unconfirmed', retiredCount: 0};
+  }
+  const readSnapshot = async () => {
+    const {inventory} = await readStock();
+    return {inventory, protection: await readRawCacheProtection({inventory, boundary, repository,
+      sourceHead, ownerRunId, getJson, restoredSuccessor})};
+  };
+  const {retired, lastDecision} = await closeRawCacheOverlap({repository, githubToken, readSnapshot,
+    verifyOwner, current, restoredSuccessor, retained, request});
+  if ((lastDecision.status === 'RETIRED' && lastDecision.remainingRawCopies === 2)
+      || (lastDecision.status === 'READY' && lastDecision.reason === 'already-two-raw-caches')) {
+    return {status: 'READY', reason: 'two-verified-raw-caches', retiredCount: retired.length};
+  }
+  return {status: 'HOLD', reason: lastDecision.reason ?? 'raw-cache-count-unconfirmed', retiredCount: retired.length};
 }
 
 // This verifies a completed upload, not the set of originals inside it.

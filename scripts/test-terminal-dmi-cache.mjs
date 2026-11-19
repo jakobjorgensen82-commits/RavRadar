@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { projectPublicRawRotationProof, rawRotationPairDigest } from './lib/raw-rotation-handoff.mjs';
+import { authenticateRawRotationHandoff, isAuthenticatedRawRotationHandoff,
+  projectPublicRawRotationProof, projectRawRotationDecision, rawRotationPairDigest, requireRawRotationDecision } from './lib/raw-rotation-handoff.mjs';
 import { preparePreDmiRawSuccessorProof } from './prove-pre-dmi-restored-raw-successor.mjs';
 import {
   DMI_CACHE_SAVE_STEP,
@@ -12,7 +13,8 @@ import {
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
 import {
-  buildRawSuccessorPlanBytes, closeRawCacheOverlap, planRawDmiCacheRotation, readFinalizedRawCache,
+  buildRawSuccessorPlanBytes, closeRawCacheOverlap, closeRawCacheOverlapFromHandoff,
+  planRawDmiCacheRotation, readFinalizedRawCache,
   readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache, verifyRawCacheRotationOwner,
 } from './lib/verified-raw-cache-rotation.mjs';
 
@@ -688,3 +690,84 @@ assert.deepEqual(await verifyRetirement({
   inputs: {saved: undefined, restoredSuccessor},
 }), {result: {status: 'RETIRED', cacheId: rawCaches[0].id, remainingRawCopies: 3}, reads: 3, locks: 4, deletes: [retirementUrl]});
 console.log('OK: an exact restored archive covering the verified successor plan can bootstrap retirement.');
+
+// The receiver binds the wire form to an independently observed next owner;
+// neither the JSON nor an object-shaped substitute carries that authority.
+const nextScope = {...bridgeInputs.run, runId: String(runId + 5)};
+const wire = Buffer.from(JSON.stringify({...publicHandoff, runId: nextScope.runId}));
+const guardedB = {...successorBoundary, sourceHead: pairedBaseline.bSourceHead, centralVersion: 31,
+  expectedZoneCount: 210, expectedPartCount: 673};
+const verifyProducer = async () => {};
+const protectedReaders = {
+  readProtectedB: async () => guardedB,
+  readProtectedSVersion: async () => pairedBaseline.sVersion,
+};
+const authenticateArgs = {bytes: wire, scope: nextScope, verifyArtifactProducer: verifyProducer, ...protectedReaders};
+const authenticated = await authenticateRawRotationHandoff(authenticateArgs);
+assert.ok(isAuthenticatedRawRotationHandoff(authenticated));
+assert.equal(isAuthenticatedRawRotationHandoff({...authenticated}), false);
+await assert.rejects(authenticateRawRotationHandoff({...authenticateArgs,
+  readProtectedSVersion: async () => pairedBaseline.sVersion + 1}), /HANDOFF_EVIDENCE_INVALID/);
+await assert.rejects(authenticateRawRotationHandoff({...authenticateArgs,
+  scope: {...nextScope, targetReferenceAt: '2026-09-05T05:00:00Z'}}), /HANDOFF_EVIDENCE_INVALID/);
+await assert.rejects(authenticateRawRotationHandoff({...authenticateArgs,
+  verifyArtifactProducer: async () => {throw new Error('handoff producer unproved');}}), /producer unproved/);
+const attestedPlan = {...bootPlan, current: {...successor, runId: nextScope.runId, boundary: authenticated.boundary},
+  restoredSuccessor: authenticated};
+assert.deepEqual(planRawDmiCacheRotation(attestedPlan).retire, [rawIdentity(rawCaches[0])]);
+assert.equal(planRawDmiCacheRotation({...attestedPlan, restoredSuccessor: {...authenticated}}).status, 'HOLD');
+const liveOwner = {...productionOwner, id: Number(nextScope.runId)};
+const sourceRuns = Object.fromEntries(rawCaches.map(row => {
+  const sourceId = Number(row.key.split('-').at(-2));
+  return [sourceId, {row, run: {...liveOwner, id: sourceId, status: 'completed', conclusion: 'success'}}];
+}));
+const apiRoot = '/repos/' + productionRepo;
+for (const uncertainSecond of [false, true]) {
+  let rows = [...rawCaches, {...otherRefCache, size_in_bytes: 1024}];
+  const removed = [];
+  const choice = await closeRawCacheOverlapFromHandoff({
+    ...authenticateArgs, githubToken: 'synthetic-token',
+    getJson: async route => {
+      if (route === apiRoot + '/git/ref/heads/main') return main;
+      if (route.includes('/actions/caches?')) return {total_count: rows.length, actions_caches: rows};
+      if (route.endsWith('/actions/cache/usage')) return {active_caches_count: rows.length, active_caches_size_in_bytes: 0};
+      if (route.includes('/actions/runs?status=')) {
+        const workflow_runs = route.includes('status=in_progress') ? [liveOwner] : [];
+        return {total_count: workflow_runs.length, workflow_runs};
+      }
+      const match = route.match(/\/actions\/runs\/(\d+)\/attempts\/1(\/jobs\?per_page=100)?$/);
+      assert.ok(match, route);
+      if (Number(match[1]) === liveOwner.id) return liveOwner;
+      const source = sourceRuns[match[1]];
+      assert.ok(source);
+      if (!match[2]) return source.run;
+      return {total_count: 1, jobs: [{...sourceJob, run_id: source.run.id,
+        steps: [
+          step(DMI_PRODUCER_STEP, source.row.created_at, source.row.created_at, 'success', 113),
+          step('Save progressed DMI GRIB download cache', source.row.created_at, source.row.created_at, 'success', 117),
+        ],
+      }]};
+    },
+    request: async url => {
+      const cacheId = Number(url.split('/').at(-1));
+      removed.push(cacheId);
+      rows = rows.filter(row => row.id !== cacheId);
+      if (uncertainSecond && removed.length === 2) throw new Error('synthetic uncertain transport');
+      return acknowledged();
+    },
+  });
+  assert.deepEqual(removed, rawCaches.slice(0, 2).map(row => row.id));
+  assert.equal(choice.status, uncertainSecond ? 'HOLD' : 'READY');
+  assert.equal(choice.retiredCount, uncertainSecond ? 1 : 2);
+}
+console.log('OK: the exact handoff and live paired versions govern both initial RAW retirements.');
+
+
+const confirmed = projectRawRotationDecision(nextScope, privateSha256, {status: 'READY', retiredCount: 2});
+assert.deepEqual(requireRawRotationDecision(Buffer.from(JSON.stringify(confirmed)), nextScope, privateSha256), confirmed);
+for (const change of [{status: 'HOLD'}, {sourceHead: '2'.repeat(40)}, {runAttempt: '2'}, {retiredCount: 3},
+  {privateProofSha256: '3'.repeat(64)}, {datasetId: successorBoundary.datasetId}]) {
+  assert.throws(() => requireRawRotationDecision(
+    Buffer.from(JSON.stringify({...confirmed, ...change})), nextScope, privateSha256), /HANDOFF_EVIDENCE_INVALID/);
+}
+console.log('OK: only the same-run positive confirmation releases the waiting acquisition.');

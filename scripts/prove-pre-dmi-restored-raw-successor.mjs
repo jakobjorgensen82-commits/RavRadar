@@ -65,7 +65,7 @@ async function main(env) {
   const run = { runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, sourceHead: env.GITHUB_SHA,
     targetReferenceAt: env.RAVRADAR_PRODUCTION_TARGET_HOUR };
   requireProof(process.platform === 'linux' && env.GITHUB_ACTIONS === 'true' && env.RUNNER_ENVIRONMENT === 'github-hosted'
-    && env.RAVRADAR_RAW_BOOTSTRAP_PROOF === 'observe' && env.GITHUB_REPOSITORY === REPO
+    && ['observe', 'enforce'].includes(env.RAVRADAR_RAW_BOOTSTRAP_PROOF) && env.GITHUB_REPOSITORY === REPO
     && env.GITHUB_WORKFLOW_REF === WORKFLOW && env.GITHUB_EVENT_NAME === 'workflow_dispatch'
     && env.GITHUB_REF === 'refs/heads/main' && env.GITHUB_ACTOR === 'github-actions[bot]'
     && env.GITHUB_TRIGGERING_ACTOR === 'github-actions[bot]' && run.runAttempt === '1'

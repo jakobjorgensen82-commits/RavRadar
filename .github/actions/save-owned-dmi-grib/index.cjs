@@ -64,7 +64,7 @@ function fixedInputs() {
       || !key.endsWith(`-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`)) {
     throw refused('DMI_RAW_SAVE_INPUT_REFUSED');
   }
-  const archiveLimit = env.RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES;
+  const archiveLimit = env.INPUT_ARCHIVE_LIMIT || env.RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES;
   if (archiveLimit !== undefined && (!/^[1-9][0-9]{0,15}$/.test(archiveLimit)
       || !Number.isSafeInteger(Number(archiveLimit)) || Number(archiveLimit) < 1024)) {
     throw refused('DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED');
@@ -552,8 +552,10 @@ async function runOwnedOperation(operation) {
     child = spawn('python3', ['-B', path.join(ROOT, 'scripts/run-owned-dmi-grib-save.py'),
       ...(operation === 'distribution' ? ['--prepare-distribution']
         : operation === 'cipher' ? ['--upload-encrypted-progress'] : [])], {
-      cwd: ROOT, env: process.env, shell: false,
-      stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+      cwd: ROOT,
+      env: input?.archiveLimit === undefined ? process.env
+        : {...process.env, RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: input.archiveLimit},
+      shell: false, stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     });
     if (require.main === module) cliPhase = 'CLOSURE';
     const closureText = collectReceipt(child.stdout);

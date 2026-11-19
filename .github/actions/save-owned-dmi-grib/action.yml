@@ -10,6 +10,9 @@ inputs:
   key:
     description: Exact existing raw or encrypted-progress run/attempt cache key.
     required: true
+  archive_limit:
+    description: Optional maximum compressed RAW bytes from this run's cache inventory.
+    required: false
 outputs:
   saved:
     description: True only after v2 finalization, physical cohort closure and own claim release.

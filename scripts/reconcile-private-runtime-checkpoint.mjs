@@ -687,7 +687,7 @@ async function main() {
       : after599 ? (savedWeather ? reconcileSavedAssistantAfter599PrivateRuntimeCheckpoint : reconcileAssistantAfter599PrivateRuntimeCheckpoint)
       : after598 ? (savedWeather ? reconcileSavedAssistantAfter598PrivateRuntimeCheckpoint : reconcileAssistantAfter598PrivateRuntimeCheckpoint)
       : savedWeather ? reconcileSavedPrivateRuntimeCheckpoint : reconcilePrivateRuntimeCheckpoint;
-    const recordRawBaseline = command === 'reconcile' && process.env.RAVRADAR_RAW_BOOTSTRAP_PROOF === 'observe'
+    const recordRawBaseline = command === 'reconcile' && ['observe', 'enforce'].includes(process.env.RAVRADAR_RAW_BOOTSTRAP_PROOF)
       ? async evidence => {
         need(['bVersion', 'sVersion'].every(key => Number.isSafeInteger(evidence[key]) && evidence[key] > 0)
           && /^[a-f0-9]{40}$/.test(evidence.bSourceHead) && /^[a-f0-9]{64}$/.test(evidence.boundarySha256),

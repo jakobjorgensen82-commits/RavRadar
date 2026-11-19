@@ -30,6 +30,10 @@ on:
       production_target_hour:
         required: true
         type: string
+      enforce_raw_cache_rotation:
+        required: false
+        type: boolean
+        default: false
       force:
         required: true
         type: boolean
@@ -1452,7 +1456,7 @@ jobs:
           NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ inputs.enforce_raw_cache_rotation && 'enforce' || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
 
       - name: Classify one-time DMI PART continuity donor
         id: dmi-part-continuity-donor
@@ -2419,7 +2423,7 @@ jobs:
       - name: Observe exact restored RAW coverage for the locked successor before DMI
         id: raw-bootstrap-pre-dmi-proof
         if: >-
-          vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe' &&
+          (vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe' || inputs.enforce_raw_cache_rotation == true) &&
           github.repository == 'jakobjorgensen82-commits/RavRadar' &&
           github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
           github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' && github.run_attempt == 1 &&
@@ -2441,12 +2445,13 @@ jobs:
         timeout-minutes: 2
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
-          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ inputs.enforce_raw_cache_rotation && 'enforce' || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
           RAW_NORMAL_PRE_DMI_STEPS_VERIFIED: 'true'
           RAW_MATCHED_CACHE_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
         run: node scripts/prove-pre-dmi-restored-raw-successor.mjs
 
       - name: Publish the bounded RAW rotation handoff before DMI
+        id: raw-bootstrap-handoff-upload
         if: steps.raw-bootstrap-pre-dmi-proof.outcome == 'success' && steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage_sha256 != ''
         continue-on-error: true
         uses: actions/upload-artifact@v7
@@ -2455,6 +2460,38 @@ jobs:
           path: ${{ runner.temp }}/ravradar-raw-rotation/handoff.json
           if-no-files-found: error
           retention-days: 1
+
+      - name: Require the proven RAW handoff before cache rotation
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          PROOF_OUTCOME: ${{ steps.raw-bootstrap-pre-dmi-proof.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.raw-bootstrap-handoff-upload.outcome }}
+        run: |
+          test "$PROOF_OUTCOME" = success && test "$UPLOAD_OUTCOME" = success
+
+      - name: Wait for the RAW rotation decision before DMI
+        id: raw-rotation-decision-artifact
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'
+        timeout-minutes: 4
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/find-raw-rotation-artifact.mjs --result
+
+      - name: Download the immutable RAW rotation decision
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true' && steps.raw-rotation-decision-artifact.outputs.artifact_status == 'found'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.raw-rotation-decision-artifact.outputs.artifact_id }}
+          path: ${{ runner.temp }}/ravradar-raw-rotation-received
+          digest-mismatch: error
+
+      - name: Require successful RAW rotation for this exact target
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'
+        env:
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: enforce
+          RAW_BOOTSTRAP_PRIVATE_PROOF_SHA256: ${{ steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage_sha256 }}
+        run: node scripts/retire-verified-raw-caches.mjs --require-decision
 
       - name: Bind causal OLD current reconstruction to the materialized saved inputs
         id: legacy-current-requests
@@ -2634,7 +2671,7 @@ jobs:
 
       - name: Measure room for the next DMI RAW cache
         id: dmi-raw-upload-admission
-        if: ${{ !cancelled() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true' }}
+        if: ${{ !cancelled() && inputs.enforce_raw_cache_rotation == true && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true' }}
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -2643,16 +2680,20 @@ jobs:
 
       - name: Save progressed DMI GRIB download cache
         id: dmi-raw-save
-        if: ${{ !cancelled() && steps.dmi-raw-upload-admission.outcome == 'success' && steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes != '' }}
-        env:
-          RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: ${{ steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes }}
+        if: >-
+          !cancelled() && inputs.completed_private_runtime != true &&
+          steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' &&
+          steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' &&
+          steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true' &&
+          (inputs.enforce_raw_cache_rotation != true || (steps.dmi-raw-upload-admission.outcome == 'success' && steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes != ''))
         uses: ./.github/actions/save-owned-dmi-grib
         with:
+          archive_limit: ${{ steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes }}
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Require finalized RAW storage before using newly acquired DMI data
-        if: ${{ !cancelled() && inputs.completed_private_runtime != true && steps.preflight.outputs.should_run == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure') && steps.dmi-raw-save.outputs.saved != 'true' }}
+        if: ${{ !cancelled() && inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure') && steps.dmi-raw-save.outputs.saved != 'true' }}
         shell: bash
         run: |
           echo '::error::New DMI inputs cannot become a protected baseline without a finalized RAW cache.'
