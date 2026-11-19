@@ -9,7 +9,7 @@ import {
   selectTerminalDmiCache,
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
-import {planRawDmiCacheRotation, readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache} from './lib/verified-raw-cache-rotation.mjs';
+import {planRawDmiCacheRotation, readFinalizedRawCache, readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache} from './lib/verified-raw-cache-rotation.mjs';
 
 const repository = 'owner/repository';
 const runId = 33990516150;
@@ -489,3 +489,28 @@ assert.deepEqual(await verifyRetirement({
 }), {result: {status: 'HOLD', reason: 'raw-cache-protection-changed', retire: []},
   reads: 2, locks: 1, deletes: []});
 console.log('OK: one exact DELETE at most; confirmed only when expected retained inventory agrees.');
+
+const rawCandidate = rawCaches.at(-1);
+const sourceRunId = Number(rawCandidate.key.split('-').at(-2));
+const sourceRun = {...ordinaryOwner, id: sourceRunId, status: 'completed', conclusion: 'failure'};
+const sourceJob = {
+  id: 119, name: DMI_PRODUCER_JOB, run_id: sourceRunId, run_attempt: 1,
+  head_branch: 'main', head_sha: headSha, status: 'completed', conclusion: 'failure',
+  steps: [
+    {name: DMI_PRODUCER_STEP, number: 113, status: 'completed', conclusion: 'success',
+      started_at: '2026-09-04T20:44:00Z', completed_at: rawCandidate.created_at},
+    {name: 'Save progressed DMI GRIB download cache', number: 117, status: 'completed', conclusion: 'success',
+      started_at: rawCandidate.created_at, completed_at: rawCandidate.created_at},
+  ],
+};
+const finalized = ({row=rawCandidate, result=sourceRun, jobs=[sourceJob]}={}) => readFinalizedRawCache({
+  cache: row, repository,
+  getJson: async route => route.endsWith('/jobs?per_page=100') ? {jobs, total_count: jobs.length} : result,
+});
+assert.deepEqual(await finalized(), rawIdentity(rawCandidate));
+assert.equal(await finalized({row:{...rawCandidate, created_at:'2026-09-05T23:59:00Z'}}), null);
+assert.equal(await finalized({result:{...sourceRun, run_attempt:2}}), null);
+assert.equal(await finalized({jobs:[{...sourceJob, steps:[...sourceJob.steps, sourceJob.steps[1]]}]}), null);
+assert.equal(await finalized({jobs:[{...sourceJob, steps:[sourceJob.steps[0],
+  {...sourceJob.steps[1], conclusion:'skipped'}]}]}), null);
+console.log('OK: RAW archive finalization matches an exact successful save step, even if a later stage failed.');

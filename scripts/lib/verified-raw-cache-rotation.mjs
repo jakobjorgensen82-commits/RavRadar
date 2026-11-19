@@ -5,6 +5,7 @@ import {requirePublishedRawRotationRetention} from '../plan-ravscore-current-his
 import {WEATHER_STATE_EPOCH_ORIGINAL_DATASET} from '../weather-state-epoch-budget.mjs';
 import {isMainRawCache} from './github-actions-cache-stock.mjs';
 import {canonicalSavedDmiOriginalCapture} from './saved-dmi-original-capture.mjs';
+import {DMI_PRODUCER_JOB, DMI_PRODUCER_STEP, successfulStep} from './terminal-dmi-cache.mjs';
 
 const SHA256 = /^[0-9a-f]{64}$/;
 const EXACT_HOUR = /^\d{4}-\d{2}-\d{2}T\d{2}:00:00Z$/;
@@ -323,4 +324,36 @@ export async function retireVerifiedRawCache({
     // Preserve uncertainty and never move on to a second deletion.
   }
   return hold('cache-retirement-not-confirmed');
+}
+
+// This verifies a completed upload, not the set of originals inside it.
+export async function readFinalizedRawCache({cache, repository, getJson}) {
+  const identity = cache && cacheIdentity(cache);
+  if (!identity || !isMainRawCache(identity)
+      || !Number.isSafeInteger(cache.size_in_bytes) || cache.size_in_bytes < 1
+      || typeof cache.created_at !== 'string' || finiteTime(cache.created_at) === null
+      || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '') || typeof getJson !== 'function') {
+    return null;
+  }
+  const [runId, runAttempt] = cache.key.split('-').slice(-2).map(Number);
+  if (![runId, runAttempt].every(value => Number.isSafeInteger(value) && value >= 1)) return null;
+  const attempt = '/repos/' + repository + '/actions/runs/' + runId + '/attempts/' + runAttempt;
+  const run = await getJson(attempt);
+  if (run?.id !== runId || run.run_attempt !== runAttempt || run.head_branch !== 'main'
+      || run.repository?.full_name !== repository || run.path !== ORDINARY_WEATHER
+      || !/^[a-f0-9]{40}$/.test(run.head_sha ?? '')) return null;
+
+  const reply = await getJson(attempt + '/jobs?per_page=100');
+  if (!Array.isArray(reply?.jobs) || reply.total_count !== reply.jobs.length || reply.total_count > 100) return null;
+  const workers = reply.jobs.filter(job => job?.name === DMI_PRODUCER_JOB);
+  if (workers.length !== 1) return null;
+  const [job] = workers;
+  if (job.run_id !== runId || job.run_attempt !== runAttempt || job.head_branch !== 'main'
+      || job.head_sha !== run.head_sha || !Array.isArray(job.steps)) return null;
+  const dmi = successfulStep(job, DMI_PRODUCER_STEP);
+  const save = successfulStep(job, 'Save progressed DMI GRIB download cache');
+  const created = finiteTime(cache.created_at);
+  if (!dmi || !save || dmi.number >= save.number || dmi.completedAt > save.startedAt
+      || created < save.startedAt - 1_000 || created > save.completedAt + 2_000) return null;
+  return identity;
 }
