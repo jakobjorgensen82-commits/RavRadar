@@ -21,7 +21,7 @@ import time
 
 ROOT = Path(__file__).resolve().parent.parent
 ENTRY = ROOT / '.github/actions/save-owned-dmi-grib/index.cjs'
-ZSTDMT = '/usr/bin/zstdmt'
+SYSTEM_ZSTDMT = ('/usr/local/bin/zstdmt', '/usr/bin/zstdmt')
 ARCHIVE_OBSERVER = 'RAVRADAR_DMI_RAW_ARCHIVE_OBSERVER'
 ARCHIVE_REFUSAL = 'raw-archive-budget-exceeded'
 _retained_children = []
@@ -41,20 +41,21 @@ def constrain_raw_archive_bytes():
     return limit == int(value)
 
 
-def install_archive_observer(scope, environment):
+def install_archive_observer(scope, environment, codec):
     # Only the SDK's fixed Linux zstdmt command resolves differently, and only
     # within this owned worker. The genuine system compressor produces the bytes.
     shim = scope / 'zstdmt'
     python = shlex.quote(sys.executable)
     script = shlex.quote(str(Path(__file__).resolve()))
-    shim.write_text(f'#!/bin/sh\nexec {python} -B {script} --fixed-zstdmt "$@"\n', encoding='utf-8')
+    shim.write_text(f'#!/bin/sh\nexec {python} -B {script} --fixed-zstdmt {shlex.quote(codec)} "$@"\n',
+                    encoding='utf-8')
     shim.chmod(0o700)
     environment['RUNNER_TEMP'] = str(scope)
     environment[ARCHIVE_OBSERVER] = '1'
     environment['PATH'] = str(scope) + os.pathsep + environment['PATH']
 
 
-def compress_owned_archive(arguments):
+def compress_owned_archive(codec, arguments):
     import resource
 
     scope = Path(os.environ['RUNNER_TEMP'])
@@ -63,14 +64,15 @@ def compress_owned_archive(arguments):
     remaining = int(os.environ['RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES'])
     with open(f'/proc/{os.getsid(0)}/cmdline', 'rb') as worker:
         worker_arguments = worker.read(16385).split(b'\0')
-    if (os.environ.get(ARCHIVE_OBSERVER) != '1' or arguments not in ([], ['--long=30'])
+    if (codec not in SYSTEM_ZSTDMT or not os.access(codec, os.X_OK)
+            or os.environ.get(ARCHIVE_OBSERVER) != '1' or arguments not in ([], ['--long=30'])
             or worker_arguments[1:] != [os.fsencode(ENTRY), b'--fixed-api-worker', b'']
             or directory.parent != scope or not stat.S_ISREG(output.st_mode) or output.st_size != 0
             or not os.path.samestat(output, (directory / 'cache.tzst').lstat())
             or resource.getrlimit(resource.RLIMIT_FSIZE) != (remaining, remaining)):
         raise RuntimeError('DMI_RAW_SAVE_ARCHIVE_OBSERVER_REFUSED')
 
-    with subprocess.Popen([ZSTDMT, *arguments], stdout=subprocess.PIPE) as compressor:
+    with subprocess.Popen([codec, *arguments], stdout=subprocess.PIPE) as compressor:
         while chunk := os.read(compressor.stdout.fileno(), 65536):
             if len(chunk) > remaining:
                 compressor.kill()
@@ -193,11 +195,14 @@ def main():
         # inherit the limit. It does not alter the acquisition directory.
         if not distribution and not ciphertext and constrain_raw_archive_bytes():
             codec = shutil.which('zstdmt', path=environment.get('PATH'))
-            if (codec and environment.get('RUNNER_TEMP') and os.access(ZSTDMT, os.X_OK)
-                    and os.path.samefile(codec, ZSTDMT)):
-                temp = Path(environment['RUNNER_TEMP']).resolve(strict=True)
-                archive_scope = Path(tempfile.mkdtemp(prefix='rr-dmi-raw-archive-', dir=temp))
-                install_archive_observer(archive_scope, environment)
+            if codec and environment.get('RUNNER_TEMP'):
+                # GitHub's Ubuntu image uses /usr/local/bin; distro packages use /usr/bin.
+                for system_codec in SYSTEM_ZSTDMT:
+                    if os.access(system_codec, os.X_OK) and os.path.samefile(codec, system_codec):
+                        temp = Path(environment['RUNNER_TEMP']).resolve(strict=True)
+                        archive_scope = Path(tempfile.mkdtemp(prefix='rr-dmi-raw-archive-', dir=temp))
+                        install_archive_observer(archive_scope, environment, system_codec)
+                        break
         child = subprocess.Popen([parent_executable, str(ENTRY), fixed_worker],
                                  cwd=ROOT, env=environment, start_new_session=True,
                                  stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -256,7 +261,7 @@ def main():
 if __name__ == '__main__':
     try:
         if sys.argv[1:2] == ['--fixed-zstdmt']:
-            result = compress_owned_archive(sys.argv[2:])
+            result = compress_owned_archive(sys.argv[2], sys.argv[3:])
         else:
             main()
             result = 0
