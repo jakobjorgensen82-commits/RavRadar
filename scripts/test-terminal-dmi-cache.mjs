@@ -9,7 +9,7 @@ import {
   selectTerminalDmiCache,
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
-import {planRawDmiCacheRotation} from './lib/verified-raw-cache-rotation.mjs';
+import {planRawDmiCacheRotation, readRawCacheReaderActivity} from './lib/verified-raw-cache-rotation.mjs';
 
 const repository = 'owner/repository';
 const runId = 33990516150;
@@ -243,8 +243,7 @@ assert.deepEqual(planRawDmiCacheRotation({
   ...plan, after: snapshot([...plan.before.inventory.actions_caches].reverse()
     .map(row => ({ ...row, last_accessed_at: '2026-09-05T00:00:00Z' }))),
 }), {
-  status: 'READY', reason: 'newest-two-raw-caches-verified', retain: retained,
-  retire: [rawIdentity(rawCaches[0])],
+  status: 'HOLD', reason: 'retirement-requires-successor-save', retire: [],
 });
 const checkHold = (replacement, reason) => {
   assert.deepEqual(planRawDmiCacheRotation({ ...plan, ...replacement }), { status: 'HOLD', reason, retire: [] });
@@ -343,6 +342,9 @@ for (const condition of [
   {current: withCapture({ ...capture, contentSha256: '3'.repeat(64) })},
   {current: withCapture({ ...capture, itemId: 'Different provider object' })},
   {current: {...successor, requiredCaptures: 2}},
+  {current: {...successor, requiredCaptures: 0, successorPlan: {
+    ...successor.successorPlan, retention: {...successor.successorPlan.retention, captures: []},
+  }}},
   {current: {...successor, targetReferenceAt: '2026-09-05T00:00:00Z'}},
   {current: {...successor, targetReferenceAt: '2026-09-05T05:00:00Z'}},
   {current: {...successor, boundary}},
@@ -357,3 +359,53 @@ for (const condition of [
   });
 }
 console.log('OK: finalized RAW membership must cover the authenticated successor plan.');
+
+const ordinaryOwner = {
+  id: 111, path: '.github/workflows/run-current-weather-once.yml', status: 'in_progress',
+  conclusion: null, head_branch: 'main', head_sha: headSha, run_attempt: 1, event: 'workflow_dispatch',
+  actor: {login: 'github-actions[bot]'}, triggering_actor: {login: 'github-actions[bot]'},
+  repository: {full_name: repository},
+};
+const inertLegacy = {
+  ...ordinaryOwner, id: 34613079069, path: '.github/workflows/update-and-deploy.yml', status: 'queued',
+  head_sha: '5587001b45ffea056addaf6cd20084719540336a',
+  created_at: '2026-09-11T14:55:55Z', updated_at: '2026-09-11T14:55:55Z',
+};
+const queuedAudit = {
+  ...ordinaryOwner, id: 112, status: 'queued', path: '.github/workflows/audit-saved-weather-inputs.yml',
+};
+const readActivity = async (rows, respond) => readRawCacheReaderActivity({
+  repository, sourceHead: headSha, ownerRunId: ordinaryOwner.id,
+  getJson: async route => {
+    const status = new URL(route, 'https://example.invalid').searchParams.get('status');
+    if (status) {
+      const matches = rows.filter(row => row.status === status);
+      return respond?.(route) ?? {total_count: matches.length, workflow_runs: matches};
+    }
+    assert.equal(route, '/repos/' + repository + '/actions/runs/34613079069/attempts/1/jobs?per_page=1');
+    return respond?.(route) ?? {total_count: 0, jobs: []};
+  },
+});
+assert.deepEqual(await readActivity([ordinaryOwner, inertLegacy]), {status: 'CLEAR', checkedRuns: 2, inertLegacy: 1});
+assert.deepEqual(await readActivity([ordinaryOwner, queuedAudit, inertLegacy]), {
+  status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
+});
+assert.deepEqual(await readActivity([ordinaryOwner, {...inertLegacy, run_attempt: 2}]), {
+  status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
+});
+assert.deepEqual(await readActivity([ordinaryOwner, inertLegacy], route =>
+  route.includes('/jobs') ? {total_count: 1, jobs: [{id: 251}]} : undefined), {
+  status: 'HOLD', reason: 'legacy-reader-not-proved-inert',
+});
+assert.deepEqual(await readActivity([ordinaryOwner], route =>
+  route.includes('status=pending') ? {total_count: 1, workflow_runs: []} : undefined), {
+  status: 'HOLD', reason: 'incomplete-reader-inventory',
+});
+assert.deepEqual(await readActivity([{...ordinaryOwner, run_attempt: 2}]), {
+  status: 'HOLD', reason: 'rotation-owner-unconfirmed',
+});
+assert.deepEqual(await readActivity([ordinaryOwner, {...queuedAudit, path: '.github/workflows/new-reader.yml',
+  head_branch: 'other', head_sha: 'b'.repeat(40)}]), {
+  status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
+});
+console.log('OK: queued RAW readers hold retirement; exact jobless legacy identities alone can be excluded.');

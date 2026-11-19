@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {isInertLegacyQueue} from '../check-weather-cadence-watchdog.mjs';
 import {requirePublishedRawRotationRetention} from '../plan-ravscore-current-history.mjs';
 import {isMainRawCache} from './github-actions-cache-stock.mjs';
 import {canonicalSavedDmiOriginalCapture} from './saved-dmi-original-capture.mjs';
@@ -103,12 +104,8 @@ function matchesRawSave(saved, current, cache) {
       || typeof current.sourceHead !== 'string' || !/^[0-9a-f]{40}$/.test(current.sourceHead)
       || !validRawBoundary(predecessor) || !validRawBoundary(retention?.boundary)
       || Date.parse(predecessor.productionReferenceAt) >= Date.parse(retention.boundary.productionReferenceAt)
-      || Date.parse(retention.boundary.productionReferenceAt) >= Date.parse(current.targetReferenceAt)
       || receipt.boundarySha256 !== flatDigest(predecessor)
-      || flatDigest(retention.boundary) !== flatDigest(current.boundary ?? {})
-      || retention.schemaVersion !== 1 || retention.kind !== 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION'
-      || !Array.isArray(retention.captures) || retention.captures.length > 4096
-      || retention.captures.length !== current.requiredCaptures
+      || retention.captures.length === 0 || retention.captures.length !== current.requiredCaptures
       || !Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > 1024 * 1024
       || ![receipt.captureSetSha256, receipt.manifestSha256].every(value => typeof value === 'string' && SHA256.test(value))
       || createHash('sha256').update(bytes).digest('hex') !== receipt.observationSha256) return false;
@@ -143,9 +140,10 @@ function isoHour(value) {
 
 // A pure decision. The normal caller must authenticate both unfiltered repo
 // inventories under the production lock, the current B/S and capture plan, and
-// the actual V2 report from that run's verified pre-mutation restore, or the
-// finalized SAVE receipt plus SHA-bound membership and the authentic successor
-// plan for the exact next target. It must
+// the exact next target's capture demand calculated from the authentic
+// published B/S. Retirement requires a finalized SAVE receipt with SHA-bound
+// membership covering that demand. A current restore can confirm the two
+// existing copies without authorizing a retirement. The caller must
 // also independently verify both finalized keep identities in order, and every
 // RAW dependency of any still-admissible checkpoint, including exact/parked
 // requests. A complete protection snapshot promises that entire scope.
@@ -183,10 +181,76 @@ export function planRawDmiCacheRotation({ before, after, retained, current, obse
     if (!row) return hold('protected-raw-cache-unavailable');
     if (!matchesCache(row, retained[0]) && !matchesCache(row, retained[1])) return hold('protected-raw-cache-outside-newest-two');
   }
+  if (raw.length > 2 && saved === undefined) return hold('retirement-requires-successor-save');
   return {
     status: 'READY',
     reason: raw.length === 2 ? 'already-two-raw-caches' : 'newest-two-raw-caches-verified',
     retain: raw.slice(0, 2).map(cacheIdentity),
     retire: raw.length > 2 ? [cacheIdentity(raw.at(-1))] : [],
   };
+}
+
+const ACTIVE_ACTIONS_STATES = ['queued', 'in_progress', 'waiting', 'requested', 'pending'];
+const LEGACY_WEATHER = '.github/workflows/update-and-deploy.yml';
+const ORDINARY_WEATHER = '.github/workflows/run-current-weather-once.yml';
+const RAW_READERS = new Set([
+  LEGACY_WEATHER,
+  ORDINARY_WEATHER,
+  '.github/workflows/audit-saved-weather-inputs.yml',
+  '.github/workflows/recover-saved-dmi-originals.yml',
+  '.github/workflows/validate-copernicus-current-pilot.yml',
+]);
+
+// The caller holds the production queue and supplies the exact running owner.
+// This is a read-only census. It cannot reserve a queued request or replace the
+// protected B/S and exact cache pin inventory. An uninspected input holds.
+export async function readRawCacheReaderActivity({repository, sourceHead, ownerRunId, getJson}) {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
+      || !/^[a-f0-9]{40}$/.test(sourceHead ?? '')
+      || !Number.isSafeInteger(ownerRunId) || ownerRunId < 1 || typeof getJson !== 'function') {
+    throw new Error('RAW_CACHE_READER_ACTIVITY_INVALID');
+  }
+  const hold = reason => ({status: 'HOLD', reason});
+  const actions = '/repos/' + repository + '/actions';
+  const requests = await Promise.all(ACTIVE_ACTIONS_STATES.map(async status => ({
+    status, data: await getJson(actions + '/runs?status=' + status + '&per_page=100'),
+  })));
+  const runs = new Map();
+  for (const {status, data} of requests) {
+    if (!Array.isArray(data?.workflow_runs) || data.total_count !== data.workflow_runs.length
+        || data.total_count > 100) return hold('incomplete-reader-inventory');
+    for (const run of data.workflow_runs) {
+      if (!Number.isSafeInteger(run?.id) || run.id < 1 || runs.has(run.id) || run.status !== status
+          || run.conclusion !== null || run.repository?.full_name !== repository
+          || typeof run.path !== 'string' || !/^\.github\/workflows\/[a-zA-Z0-9_.-]+\.ya?ml$/.test(run.path)
+          || typeof run.head_branch !== 'string' || !/^[a-f0-9]{40}$/.test(run.head_sha ?? '')
+          || !Number.isSafeInteger(run.run_attempt) || run.run_attempt < 1) {
+        return hold('incomplete-reader-inventory');
+      }
+      runs.set(run.id, run);
+    }
+  }
+  const owner = runs.get(ownerRunId);
+  if (owner?.path !== ORDINARY_WEATHER || owner.head_sha !== sourceHead || owner.head_branch !== 'main'
+      || owner.status !== 'in_progress' || owner.run_attempt !== 1 || owner.event !== 'workflow_dispatch'
+      || owner.actor?.login !== 'github-actions[bot]' || owner.triggering_actor?.login !== 'github-actions[bot]') {
+    return hold('rotation-owner-unconfirmed');
+  }
+  const potentialLegacy = [];
+  for (const run of runs.values()) {
+    if (run.id === ownerRunId) continue;
+    if (run.path === LEGACY_WEATHER && run.head_branch === 'main' && isInertLegacyQueue(run)) {
+      potentialLegacy.push(run);
+      continue;
+    }
+    if (RAW_READERS.has(run.path) || run.head_sha !== sourceHead || run.head_branch !== 'main') {
+      return hold('possible-raw-reader-active-or-queued');
+    }
+  }
+  const legacyJobs = await Promise.all(potentialLegacy.map(run =>
+    getJson(actions + '/runs/' + run.id + '/attempts/1/jobs?per_page=1')));
+  if (legacyJobs.some(jobs => jobs?.total_count !== 0 || !Array.isArray(jobs.jobs) || jobs.jobs.length !== 0)) {
+    return hold('legacy-reader-not-proved-inert');
+  }
+  return {status: 'CLEAR', checkedRuns: runs.size, inertLegacy: potentialLegacy.length};
 }

@@ -18,7 +18,7 @@ const INERT_LEGACY_QUEUE = new Map([
   [34228112413, { at: '2026-09-08T12:47:45Z', sha: 'b814b525962514a368536f456477881390d6b333' }],
 ]);
 
-function isInertLegacyQueue(run) {
+export function isInertLegacyQueue(run) {
   const known = INERT_LEGACY_QUEUE.get(run?.id);
   return Boolean(known && run.status === 'queued' && run.run_attempt === 1 &&
     run.event === 'workflow_dispatch' && run.head_sha === known.sha &&
