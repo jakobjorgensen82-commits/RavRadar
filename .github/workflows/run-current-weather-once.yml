@@ -96,7 +96,7 @@ jobs:
 
   current-main-target:
     needs: operational-recovery-gate
-    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
+    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success' && needs.operational-recovery-gate.outputs.closure_deferred == 'false')) }}
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1109,8 +1109,8 @@ jobs:
 
   terminal-outcome:
     name: Require a verified current-weather deployment
-    needs: [current-main-target, native-identity-prewrite, state-epoch-prewrite, build-and-prepare, deploy-pages]
-    if: always()
+    needs: [operational-recovery-gate, current-main-target, native-identity-prewrite, state-epoch-prewrite, build-and-prepare, deploy-pages]
+    if: always() && needs.operational-recovery-gate.outputs.closure_deferred != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -1265,6 +1265,52 @@ jobs:
       # The recipient reads this exact successful step from this run attempt.
       # A second dispatch with the same source cannot present its own run ID here.
       - name: Bind document history recipient ${{ steps.dispatch.outputs.recipient_run_id }}
+        run: ':'
+
+  handoff-recovered-weather:
+    name: Hand off recovered weather to the existing cadence watchdog
+    needs: [operational-recovery-gate, terminal-outcome]
+    if: >-
+      always() && !cancelled() && needs.operational-recovery-gate.result == 'success' &&
+      needs.operational-recovery-gate.outputs.closure_deferred == 'true' &&
+      needs.terminal-outcome.result == 'skipped' &&
+      github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+      github.ref == 'refs/heads/main' && github.run_attempt == '1' &&
+      github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' &&
+      inputs.current_family_cold_start != true && inputs.completed_private_runtime != true &&
+      inputs.completed_stage_source == '' && inputs.quick_confirmation != true &&
+      inputs.quick_progress_source == '' && inputs.checkpoint_target_hour == '' &&
+      inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&
+      inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' &&
+      inputs.weather_state_epoch_raw_cache_key == '' && inputs.native_sampling_identity_original_recovery != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      # A bot completion event alone is unreliable. Dispatch the existing
+      # watchdog, then let this owner end before the recipient takes the lock.
+      - name: Dispatch one bound watchdog after verified recovery
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]{0,14}$ ]]
+          if ! ack="$(timeout --signal=KILL 20s gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/watch-missed-weather-schedule.yml/dispatches" \
+            -f ref=main -f "inputs[recovery_source_run_id]=$GITHUB_RUN_ID" 2>/dev/null)" ||
+            ! recipient="$(jq -er '.workflow_run_id | numbers | tostring | select(test("^[1-9][0-9]{0,14}$"))' <<< "$ack" 2>/dev/null)" ||
+            [[ "$recipient" = "$GITHUB_RUN_ID" ]]; then
+            echo 'WEATHER_RECOVERY_WATCHDOG_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY' >&2
+            exit 1
+          fi
+          echo "recipient_run_id=$recipient" >> "$GITHUB_OUTPUT"
+
+      - name: Bind weather recovery recipient ${{ steps.dispatch.outputs.recipient_run_id }}
         run: ':'
 
   notify-owner-failure:

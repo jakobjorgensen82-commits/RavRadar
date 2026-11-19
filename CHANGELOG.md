@@ -4,6 +4,10 @@
 - Når en normal kørsel har gemt og verificeret den nye kopi og udgivet prognosen, kan den afslutte rotationen samme gang. En gyldig genoptagelse, som bruger den ældste kopi, bevarer den.
 - Når funktionen er aktiveret, måles hele GitHub-cachebestanden før en ny upload. Den første driftsprøve gennemføres i observationstilstand.
 
+## 4.0.602 — frisk vejr efter afsluttet genudgivelse
+
+- En planlagt kørsel, der genudgiver en gemt prognose, kan bestille én selvstændig frisk vejrhentning efter sin afslutning. Kildekvalifikation og faktiske kørsler afventer.
+
 ## 4.0.602 — spørgsmål om ravfund
 
 - Korte opfølgninger om svag UV-glød og gennemsigtighed beholder fundet som samtaleemne.

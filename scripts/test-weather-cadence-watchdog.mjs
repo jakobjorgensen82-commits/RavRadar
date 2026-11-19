@@ -117,6 +117,53 @@ assert.throws(() => check({ normalRuns: { workflow_runs: [
 assert.throws(() => check({ manualRuns: { workflow_runs: [] } }), /No verified/);
 assert.throws(() => check({ normalRuns: { workflow_runs: [{ ...old, conclusion: null }] } }), /malformed/);
 
+test('Only the one bound terminal recovery watchdog can replace its producer in the same weather slot', () => {
+  const headSha = 'a'.repeat(40), sourceId = '41123456789', recipientId = '41123456800';
+  const repository = { id: 1306858343, full_name: 'jakobjorgensen82-commits/RavRadar' };
+  const owner = {
+    ...run('2026-09-28T00:19:00Z', '2026-09-28T02:00:00Z'),
+    id: Number(sourceId), head_sha: headSha, path: '.github/workflows/run-current-weather-once.yml',
+    event: 'workflow_dispatch', actor: { login: 'github-actions[bot]' }, repository, head_repository: repository,
+  };
+  const prefix = 'Finish an interrupted generation before new work / ';
+  const job = (name, conclusion = 'success', steps = []) => ({
+    name, status: 'completed', conclusion, run_id: owner.id, run_attempt: 1, head_sha: headSha,
+    steps: steps.map(name => ({ name, status: 'completed', conclusion: 'success' })),
+  });
+  const commonJobs = [
+    job('Require a verified current-weather deployment', 'skipped'),
+    job(prefix + 'Require terminal operational recovery before production'),
+    job('Hand off recovered weather to the existing cadence watchdog', 'success',
+      ['Bind weather recovery recipient ' + recipientId]),
+  ];
+  const resume = job(prefix + 'resume-pre-activation-pages / Deploy exact pre-activation Pages artifact', 'success',
+    ['Verify deployed exact model, implementation and 210/673 artifact', 'Seal exact verified deployment terminal']);
+  const redeploy = job(prefix + 'Redeploy only a helper-proven exact sealed Pages target', 'success',
+    ['Redeploy the exact sealed Pages target']);
+  const finalized = job(prefix + 'Finalize exact recovered target without Pages privileges', 'success',
+    ['Reobserve exact target and complete central CAS']);
+  const evaluate = ({ rows = [...commonJobs, resume], runs = [owner], receiver = recipientId,
+    nowMs = at('2026-09-28T02:01:00Z') } = {}) => check({
+    manualRuns: { workflow_runs: runs },
+    nowMs,
+    recoveryHandoff: { sourceId, recipientId: receiver, headSha, jobs: { total_count: rows.length, jobs: rows } },
+  });
+  assert.equal(evaluate().reason, 'verified-recovery-needs-fresh-weather');
+  assert.equal(evaluate({ rows: [...commonJobs, redeploy, finalized] }).dispatch, true);
+  assert.equal(evaluate({ runs: [old] }).dispatch, false);
+  assert.equal(evaluate({ runs: [{ ...owner, status: 'in_progress', conclusion: null }] }).dispatch, false);
+  assert.equal(evaluate({ rows: commonJobs }).dispatch, false);
+  assert.equal(evaluate({ rows: [...commonJobs, redeploy] }).dispatch, false);
+  assert.equal(evaluate({ rows: [...commonJobs, resume, redeploy, finalized] }).dispatch, false);
+  assert.equal(evaluate({ rows: [job(commonJobs[0].name), ...commonJobs.slice(1), resume] }).dispatch, false);
+  assert.equal(evaluate({ receiver: '41123456801' }).dispatch, false);
+  assert.equal(evaluate({ nowMs: at('2026-09-28T03:30:00Z') }).dispatch, false);
+  const next = run('2026-09-28T02:00:30Z', '2026-09-28T02:00:45Z');
+  assert.equal(evaluate({ runs: [owner, { ...next, status: 'queued', conclusion: null }] }).reason,
+    'weather-run-active-or-queued');
+  assert.equal(evaluate({ runs: [owner, next] }).reason, 'weather-run-already-started-in-slot');
+});
+
 const workflow = await fs.readFile('.github/workflows/watch-missed-weather-schedule.yml', 'utf8');
 assert.doesNotMatch(workflow, /\bschedule:\s*\n/);
 assert.match(workflow, /needs\.inspect\.outputs\.dispatch == 'true' && steps\.recheck\.outputs\.dispatch == 'true'/);
@@ -127,11 +174,35 @@ const cadenceReader = await fs.readFile('scripts/read-weather-cadence-github.mjs
 assert.match(cadenceReader, /run-current-weather-once\.yml\/runs\?per_page=100/);
 assert.equal((workflow.match(/node scripts\/check-weather-cadence-watchdog\.mjs/g) || []).length, 2);
 assert.doesNotMatch(workflow, /retry-failed-production|external_watchdog=true/);
+assert.match(workflow, /group: .*recovery_source_run_id != '' && 'ravradar-weather-production-v2'/);
+assert.equal((workflow.match(/RAVRADAR_WEATHER_RECOVERY_RUN_ID:/g) || []).length, 2);
+const ordinaryWeather = await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8');
+const recoveryHandoffJob = ordinaryWeather.split('\n  handoff-recovered-weather:\n')[1]?.split('\n  notify-owner-failure:\n')[0];
+assert.match(recoveryHandoffJob, /closure_deferred == 'true'[\s\S]*terminal-outcome.result == 'skipped'/);
+assert.match(recoveryHandoffJob, /Bind weather recovery recipient .*recipient_run_id/);
+assert.equal((recoveryHandoffJob.match(/gh api --method POST/g) || []).length, 1);
+assert.match(recoveryHandoffJob, /watch-missed-weather-schedule.yml\/dispatches[\s\S]*inputs\[recovery_source_run_id\]/);
 console.log('External four-hour weather cadence: one run per slot and fail-closed guards passed.');
 
 const readCode = code => error => error?.cadenceReadCode === code && error.message === code;
 const readOptions = { kind: 'manual', repository: 'owner/repository', token: 'OFFLINE_SYNTHETIC_TOKEN' };
 const readResponse = (status, document = { workflow_runs: [old] }) => ({ status, json: async () => document });
+
+test('Recovery metadata reads only the exact first attempt and rejects a partial job inventory', async () => {
+  const options = { ...readOptions, kind: 'recovery-jobs', recoveryRunId: '41123456789' };
+  const jobs = { total_count: 1, jobs: [{ id: 1 }] };
+  assert.deepEqual(await readWeatherCadenceGithub({ ...options, request: async (url, request) => {
+    assert.equal(url, 'https://api.github.com/repos/owner/repository/actions/runs/41123456789/attempts/1/jobs?per_page=100');
+    assert.equal(request.method, 'GET');
+    return readResponse(200, jobs);
+  } }), jobs);
+  await assert.rejects(() => readWeatherCadenceGithub({ ...options,
+    request: async () => readResponse(200, { ...jobs, total_count: 2 }) }),
+  readCode('WEATHER_CADENCE_READ_METADATA_REJECTED'));
+  await assert.rejects(() => readWeatherCadenceGithub({ ...options, recoveryRunId: '41123456789/attempts/2',
+    request: async () => assert.fail('An unbound path must never be read') }),
+  readCode('WEATHER_CADENCE_READ_ARGUMENT_REJECTED'));
+});
 
 test('Cadence metadata retries only 502/503/504 with bounded delays and unchanged GET scope', async () => {
   for (const status of [502, 503, 504]) {

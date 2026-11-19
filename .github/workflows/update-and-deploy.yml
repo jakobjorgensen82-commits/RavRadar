@@ -277,7 +277,7 @@ jobs:
   current-hour-readiness:
     name: Check timed current-hour readiness
     needs: operational-recovery-gate
-    if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' }}
+    if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' && needs.operational-recovery-gate.outputs.closure_deferred == 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -1094,7 +1094,7 @@ jobs:
       - geometry-v2-national
       - geometry-v2-pilot
       - deploy-pages
-    if: always()
+    if: always() && needs.operational-recovery-gate.outputs.closure_deferred != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

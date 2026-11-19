@@ -1,3 +1,7 @@
+## 19. november — frisk vejr efter afsluttet genudgivelse
+
+Hvis en planlagt kørsel skal genudgive en gemt prognose, skal den først verificere udgivelsen og afslutte. Den eksisterende vejrvagt venter på den afsluttede kørsel og kontrollerer dens udgivelsesbevis. Derefter bestiller den én almindelig vejrhentning, hvis der ikke allerede er startet eller køet en. Den nye kørsel afslutter registreringen for den genudgivne prognose og henter så frisk vejr på det normale tidspunkt. Den faste tidsplan ændres ikke. Kildekontrol og første faktiske genudgivelse med frisk efterfølgende vejrhentning afventer.
+
 ## 18. november — ravfund og korte opfølgninger
 
 ## 19. november — begrænset RAW-rotation før ny vejrhentning
