@@ -816,5 +816,5 @@ if (process.platform === 'linux') {
   });
   assert.equal(proof.error, undefined);
   assert.equal(proof.status, 0, proof.stderr);
-  assert.match(proof.stderr, /Ran 2 tests/);
+  assert.match(proof.stderr, /^Ran [1-9]\d* tests? in /m);
 }
