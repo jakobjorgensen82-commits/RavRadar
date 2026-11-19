@@ -30,6 +30,52 @@ function step(source, name) {
   return found[0];
 }
 
+test('Copernicus closure gates the ordinary provider handoff and encrypted SAVE', () => {
+  const seal = step(actualNormalWorkflow, 'Encrypt newly saved private weather progress before later production steps');
+  const sealCondition = seal.match(/COPERNICUS_SOURCES_STOPPED: \$\{\{([\s\S]*?)\}\}/)[1]
+    .replaceAll(/steps\.([\w-]+)\./g, "steps['$1'].");
+  assert.match(seal, /if \[ "\$COPERNICUS_SOURCES_STOPPED" != true \]; then[\s\S]*?exit 1\n\s+fi\n\s+node scripts\/weather-component-progress-cache\.mjs save/);
+  const steps = {
+    'copernicus-fill': {outcome: 'skipped'},
+    'copernicus-fill-closure': {},
+    'copernicus-next-run-refresh': {outcome: 'skipped'},
+    'copernicus-refresh-closure': {},
+  };
+  const maySeal = () => runInNewContext(`(${sealCondition})`, {steps}) === 'true';
+  assert.equal(maySeal(), true, 'Existing DMI-only progress may still be saved');
+  for (const [producerName, producerId, guardName, guardId, nextName] of [
+    ['Fill only exact-hour DMI gaps from Copernicus', 'copernicus-fill',
+      'Require stopped Copernicus producer before using its source stage', 'copernicus-fill-closure',
+      'Require reusable Copernicus source stage before combined current closure'],
+    ['Reclaim a bounded Copernicus quality slice for the next normal run', 'copernicus-next-run-refresh',
+      'Require stopped Copernicus producer after optional quality work', 'copernicus-refresh-closure',
+      'Recheck reusable Copernicus evidence after optional quality work'],
+  ]) {
+    const producer = step(actualNormalWorkflow, producerName);
+    const guard = step(actualNormalWorkflow, guardName);
+    const next = step(actualNormalWorkflow, nextName);
+    const position = block => actualNormalWorkflow.indexOf(block);
+    assert.ok(position(producer) < position(guard) && position(guard) < position(next));
+    assert.match(producer, /RAVRADAR_COPERNICUS_REQUIRE_CLOSURE: 'true'/);
+    assert.ok(guard.includes(`steps.${producerId}.outputs.copernicus_producer_closed`));
+    assert.match(guard, /COPERNICUS_PRODUCER_STOP_UNPROVED" >&2\n\s+exit 1/);
+    assert.doesNotMatch(next.match(/^        if:.*$/m)[0], /always\(\)|!cancelled\(/);
+    const guardCondition = guard.match(/^        if: (.+)$/m)[1]
+      .replaceAll('always()', 'true').replaceAll(/steps\.([\w-]+)\./g, "steps['$1'].");
+    assert.equal(runInNewContext(guardCondition, {steps}), false);
+    for (const outcome of ['success', 'failure', 'cancelled']) {
+      steps[producerId].outcome = outcome;
+      assert.equal(runInNewContext(guardCondition, {steps}), true);
+      assert.equal(maySeal(), false, 'No SAVE if the guard cannot prove the producer stopped');
+    }
+    steps[producerId].outcome = 'failure';
+    steps[guardId].outcome = 'success';
+    assert.equal(maySeal(), true, 'Controlled provider failure can preserve authenticated progress');
+    steps[producerId].outcome = 'skipped';
+    steps[guardId].outcome = 'skipped';
+  }
+});
+
 test('normal DMI save uses its measured allowance and must actually finalize before fresh weather', () => {
   const admission = step(actualNormalWorkflow, 'Measure room for the next DMI RAW cache');
   const save = step(actualNormalWorkflow, 'Save progressed DMI GRIB download cache');

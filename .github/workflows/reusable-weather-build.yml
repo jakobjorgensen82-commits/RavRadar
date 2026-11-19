@@ -2920,6 +2920,7 @@ jobs:
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true)
         continue-on-error: true
         env:
+          RAVRADAR_COPERNICUS_REQUIRE_CLOSURE: 'true'
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
@@ -2934,6 +2935,18 @@ jobs:
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
+
+      - name: Require stopped Copernicus producer before using its source stage
+        id: copernicus-fill-closure
+        if: always() && steps.copernicus-fill.outcome != '' && steps.copernicus-fill.outcome != 'skipped'
+        shell: bash
+        env:
+          COPERNICUS_PRODUCER_CLOSED: ${{ steps.copernicus-fill.outputs.copernicus_producer_closed }}
+        run: |
+          if [ "$COPERNICUS_PRODUCER_CLOSED" != true ]; then
+            echo "COPERNICUS_PRODUCER_STOP_UNPROVED" >&2
+            exit 1
+          fi
 
       - name: Require reusable Copernicus source stage before combined current closure
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')
@@ -3160,6 +3173,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 7
         env:
+          RAVRADAR_COPERNICUS_REQUIRE_CLOSURE: 'true'
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
@@ -3174,6 +3188,18 @@ jobs:
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
+
+      - name: Require stopped Copernicus producer after optional quality work
+        id: copernicus-refresh-closure
+        if: always() && steps.copernicus-next-run-refresh.outcome != '' && steps.copernicus-next-run-refresh.outcome != 'skipped'
+        shell: bash
+        env:
+          COPERNICUS_PRODUCER_CLOSED: ${{ steps.copernicus-next-run-refresh.outputs.copernicus_producer_closed }}
+        run: |
+          if [ "$COPERNICUS_PRODUCER_CLOSED" != true ]; then
+            echo "COPERNICUS_PRODUCER_STOP_UNPROVED" >&2
+            exit 1
+          fi
 
       - name: Recheck reusable Copernicus evidence after optional quality work
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
@@ -3197,9 +3223,17 @@ jobs:
         timeout-minutes: 4
         shell: bash
         env:
+          COPERNICUS_SOURCES_STOPPED: ${{
+            (steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success') &&
+            (steps.copernicus-next-run-refresh.outcome == '' || steps.copernicus-next-run-refresh.outcome == 'skipped' || steps.copernicus-refresh-closure.outcome == 'success')
+            && 'true' || 'false' }}
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
+          if [ "$COPERNICUS_SOURCES_STOPPED" != true ]; then
+            echo "COPERNICUS_PRODUCER_STOP_UNPROVED" >&2
+            exit 1
+          fi
           node scripts/weather-component-progress-cache.mjs save \
             --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
             --report "$RUNNER_TEMP/weather-progress-save-report.json"
