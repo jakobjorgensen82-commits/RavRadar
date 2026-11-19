@@ -709,6 +709,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         claim_identity = None
         archive_bytes = None
         archive_version = None
+        connections = 0
         finished = False
         server_failure = []
         old_alarm = signal.getsignal(signal.SIGALRM)
@@ -780,6 +781,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
 
         class Transport(HTTPServer):
             allow_reuse_address = False
+
+            def get_request(self):
+                nonlocal connections
+                connection = super().get_request()
+                connections += 1
+                return connection
 
             def handle_error(self, _request, _client_address):
                 server_failure.append(sys.exc_info()[1])
@@ -1004,6 +1011,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     raise server_failure[0]
                 self.assertEqual(parent.wait(timeout=1.0), 1)
                 self.assertEqual(calls, [])
+                self.assertEqual(connections, 0)
                 self.assertEqual(small(output), b'')
                 self.assertEqual(small(root / 'stderr'), b'DMI_RAW_SAVE_REFUSED\n'
                     b'DMI_RAW_SAVE_DIAGNOSTIC stage=API reason=DMI_RAW_SAVE_API_FAILED\n')
