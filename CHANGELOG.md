@@ -1,3 +1,7 @@
+## 4.0.602 — opfølgning i Spørg RavRadar ved opstart
+
+- Et spørgsmål om et muligt ravfund kan følges op, selv hvis kortet først bliver færdigt med at indlæse mellem de to svar. Opfølgningen om gennemsigtighed og svag UV-reaktion besvarer begge dele.
+
 ## Drift — rotation af DMI-råcacher
 
 - Cachekontrollen angiver nu trin og fejlkategori. Oprydningsjobbet stopper med at vente, når det tilhørende byggejob er afsluttet uden at udgive et bevis.

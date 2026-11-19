@@ -19,8 +19,8 @@ import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-nativ
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
 const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.198.0'});
-const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
-const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
+const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.198.0',storage:'supabase/storage-api:v1.86.0'});
+const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
 const NATIVE_ACTIVITY_VENDOR_PINS=Object.freeze({...ARCHIVE_VENDOR_PINS,'gotrue-version':IMAGES.auth.split(':').at(-1)+'\n'});
 const NATIVE_ACTIVITY_B9_ROLE_MARKER='NATIVE_ACTIVITY_B9_ROLE_CONFIRMED';
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
@@ -215,6 +215,8 @@ function safeError(error,stage){
       ?{permissionDenied:publicArchivePermissionDiagnostic(error.permissionDenied)}:{}),
     ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.code==='SQLSTATE_23514'&&error.inputOwner==='DATA'
       ?{checkConstraint:publicArchiveCheckDiagnostic(error.checkConstraint)}:{}),
+    ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.code==='SQLSTATE_42703'&&error.inputOwner==='DATA'
+      ?{undefinedColumn:publicArchiveUndefinedColumnDiagnostic(error.undefinedColumn)}:{}),
     ...(['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','RESTORE_ARCHIVE_HISTORY'].includes(stage)
       &&error?.code==='SQLSTATE_P0001'&&error.inputOwner==='CHECK_SUSPEND'
       ?{checkSuspend:publicArchiveCheckSuspendDiagnostic(error.checkSuspend)}:{})};
@@ -258,7 +260,51 @@ function archiveInputDiagnostic(diagnostic,code,inputLines,inventory=null){
   if(code==='SQLSTATE_42501'&&['DATA','HISTORY'].includes(report.inputOwner))
     report.permissionDenied=Buffer.isBuffer(diagnostic)&&Buffer.from(text,'utf8').equals(diagnostic)
       ?archivePermissionDiagnostic(text,frame,inventory,report.inputOwner):{state:'UNAVAILABLE'};
+  if(code==='SQLSTATE_42703'&&report.inputOwner==='DATA'){
+    report.undefinedColumn={state:'UNAVAILABLE'};
+    if(Buffer.isBuffer(diagnostic)&&Buffer.from(text,'utf8').equals(diagnostic))try{
+      report.undefinedColumn=archiveUndefinedColumnDiagnostic(text,frame,line-ranges[0][1].first+1,inventory);
+    }catch{ /* Optional evidence cannot replace the original restore failure. */ }
+  }
   return report;
+}
+
+function publicArchiveUndefinedColumnDiagnostic(value){
+  const unavailable={state:'UNAVAILABLE'};
+  if(!value||Object.getPrototypeOf(value)!==Object.prototype)return unavailable;
+  if(value.state==='OTHER_SQL'&&Object.keys(value).length===1)return {state:'OTHER_SQL'};
+  const keys=['state','schemaClass','relationClass','copyOrdinal','columnOrdinal','tupleSha256'];
+  const ordinal=n=>Number.isSafeInteger(n)&&n>0&&n<=4096;
+  if(Object.keys(value).length!==keys.length||!keys.every(key=>Object.hasOwn(value,key))
+    ||value.state!=='COPY_HEADER_COLUMN'
+    ||!['OTHER',...Object.values(ARCHIVE_RELATION_SCHEMAS)].includes(value.schemaClass)
+    ||!['OTHER',...Object.values(ARCHIVE_FIXED_RELATIONS)].includes(value.relationClass)
+    ||!ordinal(value.copyOrdinal)||!ordinal(value.columnOrdinal)
+    ||typeof value.tupleSha256!=='string'||!/^[a-f0-9]{64}$/.test(value.tupleSha256))return unavailable;
+  return Object.fromEntries(keys.map(key=>[key,value[key]]));
+}
+function archiveUndefinedColumnDiagnostic(text,frame,fileLine,inventory){
+  const unavailable={state:'UNAVAILABLE'};
+  if(Buffer.byteLength(text)>P.diagnosticBytes||(text.match(/\bERROR:/g)??[]).length!==1)return unavailable;
+  const tail=text.slice(frame.index+frame[0].length);
+  if(/\r?\nLOCATION: +errorMissingColumn, parse_relation\.c:[1-9][0-9]{0,9}\r?\n?$/.test(tail))
+    return {state:'OTHER_SQL'};
+  if(!/^\r?\nLOCATION: +CopyGetAttnums, copy\.c:[1-9][0-9]{0,9}\r?\n?$/.test(tail)
+    ||inventory?.complete!==true||!(inventory.primaryCopyHeaders instanceof Map))return unavailable;
+  const header=inventory.primaryCopyHeaders.get(fileLine);
+  if(!header)return unavailable;
+  const qualified=new RegExp('^('+COPY_IDENTIFIER+')\\.('+COPY_IDENTIFIER+')$').exec(header.table);
+  if(!qualified)return unavailable;
+  const unquote=identifier=>identifier.slice(1,-1).replaceAll('""','"');
+  const [schema,table]=qualified.slice(1).map(unquote);
+  const columns=header.columns.match(new RegExp(COPY_IDENTIFIER,'g')).map(unquote);
+  const matches=columns.flatMap((column,index)=>
+    frame[3]===`column "${column}" of relation "${table}" does not exist`?[index]:[]);
+  if(matches.length!==1)return unavailable;
+  const [index]=matches,tupleSha256=archiveCheckTupleHash([schema,table,columns[index]]);
+  const {schemaClass,relationClass}=archiveRelationEntry('data.sql','COPY',header.table);
+  return publicArchiveUndefinedColumnDiagnostic({state:'COPY_HEADER_COLUMN',schemaClass,relationClass,
+    copyOrdinal:header.ordinal,columnOrdinal:index+1,tupleSha256});
 }
 // This is only a bounded explanation of the native 42501, never restore authority.
 function publicArchivePermissionDiagnostic(value){
@@ -1730,6 +1776,7 @@ async function* archiveParitySql(c,archive,summary,inventoryOnly=false){
   need(typeof inventoryOnly==='boolean','ARCHIVE_RELATION_PARSE_MODE');
   const tables=new Set(),sequences=new Set();let ordinal=0,rows=0;
   const relations=[];let relationBytes=0;
+  let primaryCopyHeaders=inventoryOnly?new Map():null,primaryCopyHeaderBytes=0;
   const remember=(file,kind,qualified)=>{
     const entry=archiveRelationEntry(file,kind,qualified);relationBytes+=Buffer.byteLength(JSON.stringify(entry));
     need(relationBytes<=P.diagnosticBytes,'ARCHIVE_RELATION_INVENTORY_BOUND');relations.push(entry);
@@ -1737,7 +1784,7 @@ async function* archiveParitySql(c,archive,summary,inventoryOnly=false){
   const text=value=>Buffer.from(value,'utf8');
   if(!inventoryOnly)yield text('SET LOCAL standard_conforming_strings = on;\nSET LOCAL client_encoding = \'UTF8\';\nSET LOCAL statement_timeout = \'90s\';\n');
   for(const file of ['data.sql','history-data.sql']){
-    let header=[],headerBytes=0,copy=null,lineBytes=0,prefix=Buffer.alloc(0);
+    let header=[],headerBytes=0,copy=null,lineBytes=0,prefix=Buffer.alloc(0),fileLine=1;
     const controlState={restrict:null,seenRestrict:false},utf8=new TextDecoder('utf-8',{fatal:true});
     function endCopy(){
       const {table,columns,temp}=copy;
@@ -1759,6 +1806,12 @@ async function* archiveParitySql(c,archive,summary,inventoryOnly=false){
       if(start){const [,table,columns]=start;need(!tables.has(table),'ARCHIVE_PARITY_DUPLICATE_COPY');tables.add(table);
         need(tables.size<=4096,'ARCHIVE_PARITY_TABLE_BOUND');const temp='"rr_archive_expected_'+String(++ordinal)+'"';
         if(inventoryOnly)remember(file,'COPY',table);
+        if(primaryCopyHeaders&&file==='data.sql'){
+          primaryCopyHeaderBytes+=bytes.length;
+          // Loss of optional diagnostic metadata must leave the original SQL path usable.
+          if(primaryCopyHeaderBytes>P.diagnosticBytes)primaryCopyHeaders=null;
+          else primaryCopyHeaders.set(fileLine,{ordinal,table,columns});
+        }
         copy={table,columns,temp};return inventoryOnly?'':`CREATE TEMP TABLE ${temp} ON COMMIT DROP AS SELECT ${columns} FROM ONLY ${table} WITH NO DATA;\nCOPY pg_temp.${temp} (${columns}) FROM stdin;\n`;}
       const sequence=SETVAL_HEADER.exec(line);
       if(sequence){const name=sequence[1].replaceAll("''","'"),value=sequence[2],called=sequence[3];
@@ -1784,6 +1837,7 @@ async function* archiveParitySql(c,archive,summary,inventoryOnly=false){
           headerBytes+=part.length;need(headerBytes<=8192,'ARCHIVE_PARITY_CONTROL_BOUND');header.push(part);
           if(complete){const sql=control(Buffer.concat(header,headerBytes));header=[];headerBytes=0;if(sql)yield text(sql);}
         }
+        if(inventoryOnly&&complete)fileLine++;
         from=end;
       }
     }
@@ -1793,7 +1847,7 @@ async function* archiveParitySql(c,archive,summary,inventoryOnly=false){
   }
   need(tables.has('"auth"."users"')&&tables.has('"auth"."identities"'),'ARCHIVE_PARITY_AUTH_TABLES_REQUIRED');
   Object.assign(summary,{tableCount:tables.size,rowCount:rows,sequenceCount:sequences.size});
-  if(inventoryOnly)summary.relations=relations;
+  if(inventoryOnly)Object.assign(summary,{relations,primaryCopyHeaders});
   else yield text(`SELECT jsonb_build_object('status','PASS','scope','AUTHENTICATED_ARCHIVE_CONTENT_AND_DUPLICATES','tables',${tables.size},'rows',${rows},'sequences',${sequences.size});\n`);
 }
 const ARCHIVE_RELATION_SCHEMAS=Object.freeze({auth:'AUTH',storage:'STORAGE',supabase_functions:'SUPABASE_FUNCTIONS',
@@ -1972,6 +2026,8 @@ async function collectArchiveRelationInventory(c,archive){
   const relations=summary.relations;need(Array.isArray(relations)&&relations.length<=8192,'ARCHIVE_RELATION_INVENTORY_BOUND');
   const inventory={complete:true,relations,digest:sha(Buffer.from(JSON.stringify({
     files:archive.files.filter(f=>['data.sql','history-data.sql'].includes(f.file)),relations})))};
+  // Keep the source header index private. Existing inventory hashes and reports are unchanged.
+  Object.defineProperty(inventory,'primaryCopyHeaders',{value:summary.primaryCopyHeaders});
   // Build both bounded payloads now. No DDL/data starts if full parse or either
   // phase's exact query cannot be represented inside the existing diagnostic cap.
   for(const phase of ['DATA','HISTORY_DATA'])archiveRelationPreflightSql(inventory,phase);return inventory;
@@ -2910,7 +2966,7 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       assert.equal(syntheticNativeHookConfig({...p,nativeStorageBootstrap:undefined}),original+'\n[auth.hook.custom_access_token]\nenabled = true\n'
         +'uri = "pg-functions://postgres/public/rr_native_activity_test_hook"\n');
       assert.deepEqual(NATIVE_ACTIVITY_VENDOR_PINS,{'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
-      assert.deepEqual(ARCHIVE_VENDOR_PINS,{'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
+      assert.deepEqual(ARCHIVE_VENDOR_PINS,{'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
       for(const [context,project]of [[{...c,archive:true},p],[{...c,owner:'123-2'},p],[c,{...p,side:'A'}],
         [c,{...p,id:'linked-project'}],[c,{...p,dir:c.root}]]){
         assert.throws(()=>archiveVendorPinDirectory(context,project,true),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
@@ -3314,7 +3370,7 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       await fs.mkdir(directory,{mode:0o700});
       await fs.writeFile(path.join(directory,'cli-latest'),'3.1.0\n',{flag:'wx',mode:0o600});
       await prepareArchiveVendorBootstrap(c,p);await verifyArchiveVendorBootstrap(c,p);
-      assert.equal(await fs.readFile(path.join(directory,'gotrue-version'),'utf8'),'v2.197.0\n');
+      assert.equal(await fs.readFile(path.join(directory,'gotrue-version'),'utf8'),'v2.198.0\n');
       assert.equal(await fs.readFile(path.join(directory,'storage-version'),'utf8'),'v1.86.0\n');
       assert.deepEqual((await fs.readdir(directory)).sort(),['cli-latest','gotrue-version','storage-version']);
       await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
@@ -3362,14 +3418,14 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.198.0'),image).id,imageId);
       assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
     }
-    assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),image).id,imageId);
-    for(const tag of ['gotrue:v2.196.0','gotrue:v2.198.0','gotrue:latest'])
+    assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.198.0'),image).id,imageId);
+    for(const tag of ['gotrue:v2.196.0','gotrue:v2.197.0','gotrue:latest'])
       assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info(tag),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
-    assert.throws(()=>serviceImageMetadata({archive:true},{side:'A'},'auth',info('gotrue:v2.197.0'),image),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'A'},'auth',info('gotrue:v2.198.0'),image),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
     for(const service of ['db','kong'])for(const archive of [false,true])
       assert.equal(serviceImageMetadata({archive},{side:'B'},service,info(IMAGES[service].split('/').at(-1)),image).id,imageId);
-    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),{...image,Id:'sha256:'+'b'.repeat(64)}));
-    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),{...image,RepoDigests:[]}),error=>error.code==='IMAGE_DIGEST_REQUIRED');
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.198.0'),{...image,Id:'sha256:'+'b'.repeat(64)}));
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.198.0'),{...image,RepoDigests:[]}),error=>error.code==='IMAGE_DIGEST_REQUIRED');
   });
   async function ownLocalAuthBootstrap(run){
     const data=[
@@ -3391,7 +3447,7 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);c.stage='QUIESCE_B_AUTH';
       const p={side:'B',db:'e'.repeat(64)};
       const report={kind:'ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1',measurementPoint:'AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL',
-        inventorySha256:c.archiveRelationInventory.digest,authTag:'gotrue:v2.197.0',authImageSha256:'d'.repeat(64),
+        inventorySha256:c.archiveRelationInventory.digest,authTag:'gotrue:v2.198.0',authImageSha256:'d'.repeat(64),
         targetCount:5,unclassifiedTargetCount:1,fixedTargets:[
           {label:'AUTH_IDENTITIES',kind:'COPY',state:'TABLE'},
           {label:'AUTH_USERS',kind:'COPY',state:'TABLE'},
@@ -3938,6 +3994,51 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       assert(c.processes.every(p=>p.processGroupClosed));
     },{fileSql:{'data.sql':'COPY "auth"."users" ("id") FROM stdin;\n\\.\n',
       'history-data.sql':'COPY "auth"."identities" ("id") FROM stdin;\n\\.\n'}});
+  });
+
+  test('normal archive DATA 42703 verifies the exact COPY field without exposing names or SQL',async()=>{
+    const stage='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',code='SQLSTATE_42703',unknown={state:'UNAVAILABLE'};
+    const data='-- synthetic\r\nCOPY "auth"."users" ("id") FROM stdin;\r\n'
+      +'x'.repeat(ARCHIVE_SQL.chunkBytes)+'\r\n\\.\r\n'
+      +'COPY "auth"."identities" ("id", "private_column_fixture") FROM stdin;\r\n\\.\r\n';
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+      c.archive=true;c.home=c.root;c.processes=[];
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);
+      const inputLines={next:1,ranges:new Map()},chunks=[];
+      for await(const chunk of materializedRestoreBytes(c,archive,false,inputLines))chunks.push(chunk);
+      const firstDataLine=inputLines.ranges.get('DATA').first,headerLine=firstDataLine+4;
+      const nativeLocation='LOCATION:  CopyGetAttnums, copy.c:123\n';
+      const frame=(line,name='private_column_fixture',relation='identities')=>
+        'psql:<stdin>:'+line+': ERROR:  42703: column "'+name+'" of relation "'+relation+'" does not exist\n';
+      const wire=frame(headerLine)+nativeLocation;
+      const classify=text=>archiveInputDiagnostic(Buffer.from(text),code,inputLines,c.archiveRelationInventory);
+      const expected={state:'COPY_HEADER_COLUMN',schemaClass:'AUTH',relationClass:'AUTH_IDENTITIES',
+        copyOrdinal:2,columnOrdinal:2,tupleSha256:archiveCheckTupleHash(['auth','identities','private_column_fixture'])};
+      assert.deepEqual(classify(wire),{inputOwner:'DATA',undefinedColumn:expected});
+      for(const text of [frame(headerLine),wire+'private trailing text\n',wire+wire,
+        frame(headerLine-1)+nativeLocation,frame(headerLine,'private_other_column')+nativeLocation,
+        frame(headerLine,'private_column_fixture','users')+nativeLocation,
+        wire.replace('CopyGetAttnums','exec_stmt_raise'),wire.replace('copy.c','pl_exec.c')]){
+        assert.deepEqual(classify(text).undefinedColumn??unknown,unknown);
+      }
+      assert.equal(classify(frame(firstDataLine-1)+nativeLocation).undefinedColumn,undefined);
+      const other=frame(headerLine)+'LINE 1: SELECT private expression\nLOCATION:  errorMissingColumn, parse_relation.c:3271\n';
+      assert.deepEqual(classify(other).undefinedColumn,{state:'OTHER_SQL'});
+      assert.deepEqual(publicArchiveUndefinedColumnDiagnostic({...expected,privateName:'private_column_fixture'}),unknown);
+      assert.equal(safeError({code,inputOwner:'DATA',undefinedColumn:expected},'RESTORE_ARCHIVE_HISTORY').undefinedColumn,undefined);
+      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write('+JSON.stringify(wire)+',()=>process.exit(3));});'];
+      const input=(async function*(){for(const chunk of chunks)yield chunk;})();
+      await assert.rejects(command(c,stage,process.execPath,child,{input,archivePsql:true,inputLines,maxMs:10_000}),error=>{
+        assert.equal(error.code,code);assert.equal(error.exit,3);assert.equal(error.inputOwner,'DATA');
+        const first=safeError(error,stage),report=restorePublicReport(c,null,first,true);
+        assert.deepEqual(first.undefinedColumn,expected);
+        assert.equal(report.status,'FAILED_CLOSED');
+        assert(!JSON.stringify(report).includes('private_column_fixture'));
+        return true;
+      });
+      assert(c.processes.every(p=>p.processGroupClosed));
+    },{fileSql:{'data.sql':data,'history-data.sql':'-- synthetic empty history\n'}});
   });
 
   test('owned archive GRANT 42704 projects only the exact missing role class',async()=>{
