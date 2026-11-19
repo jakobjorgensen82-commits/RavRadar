@@ -53,3 +53,29 @@ Efter merge af PR #469 som `1e2cc005` afslørede første levende
 tørkørsel `36365055249` tre gamle fastlåste `queued`-poster, der
 fejlagtigt blokerede dispatch. Den snævre fortsættelse står i
 DEC-0260; cron-job.org er ikke aktiveret på dette grundlag alene.
+
+## Afgrænset ejerbestilling efter en fejl i det aktuelle slot
+
+Den almindelige cron-bestilling optager stadig slottet på første forsøg.
+Ejeren kan særskilt bestille én almindelig vejrhentning fra den eksisterende
+vejrvagt med det præcise GitHub-run-ID for sidste mislykkede ordinære
+bot-start, mens samme vagtvindue er åbent. Vagtens normale og tidligere
+recovery-bestillinger bruges hver for sig. Denne bestilling kræver ejerens
+egen første workflow-attempt på main. Det faste navn på bestillingen og
+komplet GitHub-historik for slottet binder autoriteten til første
+ejerbestilling. En senere bestilling eller et GitHub-genforsøg kan derfor
+ikke erstatte et afsendelsesudfald, som stadig er ukendt.
+
+Ved begge observationer kræves et afsluttet, mislykket, autentisk første
+botforsøg. Begge vejrun-indgange skal være fri for aktive og nyere
+forsøg. Det komplette Actions-inventar skal ligeledes være frit, når den
+aktuelle vejrvagt og de præcist kendte inerte legacy-poster er regnet ud.
+Ufuldstændig eller tvetydig GitHub-metadata lukker vejen. Efter den normale
+exact-main kildekvalifikation genlæses oplysningerne umiddelbart før højst
+én eksisterende botbestilling. Den bestilte vejrkørsel anvender alle
+normale skrive-, RAW-, B/S-, artifact- og deploykontroller. Cron-posten og
+tidsplanen ændres ikke.
+
+Dette er en eksplicit ejerbeslutning om en ny ordinær kørsel. Bestillingen
+gør ingen antagelse om, at den foregående kørsel var uden HTTP-kald, og
+leverer ingen genoptagelses- eller udsagnsret om tidligere writes.

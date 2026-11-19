@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { assessWeatherCadenceWatchdog } from './check-weather-cadence-watchdog.mjs';
-import { readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
+import { CADENCE_ACTIVE_STATES, readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
 import { notifyWeatherFailure, weatherFailureIssue, WEATHER_FAILURE_REPOSITORY,
   WEATHER_FAILURE_OWNER } from './notify-weather-failure.mjs';
 
@@ -176,6 +176,8 @@ assert.equal((workflow.match(/node scripts\/check-weather-cadence-watchdog\.mjs/
 assert.doesNotMatch(workflow, /retry-failed-production|external_watchdog=true/);
 assert.match(workflow, /group: .*recovery_source_run_id != '' && 'ravradar-weather-production-v2'/);
 assert.equal((workflow.match(/RAVRADAR_WEATHER_RECOVERY_RUN_ID:/g) || []).length, 2);
+assert.equal((workflow.match(/RAVRADAR_WEATHER_OWNER_FAILED_RUN_ID:/g) || []).length, 2);
+assert.match(workflow, /^run-name:.*'Owner weather request'/m);
 const ordinaryWeather = await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8');
 const recoveryHandoffJob = ordinaryWeather.split('\n  handoff-recovered-weather:\n')[1]?.split('\n  notify-owner-failure:\n')[0];
 assert.match(recoveryHandoffJob, /closure_deferred == 'true'[\s\S]*terminal-outcome.result == 'skipped'/);
@@ -187,6 +189,81 @@ console.log('External four-hour weather cadence: one run per slot and fail-close
 const readCode = code => error => error?.cadenceReadCode === code && error.message === code;
 const readOptions = { kind: 'manual', repository: 'owner/repository', token: 'OFFLINE_SYNTHETIC_TOKEN' };
 const readResponse = (status, document = { workflow_runs: [old] }) => ({ status, json: async () => document });
+
+const ownerFallbackNow = at('2026-09-28T00:45:00Z');
+const cadenceRepo = { id: 1306858343, full_name: WEATHER_FAILURE_REPOSITORY };
+const cadenceOwner = { login: WEATHER_FAILURE_OWNER };
+const cadenceBot = { login: 'github-actions[bot]' };
+const ownerRetryFailure = {
+  ...run('2026-09-28T00:19:00Z', '2026-09-28T00:30:00Z', 'completed', 'main', 'failure'),
+  id: 40000000100, head_sha: 'a'.repeat(40), path: '.github/workflows/run-current-weather-once.yml',
+  event: 'workflow_dispatch', actor: cadenceBot, triggering_actor: cadenceBot,
+  repository: cadenceRepo, head_repository: cadenceRepo,
+};
+const ownerRetryRequest = {
+  ...run('2026-09-28T00:40:00Z', '2026-09-28T00:41:00Z', 'in_progress'),
+  id: 40000000102, head_sha: 'b'.repeat(40), path: '.github/workflows/watch-missed-weather-schedule.yml',
+  display_title: 'Owner weather request', event: 'workflow_dispatch', actor: cadenceOwner,
+  triggering_actor: cadenceOwner, repository: cadenceRepo, head_repository: cadenceRepo,
+};
+const activeInventory = (extra = []) => CADENCE_ACTIVE_STATES.map(status => {
+  const workflow_runs = [ownerRetryRequest, ...extra].filter(item => item.status === status);
+  return { workflow_runs, total_count: workflow_runs.length };
+});
+const ownerHistory = (...workflow_runs) => ({ workflow_runs, total_count: workflow_runs.length });
+const explicitOrder = {
+  failedRunId: String(ownerRetryFailure.id), requestId: String(ownerRetryRequest.id), headSha: ownerRetryRequest.head_sha,
+  history: ownerHistory(ownerRetryRequest), activity: activeInventory(),
+};
+
+test('The owner can order one normal retry after the latest failed bot attempt inside the same slot', () => {
+  const context = { ...base, nowMs: ownerFallbackNow, manualRuns: { workflow_runs: [ownerRetryFailure] } };
+  const evaluate = (change = {}, scope = {}) => assessWeatherCadenceWatchdog({
+    ...context, ownerOrder: { ...explicitOrder, ...change }, ...scope,
+  });
+  assert.equal(assessWeatherCadenceWatchdog(context).reason, 'weather-run-already-started-in-slot');
+  assert.equal(evaluate().reason, 'verified-owner-order-needs-fresh-weather');
+  assert.equal(evaluate().dispatch, true);
+  assert.equal(evaluate({}, { nowMs: at('2026-09-28T01:47:00Z') }).dispatch, false);
+  for (const failed of [
+    { ...ownerRetryFailure, conclusion: 'success' },
+    { ...ownerRetryFailure, run_attempt: 2 },
+    { ...ownerRetryFailure, triggering_actor: cadenceOwner },
+    { ...ownerRetryFailure, head_repository: { id: cadenceRepo.id + 1, full_name: cadenceRepo.full_name } },
+    { ...ownerRetryFailure, status: 'in_progress', conclusion: null },
+  ]) assert.equal(evaluate({}, { manualRuns: { workflow_runs: [failed] } }).dispatch, false);
+  const later = { ...run('2026-09-28T00:38:00Z', '2026-09-28T00:38:00Z'), id: ownerRetryFailure.id + 1 };
+  assert.equal(evaluate({}, { manualRuns: { workflow_runs: [ownerRetryFailure, later] } }).reason,
+    'weather-run-already-started-after-owner-boundary');
+  assert.equal(evaluate({}, { normalRuns: { workflow_runs: [{ ...later, status: 'queued', conclusion: null }] } }).reason,
+    'weather-run-active-or-queued');
+  const activeSource = { ...ownerRetryRequest, id: later.id, path: '.github/workflows/validate-pull-request.yml' };
+  assert.equal(evaluate({ activity: activeInventory([activeSource]) }).reason, 'owner-weather-order-actions-active-or-unproved');
+  const firstUnknownPost = { ...ownerRetryRequest, id: ownerRetryRequest.id - 1, status: 'completed', conclusion: 'failure' };
+  assert.equal(evaluate({ history: ownerHistory(ownerRetryRequest, firstUnknownPost) }).dispatch, false);
+  assert.equal(evaluate({ history: ownerHistory({ ...ownerRetryRequest, run_attempt: 2 }) }).dispatch, false);
+  assert.equal(evaluate({ history: { ...ownerHistory(ownerRetryRequest), total_count: 2 } }).dispatch, false);
+  assert.equal(evaluate({ activity: activeInventory().slice(1) }).dispatch, false);
+});
+
+test('Owner retry reads bounded exact GitHub metadata and refuses a truncated order or activity inventory', async () => {
+  const variants = [
+    { kind: 'owner-orders', ownerOrdersSince: '2026-09-28T00:17:00.000Z',
+      route: 'workflows/watch-missed-weather-schedule.yml/runs?branch=main&event=workflow_dispatch&per_page=100&created=%3E%3D2026-09-28T00%3A17%3A00.000Z' },
+    { kind: 'owner-active-runs', activeRunStatus: 'queued', route: 'runs?status=queued&per_page=100' },
+  ];
+  for (const { route, ...options } of variants) {
+    const document = ownerHistory(ownerRetryRequest);
+    assert.deepEqual(await readWeatherCadenceGithub({ ...readOptions, ...options, request: async (url, request) => {
+      assert.equal(url, 'https://api.github.com/repos/owner/repository/actions/' + route);
+      assert.equal(request.method, 'GET');
+      return readResponse(200, document);
+    } }), document);
+    await assert.rejects(() => readWeatherCadenceGithub({ ...readOptions, ...options,
+      request: async () => readResponse(200, { ...document, total_count: 2 }),
+    }), readCode('WEATHER_CADENCE_READ_METADATA_REJECTED'));
+  }
+});
 
 test('Recovery metadata reads only the exact first attempt and rejects a partial job inventory', async () => {
   const options = { ...readOptions, kind: 'recovery-jobs', recoveryRunId: '41123456789' };

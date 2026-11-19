@@ -2,19 +2,27 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
+import { CADENCE_ACTIVE_STATES, readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
+import { WEATHER_FAILURE_OWNER } from './notify-weather-failure.mjs';
 
 const FOUR_HOURS_MS = 4 * 60 * 60_000;
 const SLOT_MINUTE_MS = 17 * 60_000;
 const EARLIEST_DISPATCH_MS = 60_000;
 const LATEST_DISPATCH_MS = 90 * 60_000;
-const ACTIVE = new Set(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
+const ACTIVE = new Set(CADENCE_ACTIVE_STATES);
 const STATUSES = new Set([...ACTIVE, 'completed']);
 const REPOSITORY = 'jakobjorgensen82-commits/RavRadar';
+const WATCHDOG_PATH = '.github/workflows/watch-missed-weather-schedule.yml';
+const ORDINARY_PATH = '.github/workflows/run-current-weather-once.yml';
+const LEGACY_PATH = '.github/workflows/update-and-deploy.yml';
+const OWNER_ORDER_TITLE = 'Owner weather request';
 const RECOVERY_PREFIX = 'Finish an interrupted generation before new work / ';
 const HANDOFF_JOB = 'Hand off recovered weather to the existing cadence watchdog';
 const HANDOFF_STEP = 'Bind weather recovery recipient ';
 const RUN_ID = /^[1-9][0-9]{0,14}$/;
+const MAIN_HEAD = /^[a-f0-9]{40}$/;
+const slotFor = nowMs => Math.floor((nowMs - SLOT_MINUTE_MS) / FOUR_HOURS_MS) * FOUR_HOURS_MS + SLOT_MINUTE_MS;
+const ownRepository = value => value?.id === 1306858343 && value.full_name === REPOSITORY;
 // GitHub still reports these three old, inert legacy-orchestrator attempts as
 // queued. Ignore only their exact unchanged identities, never an arbitrary old
 // queued run. A changed attempt, SHA, timestamp or state regains the guard.
@@ -99,12 +107,64 @@ function verifiedRecoveryOwner(manualRuns, handoff, nowMs) {
   return owner;
 }
 
+function verifiedOwnerOrder(manualRuns, ownerOrder, slotMs, nowMs) {
+  const { failedRunId, requestId, headSha, history } = ownerOrder ?? {};
+  if (!RUN_ID.test(failedRunId ?? '') || !RUN_ID.test(requestId ?? '') || requestId === failedRunId
+    || !MAIN_HEAD.test(headSha ?? '') || !Array.isArray(history?.workflow_runs)
+    || history.total_count !== history.workflow_runs.length || history.total_count > 100) return null;
+  const failures = manualRuns.workflow_runs.filter(run => String(run?.id) === failedRunId);
+  const failed = failures[0];
+  if (failures.length !== 1 || failed.path !== ORDINARY_PATH || failed.head_branch !== 'main'
+    || failed.event !== 'workflow_dispatch' || failed.run_attempt !== 1 || !MAIN_HEAD.test(failed.head_sha ?? '')
+    || failed.actor?.login !== 'github-actions[bot]' || failed.triggering_actor?.login !== 'github-actions[bot]'
+    || !ownRepository(failed.repository) || !ownRepository(failed.head_repository)
+    || failed.status !== 'completed' || failed.conclusion !== 'failure'
+    || !(Date.parse(failed.created_at) >= slotMs && Date.parse(failed.updated_at) <= nowMs)) return null;
+  // Workflow concurrency serializes the orders. Keep even a previous failed
+  // order occupied: the old POST's result can be unknown and invisible yet.
+  const requests = history.workflow_runs.filter(run => run?.display_title === OWNER_ORDER_TITLE
+    && run.actor?.login === WEATHER_FAILURE_OWNER);
+  if (requests.some(run => !RUN_ID.test(String(run.id)) || run.path !== WATCHDOG_PATH
+    || run.head_branch !== 'main' || run.event !== 'workflow_dispatch'
+    || !ownRepository(run.repository) || !ownRepository(run.head_repository)
+    || !(Date.parse(run.created_at) >= slotMs && Date.parse(run.created_at) <= nowMs))) return null;
+  const ownRequests = requests.filter(run => String(run.id) === requestId);
+  const request = ownRequests[0];
+  if (ownRequests.length !== 1 || request.run_attempt !== 1 || request.status !== 'in_progress'
+    || request.conclusion !== null || request.head_sha !== headSha
+    || request.triggering_actor?.login !== WEATHER_FAILURE_OWNER
+    || Date.parse(request.created_at) < Date.parse(failed.updated_at)
+    || requests.some(run => Number(run.id) < Number(requestId))) return null;
+  return failed;
+}
+
+function ownerOrderReadersClear({ requestId, headSha, activity }) {
+  if (!Array.isArray(activity) || activity.length !== CADENCE_ACTIVE_STATES.length) return false;
+  const observed = new Set();
+  for (const [index, status] of CADENCE_ACTIVE_STATES.entries()) {
+    const document = activity[index];
+    if (!Array.isArray(document?.workflow_runs) || document.total_count !== document.workflow_runs.length
+      || document.total_count > 100) return false;
+    for (const row of document.workflow_runs) {
+      if (!RUN_ID.test(String(row?.id)) || observed.has(row.id) || row.status !== status
+        || row.conclusion !== null || !ownRepository(row.repository)) return false;
+      observed.add(row.id);
+      if (String(row.id) === requestId && row.path === WATCHDOG_PATH && row.head_sha === headSha
+        && row.head_branch === 'main' && row.status === 'in_progress' && row.run_attempt === 1) continue;
+      if (row.path === LEGACY_PATH && row.head_branch === 'main' && isInertLegacyQueue(row)) continue;
+      return false;
+    }
+  }
+  return observed.has(Number(requestId));
+}
+
 export function assessWeatherCadenceWatchdog({
   normalRuns,
   manualRuns,
   nowMs = Date.now(),
   branch = 'main',
   recoveryHandoff,
+  ownerOrder,
 }) {
   if (!Number.isFinite(nowMs) || branch !== 'main') {
     throw new Error('Invalid four-hour weather watchdog policy');
@@ -112,10 +172,21 @@ export function assessWeatherCadenceWatchdog({
   const normal = readMainRuns(normalRuns, branch, 'normal weather', nowMs, true);
   const manual = readMainRuns(manualRuns, branch, 'manual weather', nowMs);
   if (manual.length === 0) throw new Error('No verified current-weather run history on main');
-  const slotMs = Math.floor((nowMs - SLOT_MINUTE_MS) / FOUR_HOURS_MS) * FOUR_HOURS_MS + SLOT_MINUTE_MS;
+  const slotMs = slotFor(nowMs);
   const slotAt = new Date(slotMs).toISOString();
   const decision = (dispatch, reason) => ({ dispatch, reason, slotAt });
   const runs = [...normal, ...manual];
+  if (ownerOrder !== undefined) {
+    const failed = recoveryHandoff === undefined && verifiedOwnerOrder(manualRuns, ownerOrder, slotMs, nowMs);
+    if (!failed || normal.some(run => run.id === failed.id)) return decision(false, 'owner-weather-order-unproved');
+    if (nowMs < slotMs + EARLIEST_DISPATCH_MS || nowMs >= slotMs + LATEST_DISPATCH_MS)
+      return decision(false, 'owner-weather-order-window-closed');
+    if (runs.some(run => ACTIVE.has(run.status))) return decision(false, 'weather-run-active-or-queued');
+    if (runs.some(run => run.id !== failed.id && run.attemptStartedMs >= Date.parse(failed.created_at)))
+      return decision(false, 'weather-run-already-started-after-owner-boundary');
+    if (!ownerOrderReadersClear(ownerOrder)) return decision(false, 'owner-weather-order-actions-active-or-unproved');
+    return decision(true, 'verified-owner-order-needs-fresh-weather');
+  }
   if (recoveryHandoff !== undefined) {
     const owner = verifiedRecoveryOwner(manualRuns, recoveryHandoff, nowMs);
     if (!owner || normal.some(run => run.id === owner.id)) return decision(false, 'recovery-only-owner-unproved');
@@ -156,6 +227,26 @@ async function main() {
   ]);
   const env = process.env;
   const sourceId = env.RAVRADAR_WEATHER_RECOVERY_RUN_ID;
+  const failedRunId = env.RAVRADAR_WEATHER_OWNER_FAILED_RUN_ID;
+  const nowMs = Date.now();
+  let ownerOrder;
+  if (failedRunId) {
+    const { GITHUB_RUN_ID: requestId, GITHUB_SHA: headSha } = env;
+    if (sourceId || !RUN_ID.test(failedRunId) || !RUN_ID.test(requestId ?? '') || failedRunId === requestId
+      || !MAIN_HEAD.test(headSha ?? '') || env.RAVRADAR_EXTERNAL_WATCHDOG !== 'false'
+      || env.GITHUB_REPOSITORY !== REPOSITORY || env.GITHUB_REF !== 'refs/heads/main'
+      || env.GITHUB_WORKFLOW_REF !== REPOSITORY + '/' + WATCHDOG_PATH + '@refs/heads/main'
+      || env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || env.GITHUB_RUN_ATTEMPT !== '1'
+      || env.GITHUB_ACTOR !== WEATHER_FAILURE_OWNER || env.GITHUB_TRIGGERING_ACTOR !== WEATHER_FAILURE_OWNER) {
+      throw new Error('WEATHER_OWNER_ORDER_REJECTED');
+    }
+    const access = { repository: REPOSITORY, token: env.GH_TOKEN };
+    const [history, ...activity] = await Promise.all([
+      readWeatherCadenceGithub({ ...access, kind: 'owner-orders', ownerOrdersSince: new Date(slotFor(nowMs)).toISOString() }),
+      ...CADENCE_ACTIVE_STATES.map(activeRunStatus => readWeatherCadenceGithub({ ...access, kind: 'owner-active-runs', activeRunStatus })),
+    ]);
+    ownerOrder = { failedRunId, requestId, headSha, history, activity };
+  }
   let recoveryHandoff;
   if (sourceId) {
     const { GITHUB_RUN_ID: recipientId, GITHUB_SHA: headSha } = env;
@@ -171,7 +262,7 @@ async function main() {
       token: env.GH_TOKEN, recoveryRunId: sourceId });
     recoveryHandoff = { sourceId, recipientId, headSha, jobs };
   }
-  const result = assessWeatherCadenceWatchdog({ normalRuns, manualRuns, recoveryHandoff });
+  const result = assessWeatherCadenceWatchdog({ normalRuns, manualRuns, nowMs, recoveryHandoff, ownerOrder });
   if (options.githubOutput) {
     await fs.appendFile(options.githubOutput, `dispatch=${result.dispatch}\nreason=${result.reason}\n`);
   }

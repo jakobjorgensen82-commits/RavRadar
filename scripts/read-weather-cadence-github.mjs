@@ -11,17 +11,27 @@ const routes = {
 const transient = new Set([502, 503, 504]);
 const delays = [1000, 2000];
 const fail = code => { throw Object.assign(new Error(code), { cadenceReadCode: code }); };
+export const CADENCE_ACTIVE_STATES = Object.freeze(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 
 export async function readWeatherCadenceGithub({ kind, repository, token, recoveryRunId,
+  ownerOrdersSince, activeRunStatus,
   request = fetch, wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) }) {
   const recovery = kind === 'recovery-jobs';
-  if ((!recovery && !Object.hasOwn(routes, kind))
+  const ownerOrders = kind === 'owner-orders';
+  const activeRuns = kind === 'owner-active-runs';
+  if ((!recovery && !ownerOrders && !activeRuns && !Object.hasOwn(routes, kind))
     || (recovery ? !/^[1-9][0-9]{0,14}$/.test(recoveryRunId ?? '') : recoveryRunId !== undefined)
+    || (ownerOrders ? !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(ownerOrdersSince ?? '') : ownerOrdersSince !== undefined)
+    || (activeRuns ? !CADENCE_ACTIVE_STATES.includes(activeRunStatus) : activeRunStatus !== undefined)
     || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
     || typeof token !== 'string' || !token || typeof request !== 'function' || typeof wait !== 'function') {
     fail('WEATHER_CADENCE_READ_ARGUMENT_REJECTED');
   }
-  const route = recovery ? `runs/${recoveryRunId}/attempts/1/jobs?per_page=100` : `workflows/${routes[kind]}`;
+  const route = recovery ? `runs/${recoveryRunId}/attempts/1/jobs?per_page=100`
+    : ownerOrders ? 'workflows/watch-missed-weather-schedule.yml/runs?branch=main&event=workflow_dispatch&per_page=100&created='
+      + encodeURIComponent('>=' + ownerOrdersSince)
+    : activeRuns ? 'runs?status=' + activeRunStatus + '&per_page=100'
+    : `workflows/${routes[kind]}`;
   const url = `https://api.github.com/repos/${repository}/actions/${route}`;
   // Each job reads at most four bounded endpoints, including recovery metadata.
   // The separate single POST is bounded to 20s inside the unchanged 5min job.
@@ -45,7 +55,8 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
           || (recovery ? !Array.isArray(document.jobs) || document.jobs.length > 100
             || document.total_count !== document.jobs.length
             : kind === 'workflow' ? document.state !== 'active'
-            : !Array.isArray(document.workflow_runs) || document.workflow_runs.length > 100)) {
+            : !Array.isArray(document.workflow_runs) || document.workflow_runs.length > 100
+              || ((ownerOrders || activeRuns) && document.total_count !== document.workflow_runs.length))) {
           fail('WEATHER_CADENCE_READ_METADATA_REJECTED');
         }
         return document;
