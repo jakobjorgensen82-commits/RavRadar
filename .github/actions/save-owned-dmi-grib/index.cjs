@@ -23,6 +23,7 @@ function refused(code) { return new Error(code); }
 let cliPhase = 'UNKNOWN';
 const REFUSAL_REASONS = new Set([
   'DMI_RAW_SAVE_INPUT_REFUSED', 'DMI_RAW_SAVE_V2_REQUIRED', 'DMI_RAW_SAVE_ARGUMENT_REFUSED',
+  'DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED',
   'DMI_RAW_DISTRIBUTION_INPUT_REFUSED', 'WEATHER_CIPHER_UPLOAD_INPUT_REFUSED',
   'WEATHER_ACQUISITION_WRITER_ARGUMENTS_INVALID', 'WEATHER_ACQUISITION_WRITER_OWNER_INVALID',
   'WEATHER_ACQUISITION_WRITER_BUSY', 'WEATHER_ACQUISITION_WRITER_UNPROVED',
@@ -61,6 +62,11 @@ function fixedInputs() {
       || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ATTEMPT || '')
       || !key.endsWith(`-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`)) {
     throw refused('DMI_RAW_SAVE_INPUT_REFUSED');
+  }
+  const archiveLimit = env.RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES;
+  if (archiveLimit !== undefined && (!/^[1-9][0-9]{0,15}$/.test(archiveLimit)
+      || !Number.isSafeInteger(Number(archiveLimit)) || Number(archiveLimit) < 1024)) {
+    throw refused('DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED');
   }
   // The official selector must already select v2. Do not manufacture runtime
   // credentials or force a different service mode to obtain a positive receipt.

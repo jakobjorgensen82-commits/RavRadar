@@ -280,6 +280,8 @@ const PATH_AREAS=freeze({
     'scripts/test-release-contract-metadata.mjs',
   ],
   ownedCacheNative:[
+    '.github/actions/save-owned-dmi-grib/index.cjs',
+    'scripts/run-owned-dmi-grib-save.py',
     'scripts/test-owned-dmi-grib-save-native.py',
     'scripts/test-owned-dmi-cache-dependency.mjs',
   ],

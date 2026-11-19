@@ -8,6 +8,7 @@ cache key, token or owner capability is transferred here.
 import json
 import os
 from pathlib import Path
+import re
 import select
 import signal
 import subprocess
@@ -17,6 +18,19 @@ import time
 ROOT = Path(__file__).resolve().parent.parent
 ENTRY = ROOT / '.github/actions/save-owned-dmi-grib/index.cjs'
 _retained_children = []
+
+
+def constrain_raw_archive_bytes():
+    value = os.environ.get('RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES')
+    if value is None:
+        return
+    if not re.fullmatch(r'[1-9][0-9]{0,15}', value) or not 1024 <= int(value) < 2 ** 53:
+        raise RuntimeError('DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED')
+
+    import resource
+    inherited = resource.getrlimit(resource.RLIMIT_FSIZE)
+    limit = min([int(value), *(bound for bound in inherited if bound != resource.RLIM_INFINITY)])
+    resource.setrlimit(resource.RLIMIT_FSIZE, (limit, limit))
 
 
 def main():
@@ -119,6 +133,10 @@ def main():
             raise RuntimeError('DMI_RAW_SAVE_INTERRUPTED')
         fixed_worker = ('--fixed-distribution-worker' if distribution else
                         '--fixed-cipher-worker' if ciphertext else '--fixed-api-worker')
+        if not distribution and not ciphertext:
+            # Only this owned RAW SAVE cohort and its archive subprocesses
+            # inherit the limit. It does not alter the acquisition directory.
+            constrain_raw_archive_bytes()
         child = subprocess.Popen([parent_executable, str(ENTRY), fixed_worker],
                                  cwd=ROOT, env=os.environ.copy(), start_new_session=True,
                                  stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
