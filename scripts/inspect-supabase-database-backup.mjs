@@ -35,6 +35,7 @@ export async function inspectDatabaseBackupPlan({env=process.env, confirmMain=co
     locatorVersion: stock.locatorVersion,
     archiveCompletedAt: stock.completedAt,
     objectCount: stock.objectCount,
+    databaseStorage: stock.databaseStorage,
     usedBytes: stock.usedBytes,
     bucketLimitBytes,
     reservedCaptureBytes,

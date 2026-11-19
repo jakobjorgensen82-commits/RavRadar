@@ -94,20 +94,53 @@ version_privacy as (${PRIVATE_STUDY_ADMIN_ACCESS_SQL.trim().replace(/;$/,'').rep
 select current_privacy.metadata,version_privacy.metadata as version_metadata,
 (has_table_privilege('service_role','public.admin_documents','SELECT') and has_table_privilege('service_role','public.admin_documents','INSERT') and has_table_privilege('service_role','public.admin_documents','UPDATE')) as current_access
 from current_privacy,version_privacy`;
+const CATALOGUE_URL='https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query';
+const STORAGE_SQL=`with database_sizes as (
+  select pg_catalog.pg_database_size(oid) as bytes from pg_catalog.pg_database
+)
+select pg_catalog.pg_database_size(pg_catalog.current_database())::text as "projectDatabaseBytes",
+       (select sum(bytes) from database_sizes)::text as "clusterDatabaseBytes",
+       (select count(bytes) = count(*) from database_sizes) as "completeDatabaseInventory",
+       pg_catalog.pg_total_relation_size('public.admin_documents'::regclass)::text as "adminCurrentBytes",
+       pg_catalog.pg_total_relation_size('public.admin_document_versions'::regclass)::text as "adminHistoryBytes",
+       (select pg_catalog.pg_total_relation_size(reltoastrelid::regclass) from pg_catalog.pg_class
+        where oid = 'public.admin_document_versions'::regclass)::text as "adminHistoryToastBytes"`;
+const STORAGE_QUERY_BODY=JSON.stringify({query:STORAGE_SQL,read_only:true});
+
+async function readDatabaseStorage(c) {
+  const response=await c.fetch(CATALOGUE_URL,{method:'POST',headers:{
+    Authorization:'Bearer '+c.env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json',
+  },body:STORAGE_QUERY_BODY});
+  need(response.status===200||response.status===201,'BACKUP_STOCK_DATABASE_SIZE_READ');
+  const rows=parse(Buffer.from(await response.arrayBuffer()),'BACKUP_STOCK_DATABASE_SIZE_READ');
+  need(Array.isArray(rows)&&rows.length===1,'BACKUP_STOCK_DATABASE_SIZE_READ');
+  const byteFields=['projectDatabaseBytes','clusterDatabaseBytes','adminCurrentBytes','adminHistoryBytes','adminHistoryToastBytes'];
+  fields(rows[0],[...byteFields,'completeDatabaseInventory'],'BACKUP_STOCK_DATABASE_SIZE_FIELDS');
+  const row=rows[0];
+  need(row.completeDatabaseInventory===true&&byteFields.every(key=>typeof row[key]==='string'
+    &&/^[1-9][0-9]{0,15}$/.test(row[key])&&positive(Number(row[key]))),'BACKUP_STOCK_DATABASE_SIZE_FIELDS');
+  const measured=Object.fromEntries(byteFields.map(key=>[key,Number(row[key])]));
+  need(measured.adminHistoryToastBytes<=measured.adminHistoryBytes
+    &&measured.adminCurrentBytes+measured.adminHistoryBytes<=measured.projectDatabaseBytes
+    &&measured.projectDatabaseBytes<=measured.clusterDatabaseBytes,'BACKUP_STOCK_DATABASE_SIZE_PARITY');
+  return measured;
+}
 async function privacy(c){need(typeof c.env.SUPABASE_ACCESS_TOKEN==='string'&&c.env.SUPABASE_ACCESS_TOKEN.length>=20,'CATALOGUE_TOKEN_REQUIRED');
-  const response=await c.fetch('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query',{method:'POST',headers:{Authorization:'Bearer '+c.env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query:ACCESS_SQL})});
+  const response=await c.fetch(CATALOGUE_URL,{method:'POST',headers:{Authorization:'Bearer '+c.env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query:ACCESS_SQL})});
   need(response.status===200||response.status===201,'LOCATOR_PRIVACY');const rows=parse(Buffer.from(await response.arrayBuffer()),'LOCATOR_PRIVACY');need(Array.isArray(rows)&&rows.length===1,'LOCATOR_PRIVACY');
   fields(rows[0],['metadata','version_metadata','current_access'],'LOCATOR_PRIVACY');need(rows[0].current_access===true,'LOCATOR_SERVICE_ACCESS');
   try{assertPrivateStudyAdminAccess([{metadata:rows[0].metadata}]);const version=rows[0].version_metadata,aliases={'ravradar_admin_document_versions_read':'ravradar_admin_documents_read','ravradar_ravscore_checkpoint_versions_no_direct_read':'ravradar_ravscore_checkpoint_no_direct_read'};
     need(Array.isArray(version?.policies)&&version.policies.length===2&&version.policies.every(p=>Object.hasOwn(aliases,p.name)),'LOCATOR_PRIVACY');
     assertPrivateStudyAdminAccess([{metadata:{...version,policies:version.policies.map(p=>({...p,name:aliases[p.name]}))}}]);
   }catch{fail('LOCATOR_PRIVACY');}}
-function clients(env,fetchImpl,{bootstrap=false,readOnly=false,rotation=false,receiptWrite=false}={}){
+function clients(env,fetchImpl,{bootstrap=false,readOnly=false,rotation=false,receiptWrite=false,storageInspection=false}={}){
   need((bootstrap||env.SUPABASE_URL?.replace(/\/$/,'')===P.project)&&typeof env.SUPABASE_SERVICE_ROLE_KEY==='string'&&env.SUPABASE_SERVICE_ROLE_KEY.length>=32,'EXACT_PROJECT_MASTER');
   const state={started:Date.now(),writes:new Set(),unknown:false,fatal:null,readBytes:0,bootstrap,listing:null,searchDeadline:null,objectReadBound:P.maximumObjectBytes,archiveCreates:0,locatorWrites:0,candidateReadBytes:0},host=String(env.RAVRADAR_R2_ACCOUNT_ID)+'.eu.r2.cloudflarestorage.com';
   const guarded=async(url,options={})=>{
     if(state.unknown)fail('DB_BACKUP_WRITE_OUTCOME_UNKNOWN');if(state.fatal)fail(state.fatal);need(Date.now()-state.started<P.maximumMs,'REMOTE_DEADLINE');if(state.searchDeadline&&Date.now()>=state.searchDeadline){state.fatal='BOOTSTRAP_DEADLINE';fail(state.fatal);}
-    const u=new URL(url),method=String(options.method||'GET').toUpperCase(),management=u.href==='https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query'&&method==='POST'&&options.body===JSON.stringify({query:ACCESS_SQL});
+    const u=new URL(url),method=String(options.method||'GET').toUpperCase(),management=u.href===CATALOGUE_URL&&method==='POST'
+      &&(options.body===JSON.stringify({query:ACCESS_SQL})
+        ||readOnly&&storageInspection&&options.body===STORAGE_QUERY_BODY);
     const versions=rotation&&u.origin===P.project&&u.pathname==='/rest/v1/admin_document_versions',
       admin=u.origin===P.project&&u.pathname==='/rest/v1/admin_documents',r2=u.protocol==='https:'&&u.hostname===host&&(u.pathname==='/'+P.bucket||u.pathname.startsWith('/'+P.bucket+'/'));
     if(bootstrap)need(r2&&(['GET','HEAD'].includes(method)||receiptWrite&&method==='PUT'
@@ -537,7 +570,8 @@ export async function inspectSupabaseDatabaseBackupStock(expectedIndexCommitment
   let c;
   try{
     need(hash(expectedIndexCommitment),'BACKUP_STOCK_SELECTOR');
-    c=clients(dependencies.env??process.env,dependencies.fetchImpl??globalThis.fetch,{readOnly:true,rotation:true});
+    c=clients(dependencies.env??process.env,dependencies.fetchImpl??globalThis.fetch,
+      {readOnly:true,rotation:true,storageInspection:true});
     c.state.searchDeadline=Date.now()+B.maximumSearchMs;
     c.state.objectReadBound=B.maximumIndexWireBytes;
     const {locator,pointer,group,selfDescribing}=await lifecycleCurrent(c,expectedIndexCommitment);
@@ -548,9 +582,10 @@ export async function inspectSupabaseDatabaseBackupStock(expectedIndexCommitment
       const listed=inventory.objects.get(object.path)??inventory.partObjects.get(object.path);
       need(listed?.sha256===object.sha256&&listed.bytes===object.bytes,'BACKUP_STOCK_CURRENT_OBJECT_MISSING_OR_CHANGED');
     }
+    const databaseStorage=await readDatabaseStorage(c);
     need(same(await readLocator(c),locator),'LOCATOR_CHANGED');
     return {locatorVersion:locator.version,completedAt:group.completedAt,context:pointer.context,usedBytes:inventory.total,
-      objectCount:inventory.count,selfContainedCurrentOnly:selfDescribing&&inventory.count===expected.length};
+      objectCount:inventory.count,databaseStorage,selfContainedCurrentOnly:selfDescribing&&inventory.count===expected.length};
   }catch(error){throw archiveFailure(error,c);}
 }
 async function rotationInventory(c,{requireKnownNamespace=true}={}){

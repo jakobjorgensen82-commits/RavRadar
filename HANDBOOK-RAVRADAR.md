@@ -8,6 +8,14 @@ Før en ny upload må et særskilt GitHub-job rydde gamle rester op, mens den al
 
 Den næste RAW-upload afpasses efter den samlede cachebestand i GitHub og en reserve til andre cachefiler. To færdige kopier bevares, mens den tredje gemmes. Samme kørsel kan derefter fjerne den ældste, når den nye kopi er færdig, de nødvendige originale vejrfiler er verificeret, den nye prognose er kontrolleret på RavRadar, og ingen genoptagelse stadig kan bruge den gamle kopi. Ved ukendt udfald bevares kopierne. Første ordinære driftsprøve med tre eksisterende kopier skal have plads og rotation kontrolleret før den næste upload. Den lokale kandidat afventer kontrol i GitHub og aktivering.
 
+## 89.357 — Kildekontrol før driftsfiler
+
+Den tidlige kontrol af programkoden læser den rene kopi fra GitHub.
+
+Det almindelige vejrjob afgør først hurtigt, om en opdatering er nødvendig. Derefter genbruger det et verificeret resultat for præcis samme kode eller kører kildekontrollen. Først derefter lægger jobbet godkendt geometri, administration og gemte vejrdata ind i arbejdskopien. Den færdige prognose kontrolleres efter beregningen.
+
+Kørsel #352 standsede under den tidlige kontrol, fordi driftsfiler allerede var lagt ind. Et nyt almindeligt forløb skal bekræfte den rettede rækkefølge og offentlig udgivelse.
+
 ## 89.355 — Når et fund kan ligne rav
 
 En kort opfølgning om glød eller gennemsigtighed beholder fundet som emne.
@@ -224,7 +232,9 @@ Diagnostikken er under kildeforberedelse. Den opretter ingen ny prøve, åbner i
 
 ## 89.347 — Databasebackup med sikker, løbende oprydning
 
-**Klargjort, ikke aktiveret.** Forberedt automatik gendanner først, beskytter en verificeret reserve og rydder kun dokumenterede gamle backups op.
+**Ugentlig backup er aktiveret.** Første automatiske gendannelse med en varig kvittering skal stadig bekræftes.
+
+Den skrivefri lagerkontrol måler nu også den fysiske databasestørrelse. Den viser det samlede antal bytes for alle databaser i klyngen og størrelsen på den aktuelle database. Den viser særskilt plads til aktuelle administrationsdokumenter og deres historik. Historikkens store værdier ligger i et særskilt lager i PostgreSQL, som allerede er medregnet i historiktallet. Målingen viser derfor, om oprydning af gamle versioner har frigivet fysisk plads. Free kræver også, at forbrug og gendannelse er verificeret.
 
 Ny optagelse, isoleret gendannelse og rotation er tre forskellige handlinger. Den forberedte automatik udfører højst én af dem i et almindeligt vedligeholdelsesvindue. Den starter ikke en ekstra vejrhentning og ændrer hverken RavScore eller de indsamlede vejrdata.
 

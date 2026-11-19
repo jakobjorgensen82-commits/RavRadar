@@ -50,6 +50,25 @@ test('normal DMI save uses its measured allowance and must actually finalize bef
   assert.deepEqual(order, [...order].sort((a, b) => a - b));
 });
 
+test('ordinary source validation runs on committed files before any runtime overlay', () => {
+  const orderedSteps = [
+    'Decide whether weather needs updating before private runtime download',
+    'Verify exact-content source validation with GitHub',
+    'Run fast source gate before expensive data refresh',
+    'Preserve latest verified source-content validation outcome',
+    'Build constrained natural zone coastlines',
+    'Sync centrally saved admin configuration',
+    'Verify and restore the private production runtime bundle',
+    'Update DMI bulk model cache',
+  ];
+  let previous = -1;
+  for (const name of orderedSteps) {
+    const position = actualNormalWorkflow.indexOf(step(actualNormalWorkflow, name));
+    assert.ok(position > previous, 'Workflow step runs out of order: ' + name);
+    previous = position;
+  }
+});
+
 function epochCheckpointPreflightGuard(source) {
   const preflight = step(source, 'Decide whether weather needs updating before private runtime download');
   const run = preflight.match(/        run: \|\n([\s\S]*)$/)?.[1]?.replace(/^          /gm, '');
