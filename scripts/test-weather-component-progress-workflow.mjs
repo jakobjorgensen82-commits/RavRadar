@@ -483,13 +483,17 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
     const ipc = [];
     const outputs = [];
     const diagnostics = [];
+    const observations = [];
+    const actionPath = options.rawRoot
+      ? path.join(options.rawRoot, '.github/actions/save-owned-dmi-grib/index.cjs') : ownedRawAction;
     let cliDone;
     const cliFinished = new Promise(resolve => { cliDone = resolve; });
     const ownerValue = Object.freeze({});
     const env = { INPUT_PATH: '.cache/dmi-grib', INPUT_KEY: 'dmi-grib-v4-Linux-2026-W41-42-1',
       RUNNER_OS: 'Linux', GITHUB_RUN_ID: '42', GITHUB_RUN_ATTEMPT: '1',
       GITHUB_REF: 'refs/heads/main', GITHUB_SERVER_URL: 'https://github.com',
-      ACTIONS_CACHE_SERVICE_V2: '1', GITHUB_OUTPUT: '/synthetic/outputs', ...options.env };
+      ACTIONS_CACHE_SERVICE_V2: '1', GITHUB_OUTPUT: '/synthetic/outputs',
+      GITHUB_WORKSPACE: options.rawRoot, GITHUB_SHA: 'f'.repeat(40), ...options.env };
     const processFixture = Object.assign(new OwnedRawEmitter(), {
       env, platform: 'linux', versions: { node: '24.19.0' }, argv: ['node', ownedRawAction],
       ppid: 12345,
@@ -524,7 +528,7 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
     const spawn = (command, args, settings) => {
       events.push('spawn');
       assert.equal(command, 'python3');
-      assert.deepEqual(Array.from(args), ['-B', path.join(path.dirname(ownedRawAction), '../../../scripts/run-owned-dmi-grib-save.py'),
+      assert.deepEqual(Array.from(args), ['-B', path.join(path.dirname(actionPath), '../../../scripts/run-owned-dmi-grib-save.py'),
         ...(options.distribution ? ['--prepare-distribution'] : [])]);
       assert.equal(settings.env, env);
       assert.equal(settings.shell, false);
@@ -549,7 +553,12 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       if (specifier === 'node:child_process') return { spawn };
       if (specifier === 'node:module') return { findPackageJSON: () => '/synthetic/cache-package.json' };
       if (specifier === 'node:fs') return {
-        fstatSync(fd) { assert.equal(fd, 3); return { isFIFO: () => !options.wrongParent, isSocket: () => false }; },
+        ...ownedRawRequire('node:fs'),
+        fstatSync(fd, settings) {
+          if (options.rawRoot) return ownedRawRequire('node:fs').fstatSync(fd, settings);
+          assert.equal(fd, 3);
+          return { isFIFO: () => !options.wrongParent, isSocket: () => false };
+        },
         readFileSync(file) {
           if (file === '/proc/12345/cmdline') return Buffer.from('python3\0-B\0'
             + path.join(path.dirname(ownedRawAction), '../../../scripts/run-owned-dmi-grib-save.py') + '\0');
@@ -568,9 +577,9 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
     };
     if (options.cli) require.main = module;
     const context = vmOwnedRawCache.createContext({ require, module, exports: module.exports,
-      __dirname: path.dirname(ownedRawAction), __filename: ownedRawAction, process: processFixture,
-      Buffer, URL, console });
-    new vmOwnedRawCache.Script(ownedRawSource, { filename: ownedRawAction,
+      __dirname: path.dirname(actionPath), __filename: actionPath, process: processFixture,
+      Buffer, URL, console: { ...console, log: value => observations.push(value) } });
+    new vmOwnedRawCache.Script(ownedRawSource, { filename: actionPath,
       importModuleDynamically: vmOwnedRawCache.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER }).runInContext(context);
     const receipt = { schemaVersion: 1, kind: 'DMI_RAW_SAVE_V2_FINALIZED', apiVersion: '6.1.0',
       path: env.INPUT_PATH, key: env.INPUT_KEY, cacheId: 17 };
@@ -586,7 +595,7 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
     function dispose() {
       for (const stream of child?.stdio || []) stream?.destroy();
     }
-    return { ...module.exports, events, ipc, outputs, env, started, finish, receipt, processFixture, dispose,
+    return { ...module.exports, events, ipc, outputs, observations, env, started, finish, receipt, processFixture, dispose,
       diagnostics, cliFinished };
   }
   try {
@@ -709,6 +718,75 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       assert.equal((await operation).saved, true);
       assert.deepEqual(value.events, ['acquire', 'assert', 'spawn', 'assert', 'release']);
       assert.deepEqual(value.outputs, ['saved=true\n']);
+    });
+    await t.test('RAW membership requires unchanged verified members and a finalized archive', async () => {
+      for (const scenario of ['unchanged', 'file changed', 'digest mismatch', 'archive capacity skipped']) {
+        const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'rr-raw-save-observation-')));
+        const raw = path.join(root, '.cache', 'dmi-grib');
+        const manifest = path.join(raw, 'asset-manifest.json');
+        const name = 'a'.repeat(24) + '.grib';
+        const file = path.join(raw, name);
+        const identity = async file => {
+          const stat = await fs.lstat(file, { bigint: true });
+          return [stat.dev, stat.ino, stat.mode, stat.size, stat.mtimeNs, stat.ctimeNs].map(String);
+        };
+        const archiveCapacitySkipped = scenario === 'archive capacity skipped';
+        const archiveLimit = archiveCapacitySkipped ? '1024' : undefined;
+        const value = fixture({ rawRoot: root, env: { RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: archiveLimit } });
+        try {
+          await fs.mkdir(raw, { recursive: true });
+          await fs.writeFile(manifest, '{}');
+          await fs.writeFile(file, 'synthetic');
+          const capture = '4'.repeat(64);
+          const captureSetSha256 = crypto.createHash('sha256').update(JSON.stringify([capture])).digest('hex');
+          await fs.writeFile(path.join(root, '.cache', 'dmi-raw-save-membership.json'), JSON.stringify({
+            schemaVersion: 2, execution: { RUN_ID: '42', RUN_ATTEMPT: '1', SHA: 'f'.repeat(40) },
+            boundarySha256: '1'.repeat(64),
+            captureSetSha256: scenario === 'digest mismatch' ? '2'.repeat(64) : captureSetSha256,
+            manifestSha256: '3'.repeat(64), directory: await identity(raw), manifest: await identity(manifest),
+            files: [[name, await identity(file), capture]],
+          }));
+          const operation = value.runOwnedSave();
+          await value.started;
+          assert.deepEqual(value.observations, []);
+          assert.deepEqual(value.outputs, []);
+          if (scenario === 'file changed') await fs.utimes(file, new Date(1e9), new Date(1e9));
+          const { schemaVersion, apiVersion, path: rawPath, key } = value.receipt;
+          await value.finish({ api: archiveCapacitySkipped
+            ? { schemaVersion, kind: 'DMI_RAW_ARCHIVE_BUDGET_EXCEEDED', apiVersion, path: rawPath, key, archiveLimit }
+            : value.receipt });
+          const outcome = await operation;
+          assert.equal(value.events.at(-1), 'release');
+          assert.deepEqual(value.observations, []);
+          if (archiveCapacitySkipped) {
+            assert.equal(outcome.archiveCapacitySkipped, true);
+            assert.equal(Object.hasOwn(outcome, 'saved'), false);
+            assert.deepEqual(value.outputs, ['archive_capacity_skipped=true\n']);
+            continue;
+          }
+          assert.equal(outcome.saved, true);
+          if (scenario === 'unchanged') {
+            assert.equal(value.outputs.length, 1);
+            const output = value.outputs[0].match(/^saved=true\nsaved_membership=(.*)\n$/);
+            assert.ok(output);
+            const receipt = JSON.parse(output[1]);
+            assert.equal(receipt.kind, 'DMI_RAW_SAVE_COMMITTED_MEMBERSHIP');
+            assert.equal(receipt.schemaVersion, 2);
+            assert.equal(receipt.key, value.receipt.key);
+            assert.equal(receipt.cacheId, value.receipt.cacheId);
+            assert.equal(receipt.verifiedCaptureCount, 1);
+            assert.equal(receipt.captureSetSha256, captureSetSha256);
+            assert.equal(JSON.stringify(receipt).includes(name), false);
+          } else {
+            assert.deepEqual(value.outputs, ['saved=true\n']);
+          }
+        } finally {
+          value.dispose();
+          assert.equal(path.dirname(root), await fs.realpath(os.tmpdir()));
+          assert.ok(path.basename(root).startsWith('rr-raw-save-observation-'));
+          await fs.rm(root, { recursive: true });
+        }
+      }
     });
     await t.test('exit0 plus API finalization without physical receipt retains own claim', async () => {
       const value = fixture();
