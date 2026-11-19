@@ -517,6 +517,10 @@ Den installerede kildevælger skelner nu også mellem en almindelig kodeopdateri
 
 <h3>Målrettet kildeprøve for afgrænset ejerkode</h3><p>En ren rettelse i de to normale ejer-/genoptagelseshelpers kan i den lokale planforberedelse bruge den eksisterende ejerprøve. Den kontrollerer fortsat offentlig målverifikation, database-/Edge-parathed, atomisk vedligeholdelse, raceafslag og bevarede arkiver. De fire øvrige Pagesprøver udføres også. Den store deploymentprøve skal være uændret; ændrede workflows, transport, browserkode, nye eller slettede helpers, ændret filmode og ukendte relevante input beholder de brede kontroller. PR911 ville derfor fortsat blive bredprøvet. Der ændres ingen tidsgrænse eller produktionskontrol, og der tilføjes ingen ny prøveindgang. Normal kildekvalifikation og målt tidsvirkning skal bevises særskilt, før forberedelsen regnes som leveret.</p>
 
+### Frisk vejr efter en afsluttet genudgivelse
+
+Hvis en planlagt kørsel skal genudgive en gemt prognose, skal den først verificere udgivelsen og afslutte. Den eksisterende vejrvagt venter på den afsluttede kørsel og kontrollerer dens udgivelsesbevis. Derefter bestiller den én almindelig vejrhentning, hvis der ikke allerede er startet eller køet en. Den nye kørsel afslutter registreringen for den genudgivne prognose og henter så frisk vejr på det normale tidspunkt. Den faste tidsplan ændres ikke. Kildekontrol og første faktiske genudgivelse med frisk efterfølgende vejrhentning afventer.
+
 ## 89.322 Genoptagelse når Pages-pakken endnu ikke er synlig
 
 Brug en gemt prognose igen, når GitHub har kvitteret for upload, men pakkens metadata først bliver synlige senere.

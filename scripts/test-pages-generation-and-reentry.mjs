@@ -204,6 +204,77 @@ for (const name of ['update-and-deploy', 'run-current-weather-once', 'deploy-cod
     'operational-recovery-gate'), /Source review read permission missing/);
 }
 const recovery = await read('reusable-operational-reentry');
+
+{
+  const runningOwner = { ...identity, repository: 'ravradar/RavRadar', attemptId: 'pages-recovery-123-2' };
+  const fetchActiveOwner = async (url, options) => {
+    assert.equal(url, 'https://api.github.com/repos/ravradar/RavRadar/actions/runs/123');
+    assert.equal(options.headers.Authorization, 'Bearer test-token');
+    return { ok: true, json: async () => ({
+      id: 123, run_attempt: 2, head_sha: runningOwner.headSha, head_branch: 'main',
+      repository: { full_name: runningOwner.repository }, path: '.github/workflows/run-current-weather-once.yml',
+      status: 'in_progress', conclusion: null,
+    }) };
+  };
+  await assert.rejects(readAuthenticPagesAttemptClosure({
+    owner: runningOwner, token: 'test-token', fetchImpl: fetchActiveOwner,
+  }), /PAGES_OWNER_RUN_ACTIVE_CHANGED_OR_UNKNOWN/);
+
+  const prove = recovery.split('      - name: Prove reconciliation or exact-target redeploy completed\n')[1];
+  assert.ok(prove);
+  const program = prove.split('        run: |\n')[1].replace(/^ {10}/gm, '');
+  const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-own-recovery-writer-'));
+  try {
+    const shell = process.platform === 'win32'
+      ? path.resolve(execFileSync('git', ['--exec-path'], { encoding: 'utf8' }).trim(), '../../../usr/bin/sh.exe')
+      : 'bash';
+    const defaults = {
+      RECONCILE_RESULT: 'success', GEOMETRY_ONLY: 'false', HAS_PHASE: 'true', PHASE_COMPLETE_RESULT: 'skipped',
+      EXACT_TARGET_RESULT: 'skipped', FINALIZE_RESULT: 'skipped', ACTUAL_RECOVERY_ACTION: '',
+      RESUME_RESULT: 'skipped', RESUME_PAGES_RESULT: 'skipped', RESUME_PAGES_VERIFIED: '',
+    };
+    const cases = [
+      ['verified pre-activation writer defers its own closure',
+        { RECOVERY_ACTION: 'PRE_ACTIVATION_RESUME', RESUME_RESULT: 'success', RESUME_PAGES_RESULT: 'success',
+          RESUME_PAGES_VERIFIED: 'true' }, 'true'],
+      ['unverified pre-activation cannot defer',
+        { RECOVERY_ACTION: 'PRE_ACTIVATION_RESUME', RESUME_RESULT: 'success', RESUME_PAGES_RESULT: 'success' }, null],
+      ['actual exact redeploy defers the preparation phase',
+        { RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY', ACTUAL_RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY',
+          EXACT_TARGET_RESULT: 'success', FINALIZE_RESULT: 'success' }, 'true'],
+      ['exact redeploy can own a Pages write without a preparation phase',
+        { RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY', ACTUAL_RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY',
+          EXACT_TARGET_RESULT: 'success', FINALIZE_RESULT: 'success', HAS_PHASE: 'false' }, 'true'],
+      ['exact redeploy requires its public finalizer',
+        { RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY', ACTUAL_RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY',
+          EXACT_TARGET_RESULT: 'success', FINALIZE_RESULT: 'failure' }, null],
+      ['revalidation to target reconciliation preserves strict phase closure',
+        { RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY', ACTUAL_RECOVERY_ACTION: 'TARGET_RECONCILE',
+          EXACT_TARGET_RESULT: 'success', FINALIZE_RESULT: 'success', PHASE_COMPLETE_RESULT: 'success' }, 'false'],
+      ['revalidated reconciliation cannot skip phase closure',
+        { RECOVERY_ACTION: 'EXACT_TARGET_REDEPLOY', ACTUAL_RECOVERY_ACTION: 'TARGET_RECONCILE',
+          EXACT_TARGET_RESULT: 'success', FINALIZE_RESULT: 'success' }, null],
+      ['next run can close the completed prior phase',
+        { RECOVERY_ACTION: 'COMPLETED_PRE_ACTIVATION', PHASE_COMPLETE_RESULT: 'success' }, 'false'],
+      ['failed terminal proof for the prior phase closes nothing',
+        { RECOVERY_ACTION: 'COMPLETED_PRE_ACTIVATION', PHASE_COMPLETE_RESULT: 'failure' }, null],
+    ];
+    for (const [index, [name, values, deferred]] of cases.entries()) {
+      const output = path.join(work, 'output-' + index).replace(/\\/g, '/');
+      const summary = path.join(work, 'summary-' + index).replace(/\\/g, '/');
+      const result = spawnSync(shell, ['-e', '-s'], {
+        input: program, encoding: 'utf8', timeout: 10000,
+        env: { ...process.env, ...defaults, ...values, GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary },
+      });
+      assert.equal(result.error, undefined, name);
+      assert.equal(result.status, deferred === null ? 1 : 0, name + ': ' + result.stderr);
+      if (deferred !== null) assert.equal((await fs.readFile(output, 'utf8')).trim(), 'closure_deferred=' + deferred, name);
+      if (deferred === 'true') assert.match(await fs.readFile(summary, 'utf8'), /New writes wait/);
+    }
+  } finally {
+    await fs.rm(work, { recursive: true, force: true });
+  }
+}
 function assertPublishedCompletionOrder(source) {
   const phase=source.indexOf('if test "$(jq -r \'.action\' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then');
   const gate=source.indexOf('completion_source_output=',phase),required=source.indexOf("grep -Fx 'required=false'",gate);
@@ -251,6 +322,34 @@ for (const job of ['reconcile-operational-pending', 'recover-operational-pages-t
     /Source review read permission missing/);
 }
 const once=await read('run-current-weather-once');
+for (const [source, job] of [
+  [once, 'current-main-target'],
+  [await read('update-and-deploy'), 'current-hour-readiness'],
+  [await read('deploy-code-only-repair'), 'build-code-only'],
+  [once, 'terminal-outcome'],
+  [await read('update-and-deploy'), 'production-outcome'],
+]) {
+  const jobStart = source.indexOf('\n  ' + job + ':\n');
+  assert.ok(jobStart >= 0);
+  const condition = source.slice(jobStart).match(/^    if: (.+)$/m)?.[1];
+  const isReportingJob = job === 'terminal-outcome' || job === 'production-outcome';
+  const expression = condition.replace(/^\$\{\{ | \}\}$/g, '')
+    .replace(/needs\.operational-recovery-gate/g, 'gate');
+  const evaluate = (closureDeferred, result = 'success', coldStart = false) => runInNewContext(expression, {
+    gate: { result, outputs: { closure_deferred: closureDeferred } },
+    inputs: { current_family_cold_start: coldStart },
+    cancelled: () => false,
+    always: () => true,
+  });
+  assert.equal(evaluate('false'), true, job);
+  assert.equal(evaluate('true'), false, job);
+  assert.equal(evaluate(undefined), isReportingJob, job);
+  assert.equal(evaluate('UNKNOWN'), isReportingJob, job);
+  if (job === 'current-main-target') assert.equal(evaluate(undefined, 'skipped', true), true);
+}
+const adminHistory = await read('maintain-admin-document-history');
+const adminAdmission = adminHistory.slice(adminHistory.indexOf('        id: admission\n'), adminHistory.indexOf('      - uses: actions/checkout@v7'));
+assert.match(adminAdmission, /Require a verified current-weather deployment[\s\S]*DOCUMENT_HISTORY_SKIPPED_NO_VERIFIED_WEATHER[\s\S]*'proceed=true'/);
 const onceStep=name=>{const start=once.indexOf('      - name: '+name+'\n');assert(start>=0);
   const next=once.indexOf('\n      - ',start+1),job=once.indexOf('\n  native-identity-prewrite:',start+1);
   return once.slice(start,next>=0&&(job<0||next<job)?next:job);};

@@ -12,14 +12,18 @@ const transient = new Set([502, 503, 504]);
 const delays = [1000, 2000];
 const fail = code => { throw Object.assign(new Error(code), { cadenceReadCode: code }); };
 
-export async function readWeatherCadenceGithub({ kind, repository, token,
+export async function readWeatherCadenceGithub({ kind, repository, token, recoveryRunId,
   request = fetch, wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) }) {
-  if (!Object.hasOwn(routes, kind) || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
+  const recovery = kind === 'recovery-jobs';
+  if ((!recovery && !Object.hasOwn(routes, kind))
+    || (recovery ? !/^[1-9][0-9]{0,14}$/.test(recoveryRunId ?? '') : recoveryRunId !== undefined)
+    || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
     || typeof token !== 'string' || !token || typeof request !== 'function' || typeof wait !== 'function') {
     fail('WEATHER_CADENCE_READ_ARGUMENT_REJECTED');
   }
-  const url = `https://api.github.com/repos/${repository}/actions/workflows/${routes[kind]}`;
-  // Five GETs in the full inspect/recheck path: at most 5*(3*10+1+2)=165s.
+  const route = recovery ? `runs/${recoveryRunId}/attempts/1/jobs?per_page=100` : `workflows/${routes[kind]}`;
+  const url = `https://api.github.com/repos/${repository}/actions/${route}`;
+  // Each job reads at most four bounded endpoints, including recovery metadata.
   // The separate single POST is bounded to 20s inside the unchanged 5min job.
   for (let attempt = 0; attempt < 3; attempt++) {
     const signal = AbortSignal.timeout(10_000);
@@ -38,7 +42,9 @@ export async function readWeatherCadenceGithub({ kind, repository, token,
           fail('WEATHER_CADENCE_READ_JSON_REJECTED');
         }
         if (!document || typeof document !== 'object' || Array.isArray(document)
-          || (kind === 'workflow' ? document.state !== 'active'
+          || (recovery ? !Array.isArray(document.jobs) || document.jobs.length > 100
+            || document.total_count !== document.jobs.length
+            : kind === 'workflow' ? document.state !== 'active'
             : !Array.isArray(document.workflow_runs) || document.workflow_runs.length > 100)) {
           fail('WEATHER_CADENCE_READ_METADATA_REJECTED');
         }

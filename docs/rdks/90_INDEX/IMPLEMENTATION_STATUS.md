@@ -1,3 +1,8 @@
+## 19. november — frisk vejr efter afsluttet genudgivelse
+
+- [x] Klargør afgrænset overdragelse til eksisterende vejrvagt. Målrettet lokal prøvning dækker afsluttet ejer, afslag og dubletter.
+- [ ] Gennemfør GitHub-kontrol og verificér det normale forløb ved en reel genudgivelse.
+
 ## 18. november — Spørg RavRadar om et muligt ravfund
 
 - [x] Verificér eksternt AI-svar for afgrænset identifikationsspørgsmål på dansk, tysk og engelsk gennem den normale brugerflade på 4.0.601.
