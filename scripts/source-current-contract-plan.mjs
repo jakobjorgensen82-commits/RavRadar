@@ -45,6 +45,8 @@ const LOCAL_RESTORE_INVENTORY_DISPATCH=[
 
 
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
+const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs';
+
 export const CURRENT_CONTRACT_COMMANDS=freeze({
   core:[
     'node scripts/validate-release-version.mjs',
@@ -95,9 +97,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-release-contract-metadata.mjs',
   ],
   ownedCacheNative:[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND],
-  rawCacheRotation:[
-    'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs',
-  ],
+  rawCacheRotation:[RAW_CACHE_ROTATION_SOURCE_COMMAND],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
     'node scripts/test-source-impact-workflow.mjs',
@@ -284,8 +284,6 @@ const PATH_AREAS=freeze({
   ],
   rawCacheRotation:[
     '.github/workflows/build-ravscore-historical-wave-pilot.yml',
-    '.github/workflows/reusable-weather-build.yml',
-    '.github/workflows/run-current-weather-once.yml',
     'scripts/check-weather-cadence-watchdog.mjs',
     'scripts/find-raw-rotation-artifact.mjs',
     'scripts/lib/github-actions-cache-stock.mjs',
@@ -480,6 +478,12 @@ export function currentWorkflowTargets(relative){
 const ACCOUNT_SCHEMA_SOURCE_TEST='node --test scripts/test-account-erasure-outbox.mjs';
 const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
 const SOURCE_EXECUTION_TARGETS=freeze({
+  // The actual Node24 dependency and physical archive proofs run once in the
+  // dedicated native phases. The Node22 source driver checks the normal callers.
+  '.github/actions/save-owned-dmi-grib/action.yml':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
+  '.github/actions/save-owned-dmi-grib/index.cjs':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
+  'scripts/run-owned-dmi-grib-save.py':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
+  'scripts/test-owned-dmi-grib-save-native.py':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
   'scripts/audit-pages-artifact-privacy.mjs':['node scripts/test-pages-artifact-privacy.mjs',SHARE_PROJECTION_SOURCE_TEST],
   'scripts/build-forecast-share-projection.mjs':[SHARE_PROJECTION_SOURCE_TEST],
   'scripts/verify-ravscore-operational-pages-deployment.mjs':[SHARE_PROJECTION_SOURCE_TEST],
