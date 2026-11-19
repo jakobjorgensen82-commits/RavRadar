@@ -23,6 +23,7 @@ function refused(code) { return new Error(code); }
 let cliPhase = 'UNKNOWN';
 const REFUSAL_REASONS = new Set([
   'DMI_RAW_SAVE_INPUT_REFUSED', 'DMI_RAW_SAVE_V2_REQUIRED', 'DMI_RAW_SAVE_ARGUMENT_REFUSED',
+  'DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED',
   'DMI_RAW_DISTRIBUTION_INPUT_REFUSED', 'WEATHER_CIPHER_UPLOAD_INPUT_REFUSED',
   'WEATHER_ACQUISITION_WRITER_ARGUMENTS_INVALID', 'WEATHER_ACQUISITION_WRITER_OWNER_INVALID',
   'WEATHER_ACQUISITION_WRITER_BUSY', 'WEATHER_ACQUISITION_WRITER_UNPROVED',
@@ -62,13 +63,18 @@ function fixedInputs() {
       || !key.endsWith(`-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`)) {
     throw refused('DMI_RAW_SAVE_INPUT_REFUSED');
   }
+  const archiveLimit = env.INPUT_ARCHIVE_LIMIT || env.RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES;
+  if (archiveLimit !== undefined && (!/^[1-9][0-9]{0,15}$/.test(archiveLimit)
+      || !Number.isSafeInteger(Number(archiveLimit)) || Number(archiveLimit) < 1024)) {
+    throw refused('DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED');
+  }
   // The official selector must already select v2. Do not manufacture runtime
   // credentials or force a different service mode to obtain a positive receipt.
   let github;
   try { github = new URL(env.GITHUB_SERVER_URL || 'https://github.com'); } catch {}
   if (!github || github.origin !== 'https://github.com' || github.username || github.password
       || !env.ACTIONS_CACHE_SERVICE_V2) throw refused('DMI_RAW_SAVE_V2_REQUIRED');
-  return { key, path: CACHE_PATH };
+  return { key, path: CACHE_PATH, archiveLimit };
 }
 
 function fixedDistributionInputs() {
@@ -305,6 +311,18 @@ async function runApiWorker() {
   // Same default options/cross-OS behavior as the existing save action. Only
   // the reviewed v2 API's returned positive ID is a finalization candidate.
   const cacheId = await cache.saveCache([CACHE_PATH], input.key, undefined, false);
+  const archiveRefusal = input.archiveLimit !== undefined
+      && process.env.RAVRADAR_DMI_RAW_ARCHIVE_OBSERVER === '1'
+    ? fs.lstatSync(path.join(process.env.RUNNER_TEMP, 'raw-archive-budget-exceeded'),
+      { throwIfNoEntry: false }) : undefined;
+  if (archiveRefusal) {
+    if (cacheId !== -1 || !archiveRefusal.isFile() || archiveRefusal.size !== 0) {
+      throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+    }
+    fs.writeSync(3, JSON.stringify({ schemaVersion: 1, kind: 'DMI_RAW_ARCHIVE_BUDGET_EXCEEDED',
+      apiVersion: API_VERSION, path: input.path, key: input.key, archiveLimit: input.archiveLimit }));
+    return;
+  }
   if (!Number.isSafeInteger(cacheId) || cacheId <= 0) {
     throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
   }
@@ -433,6 +451,35 @@ function parseReceipt(text) {
   throw refused('DMI_RAW_SAVE_RECEIPT_INVALID');
 }
 
+function rawMembershipIdentity(stat) {
+  return [stat.dev, stat.ino, stat.mode, stat.size, stat.mtimeNs, stat.ctimeNs].map(String);
+}
+
+// The owner snapshots the fixed archive input on both sides of SAVE. A later
+// byte check can use this inventory to tie local originals to that exact SAVE.
+function rawInventorySha256() {
+  const raw = path.join(ROOT, CACHE_PATH);
+  try {
+    if (fs.realpathSync(raw) !== raw) return null;
+    const directory = fs.lstatSync(raw, { bigint: true });
+    if (!directory.isDirectory()) return null;
+    const names = fs.readdirSync(raw).sort();
+    if (names.length > 4097 || !names.includes('asset-manifest.json')) return null;
+    const members = [];
+    for (const name of names) {
+      const file = fs.lstatSync(path.join(raw, name), { bigint: true });
+      if (!file.isFile() || file.nlink !== 1n) return null;
+      members.push([name, rawMembershipIdentity(file)]);
+    }
+    const identity = rawMembershipIdentity(directory);
+    if (rawMembershipIdentity(fs.lstatSync(raw, { bigint: true }))
+      .some((value, index) => value !== identity[index])) return null;
+    return crypto.createHash('sha256').update(JSON.stringify([identity, members])).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
 async function runOwnedOperation(operation) {
   if (require.main === module) cliPhase = 'INPUT';
   const input = operation === 'save' ? fixedInputs()
@@ -444,6 +491,8 @@ async function runOwnedOperation(operation) {
   let physicalClosed = false;
   let firstFailure = null;
   let interrupted = false;
+  let archiveCapacitySkipped = false;
+  let finalizedInventory;
   const interrupt = () => {
     interrupted = true;
     // Request only. The Python owner must still prove its entire group absent.
@@ -456,12 +505,17 @@ async function runOwnedOperation(operation) {
     lease = await owner.acquireWeatherAcquisitionWriter();
     await owner.assertWeatherAcquisitionWriter(lease);
     if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
+    const inventoryBefore = operation === 'save'
+      && (input.archiveLimit !== undefined || process.env.RAVRADAR_MEASURE_RAW_SAVE_INVENTORY === 'true')
+      ? rawInventorySha256() : null;
     if (require.main === module) cliPhase = 'SPAWN';
     child = spawn('python3', ['-B', path.join(ROOT, 'scripts/run-owned-dmi-grib-save.py'),
       ...(operation === 'distribution' ? ['--prepare-distribution']
         : operation === 'cipher' ? ['--upload-encrypted-progress'] : [])], {
-      cwd: ROOT, env: process.env, shell: false,
-      stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+      cwd: ROOT,
+      env: input?.archiveLimit === undefined ? process.env
+        : {...process.env, RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: input.archiveLimit},
+      shell: false, stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     });
     if (require.main === module) cliPhase = 'CLOSURE';
     const closureText = collectReceipt(child.stdout);
@@ -497,13 +551,23 @@ async function runOwnedOperation(operation) {
           || typeof receipt.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(receipt.sha256)) {
         throw refused('WEATHER_CIPHER_UPLOAD_NOT_FINALIZED');
       }
-    } else if (receipt.schemaVersion !== 1 || receipt.kind !== 'DMI_RAW_SAVE_V2_FINALIZED'
-        || receipt.apiVersion !== API_VERSION || receipt.path !== input.path
-        || receipt.key !== input.key || !Number.isSafeInteger(receipt.cacheId) || receipt.cacheId <= 0) {
-      throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+    } else {
+      if (receipt.schemaVersion !== 1 || receipt.apiVersion !== API_VERSION
+          || receipt.path !== input.path || receipt.key !== input.key) {
+        throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+      }
+      archiveCapacitySkipped = receipt.kind === 'DMI_RAW_ARCHIVE_BUDGET_EXCEEDED'
+        && input.archiveLimit !== undefined && receipt.archiveLimit === input.archiveLimit;
+      if (!archiveCapacitySkipped && (receipt.kind !== 'DMI_RAW_SAVE_V2_FINALIZED'
+          || !Number.isSafeInteger(receipt.cacheId) || receipt.cacheId <= 0)) {
+        throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+      }
     }
     if (require.main === module) cliPhase = 'LEASE';
     await owner.assertWeatherAcquisitionWriter(lease);
+    if (inventoryBefore !== null && !archiveCapacitySkipped && rawInventorySha256() === inventoryBefore) {
+      finalizedInventory = { cacheId: receipt.cacheId, inventorySha256: inventoryBefore };
+    }
   } catch (error) {
     firstFailure = { value: error };
   } finally {
@@ -532,14 +596,24 @@ async function runOwnedOperation(operation) {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'uploaded=true\n');
     return { uploaded: true };
   }
-  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'saved=true\n');
+  if (archiveCapacitySkipped) {
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'archive_capacity_skipped=true\n');
+    return { archiveCapacitySkipped: true };
+  }
+  if (process.env.GITHUB_OUTPUT) {
+    let output = 'saved=true\n';
+    if (finalizedInventory) {
+      output += 'saved_inventory=' + JSON.stringify(finalizedInventory) + '\n';
+    }
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
+  }
   return { saved: true };
 }
 
 async function runOwnedSave() { return runOwnedOperation('save'); }
 async function runOwnedDistribution() { return runOwnedOperation('distribution'); }
 async function runOwnedCipherUpload() { return runOwnedOperation('cipher'); }
-module.exports = { runApiWorker, runOwnedSave, runOwnedDistribution };
+module.exports = { rawInventorySha256, runApiWorker, runOwnedSave, runOwnedDistribution };
 if (require.main === module) {
   cliPhase = 'INPUT';
   const selectedSave = process.env.INPUT_OPERATION === 'upload-encrypted-progress' ? runOwnedCipherUpload

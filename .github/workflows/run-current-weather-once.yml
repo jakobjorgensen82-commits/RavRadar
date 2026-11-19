@@ -969,6 +969,63 @@ jobs:
           stage verify-binding-installed
           echo 'WEATHER_STATE_EPOCH_ARCHIVE_AND_DATABASE_READBACK_COMPLETE_NO_PUBLICATION'
 
+  retire-dmi-raw-archives:
+    name: Retire verified older DMI RAW archives
+    needs: current-main-target
+    if: >-
+      vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'enforce' &&
+      needs.current-main-target.outputs.ordinary_scheduled == 'true' &&
+      needs.current-main-target.outputs.completed_private_runtime != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Locate the immutable RAW proof from the waiting builder
+        id: raw-proof
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/find-raw-rotation-artifact.mjs --proof
+
+      - name: Download the verified RAW rotation handoff
+        if: steps.raw-proof.outputs.artifact_status == 'found'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.raw-proof.outputs.artifact_id }}
+          path: ${{ runner.temp }}/ravradar-raw-rotation-received
+          digest-mismatch: error
+
+      - name: Confirm and retire only the verified older RAW archives
+        id: raw-retirement
+        if: steps.raw-proof.outputs.artifact_status == 'found'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAW_ROTATION_ARTIFACT_ID: ${{ steps.raw-proof.outputs.artifact_id }}
+          RAW_ROTATION_ARTIFACT_DIGEST: ${{ steps.raw-proof.outputs.artifact_digest }}
+          RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-main-target.outputs.target_hour }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: enforce
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/retire-verified-raw-caches.mjs --write-decision
+
+      - name: Publish the RAW rotation decision
+        if: steps.raw-retirement.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: raw-rotation-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-raw-rotation-received/decision.json
+          if-no-files-found: error
+          retention-days: 1
+
   build-and-prepare:
     name: Build and prepare weather production through reusable workflow
     needs: [current-main-target, native-identity-prewrite, state-epoch-prewrite]
@@ -984,6 +1041,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/reusable-weather-build.yml
     with:
+      enforce_raw_cache_rotation: ${{ vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'enforce' && needs.current-main-target.outputs.ordinary_scheduled == 'true' && needs.current-main-target.outputs.completed_private_runtime != 'true' }}
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       completed_private_runtime: ${{ needs.current-main-target.outputs.completed_private_runtime == 'true' }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
@@ -1107,9 +1165,58 @@ jobs:
           fi
           node scripts/lib/verified-weather-deployment-terminal.mjs
 
+  close-dmi-raw-overlap:
+    name: Close the verified DMI RAW cache overlap
+    needs: [current-main-target, build-and-prepare, terminal-outcome]
+    if: >-
+      !cancelled() && needs.terminal-outcome.result == 'success' &&
+      vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'enforce' &&
+      needs.current-main-target.outputs.ordinary_scheduled == 'true' &&
+      needs.build-and-prepare.outputs.raw_saved_coverage_uploaded == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Locate the verified same-run DMI RAW coverage receipt
+        id: saved-coverage
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/find-raw-rotation-artifact.mjs --saved-coverage
+
+      - name: Download the verified DMI RAW coverage receipt
+        if: steps.saved-coverage.outputs.artifact_status == 'found'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.saved-coverage.outputs.artifact_id }}
+          path: ${{ runner.temp }}/ravradar-raw-rotation-received
+          digest-mismatch: error
+
+      - name: Retire the oldest DMI RAW copy after verified publication
+        if: steps.saved-coverage.outputs.artifact_status == 'found'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAW_ROTATION_ARTIFACT_ID: ${{ steps.saved-coverage.outputs.artifact_id }}
+          RAW_ROTATION_ARTIFACT_DIGEST: ${{ steps.saved-coverage.outputs.artifact_digest }}
+          RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-main-target.outputs.target_hour }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: enforce
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/retire-verified-raw-caches.mjs --close-saved-overlap
+
   handoff-admin-document-history:
     name: Hand off verified ordinary weather to admin document history
-    needs: [terminal-outcome, current-main-target]
+    needs: [terminal-outcome, current-main-target, close-dmi-raw-overlap]
     if: >-
       !cancelled() && needs.terminal-outcome.result == 'success' &&
       needs.current-main-target.result == 'success' &&

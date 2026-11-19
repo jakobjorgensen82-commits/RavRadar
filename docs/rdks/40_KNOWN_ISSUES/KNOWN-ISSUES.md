@@ -1,3 +1,7 @@
+## 19. november — adskil cachekvittering fra RavScores modelaftryk
+
+Et tidligere forslag ændrede checkpointudgiveren, som indgår i RavScores modelaftryk. Kildekontrollen stoppede på den afvigelse. Den lokale rettelse henter nu cachekvitteringen fra det validerede svar fra den uændrede udgiver. Den eksisterende modelidentitet er genverificeret. Den samlede kildekontrol og første kontrollerede rotation i drift udestår.
+
 ## 18. november — længere svar om identifikation af rav
 
 Et tysk spørgsmål i 4.0.601 gav HTTP 502. Leverandøren svarede HTTP 200, og funktionen kunne ikke finde et struktureret svar. Den afgrænsede variant virkede med valideret AI-oprindelse. Præcis leverandørindpakning eller afkortning er uafklaret. Den lokale rettelse afgrænser faktagrundlaget for hele den observerede spørgeform. Virkningen skal bekræftes i drift.

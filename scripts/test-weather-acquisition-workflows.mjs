@@ -30,6 +30,26 @@ function step(source, name) {
   return found[0];
 }
 
+test('normal DMI save uses its measured allowance and must actually finalize before fresh weather', () => {
+  const admission = step(actualNormalWorkflow, 'Measure room for the next DMI RAW cache');
+  const save = step(actualNormalWorkflow, 'Save progressed DMI GRIB download cache');
+  const finalization = step(actualNormalWorkflow, 'Require finalized RAW storage before using newly acquired DMI data');
+  const scoring = step(actualNormalWorkflow, 'Update central weather cache');
+  for (const block of [admission, save]) {
+    assert.match(block, /dmi-grib-v4-\$\{\{ runner\.os \}\}-\$\{\{ steps\.dmi-cache-generation\.outputs\.generation \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/);
+  }
+  assert.match(admission, /node scripts\/observe-github-raw-cache-stock\.mjs --admit-upload/);
+  assert.match(admission, /steps\.dmi-progress-write-authority\.outcome == 'success'/);
+  assert.match(save, /steps\.dmi-raw-upload-admission\.outputs\.raw_upload_budget_bytes != ''/);
+  assert.match(save, /archive_limit: \$\{\{ steps\.dmi-raw-upload-admission\.outputs\.raw_upload_budget_bytes \}\}/);
+  assert.match(save, /inputs\.enforce_raw_cache_rotation != true \|\| \(steps\.dmi-raw-upload-admission\.outcome == 'success'/);
+  assert.match(finalization, /\(steps\.dmi-bulk\.outcome == 'success' \|\| steps\.dmi-bulk\.outcome == 'failure'\) && steps\.dmi-raw-save\.outputs\.saved != 'true'/);
+  assert.match(finalization, /exit 1/);
+  assert.doesNotMatch(scoring.match(/^        if:.*$/m)?.[0] ?? '', /always\(|!cancelled\(/);
+  const order = [admission, save, finalization, scoring].map(block => actualNormalWorkflow.indexOf(block));
+  assert.deepEqual(order, [...order].sort((a, b) => a - b));
+});
+
 test('ordinary source validation runs on committed files before any runtime overlay', () => {
   const orderedSteps = [
     'Decide whether weather needs updating before private runtime download',
@@ -47,6 +67,16 @@ test('ordinary source validation runs on committed files before any runtime over
     assert.ok(position > previous, 'Workflow step runs out of order: ' + name);
     previous = position;
   }
+});
+
+test('ordinary checkpoint publishes a RAW receipt only for a completed upload inventory', () => {
+  const publish = step(actualNormalWorkflow, 'Publish atomic RavScore checkpoint to protected admin storage');
+  const proof = step(actualNormalWorkflow, 'Prove that this run saved the required DMI originals');
+  assert.match(publish, /RAVRADAR_RAW_PUBLICATION_RECEIPT: .*steps\.dmi-raw-save\.outputs\.saved_inventory != ''/);
+  assert.match(publish, /if \[ "\$RAVRADAR_RAW_PUBLICATION_RECEIPT" = true \]; then\s+node scripts\/publish-checkpoint-with-raw-receipt\.mjs/);
+  assert.match(publish, /else\s+node scripts\/protected-ravscore-continuation-checkpoint\.mjs\s+\\\s+--publish/);
+  assert.match(proof, /RAW_PUBLISHED_S_VERSION: \$\{\{ steps\.checkpoint-publish\.outputs\.raw_s_central_version \}\}/);
+  assert.match(proof, /RAW_PUBLISHED_S_GENERATION_SHA256: \$\{\{ steps\.checkpoint-publish\.outputs\.raw_s_generation_sha256 \}\}/);
 });
 
 function epochCheckpointPreflightGuard(source) {

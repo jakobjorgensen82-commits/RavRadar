@@ -6,6 +6,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 
+export const WEATHER_STATE_EPOCH_ORIGINAL_DATASET = 'rr-20261013181135-210';
 export const WEATHER_STATE_EPOCH_JOB_MINUTES = 360;
 export const WEATHER_STATE_EPOCH_RESERVE_MINUTES = 180;
 export const WEATHER_STATE_EPOCH_PHASE_MINUTES = Object.freeze({ dmi: 320, copernicus: 250, 'open-meteo': 195, weather: 180 });

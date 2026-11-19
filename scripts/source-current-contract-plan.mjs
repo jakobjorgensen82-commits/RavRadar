@@ -46,6 +46,8 @@ const LOCAL_RESTORE_INVENTORY_DISPATCH=[
 
 
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
+const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs scripts/test-committed-raw-current-capture-union.mjs';
+
 export const CURRENT_CONTRACT_COMMANDS=freeze({
   core:[
     'node scripts/validate-release-version.mjs',
@@ -96,6 +98,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-release-contract-metadata.mjs',
   ],
   ownedCacheNative:[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND],
+  rawCacheRotation:[RAW_CACHE_ROTATION_SOURCE_COMMAND],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
     'node scripts/test-source-impact-workflow.mjs',
@@ -281,7 +284,38 @@ const PATH_AREAS=freeze({
     'scripts/test-private-production-runtime-workflow.mjs',
     'scripts/test-release-contract-metadata.mjs',
   ],
+  rawCacheRotation:[
+    '.github/workflows/build-ravscore-historical-wave-pilot.yml',
+    'scripts/check-weather-cadence-watchdog.mjs',
+    'scripts/find-raw-rotation-artifact.mjs',
+    'scripts/lib/committed-raw-current-capture-union.mjs',
+    'scripts/lib/github-actions-cache-stock.mjs',
+    'scripts/lib/raw-rotation-handoff.mjs',
+    'scripts/lib/terminal-dmi-cache.mjs',
+    'scripts/lib/verify-saved-raw-capture-coverage.mjs',
+    'scripts/lib/verified-raw-cache-rotation.mjs',
+    'scripts/observe-github-raw-cache-stock.mjs',
+    'scripts/prove-post-publish-saved-raw.mjs',
+    'scripts/prove-pre-dmi-restored-raw-successor.mjs',
+    'scripts/prove-restored-raw-successor.py',
+    'scripts/prove-saved-raw-cache.py',
+    'scripts/publish-checkpoint-with-raw-receipt.mjs',
+    'scripts/read-published-raw-rotation-runtime.mjs',
+    'scripts/reconcile-private-runtime-checkpoint.mjs',
+    'scripts/retire-verified-raw-caches.mjs',
+    'scripts/test-committed-raw-current-capture-union.mjs',
+    'scripts/test-find-raw-rotation-artifact.mjs',
+    'scripts/test-github-actions-cache-stock.mjs',
+    'scripts/test-prove-restored-raw-successor.py',
+    'scripts/test-terminal-dmi-cache.mjs',
+    'scripts/test-weather-acquisition-workflows.mjs',
+    'scripts/weather-state-epoch-budget.mjs',
+    'scripts/weather-state-epoch.mjs',
+  ],
   ownedCacheNative:[
+    '.github/actions/save-owned-dmi-grib/action.yml',
+    '.github/actions/save-owned-dmi-grib/index.cjs',
+    'scripts/run-owned-dmi-grib-save.py',
     'scripts/test-owned-dmi-grib-save-native.py',
     'scripts/test-owned-dmi-cache-dependency.mjs',
   ],
@@ -454,6 +488,12 @@ export function currentWorkflowTargets(relative){
 const ACCOUNT_SCHEMA_SOURCE_TEST='node --test scripts/test-account-erasure-outbox.mjs';
 const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
 const SOURCE_EXECUTION_TARGETS=freeze({
+  // The actual Node24 dependency and physical archive proofs run once in the
+  // dedicated native phases. The Node22 source driver checks the normal callers.
+  '.github/actions/save-owned-dmi-grib/action.yml':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
+  '.github/actions/save-owned-dmi-grib/index.cjs':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
+  'scripts/run-owned-dmi-grib-save.py':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
+  'scripts/test-owned-dmi-grib-save-native.py':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
   'scripts/check-weather-cadence-watchdog.mjs':['node --test scripts/test-weather-cadence-watchdog.mjs'],
   'scripts/read-weather-cadence-github.mjs':['node --test scripts/test-weather-cadence-watchdog.mjs'],
   '.github/workflows/update-and-deploy.yml':[
@@ -1071,6 +1111,15 @@ export function planSourceCurrentContractsFromGit(input){
       if(pathAreas.get(file)?.includes('ownedCacheNative')
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_OWNED_CACHE_NATIVE_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(file==='.github/actions/save-owned-dmi-grib/action.yml'){
+        const before=readCommittedText(input.baselineCommit,file);
+        const after=readCommittedText(input.candidateCommit,file);
+        const archiveCapacityOutput='  archive_capacity_skipped:\n'
+          +'    description: True only after the local RAW archive exceeded its configured budget before any cache write.\n';
+        if(before.includes('  archive_capacity_skipped:\n')||!before.includes('  uploaded:\n')
+          ||after!==before.replace('  uploaded:\n',archiveCapacityOutput+'  uploaded:\n'))
+          return refuse('CURRENT_OWNED_CACHE_ACTION_METADATA_REQUIRES_FULL');
+      }
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');

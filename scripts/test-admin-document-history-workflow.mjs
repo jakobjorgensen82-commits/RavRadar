@@ -411,7 +411,9 @@ function executeBotHandoff({env:overrides={}, source:sourceOverrides={}, jobs:ch
 test('one verified ordinary bot attempt dispatches once and binds the one GitHub-acknowledged recipient',()=>{
   const send = caller.match(/\n  handoff-admin-document-history:\n[\s\S]*?(?=\n  [A-Za-z0-9_-]+:\n|$)/)?.[0];
   assert.ok(send, 'The exact admin history handoff job must exist');
-  assert.match(send,/needs: \[terminal-outcome, current-main-target\][\s\S]+needs\.terminal-outcome\.result == 'success'/);
+  const dependencies = send.match(/^\s*needs: \[([^\]]+)\]$/m)?.[1].split(',').map(name => name.trim());
+  assert.ok(dependencies?.includes('terminal-outcome') && dependencies.includes('current-main-target'));
+  assert.match(send,/!cancelled\(\) && needs\.terminal-outcome\.result == 'success'/);
   assert.match(send,/needs\.current-main-target\.result == 'success'/);
   assert.match(send,/needs\.current-main-target\.outputs\.completed_private_runtime == 'false'/);
   assert.match(send,/github\.run_attempt == '1'[\s\S]+github\.actor == 'github-actions\[bot\]'/);

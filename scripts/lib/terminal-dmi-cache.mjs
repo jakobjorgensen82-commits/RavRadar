@@ -27,7 +27,7 @@ export function parseLegacyDmiCache(cache) {
   return { cache, runId, runAttempt };
 }
 
-function successfulStep(job, name) {
+export function successfulStep(job, name) {
   const matches = (job.steps || []).filter(step => step.name === name);
   if (matches.length !== 1 || matches[0].status !== 'completed'
       || matches[0].conclusion !== 'success') return null;

@@ -10,9 +10,16 @@ inputs:
   key:
     description: Exact existing raw or encrypted-progress run/attempt cache key.
     required: true
+  archive_limit:
+    description: Optional maximum compressed RAW bytes from this run's cache inventory.
+    required: false
 outputs:
   saved:
     description: True only after v2 finalization, physical cohort closure and own claim release.
+  saved_inventory:
+    description: Finalized cache ID and unchanged local archive inventory digest when measured.
+  archive_capacity_skipped:
+    description: True only after the local RAW archive exceeded its configured budget before any cache write.
   uploaded:
     description: True only after fixed cipher byte checks, v2 finalization, physical cohort closure and own claim release.
 runs:

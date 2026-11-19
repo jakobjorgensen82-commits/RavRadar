@@ -30,6 +30,10 @@ on:
       production_target_hour:
         required: true
         type: string
+      enforce_raw_cache_rotation:
+        required: false
+        type: boolean
+        default: false
       force:
         required: true
         type: boolean
@@ -123,6 +127,12 @@ on:
       TRIP_GATEWAY_SHARED_SECRET:
         required: true
     outputs:
+      raw_bootstrap_coverage_sha256:
+        description: "SHA-256 of the exact UTF-8 proof.json bytes"
+        value: ${{ jobs.build-and-prepare.outputs.raw_bootstrap_coverage_sha256 }}
+      raw_saved_coverage_uploaded:
+        description: "A same-run DMI RAW coverage receipt was uploaded"
+        value: ${{ jobs.build-and-prepare.outputs.raw_saved_coverage_uploaded }}
       should_deploy:
         description: "Forwarded build-and-prepare should_deploy contract"
         value: ${{ jobs.build-and-prepare.outputs.should_deploy }}
@@ -266,6 +276,7 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
       RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD: ${{ github.sha }}
     outputs:
+      raw_bootstrap_coverage_sha256: ${{ steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage_sha256 }}
       should_deploy: ${{ steps.deployment-decision.outputs.should_deploy }}
       preflight_should_run: ${{ steps.preflight.outputs.should_run }}
       operational_action: ${{ steps.operational-action.outputs.action }}
@@ -285,6 +296,7 @@ jobs:
       pages_privacy_outcome: ${{ steps.pages-privacy.outcome }}
       pages_artifact_seal_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-artifact-seal.outcome || steps.pages-artifact-seal.outcome }}
       handoff_upload_outcome: ${{ steps.handoff-upload.outcome }}
+      raw_saved_coverage_uploaded: ${{ steps.raw-saved-coverage-upload.outcome == 'success' }}
       checkpoint_disposition: ${{ steps.checkpoint-disposition.outputs.disposition }}
       checkpoint_disposition_sha256: ${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}
       checkpoint_dataset_id: ${{ steps.checkpoint-disposition.outputs.dataset_id }}
@@ -297,6 +309,12 @@ jobs:
       artifact_built: ${{ steps.pages-build.outputs.built }}
 
     steps:
+      - name: Record build time for the optional DMI RAW proof
+        if: (inputs.enforce_raw_cache_rotation == true || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe') && github.actor == 'github-actions[bot]'
+        continue-on-error: true
+        shell: bash
+        run: printf 'RAW_BUILD_STARTED_AT=%s\n' "$(date +%s)" >> "$GITHUB_ENV"
+
       - name: Record the actual epoch build start before checkout
         if: inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true
         shell: bash
@@ -579,8 +597,6 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements-copernicus.txt
 
       - name: Install private weather-component verification dependencies
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
@@ -1515,6 +1531,7 @@ jobs:
           NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ inputs.enforce_raw_cache_rotation && 'enforce' || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
 
       - name: Classify one-time DMI PART continuity donor
         id: dmi-part-continuity-donor
@@ -2414,6 +2431,79 @@ jobs:
           RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
 
+      - name: Observe exact restored RAW coverage for the locked successor before DMI
+        id: raw-bootstrap-pre-dmi-proof
+        if: >-
+          (vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe' || inputs.enforce_raw_cache_rotation == true) &&
+          github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+          github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+          github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' && github.run_attempt == 1 &&
+          steps.preflight.outputs.should_run == 'true' &&
+          inputs.completed_private_runtime != true && inputs.completed_stage_source == '' &&
+          inputs.current_family_cold_start != true && inputs.checkpoint_only != true &&
+          inputs.quick_confirmation != true && inputs.quick_progress_source == '' &&
+          inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&
+          inputs.native_sampling_identity_original_recovery != true && inputs.produce_weather_handoff != true &&
+          steps.operational-action.outputs.action == 'integrated' && steps.operational-model.outputs.binding_current == 'true' &&
+          steps.private-runtime-install.outcome == 'success' &&
+          steps.paired-checkpoint-reconcile.outcome == 'success' && steps.paired-checkpoint-reconcile.outputs.paired == 'true' &&
+          steps.paired-checkpoint-reconcile.outputs.raw_baseline_proved == 'true' &&
+          steps.dmi-part-continuity-donor.outputs.continuity_schema == '2' &&
+          steps.dmi-grib-cache-restore.outcome == 'success' &&
+          steps.dmi-raw-restore-identity.outcome == 'success' && steps.dmi-raw-restore-identity.outputs.observed == 'true' &&
+          steps.current-history-demand.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ inputs.enforce_raw_cache_rotation && 'enforce' || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
+          RAW_NORMAL_PRE_DMI_STEPS_VERIFIED: 'true'
+          RAW_MATCHED_CACHE_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
+        run: node scripts/prove-pre-dmi-restored-raw-successor.mjs
+
+      - name: Publish the bounded RAW rotation handoff before DMI
+        id: raw-bootstrap-handoff-upload
+        if: steps.raw-bootstrap-pre-dmi-proof.outcome == 'success' && steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage_sha256 != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: raw-rotation-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-raw-rotation/handoff.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Require the proven RAW handoff before cache rotation
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          PROOF_OUTCOME: ${{ steps.raw-bootstrap-pre-dmi-proof.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.raw-bootstrap-handoff-upload.outcome }}
+        run: |
+          test "$PROOF_OUTCOME" = success && test "$UPLOAD_OUTCOME" = success
+
+      - name: Wait for the RAW rotation decision before DMI
+        id: raw-rotation-decision-artifact
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'
+        timeout-minutes: 4
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/find-raw-rotation-artifact.mjs --result
+
+      - name: Download the immutable RAW rotation decision
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true' && steps.raw-rotation-decision-artifact.outputs.artifact_status == 'found'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.raw-rotation-decision-artifact.outputs.artifact_id }}
+          path: ${{ runner.temp }}/ravradar-raw-rotation-received
+          digest-mismatch: error
+
+      - name: Require successful RAW rotation for this exact target
+        if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'
+        env:
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: enforce
+          RAW_BOOTSTRAP_PRIVATE_PROOF_SHA256: ${{ steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage_sha256 }}
+        run: node scripts/retire-verified-raw-caches.mjs --require-decision
+
       - name: Bind causal OLD current reconstruction to the materialized saved inputs
         id: legacy-current-requests
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success')
@@ -2590,12 +2680,37 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      - name: Measure room for the next DMI RAW cache
+        id: dmi-raw-upload-admission
+        if: ${{ !cancelled() && inputs.enforce_raw_cache_rotation == true && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true' }}
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_EXPECTED_RAW_SAVE_KEY: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+        run: node scripts/observe-github-raw-cache-stock.mjs --admit-upload
+
       - name: Save progressed DMI GRIB download cache
-        if: inputs.completed_private_runtime != true && (always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true')
+        id: dmi-raw-save
+        if: >-
+          !cancelled() && inputs.completed_private_runtime != true &&
+          steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' &&
+          steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' &&
+          steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true' &&
+          (inputs.enforce_raw_cache_rotation != true || (steps.dmi-raw-upload-admission.outcome == 'success' && steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes != ''))
         uses: ./.github/actions/save-owned-dmi-grib
+        env:
+          RAVRADAR_MEASURE_RAW_SAVE_INVENTORY: ${{ vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe' && 'true' || 'false' }}
         with:
+          archive_limit: ${{ steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes }}
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Require finalized RAW storage before using newly acquired DMI data
+        if: ${{ !cancelled() && inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure') && steps.dmi-raw-save.outputs.saved != 'true' }}
+        shell: bash
+        run: |
+          echo '::error::New DMI inputs cannot become a protected baseline without a finalized RAW cache.'
+          exit 1
 
       - name: Classify DMI readiness before current supplement
         id: dmi-terminal-gate
@@ -3691,11 +3806,16 @@ jobs:
       - name: Publish atomic RavScore checkpoint to protected admin storage
         id: checkpoint-publish
         if: steps.private-runtime-publish.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
-        run: >-
-          node scripts/protected-ravscore-continuation-checkpoint.mjs
-          --publish
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        shell: bash
+        run: |
+          if [ "$RAVRADAR_RAW_PUBLICATION_RECEIPT" = true ]; then
+            node scripts/publish-checkpoint-with-raw-receipt.mjs "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          else
+            node scripts/protected-ravscore-continuation-checkpoint.mjs \
+              --publish --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          fi
         env:
+          RAVRADAR_RAW_PUBLICATION_RECEIPT: ${{ steps.dmi-raw-save.outputs.saved_inventory != '' && 'true' || 'false' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -4781,3 +4901,47 @@ jobs:
           path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
           retention-days: 14
           if-no-files-found: error
+
+      - name: Prove that this run saved the required DMI originals
+        id: raw-post-publish-proof
+        if: >-
+          success() && steps.handoff-upload.outcome == 'success' &&
+          (inputs.enforce_raw_cache_rotation == true || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe') &&
+          steps.private-runtime-publish.outcome == 'success' && steps.checkpoint-publish.outcome == 'success' &&
+          steps.dmi-raw-save.outputs.saved_inventory != '' && steps.checkpoint-publish.outputs.raw_s_central_version != '' &&
+          steps.dmi-part-continuity-donor.outputs.continuity_schema == '2' &&
+          steps.operational-action.outputs.action == 'integrated' && inputs.completed_private_runtime != true &&
+          github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+          github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' &&
+          github.run_attempt == '1'
+        continue-on-error: true
+        timeout-minutes: 4
+        env:
+          RAW_SAVED_INVENTORY: ${{ steps.dmi-raw-save.outputs.saved_inventory }}
+          RAW_PUBLISHED_S_VERSION: ${{ steps.checkpoint-publish.outputs.raw_s_central_version }}
+          RAW_PUBLISHED_S_GENERATION_SHA256: ${{ steps.checkpoint-publish.outputs.raw_s_generation_sha256 }}
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          RAW_POWERED_BY_ORDINARY_PUBLICATION: 'true'
+          RAW_PRIOR_CONTINUITY_SCHEMA: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "${RAW_BUILD_STARTED_AT:-}" =~ ^[0-9]{10}$ ]] ||
+            (( $(date +%s) - RAW_BUILD_STARTED_AT > 220 * 60 )); then
+            echo 'DMI_RAW_SAVED_COVERAGE_SKIPPED_BUILD_BUDGET'
+            exit 0
+          fi
+          node scripts/prove-post-publish-saved-raw.mjs
+
+      - name: Publish same-run DMI RAW coverage receipt
+        id: raw-saved-coverage-upload
+        if: steps.raw-post-publish-proof.outcome == 'success' && steps.raw-post-publish-proof.outputs.raw_post_publish_proof == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: raw-saved-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-raw-after-publish/coverage.json
+          if-no-files-found: error
+          retention-days: 1

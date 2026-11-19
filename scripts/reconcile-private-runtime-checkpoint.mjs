@@ -490,7 +490,7 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpoint(options = {}, requ
 async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ repositoryRoot = ROOT, privateRoot, bundlePath,
   checkpointPath = path.join(repositoryRoot, '.cache/ravscore-continuation-checkpoint/checkpoint.json'),
   expected, now = new Date().toISOString(), operationalAction = process.env.OPERATIONAL_ACTION,
-  request, checkpointRequest, checkpointVersionRequest, rpcRequest } = {}, requiredFamily = null) {
+  request, checkpointRequest, checkpointVersionRequest, rpcRequest, recordRawBaseline = null } = {}, requiredFamily = null) {
   // Both public entry points have their distinct fixed request guard above.
   request ??= createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' }).documentRequest;
   checkpointRequest ??= createProtectedRavScoreCheckpointRequester();
@@ -561,6 +561,7 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
     const predecessor = await restoreReconcilePredecessor({ family, checkpointPath: restoredPath,
       targetReference: current.productionReferenceAt, request: Srequest });
     let saved = predecessor.restored.restored ? await json(restoredPath) : null;
+    let installedCheckpointVersion = recordRawBaseline ? Number(predecessor.rows[0]?.version) : NaN;
     let publishError = null;
     markReconcilePhase('S_RELATION_GUARD');
     if (!same(derived, saved)) {
@@ -601,7 +602,11 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
       const freshPath = path.join(work, 'after/.cache/ravscore-continuation-checkpoint/checkpoint.json');
       try {
         const readback = await restoreProtectedRavScoreContinuationCheckpoint({ checkpointPath: freshPath,
-          targetReference: current.productionReferenceAt, request: Srequest });
+          targetReference: current.productionReferenceAt, request: recordRawBaseline ? async (...args) => {
+            const rows = await Srequest(...args);
+            installedCheckpointVersion = Array.isArray(rows) && rows.length === 1 ? Number(rows[0].version) : NaN;
+            return rows;
+          } : Srequest });
         need(readback.restored, 'S_READBACK_MISSING'); saved = await json(freshPath);
         need(same(derived, saved), 'S_READBACK_DIFFER');
       } catch (error) { throw publishError ?? error; }
@@ -617,6 +622,21 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
     await fs.mkdir(path.dirname(checkpointPath), { recursive: true });
     await assert.rejects(fs.lstat(checkpointPath), { code: 'ENOENT' });
     await fs.rename(localSource, checkpointPath);
+    if (recordRawBaseline) {
+      try {
+        const boundary = {
+          datasetId: current.datasetId, productionReferenceAt: current.productionReferenceAt,
+          bundleContentSha256: current.bundleContentSha256, checkpointGenerationSha256: saved.generationSha256,
+          conditionsSha256: entry.sha256,
+        };
+        await recordRawBaseline({
+          bVersion: before.version, sVersion: installedCheckpointVersion, bSourceHead: current.sourceHead,
+          boundarySha256: sha(Buffer.from(JSON.stringify(boundary, Object.keys(boundary).sort()))),
+        });
+      } catch {
+        console.warn('RAW_BOOTSTRAP_PAIRED_BASELINE_NOT_RECORDED');
+      }
+    }
     return { paired: true, outcome, ...counts, requestCountsAreLogicalCalls: true,
       nativeAdmissionIssued: false, payloadLogged: false };
   } catch (error) { rememberReconcileFailure(error); first = error; throw error; }
@@ -667,8 +687,21 @@ async function main() {
       : after599 ? (savedWeather ? reconcileSavedAssistantAfter599PrivateRuntimeCheckpoint : reconcileAssistantAfter599PrivateRuntimeCheckpoint)
       : after598 ? (savedWeather ? reconcileSavedAssistantAfter598PrivateRuntimeCheckpoint : reconcileAssistantAfter598PrivateRuntimeCheckpoint)
       : savedWeather ? reconcileSavedPrivateRuntimeCheckpoint : reconcilePrivateRuntimeCheckpoint;
+    const recordRawBaseline = command === 'reconcile' && ['observe', 'enforce'].includes(process.env.RAVRADAR_RAW_BOOTSTRAP_PROOF)
+      ? async evidence => {
+        need(['bVersion', 'sVersion'].every(key => Number.isSafeInteger(evidence[key]) && evidence[key] > 0)
+          && /^[a-f0-9]{40}$/.test(evidence.bSourceHead) && /^[a-f0-9]{64}$/.test(evidence.boundarySha256),
+        'RAW_BOOTSTRAP_BASELINE');
+        const temporary = process.env.RUNNER_TEMP;
+        need(path.isAbsolute(temporary ?? '') && await fs.realpath(temporary) === temporary, 'RAW_BOOTSTRAP_BASELINE');
+        const metadata = JSON.stringify({schemaVersion: 1, kind: 'DMI_PAIRED_RAW_BASELINE_V1', ...evidence});
+        await fs.writeFile(path.join(temporary, 'ravradar-raw-baseline-evidence.json'),
+          metadata, {mode: 0o600, flag: 'wx'});
+        await fs.appendFile(process.env.GITHUB_OUTPUT, 'raw_baseline_proved=true\n');
+      }
+      : null;
     const result = await reconcile({ privateRoot: process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
-      bundlePath: process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE });
+      bundlePath: process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE, recordRawBaseline });
     markReconcilePhase('CLI_OUTPUT');
     await fs.appendFile(process.env.GITHUB_OUTPUT, `paired=${result.paired}\n`);
     console.log(JSON.stringify({ kind: 'PRIVATE_B_S_RECONCILE', ...result }));

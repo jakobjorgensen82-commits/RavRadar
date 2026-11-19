@@ -12,6 +12,14 @@ Hvis en planlagt kørsel skal genudgive en gemt prognose, skal den først verifi
 
 ## 18. november — ravfund og korte opfølgninger
 
+## 19. november — begrænset RAW-rotation før ny vejrhentning
+
+Den lokale kandidat genbruger den normale låste time samt det autentificerede vejrgrundlag. Den kontrollerer de nødvendige originaler i den nyeste faktisk gendannede kopi, mens det afgrænsede skrivejob verificerer de to nyeste uploads, aktuelle læsere og hver sletning særskilt. Planen kan først udføres, når den almindelige builder venter og samme vejrgrundlag stadig er aktuelt.
+
+Målet er to færdige RAW-kopier og højst én nyere kopi under overgangen. Ejerens estimerede eksempel er 5,91 GB for de to færdige og knap 8 GB RAW under udskiftningen. GitHub-jobbet måler hele cachebestanden før upload. Samme kørsel afslutter rotationen efter verificeret publicering på grundlag af identiteten på den nye upload, den fysiske kontrol af de aktuelle beskyttede originaler og friske kontroller af øvrige læsere. Ved uklarhed eller aktiv beskyttelse bevares den ældste. Når to kopier allerede er bekræftet, kan andre cachelæsere fortsætte sideløbende. Den første aktivering ved tre eksisterende kopier skal verificere de gendannede originaler og afslutte den gamle rotation før en ny upload. Kildekandidaten afventer GitHub. Se håndbog 89.356.
+
+Cachekontrollen får versionsnummer og fingeraftryk fra den eksisterende checkpointudgivers validerede svar. Bekræftet checkpointpublicering bevarer sit udfald, hvis cachekvitteringen mangler. Oprydningen kræver begge dele.
+
 Den eksterne AI er målt gennem den normale offentlige brugerflade på tre sprog i en afgrænset prøve. Den særskilte appopdatering på 602 er en lokal kildekandidat, der bruger den samme validerede faktavej for det kendte skånsomme identifikationsspørgsmål og husker fundet ved en snæver opfølgning. Den næste leveringsprøve omfatter den tidligere fejlede tyske formulering.
 
 ## 18. november — original backup gendannet og skrivefri lagerkontrol klargjort
