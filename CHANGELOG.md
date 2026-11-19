@@ -1,6 +1,17 @@
+## 4.0.602 — vejrets kildekontrol før driftsklargøring
+
+- Den eksisterende kildekontrol køres på den rene Git-kilde, før de aktive driftsfiler lægges ind. Kørsel #352 stoppede, da kontrollen fandt driftsændringer i sin kildekopi.
+- Den hurtige forprøve kan fortsat springe en overflødig vejropdatering over. Den færdige prognose kontrolleres efter beregning som hidtil.
+
+## 4.0.602 — fysisk måling til Supabase Free
+
+- Den skrivefri backupkontrol viser databaseplads og administrationshistorikkens fysiske størrelse uden at læse brugerdata.
+- Kildekontrollen verificerer squash-sammenføring mod den lukkede pull request, det testede udgangspunkt og det præcise træ.
+- Kildekvalifikation og måling i produktionen afventer.
+
 ## 4.0.602 — frisk vejr efter afsluttet genudgivelse
 
-- En planlagt kørsel, der genudgiver en gemt prognose, kan bestille én selvstændig frisk vejrhentning efter sin afslutning. Kildekvalifikation og faktiske kørsler afventer.
+- En planlagt kørsel, der genudgiver en gemt prognose, kan bestille én selvstændig frisk vejrhentning efter sin afslutning. Rettelsen er i drift. Første faktiske genudgivelse med frisk vejrhentning afventer.
 
 ## 4.0.602 — spørgsmål om ravfund
 
