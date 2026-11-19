@@ -215,8 +215,9 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     // identity is the committed tree; its runtime still needs all normal gates.
     assertCommittedHead();assert.equal(text(['rev-parse','--is-shallow-repository']),'false');
     const parents=text(['rev-list','--parents','-n','1',record.headSha]).split(' ');
-    assert.equal(parents.length,3);assert.equal(parents[0],record.headSha);assert(parents.every(oid));
-    assert.equal(parents.slice(1).filter(value=>value===record.producerHeadSha).length,1);
+    const oneParent=parents.length===2&&record.contractId===CURRENT_CHANGE_SOURCE_CONTRACT;
+    assert(oneParent||parents.length===3);assert.equal(parents[0],record.headSha);assert(parents.every(oid));
+    if(!oneParent)assert.equal(parents.slice(1).filter(value=>value===record.producerHeadSha).length,1);
     const tree=text(['rev-parse',record.headSha+'^{tree}']);assert(oid(tree));
     assert.equal(text(['rev-parse',record.producerHeadSha+'^{tree}']),tree);
     assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);
@@ -258,11 +259,13 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const isChange=record.contractId===CURRENT_CHANGE_SOURCE_CONTRACT;
     let structural,domainPlan,currentPlan,cumulativePlan,changeBase,controlReview;
     if(isChange){
-      // A normal merge's first parent is the live main base tested by the PR.
-      // No receipt-selected old ancestor may hide current changes.
+      // The first parent must be the live base used by the proof. For a squash,
+      // runIdentity above independently binds GitHub's closed PR to this commit
+      // and its tested head, and the complete committed trees still match.
       changeBase=receipt.changeBase;
       assert(changeBase&&oid(changeBase.commit)&&oid(changeBase.gitTree)&&oid(changeBase.pullBaseCommit));
-      assert.equal(parents[2],record.producerHeadSha);assert.equal(parents[1],changeBase.pullBaseCommit);
+      if(!oneParent)assert.equal(parents[2],record.producerHeadSha);
+      assert.equal(parents[1],changeBase.pullBaseCommit);
       assert.equal(text(['merge-base','--all',parents[1],record.producerHeadSha]),changeBase.commit);
       assert.equal(text(['rev-parse',changeBase.commit+'^{tree}']),changeBase.gitTree);
       git(['merge-base','--is-ancestor',full.mergeCommit,changeBase.commit]);
@@ -277,7 +280,18 @@ export async function decideTargetedSourceGate(record,env,dependencies){
         assert.equal(sourceTreeContentSha256(changeBase.commit,{git}),frontier.sourceTreeSha256);
         assert(frontier.sourceProofTime<=phase.proofTime);
         const priorParents=text(['rev-list','--parents','-n','1',changeBase.commit]).split(' ');
-        assert.equal(priorParents.length,3);assert.equal(priorParents[2],prior.producerHeadSha);
+        assert.equal(priorParents[0],changeBase.commit);assert(priorParents.every(oid));
+        if(priorParents.length===2){
+          assert.equal(prior.contractId,CURRENT_CHANGE_SOURCE_CONTRACT);
+          const priorPull=await json(repo+'/pulls/'+prior.pullRequestNumber);
+          assert.equal(priorPull.number,prior.pullRequestNumber);assert.equal(priorPull.state,'closed');
+          time(priorPull.merged_at);
+          assert.equal(priorPull.merge_commit_sha,changeBase.commit);assert.equal(priorPull.head?.sha,prior.producerHeadSha);
+          assert.equal(priorPull.head?.repo?.full_name,record.repository);assert.equal(priorPull.base?.ref,'main');
+          assert.equal(priorPull.base?.repo?.full_name,record.repository);
+        }else{
+          assert.equal(priorParents.length,3);assert.equal(priorParents[2],prior.producerHeadSha);
+        }
         assert.equal(text(['rev-parse',prior.producerHeadSha+'^{tree}']),frontier.gitTree);
         // The producer verified the complete immediate base before commands.
         // This delegated summary never recursively reopens its ancestors.

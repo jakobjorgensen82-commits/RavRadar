@@ -1886,6 +1886,19 @@ try{
   assert.equal(consumer.verifiedMainSourceFrontier(accepted).commit,main);
   assert.equal(consumer.verifiedMainSourceFrontier(clone(accepted)),null);
   assert.equal(consumer.verifiedMainSourceFrontier({required:false}),null);
+  const regularMerge=main;
+  try{
+    for(const [parent,required] of [[base,false],[head,true]]){
+      main=commit(candidateTree,[parent],'synthetic GitHub squash with an exact tree');
+      checkout(main);rebuildMaps();
+      const squashContext={...context,GITHUB_SHA:main};
+      const located=await discover(squashContext,content,{...freshAccess(),readGit});
+      assert.equal(located.requiresVerification,true);
+      assert.equal((await decide(located.locator,squashContext,{...freshAccess(),readGit})).required,required);
+      cases++;
+    }
+  }finally{main=regularMerge;checkout(main);rebuildMaps();}
+  scenarios.push('GitHub-linked V4 squash requires the same tested parent as well as an exact tree');
   firstDelivery={head,main,receipt:clone(selectedReceipt),zip:selectedZip,metadata:clone(selectedMetadata),
     pull:currentPull(),run:run(true),job:jobs(true),runId:selectedRun,jobId:selectedJob,pr:selectedPr,artifactId:selectedArtifactId};
 
@@ -2107,7 +2120,7 @@ try{
     'The ordinary caller read the latest immutable receipt as an origin locator without a ROOT marker');
   assert.equal(rows.length,onlyPages.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
   selectedReceipt=next.receipt;
-  main=commit(pagesTree,[firstDelivery.main,head],'synthetic subsequent same-tree main merge');checkout(main);state.merged=true;
+  main=commit(pagesTree,[firstDelivery.main],'synthetic subsequent same-tree main squash');checkout(main);state.merged=true;
   // Later API base-tip movement cannot rewrite the tested immutable Git parent.
   state.closedBaseTip='f'.repeat(40);
   selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
@@ -2172,7 +2185,16 @@ try{
   const uiAccepted=await decide(uiFound.locator,uiContext,{...freshAccess(),readGit});
   assert.equal(uiAccepted.required,false,JSON.stringify(uiAccepted));assert.equal(uiAccepted.independentControlReview,'NOT_REQUIRED');
   assert.deepEqual(uiAccepted.testedAreas,['core','publicUI']);
-  cases++;scenarios.push('two successive qualified V4 delta frontiers; ordinary UI has no ROOT marker and no ancestor artifact recursion');
+  const priorPullRoute=repo+'/pulls/'+pageDelivery.pr;
+  try{
+    for(const [field,value] of [['merge_commit_sha',base],['head',{...pageDelivery.pull.head,sha:base}]]){
+      priorMaps.set(priorPullRoute,{...pageDelivery.pull,[field]:value});
+      const result=await decide(uiFound.locator,uiContext,{...freshAccess(),readGit});
+      assert.equal(result.required,true);
+      cases++;
+    }
+  }finally{priorMaps.set(priorPullRoute,pageDelivery.pull);}
+  cases++;scenarios.push('two successive qualified V4 delta frontiers with an authenticated squash predecessor and rejection of false prior PR identity');
 
   // A later candidate may extend its catalogue while qualifying an older main.
   // Its cached ESM planner must not rewrite the older receipt's actual scope.

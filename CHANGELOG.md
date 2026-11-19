@@ -1,6 +1,7 @@
 ## 4.0.602 — fysisk måling til Supabase Free
 
 - Den skrivefri backupkontrol viser databaseplads og administrationshistorikkens fysiske størrelse uden at læse brugerdata.
+- Kildekontrollen verificerer squash-sammenføring mod den lukkede pull request, det testede udgangspunkt og det præcise træ.
 - Kildekvalifikation og måling i produktionen afventer.
 
 ## 4.0.602 — frisk vejr efter afsluttet genudgivelse

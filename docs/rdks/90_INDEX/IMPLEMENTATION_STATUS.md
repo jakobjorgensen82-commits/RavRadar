@@ -1,6 +1,7 @@
 ## 19. november — fysisk plads i Supabase
 
 - [x] Afgrænsede prøver af den skrivefri resultatmåling og afvisning af ufuldstændige tal består.
+- [ ] Kvalificér genbrug af kildebevis efter en squash-sammenføring med det testede udgangspunkt og det samme træ.
 - [ ] Kvalificér og mål de aktuelle fysiske tal efter automatisk historikoprydning.
 - [ ] Verificér gendannelse af den seneste automatiske backup og sikker overgang til Free.
 
