@@ -84,7 +84,7 @@ const previousAssistantSuffix = `${previousPanelSuffix}&assistant=forecast-follo
 const previousDomainSuffix = `${previousAssistantSuffix}&share=custom-domain-20261102`;
 const previousTransportSuffix = `${previousDomainSuffix}&transport=public-json-bridge-20261103`;
 const previousMapSuffix = `${previousTransportSuffix}&map=plain-map-v3-20261104`;
-const suffix = `${previousMapSuffix}&assistant-topic=wind-followup-20261110&assistant-find=20261118`;
+const suffix = `${previousMapSuffix}&assistant-topic=wind-followup-20261110&assistant-find=20261119`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');

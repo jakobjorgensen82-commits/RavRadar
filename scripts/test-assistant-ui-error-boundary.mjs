@@ -30,7 +30,11 @@ const assistantStart = app.indexOf('let assistantTopicState = null;');
 const assistantEnd = app.indexOf('const quickBox=', assistantStart);
 assert.ok(mapFrameStart >= 0 && mapFrameEnd > mapFrameStart && detailStart >= 0
   && detailEnd > detailStart && assistantStart >= 0 && assistantEnd > assistantStart);
-const actualUi = app.slice(mapFrameStart, mapFrameEnd) + app.slice(detailStart, detailEnd)
+const modeStart = app.indexOf('function setMode(mode,');
+const modeEnd = app.indexOf('\n', modeStart);
+assert.ok(modeStart >= 0 && modeEnd > modeStart);
+const actualUi = app.slice(modeStart, modeEnd) + '\n'
+  + app.slice(mapFrameStart, mapFrameEnd) + app.slice(detailStart, detailEnd)
   + app.slice(assistantStart, assistantEnd);
 for (const definition of ['let assistantTurn = 0;', 'function resetAssistantTopic()',
   'function assistantTopicFrame()', 'function sameAssistantTopicFrame(', 'function assistantContext(){']) {
@@ -50,12 +54,14 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {
   let detailCalls = 0;
   const asked = [], detailQuestions = [];
   const box = { scrollTop: 0, scrollHeight: 0, appendChild(node) { messages.push(node); } };
-  const state = { selectedZone: null, conditions: { zones: {} }, zones: [], mode: 'waders' };
+  const state = { selectedZone: null, conditions: { zones: {} }, zones: [], mode: 'waders', currentScores: new Map() };
   const context = vm.createContext({
     state, assistantDialog, activeManifest: manifest, runtimeGeneration: 0, conditionDetailsReady: false,
+    mapScores: new Map(), localStorage: { setItem() {} },
     conditionDetailsPromise: null, pendingZoneDetails: new Map(),
     activeLandingView: null, mapForecast: { committed: null },
     document: {
+      querySelectorAll(selector) { assert.equal(selector, '.mode-button'); return []; },
       querySelector(selector) {
         if (selector === '#assistantForm') return assistantForm;
         assert.equal(selector, '#assistantMessages'); return box;
@@ -196,12 +202,23 @@ test('accepted find identification keeps a full weak-UV followup on the actual U
   for (const [locale, first, followup] of cases) {
     const ui = fixture(locale);
     const asked = [];
+    let finishAnswer;
+    const firstAnswer = new Promise(resolve => { finishAnswer = resolve; });
     ui.context.askRavRadar = async question => {
       asked.push(question);
-      return 'SYNTHETIC_FIRST_ANSWER';
+      return question === first ? firstAnswer : 'SYNTHETIC_OTHER_ANSWER';
     };
-    await ui.submit(first);
+    const pendingFirst = ui.submit(first);
+    assert.deepEqual(asked, [first]);
+    // The header can be used while the normal public map data is still loading.
+    ui.state.zones = [];
+    ui.state.conditions = { zones: {} };
+    vm.runInContext("setMode('beach', {render:false})", ui.context);
+    finishAnswer('SYNTHETIC_FIRST_ANSWER');
+    await pendingFirst;
     assert.equal(ui.topic(), topic);
+    // A second data arrival before the followup is also unrelated to the find.
+    ui.state.conditions = { zones: {} };
     await ui.submit(followup);
     assert.deepEqual(asked, [first], 'The followup is answered locally through the existing topic frame');
     const sourced = ['Fluorescerer alt rav ens?', 'Kan glas ligne rav?']

@@ -1,3 +1,9 @@
+## 19. november — opfølgning under indlæsning af kortet
+
+- [x] Genskab det generiske svar i browseren med den offentlige app og fremprovokér samme rækkefølge i den eksisterende brugerfladeprøve for dansk, tysk og engelsk.
+- [x] Bekræft, at kandidaten besvarer den tyske opfølgning i browseren med den samme indlæsningsrækkefølge og et kontrolleret assistentsvar.
+- [ ] Kvalificér og udgiv brugerfladekoden på den aktuelle kilde. Gentag den offentlige opfølgning efter udgivelse.
+
 ## 19. november — kildekontrol før driftsfiler
 
 - [x] Find årsagen til kildeafslaget i #352 og flyt den uændrede kontrol til den rene Git-kilde efter forprøven.

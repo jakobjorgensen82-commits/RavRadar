@@ -601,7 +601,8 @@ async function reevaluateConditionRuntime(){
   return conditionRuntimePromise;
 }
 
-function setMode(mode,{render=true}={}){resetAssistantTopic();state.mode=mode;state.currentScores.clear();mapScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;refreshMapDisplay();renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast().then(completed=>{if(completed)performance.mark?.('ravradar:forecast-ready');}).catch(error=>{console.error('5-dages prognosen kunne ikke beregnes',error);nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.loadFailed')}</p>`;});renderSelectedZone();}
+// Applying the stored mode during initial map loading is not a user action.
+function setMode(mode,{render=true}={}){if(render)resetAssistantTopic();state.mode=mode;state.currentScores.clear();mapScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;refreshMapDisplay();renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast().then(completed=>{if(completed)performance.mark?.('ravradar:forecast-ready');}).catch(error=>{console.error('5-dages prognosen kunne ikke beregnes',error);nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.loadFailed')}</p>`;});renderSelectedZone();}
 
 async function resumePublicView() {
   await yieldToBrowser();
@@ -703,8 +704,9 @@ async function submitAssistantQuestion(question){
     const forecast=assistantForecastQuestion(clean,previous);
     const knowledgeQuestion=forecast?null:assistantPublicFollowupQuestion(clean,previous,frame.language);
     const routedQuestion=forecast?.question??knowledgeQuestion??clean;
+    const findFollowup=forecast||knowledgeQuestion?null:publicRavAssistantFindFollowup(clean,previous,frame.language);
     const followup=forecast||knowledgeQuestion?null:
-      (publicRavAssistantFindFollowup(clean,previous,frame.language)??assistantLocalFollowupAnswer(clean,previous,frame.language));
+      (findFollowup??assistantLocalFollowupAnswer(clean,previous,frame.language));
     const assistantIntent=classifyRavQuestion(routedQuestion);
     const needsDetails=ravQuestionNeedsConditionDetails(routedQuestion,assistantContext());
     const usesCurrentZone=activeLandingView&&state.selectedZone
@@ -724,16 +726,19 @@ async function submitAssistantQuestion(question){
     }
     const answer=followup??await askRavRadar(routedQuestion,assistantContext());
     pending.querySelector("p").textContent=answer;pending.classList.remove("loading");
+    const findTopic=forecast||knowledgeQuestion||followup!==null?null:publicRavAssistantFindTopic(clean,frame.language);
     let topic=forecast?.topic??(knowledgeQuestion||followup!==null?previous:
-      (publicRavAssistantFindTopic(clean,frame.language)??assistantTopicForQuestion(clean)));
-    if(knowledgeQuestion&&[t('assistant.refusal'),t('assistant.remoteUnavailable')].includes(answer))topic=null;
+      (findTopic??assistantTopicForQuestion(clean)));
+    if((knowledgeQuestion||findTopic)&&[t('assistant.refusal'),t('assistant.remoteUnavailable')].includes(answer))topic=null;
     if(!topic&&followup===null&&frame.language==='en'&&assistantIntent==='wind'&&clean.length<=600){
       // Keep the original first answer. The service still owns whole-question topic admission.
       const topicQuestion=clean.replace(/^(?:what|which)\s+wind\s+direction\s+is\s+(?:good|best)(?=\s|[?!.]|$)/iu,'which wind is best');
       if(topicQuestion!==clean&&assistantTopicForQuestion(topicQuestion)==='public-search:wind')topic='public-search:wind';
     }
-    if(topic&&turn===assistantTurn&&sameAssistantTopicFrame(frame,assistantTopicFrame())){
-      assistantTopicState={topic,frame};
+    // Identifying a find depends on the conversation language, not on live map data.
+    const nextFrame=findTopic||findFollowup!==null?{language:frame.language}:frame;
+    if(topic&&turn===assistantTurn&&sameAssistantTopicFrame(nextFrame,assistantTopicFrame())){
+      assistantTopicState={topic,frame:nextFrame};
     }
   }catch{
     pending.querySelector("p").textContent=t('data.loadError');pending.classList.remove("loading");

@@ -1,3 +1,7 @@
+## 19. november — Spørg RavRadar under kortets indlæsning
+
+Den offentlige start kunne miste emnet for et muligt ravfund, når kortet indlæste vejr og satte den gemte jagtform. I en afgrænset browserprøve med forsinket manifest gav den offentlige kode et generelt svar om UV-lampen. Den lokale rettelse fulgte fundet og forklarede både gennemsigtighed og svag fluorescens. Emnet følger samtalens sprog. Vejrafhængige emner bruger fortsat den aktuelle model-, zone- og vejrkontekst. Kvalifikation og offentlig kontrol af den rettede kode udestår.
+
 ## 19. november — kildekontrol før driftsfiler
 
 Vejrkørsel #352 nåede kildekontrollen, hvor kontrol af Pages-genoptagelse afviste den kørende Git-kopi. Det almindelige vejrjob havde allerede lagt geometri, administration og gemt vejr ind i arbejdskopien. Derfor køres den eksisterende kildekontrol og gemmes dens faktiske udfald lige efter den billige forprøve, før de aktive filer overlejres. Kørsel #352 nåede hverken nye leverandørdata eller udgivelse. Rettelsens normale virkning afventer ny GitHub-kontrol og vejrhentning.
