@@ -4126,8 +4126,9 @@ def _raw_current_capture_key(capture):
         if key != "acquiredAt"}, sort_keys=True, separators=(",", ":"))
 
 
-def _raw_current_inventory():
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
+def _raw_current_inventory(*, require_existing=False):
+    if not require_existing:
+        RAW_DIR.mkdir(parents=True, exist_ok=True)
     if not stat.S_ISDIR(RAW_DIR.lstat().st_mode) or RAW_DIR.is_symlink():
         _raw_cache_protection_refuse("DIRECTORY_INVALID")
     files = {}
@@ -4269,7 +4270,7 @@ def _validate_archive_isolated_raw_retention(retention):
         _raw_cache_protection_refuse("ARCHIVE_CHECKPOINT_CHANGED")
 
 
-def configure_raw_current_retention(retention):
+def configure_raw_current_retention(retention, *, require_existing=False):
     """Eviction only. The fixed JS caller binds the immutable committed B/S.
 
     No manifest/capture here can admit a vector or issue a native receipt.
@@ -4292,7 +4293,7 @@ def configure_raw_current_retention(retention):
         _raw_cache_protection_refuse("RETENTION_INVALID")
     if archive_isolated:
         _validate_archive_isolated_raw_retention(retention)
-    manifest, files = _raw_current_inventory()
+    manifest, files = _raw_current_inventory(require_existing=require_existing)
     by_capture = {}
     for name, asset in manifest["assets"].items():
         if pathlib.Path(name).name != name or not isinstance(asset, dict):
@@ -4333,7 +4334,7 @@ def configure_raw_current_retention(retention):
     _RAW_CURRENT_UNPROVED_NAMES.clear()
     _RAW_CURRENT_UNPROVED_NAMES.update(str((RAW_DIR / name).absolute()) for name in unproved)
     try:
-        _raw_current_inventory()
+        _raw_current_inventory(require_existing=require_existing)
         if archive_isolated:
             _validate_archive_isolated_raw_retention(retention)
     except BaseException:
