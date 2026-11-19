@@ -451,6 +451,10 @@ export function currentWorkflowTargets(relative){
 const ACCOUNT_SCHEMA_SOURCE_TEST='node --test scripts/test-account-erasure-outbox.mjs';
 const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
 const SOURCE_EXECUTION_TARGETS=freeze({
+  '.github/workflows/update-and-deploy.yml':[
+    'node scripts/test-pages-generation-and-reentry.mjs',
+    'node scripts/test-production-workflow-outcome.mjs',
+  ],
   'scripts/audit-pages-artifact-privacy.mjs':['node scripts/test-pages-artifact-privacy.mjs',SHARE_PROJECTION_SOURCE_TEST],
   'scripts/build-forecast-share-projection.mjs':[SHARE_PROJECTION_SOURCE_TEST],
   'scripts/verify-ravscore-operational-pages-deployment.mjs':[SHARE_PROJECTION_SOURCE_TEST],
