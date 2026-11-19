@@ -140,24 +140,25 @@ export async function assertNormalStagePublication(t) {
   const parentReceipt = { parentPin: pin.pin, parentDescriptor: pin.descriptor };
   let virtualUsed = 2_050_000_001;
   const r2Calls = [];
-  const r2Options = { storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
+  const r2OptionsFor = (remote, calls) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
     secretAccessKey: 'synthetic-secret', delayImpl: async () => {}, fetchImpl: async (url, request) => {
       const address = new URL(url);
-      r2Calls.push(request.method);
+      calls.push(request.method);
       if (request.method === 'GET' && address.searchParams.has('list-type')) {
         return new Response(`<ListBucketResult><Contents><Key>preserved</Key><Size>${virtualUsed}</Size></Contents><KeyCount>1</KeyCount><IsTruncated>false</IsTruncated></ListBucketResult>`);
       }
       if (request.method === 'HEAD' && address.pathname === '/ravradar-private-production-runtime') return new Response(null);
       const key = decodeURIComponent(address.pathname.slice('/ravradar-private-production-runtime/'.length));
-      if (request.method === 'HEAD') return new Response(null, { status: transport.objects.has(key) ? 200 : 404 });
+      if (request.method === 'HEAD') return new Response(null, { status: remote.objects.has(key) ? 200 : 404 });
       if (request.method === 'PUT') {
-        const result = await transport.storage.uploadImmutable(key, request.body);
+        const result = await remote.storage.uploadImmutable(key, request.body);
         return new Response(null, { status: result.created ? 200 : 412 });
       }
-      if (request.method === 'GET') return new Response(await transport.storage.download(key));
-      if (request.method === 'DELETE') { await transport.storage.removeExact(key); return new Response(null, { status: 204 }); }
+      if (request.method === 'GET') return new Response(await remote.storage.download(key));
+      if (request.method === 'DELETE') { await remote.storage.removeExact(key); return new Response(null, { status: 204 }); }
       throw new Error('unexpected normal publisher storage method');
-    } };
+    } });
+  const r2Options = r2OptionsFor(transport, r2Calls);
   const { storage: _syntheticOriginalStorage, ...normalPublication } = publish(child);
   const publishChild = () => publishPrivateWeatherRuntime({ ...normalPublication,
     request: bindOrdinaryStagePublicationRequest(transport.documentRequest, parentReceipt) }, r2Options);
@@ -167,6 +168,34 @@ export async function assertNormalStagePublication(t) {
     'Capacity refusal never reaches parent CAS.');
   assert.equal(r2Calls.includes('PUT'), false, 'Capacity refusal reaches no actual PUT.');
   virtualUsed = 1_734_856_529;
+  const late = normalBAndSTransports();
+  const pointerKey = 'ravscore-private-production-runtime-pointer';
+  late.documents.set(pointerKey, structuredClone(heldParent));
+  for (const [key, value] of transport.objects) late.objects.set(key, Buffer.from(value));
+  let finishDelayedCas;
+  const lostRequest = async (query, options, phase) => {
+    if (phase === 'compare-and-swap') {
+      assert.equal(finishDelayedCas, undefined, 'No blind retry of the pointer write.');
+      finishDelayedCas = () => late.documentRequest(query, options, phase);
+      throw new Error('synthetic lost response while the write is still pending');
+    }
+    return late.documentRequest(query, options, phase);
+  };
+  const lateCalls = [];
+  await assert.rejects(publishPrivateWeatherRuntime({ ...normalPublication,
+    request: bindOrdinaryStagePublicationRequest(lostRequest, parentReceipt) }, r2OptionsFor(late, lateCalls)),
+  /Private runtime pointer compare-and-swap failed closed/);
+  assert.deepEqual(late.documents.get(pointerKey), heldParent, 'Both recovery reads still saw the exact old pointer.');
+  assert.equal(lateCalls.includes('DELETE'), false, 'Ambiguous pointer write protects the candidate on the wire.');
+  assert.equal(typeof finishDelayedCas, 'function');
+  await finishDelayedCas();
+  const lateRow = late.documents.get(pointerKey);
+  assert.equal(lateRow.version, 2);
+  assert.deepEqual(lateRow.payload.previous, pin.descriptor);
+  for (const part of lateRow.payload.current.objects) {
+    assert.equal(crypto.createHash('sha256').update(await late.storage.download(part.objectPath)).digest('hex'),
+      part.objectSha256, 'The late authoritative CAS still points at every verified candidate byte.');
+  }
   const publication = await publishChild();
   assert.equal(publication.published, true);
   const row = transport.documents.get('ravscore-private-production-runtime-pointer');

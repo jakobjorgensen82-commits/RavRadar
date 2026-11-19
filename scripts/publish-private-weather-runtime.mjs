@@ -74,7 +74,32 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
     fail('PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID');
   }
   const storage = createPrivateWeatherPublicationStorage(storageOptions);
-  return publishProtectedPrivateProductionRuntime({ ...options, storage });
+  const createdPaths = new Set();
+  let pointerWriteStarted = false;
+  return publishProtectedPrivateProductionRuntime({
+    ...options,
+    request: async (query, request, phase) => {
+      if (phase === 'compare-and-swap' || phase === 'insert') pointerWriteStarted = true;
+      return options.request(query, request, phase);
+    },
+    storage: {
+      ...storage,
+      async uploadImmutable(objectPath, bytes) {
+        const result = await storage.uploadImmutable(objectPath, bytes);
+        if (result.created === true) createdPaths.add(objectPath);
+        return result;
+      },
+      async removeExact(objectPath) {
+        // A read of the old pointer after a lost response cannot exclude a
+        // later commit. Keep this candidate's parts once its write may have
+        // reached Supabase. The frozen publisher still retires older parts.
+        if (pointerWriteStarted && createdPaths.has(objectPath)) {
+          fail('PRIVATE_WEATHER_PUBLICATION_CANDIDATE_HELD_AFTER_POINTER_WRITE');
+        }
+        return storage.removeExact(objectPath);
+      },
+    },
+  });
 }
 
 export function privateWeatherPublicationArguments(argv) {
