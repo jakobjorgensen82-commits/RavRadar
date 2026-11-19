@@ -15,6 +15,7 @@ const MAX_COMMITTED_TEXT_BYTES=4*1024*1024;
 const freeze=value=>{for(const item of Object.values(value))if(item&&typeof item==='object')freeze(item);return Object.freeze(value);};
 const INSTALLER='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
 const WEATHER_BUILD='.github/workflows/reusable-weather-build.yml';
+const MANUAL_WEATHER='.github/workflows/update-and-deploy.yml';
 const ASSISTANT_SUCCESSOR_TESTS=new Set([
   'scripts/test-assistant-after597-fixed-generator.mjs',
   'scripts/test-assistant-after597-migration-prewrite.mjs',
@@ -213,6 +214,7 @@ const PATH_AREAS=freeze({
   pages:[
     '.github/actions/deploy-ravradar-pages/action.yml',
     '.github/workflows/run-current-weather-once.yml',
+    MANUAL_WEATHER,
     '.github/workflows/reusable-pages-deploy.yml',
     '.github/workflows/reusable-operational-reentry.yml',
     '.github/workflows/reusable-weather-build.yml',
@@ -296,6 +298,7 @@ const PATH_AREAS=freeze({
     'scripts/source-impact-full-baseline.mjs','scripts/test-source-impact-full-baseline.mjs',
     'scripts/test-source-targeted-domain-integration.mjs','scripts/weather-source-gate.mjs',
     '.github/workflows/watch-missed-weather-schedule.yml',
+    'scripts/check-weather-cadence-watchdog.mjs','scripts/read-weather-cadence-github.mjs',
     'scripts/lib/weather-source-gate.mjs',
     'scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs',
     'scripts/validate-release-version.mjs','scripts/test-module-version-closure-4.0.87.mjs',
@@ -451,6 +454,8 @@ export function currentWorkflowTargets(relative){
 const ACCOUNT_SCHEMA_SOURCE_TEST='node --test scripts/test-account-erasure-outbox.mjs';
 const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
 const SOURCE_EXECUTION_TARGETS=freeze({
+  'scripts/check-weather-cadence-watchdog.mjs':['node --test scripts/test-weather-cadence-watchdog.mjs'],
+  'scripts/read-weather-cadence-github.mjs':['node --test scripts/test-weather-cadence-watchdog.mjs'],
   '.github/workflows/update-and-deploy.yml':[
     'node scripts/test-pages-generation-and-reentry.mjs',
     'node scripts/test-production-workflow-outcome.mjs',
@@ -1012,6 +1017,18 @@ export function isDmiCollectionRecoveryOnlyFixtureChange(before,after){
   }catch{return false;}
 }
 
+// The manual workflow also owns geometry and weather generation. Only the
+// two recovery conditions below are within the Pages contract's test scope.
+function manualWeatherRecoveryOnly(before, after) {
+  const callerPrefix="    needs: operational-recovery-gate\n    if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success'";
+  const callerAfter=callerPrefix+" && needs.operational-recovery-gate.outputs.closure_deferred == 'false' }}";
+  const outcomeBefore='      - deploy-pages\n    if: always()\n';
+  const outcomeAfter="      - deploy-pages\n    if: always() && needs.operational-recovery-gate.outputs.closure_deferred != 'true'\n";
+  const callerBefore=callerPrefix+' }}';
+  return before.split(callerBefore).length===2 && before.split(outcomeBefore).length===2
+    && before.replace(callerBefore,callerAfter).replace(outcomeBefore,outcomeAfter)===after;
+}
+
 export function planSourceCurrentContractsFromGit(input){
   const out={schemaVersion:1,status:'PLANNED',selection:'CURRENT_CONTRACTS',commands:[],areas:{},
     resultScope:'CURRENT_CONTRACT_RESULTS_ONLY',historicalCompatibilityExecuted:false,
@@ -1060,6 +1077,9 @@ export function planSourceCurrentContractsFromGit(input){
       if(HISTORICAL_UPDATER_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_HISTORICAL_UPDATER_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(file===MANUAL_WEATHER && (row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'
+        ||!manualWeatherRecoveryOnly(readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file))))
+        return refuse('CURRENT_MANUAL_WEATHER_REQUIRES_FULL');
       if(WEATHER_OPERATION_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_WEATHER_OPERATION_REQUIRES_EXISTING_REGULAR_SOURCE');

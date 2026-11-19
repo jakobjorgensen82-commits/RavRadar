@@ -1,3 +1,7 @@
+## 4.0.602 — frisk vejr efter afsluttet genudgivelse
+
+- En planlagt kørsel, der genudgiver en gemt prognose, kan bestille én selvstændig frisk vejrhentning efter sin afslutning. Kildekvalifikation og faktiske kørsler afventer.
+
 ## 4.0.602 — spørgsmål om ravfund
 
 - Korte opfølgninger om svag UV-glød og gennemsigtighed beholder fundet som samtaleemne.

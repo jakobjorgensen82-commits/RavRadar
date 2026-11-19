@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
 
 const FOUR_HOURS_MS = 4 * 60 * 60_000;
 const SLOT_MINUTE_MS = 17 * 60_000;
@@ -9,6 +10,11 @@ const EARLIEST_DISPATCH_MS = 60_000;
 const LATEST_DISPATCH_MS = 90 * 60_000;
 const ACTIVE = new Set(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 const STATUSES = new Set([...ACTIVE, 'completed']);
+const REPOSITORY = 'jakobjorgensen82-commits/RavRadar';
+const RECOVERY_PREFIX = 'Finish an interrupted generation before new work / ';
+const HANDOFF_JOB = 'Hand off recovered weather to the existing cadence watchdog';
+const HANDOFF_STEP = 'Bind weather recovery recipient ';
+const RUN_ID = /^[1-9][0-9]{0,14}$/;
 // GitHub still reports these three old, inert legacy-orchestrator attempts as
 // queued. Ignore only their exact unchanged identities, never an arbitrary old
 // queued run. A changed attempt, SHA, timestamp or state regains the guard.
@@ -44,8 +50,53 @@ function readMainRuns(document, branch, label, nowMs, legacy = false) {
         (run.status === 'completed' && !run.conclusion)) {
       throw new Error(`${label}: malformed main run history`);
     }
-    return { status: run.status, conclusion: run.conclusion, attemptStartedMs };
+    return { id: run.id, status: run.status, conclusion: run.conclusion, attemptStartedMs };
   });
+}
+
+function verifiedRecoveryOwner(manualRuns, handoff, nowMs) {
+  const { sourceId, recipientId, headSha, jobs } = handoff ?? {};
+  if (!RUN_ID.test(sourceId ?? '') || !RUN_ID.test(recipientId ?? '') || sourceId === recipientId
+    || !/^[a-f0-9]{40}$/.test(headSha ?? '') || !Array.isArray(jobs?.jobs) || jobs.total_count !== jobs.jobs.length
+    || jobs.jobs.length > 100) return null;
+  const runs = manualRuns.workflow_runs.filter(run => String(run.id) === sourceId);
+  const owner = runs[0];
+  const ownRepo = value => value?.id === 1306858343 && value.full_name === REPOSITORY;
+  if (runs.length !== 1 || owner.run_attempt !== 1 || owner.event !== 'workflow_dispatch'
+    || owner.path !== '.github/workflows/run-current-weather-once.yml' || owner.head_branch !== 'main'
+    || owner.head_sha !== headSha || owner.actor?.login !== 'github-actions[bot]'
+    || !ownRepo(owner.repository) || !ownRepo(owner.head_repository)
+    || owner.status !== 'completed' || owner.conclusion !== 'success') return null;
+  const completedAt = Date.parse(owner.updated_at);
+  if (completedAt > nowMs || nowMs - completedAt >= LATEST_DISPATCH_MS) return null;
+  if (jobs.jobs.some(job => String(job?.run_id) !== sourceId || job.run_attempt !== 1 || job.head_sha !== headSha
+    || job.status !== 'completed')) return null;
+  const select = (names, conclusion) => {
+    const rows = jobs.jobs.filter(job => names.includes(job.name));
+    return rows.length === 1 && rows[0].conclusion === conclusion ? rows[0] : null;
+  };
+  const passedStep = (job, name) => {
+    const matches = job?.steps?.filter(step => step.name === name);
+    return matches?.length === 1 && matches[0].status === 'completed' && matches[0].conclusion === 'success';
+  };
+  const handoffJob = select([HANDOFF_JOB], 'success');
+  const bindings = handoffJob?.steps?.filter(step => step.name?.startsWith(HANDOFF_STEP));
+  if (bindings?.length !== 1 || bindings[0].name !== HANDOFF_STEP + recipientId
+    || bindings[0].status !== 'completed' || bindings[0].conclusion !== 'success'
+    || !select(['Require a verified current-weather deployment'], 'skipped')
+    || !select([RECOVERY_PREFIX + 'Require terminal operational recovery before production'], 'success')) return null;
+  const resumePages = select([
+    RECOVERY_PREFIX + 'resume-pre-activation-pages / Deploy exact pre-activation Pages artifact',
+    RECOVERY_PREFIX + 'Deploy exact pre-activation Pages artifact',
+  ], 'success');
+  const exactPages = select([RECOVERY_PREFIX + 'Redeploy only a helper-proven exact sealed Pages target'], 'success');
+  const exactFinalizer = select([RECOVERY_PREFIX + 'Finalize exact recovered target without Pages privileges'], 'success');
+  const resumed = passedStep(resumePages, 'Verify deployed exact model, implementation and 210/673 artifact')
+    && passedStep(resumePages, 'Seal exact verified deployment terminal');
+  const redeployed = passedStep(exactPages, 'Redeploy the exact sealed Pages target')
+    && passedStep(exactFinalizer, 'Reobserve exact target and complete central CAS');
+  if (Boolean(resumed) === Boolean(redeployed)) return null;
+  return owner;
 }
 
 export function assessWeatherCadenceWatchdog({
@@ -53,6 +104,7 @@ export function assessWeatherCadenceWatchdog({
   manualRuns,
   nowMs = Date.now(),
   branch = 'main',
+  recoveryHandoff,
 }) {
   if (!Number.isFinite(nowMs) || branch !== 'main') {
     throw new Error('Invalid four-hour weather watchdog policy');
@@ -63,9 +115,18 @@ export function assessWeatherCadenceWatchdog({
   const slotMs = Math.floor((nowMs - SLOT_MINUTE_MS) / FOUR_HOURS_MS) * FOUR_HOURS_MS + SLOT_MINUTE_MS;
   const slotAt = new Date(slotMs).toISOString();
   const decision = (dispatch, reason) => ({ dispatch, reason, slotAt });
+  const runs = [...normal, ...manual];
+  if (recoveryHandoff !== undefined) {
+    const owner = verifiedRecoveryOwner(manualRuns, recoveryHandoff, nowMs);
+    if (!owner || normal.some(run => run.id === owner.id)) return decision(false, 'recovery-only-owner-unproved');
+    if (runs.some(run => ACTIVE.has(run.status))) return decision(false, 'weather-run-active-or-queued');
+    const occupiedSince = Math.min(slotMs, Date.parse(owner.created_at));
+    if (runs.some(run => run.id !== owner.id && run.attemptStartedMs >= occupiedSince))
+      return decision(false, 'weather-run-already-started-in-slot');
+    return decision(true, 'verified-recovery-needs-fresh-weather');
+  }
   if (nowMs < slotMs + EARLIEST_DISPATCH_MS) return decision(false, 'before-external-cadence-window');
   if (nowMs >= slotMs + LATEST_DISPATCH_MS) return decision(false, 'external-cadence-window-expired');
-  const runs = [...normal, ...manual];
   if (runs.some(run => ACTIVE.has(run.status))) return decision(false, 'weather-run-active-or-queued');
   if (runs.some(run => run.attemptStartedMs >= slotMs)) return decision(false, 'weather-run-already-started-in-slot');
   return decision(true, 'external-four-hour-weather-slot-ready');
@@ -93,7 +154,24 @@ async function main() {
     fs.readFile(options.normalRunsPath, 'utf8').then(JSON.parse),
     fs.readFile(options.manualRunsPath, 'utf8').then(JSON.parse),
   ]);
-  const result = assessWeatherCadenceWatchdog({ normalRuns, manualRuns });
+  const env = process.env;
+  const sourceId = env.RAVRADAR_WEATHER_RECOVERY_RUN_ID;
+  let recoveryHandoff;
+  if (sourceId) {
+    const { GITHUB_RUN_ID: recipientId, GITHUB_SHA: headSha } = env;
+    if (!RUN_ID.test(sourceId) || !RUN_ID.test(recipientId ?? '') || sourceId === recipientId
+      || !/^[a-f0-9]{40}$/.test(headSha ?? '') || env.RAVRADAR_EXTERNAL_WATCHDOG !== 'false'
+      || env.GITHUB_REPOSITORY !== REPOSITORY || env.GITHUB_REF !== 'refs/heads/main'
+      || env.GITHUB_WORKFLOW_REF !== REPOSITORY + '/.github/workflows/watch-missed-weather-schedule.yml@refs/heads/main'
+      || env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || env.GITHUB_RUN_ATTEMPT !== '1'
+      || env.GITHUB_ACTOR !== 'github-actions[bot]' || env.GITHUB_TRIGGERING_ACTOR !== 'github-actions[bot]') {
+      throw new Error('WEATHER_RECOVERY_HANDOFF_REJECTED');
+    }
+    const jobs = await readWeatherCadenceGithub({ kind: 'recovery-jobs', repository: REPOSITORY,
+      token: env.GH_TOKEN, recoveryRunId: sourceId });
+    recoveryHandoff = { sourceId, recipientId, headSha, jobs };
+  }
+  const result = assessWeatherCadenceWatchdog({ normalRuns, manualRuns, recoveryHandoff });
   if (options.githubOutput) {
     await fs.appendFile(options.githubOutput, `dispatch=${result.dispatch}\nreason=${result.reason}\n`);
   }
