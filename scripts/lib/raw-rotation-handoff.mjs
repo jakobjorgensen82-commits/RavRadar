@@ -41,14 +41,14 @@ export async function authenticateRawRotationHandoff({bytes, scope, verifyArtifa
   const receipt = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
   requireEvidence(exactKeys(receipt, ['schemaVersion', 'kind', 'runId', 'runAttempt', 'sourceHead',
     'targetReferenceAt', 'cacheIdentitySha256', 'protectedPairSha256', 'privateProofSha256', 'verifiedCaptureCount'])
-    && receipt.schemaVersion === 1 && receipt.kind === 'DMI_RAW_RESTORED_COVERAGE_HANDOFF_V1'
+    && receipt.schemaVersion === 2 && receipt.kind === 'DMI_RAW_RESTORED_BASELINE_COVERAGE_HANDOFF_V2'
     && RUN_ID.test(receipt.runId ?? '') && receipt.runAttempt === '1' && HEAD.test(receipt.sourceHead ?? '')
     && HOUR.test(receipt.targetReferenceAt ?? '') && !receipt.targetReferenceAt.endsWith('.000Z')
     && ['runId', 'runAttempt', 'sourceHead', 'targetReferenceAt'].every(key => receipt[key] === scope[key])
     && [receipt.cacheIdentitySha256, receipt.protectedPairSha256, receipt.privateProofSha256]
       .every(value => typeof value === 'string' && SHA256.test(value))
     && Number.isSafeInteger(receipt.verifiedCaptureCount)
-    && receipt.verifiedCaptureCount > 0 && receipt.verifiedCaptureCount <= 4096);
+    && receipt.verifiedCaptureCount >= 0 && receipt.verifiedCaptureCount <= 4096);
   await verifyArtifactProducer();
   const [b, sVersion] = await Promise.all([readProtectedB(), readProtectedSVersion()]);
   requireEvidence(b?.expectedZoneCount === 210 && b.expectedPartCount === 673);
@@ -100,7 +100,7 @@ export function projectPublicRawRotationProof(bytes, expectedProofDigest) {
     && expectedProofDigest === digest(bytes));
   const proof = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
   requireEvidence(exactKeys(proof, ['schemaVersion', 'kind', 'pairedBaseline', 'boundary', 'coverage'])
-    && proof.schemaVersion === 1 && proof.kind === 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1');
+    && proof.schemaVersion === 2 && proof.kind === 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V2');
   const {pairedBaseline, boundary, coverage} = proof;
   requireEvidence(exactKeys(boundary, ['datasetId', 'productionReferenceAt', 'bundleContentSha256',
     'checkpointGenerationSha256', 'conditionsSha256'])
@@ -117,13 +117,13 @@ export function projectPublicRawRotationProof(bytes, expectedProofDigest) {
     && SHA256.test(coverage.cacheIdentitySha256 ?? '') && SHA256.test(coverage.planSha256 ?? '')
     && coverage.baselineBoundarySha256 === pairedBaseline.boundarySha256
     && coverage.allRequiredVerified === true && coverage.requiredCaptures === coverage.protectedFiles
-    && Number.isSafeInteger(coverage.requiredCaptures) && coverage.requiredCaptures >= 1
+    && Number.isSafeInteger(coverage.requiredCaptures) && coverage.requiredCaptures >= 0
     && coverage.requiredCaptures <= 4096 && coverage.unavailableCaptures === 0);
   const hours = (Date.parse(coverage.targetReferenceAt) - Date.parse(boundary.productionReferenceAt)) / 3_600_000;
   requireEvidence(Number.isInteger(hours) && hours >= 1 && hours <= 72);
   return {
-    schemaVersion: 1,
-    kind: 'DMI_RAW_RESTORED_COVERAGE_HANDOFF_V1',
+    schemaVersion: 2,
+    kind: 'DMI_RAW_RESTORED_BASELINE_COVERAGE_HANDOFF_V2',
     runId: coverage.runId,
     runAttempt: coverage.runAttempt,
     sourceHead: coverage.sourceHead,
