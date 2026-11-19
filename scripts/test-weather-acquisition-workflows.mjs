@@ -62,6 +62,25 @@ test('ordinary DMI closure gates RAW and encrypted progress as well as following
   ];
   const positions = steps.map(block => actualNormalWorkflow.indexOf(block));
   assert.deepEqual(positions, [...positions].sort((left, right) => left - right));
+  const profile = actualNormalWorkflow.match(/^      DMI_BULK_REQUIRE_ORDINARY_CLOSURE: \$\{\{([\s\S]+?)\}\}/m)?.[1];
+  const required = guard.match(/^          ORDINARY_CLOSURE_REQUIRED: \$\{\{(.+?)\}\}/m)?.[1];
+  assert.ok(profile && required);
+  const defaults = { quick_progress_source: '', ravscore_integrated_weather_handoff_run_id: '' };
+  for (const [overrides, action, expectedProfile, expectedRequired] of [
+    [{}, 'integrated', 'true', 'true'],
+    [{}, 'integrated-historical-maintenance', 'true', 'false'],
+    [{ current_family_cold_start: true }, 'integrated', 'false', 'false'],
+    [{ completed_private_runtime: true }, 'integrated', 'false', 'false'],
+    [{ quick_progress_source: '234-1' }, 'integrated', 'false', 'false'],
+    [{ native_sampling_identity_original_recovery: true }, 'integrated', 'false', 'false'],
+  ]) {
+    const mode = runInNewContext(profile, { inputs: { ...defaults, ...overrides } });
+    assert.equal(mode, expectedProfile);
+    assert.equal(runInNewContext(required.replace('steps.operational-action', 'steps["operational-action"]'), {
+      env: { DMI_BULK_REQUIRE_ORDINARY_CLOSURE: mode },
+      steps: { 'operational-action': { outputs: { action } } },
+    }), expectedRequired);
+  }
   assert.match(guard, /PRODUCER_CLOSED: \$\{\{ steps\.dmi-bulk\.outputs\.ordinary_dmi_producer_closed \}\}/);
   assert.match(guard, /test "\$ORDINARY_CLOSURE_REQUIRED" = true && test "\$PRODUCER_CLOSED" != true; then[\s\S]+exit 1/);
   for (const block of [steps[2], steps[5]]) {

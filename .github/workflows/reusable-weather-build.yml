@@ -260,12 +260,12 @@ jobs:
       EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
       PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
       DMI_BULK_REQUIRE_ORDINARY_CLOSURE: ${{
-        !inputs.current_family_cold_start && !inputs.completed_private_runtime &&
+        (!inputs.current_family_cold_start && !inputs.completed_private_runtime &&
         !inputs.checkpoint_only && !inputs.quick_confirmation && inputs.quick_progress_source == '' &&
         !inputs.extended_provider_bootstrap && !inputs.weather_state_epoch_bootstrap &&
         !inputs.weather_state_epoch_checkpoint_reentry && !inputs.native_sampling_identity_original_recovery &&
         !inputs.produce_weather_handoff && !inputs.ravscore_integrated_first_cutover &&
-        !inputs.ravscore_integrated_return && inputs.ravscore_integrated_weather_handoff_run_id == '' }}
+        !inputs.ravscore_integrated_return && inputs.ravscore_integrated_weather_handoff_run_id == '') && 'true' || 'false' }}
       CHECKPOINT_TARGET_HOUR: ${{ (inputs.checkpoint_only || (inputs.current_family_cold_start && inputs.quick_progress_source != '')) && inputs.production_target_hour || '' }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
@@ -2663,7 +2663,7 @@ jobs:
         if: always() && steps.dmi-bulk.outcome != '' && steps.dmi-bulk.outcome != 'skipped'
         shell: bash
         env:
-          ORDINARY_CLOSURE_REQUIRED: ${{ env.DMI_BULK_REQUIRE_ORDINARY_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated' }}
+          ORDINARY_CLOSURE_REQUIRED: ${{ (env.DMI_BULK_REQUIRE_ORDINARY_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated') && 'true' || 'false' }}
           PRODUCER_CLOSED: ${{ steps.dmi-bulk.outputs.ordinary_dmi_producer_closed }}
         run: |
           if test "$ORDINARY_CLOSURE_REQUIRED" = true && test "$PRODUCER_CLOSED" != true; then
