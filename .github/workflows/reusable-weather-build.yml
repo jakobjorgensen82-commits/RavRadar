@@ -259,6 +259,13 @@ jobs:
       NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
       EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
       PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
+      DMI_BULK_REQUIRE_ORDINARY_CLOSURE: ${{
+        !inputs.current_family_cold_start && !inputs.completed_private_runtime &&
+        !inputs.checkpoint_only && !inputs.quick_confirmation && inputs.quick_progress_source == '' &&
+        !inputs.extended_provider_bootstrap && !inputs.weather_state_epoch_bootstrap &&
+        !inputs.weather_state_epoch_checkpoint_reentry && !inputs.native_sampling_identity_original_recovery &&
+        !inputs.produce_weather_handoff && !inputs.ravscore_integrated_first_cutover &&
+        !inputs.ravscore_integrated_return && inputs.ravscore_integrated_weather_handoff_run_id == '' }}
       CHECKPOINT_TARGET_HOUR: ${{ (inputs.checkpoint_only || (inputs.current_family_cold_start && inputs.quick_progress_source != '')) && inputs.production_target_hour || '' }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
@@ -2651,6 +2658,19 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar/4.0.602 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
+      - name: Require normal DMI producer closure before saving or fetching the residual
+        id: dmi-producer-closure
+        if: always() && steps.dmi-bulk.outcome != '' && steps.dmi-bulk.outcome != 'skipped'
+        shell: bash
+        env:
+          ORDINARY_CLOSURE_REQUIRED: ${{ env.DMI_BULK_REQUIRE_ORDINARY_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated' }}
+          PRODUCER_CLOSED: ${{ steps.dmi-bulk.outputs.ordinary_dmi_producer_closed }}
+        run: |
+          if test "$ORDINARY_CLOSURE_REQUIRED" = true && test "$PRODUCER_CLOSED" != true; then
+            echo '::error::DMI_ORDINARY_PRODUCER_STOP_UNPROVED'
+            exit 1
+          fi
+
       - name: Require actual cold-start producer cessation before other consumers
         if: inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''
         shell: bash
@@ -2670,7 +2690,7 @@ jobs:
 
       - name: Reconfirm exact main before shared DMI GRIB cache
         id: dmi-progress-write-authority
-        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')
+        if: steps.dmi-producer-closure.outcome == 'success' && (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -3172,7 +3192,7 @@ jobs:
         # An early restore/short-confirmation failure must never publish a new
         # run-id checkpoint that is only a copy of older progress. At least the
         # first real supplier step must have been attempted.
-        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
+        if: steps.dmi-producer-closure.outcome == 'success' && (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
         continue-on-error: true
         timeout-minutes: 4
         shell: bash

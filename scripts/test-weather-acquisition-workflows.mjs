@@ -50,6 +50,28 @@ test('normal DMI save uses its measured allowance and must actually finalize bef
   assert.deepEqual(order, [...order].sort((a, b) => a - b));
 });
 
+test('ordinary DMI closure gates RAW and encrypted progress as well as following providers', () => {
+  const guard = step(actualNormalWorkflow, 'Require normal DMI producer closure before saving or fetching the residual');
+  const steps = [
+    step(actualNormalWorkflow, 'Update DMI bulk model cache'),
+    guard,
+    step(actualNormalWorkflow, 'Reconfirm exact main before shared DMI GRIB cache'),
+    step(actualNormalWorkflow, 'Fill only exact-hour DMI gaps from Copernicus'),
+    step(actualNormalWorkflow, 'Fill only the exact remaining current gaps from Open-Meteo'),
+    step(actualNormalWorkflow, 'Encrypt newly saved private weather progress before later production steps'),
+  ];
+  const positions = steps.map(block => actualNormalWorkflow.indexOf(block));
+  assert.deepEqual(positions, [...positions].sort((left, right) => left - right));
+  assert.match(guard, /PRODUCER_CLOSED: \$\{\{ steps\.dmi-bulk\.outputs\.ordinary_dmi_producer_closed \}\}/);
+  assert.match(guard, /test "\$ORDINARY_CLOSURE_REQUIRED" = true && test "\$PRODUCER_CLOSED" != true; then[\s\S]+exit 1/);
+  for (const block of [steps[2], steps[5]]) {
+    assert.match(block, /^        if: steps\.dmi-producer-closure\.outcome == 'success' && /m);
+  }
+  for (const block of [steps[3], steps[4]]) {
+    assert.doesNotMatch(block.match(/^        if:.*$/m)?.[0] ?? '', /always\(|!cancelled\(/);
+  }
+});
+
 test('ordinary source validation runs on committed files before any runtime overlay', () => {
   const orderedSteps = [
     'Decide whether weather needs updating before private runtime download',

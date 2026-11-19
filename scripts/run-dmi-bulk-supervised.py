@@ -671,5 +671,24 @@ def main() -> int:
         )
 
 
+def run_cli() -> int:
+    returncode = main()
+    # The cold-start adapter checks the same resources. Only the ordinary
+    # hosted Linux caller may take this receipt as authority for later work.
+    output_path = os.environ.get("GITHUB_OUTPUT")
+    if (sys.platform == "linux" and len(sys.argv) == 1
+            and os.environ.get("DMI_BULK_REQUIRE_ORDINARY_CLOSURE") == "true"
+            and type(returncode) is int and 0 <= returncode <= 255 and output_path
+            and not (_unclosed_supervised_processes or _unclosed_supervised_outputs
+                     or _unclosed_finalizer_processes)):
+        try:
+            with open(output_path, "a", encoding="utf-8") as handle:
+                handle.write("ordinary_dmi_producer_closed=true\n")
+        except OSError:
+            # Preserve the producer status. The caller refuses a missing receipt.
+            print("DMI_ORDINARY_PRODUCER_CLOSURE_RECEIPT_UNAVAILABLE", file=sys.stderr)
+    return returncode
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_cli())
