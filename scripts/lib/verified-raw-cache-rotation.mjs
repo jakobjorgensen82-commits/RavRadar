@@ -275,3 +275,49 @@ export async function readRawCacheProtection({inventory, boundary, repository, s
   if (fixedKeys.size === 0) return hold('fixed-raw-pin-catalogue-unavailable');
   return {complete: true, caches: rows.filter(row => fixedKeys.has(row.key)).map(cacheIdentity)};
 }
+
+// Call from the separate production-lock owner with freshly authenticated
+// B/S and archive evidence for the actual next hour. readSnapshot must
+// recompute stock and pins, and verifyOwner must fail on loss of the lock
+// or movement of that versioned B/S. The read-only builder cannot call this.
+export async function retireVerifiedRawCache({
+  repository, githubToken, readSnapshot, verifyOwner, current, saved, retained, request = fetch,
+}) {
+  const hold = reason => ({status: 'HOLD', reason, retire: []});
+  if (repository !== 'jakobjorgensen82-commits/RavRadar' || typeof githubToken !== 'string' || !githubToken
+      || typeof readSnapshot !== 'function' || typeof verifyOwner !== 'function' || typeof request !== 'function') {
+    throw new Error('RAW_CACHE_RETIREMENT_SCOPE');
+  }
+  if (!saved) return hold('retirement-requires-successor-save');
+  await verifyOwner();
+  const before = await readSnapshot();
+  const after = await readSnapshot();
+  const plan = planRawDmiCacheRotation({before, after, current, saved, retained});
+  if (plan.status !== 'READY' || plan.retire.length !== 1) return plan;
+
+  const [oldest] = plan.retire;
+  const expected = completeCacheInventory(after.inventory).filter(row => row.id !== oldest.id);
+  const protectedRows = completeProtectedCaches(after.protection);
+  await verifyOwner();
+  let acknowledged = false;
+  try {
+    const response = await request('https://api.github.com/repos/' + repository + '/actions/caches/' + oldest.id, {
+      method: 'DELETE', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10_000),
+      headers: {Authorization: 'Bearer ' + githubToken, Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2026-03-10'},
+    });
+    acknowledged = response?.status === 204 && response.redirected === false;
+  } catch {
+    // An ambiguous write must never be repeated. Check the inventory once.
+  }
+  try {
+    await verifyOwner();
+    const observed = await readSnapshot();
+    const same = JSON.stringify(completeCacheInventory(observed?.inventory)) === JSON.stringify(expected)
+      && JSON.stringify(completeProtectedCaches(observed?.protection)) === JSON.stringify(protectedRows);
+    if (acknowledged && same) return {status: 'RETIRED', cacheId: oldest.id};
+  } catch {
+    // Preserve uncertainty and never move on to a second deletion.
+  }
+  return hold('cache-retirement-not-confirmed');
+}

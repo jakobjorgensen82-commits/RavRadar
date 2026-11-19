@@ -9,7 +9,7 @@ import {
   selectTerminalDmiCache,
   TERMINAL_DMI_CACHE_CONTRACT,
 } from './lib/terminal-dmi-cache.mjs';
-import {planRawDmiCacheRotation, readRawCacheProtection, readRawCacheReaderActivity} from './lib/verified-raw-cache-rotation.mjs';
+import {planRawDmiCacheRotation, readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache} from './lib/verified-raw-cache-rotation.mjs';
 
 const repository = 'owner/repository';
 const runId = 33990516150;
@@ -435,3 +435,50 @@ assert.deepEqual(await readActivity([ordinaryOwner, {...queuedAudit, path: '.git
   status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
 });
 console.log('OK: fixed historical RAW dependencies are retained and legacy B/S never permits rotation.');
+
+const productionRepo = 'jakobjorgensen82-commits/RavRadar';
+const retirementUrl = 'https://api.github.com/repos/' + productionRepo + '/actions/caches/' + rawCaches[0].id;
+const verifyRetirement = async (testCase) => {
+  let reads = 0, locks = 0;
+  const deletes = [];
+  const result = await retireVerifiedRawCache({
+    repository: productionRepo, githubToken: 'synthetic-token',
+    current: successor, saved, retained,
+    verifyOwner: async () => { locks += 1; },
+    readSnapshot: async () => testCase.snapshots[reads++],
+    request: async (url, init) => {
+      assert.equal(url, retirementUrl);
+      assert.equal(init.method, 'DELETE');
+      assert.equal(init.redirect, 'error');
+      deletes.push(url);
+      return testCase.response();
+    },
+    ...testCase.inputs,
+  });
+  return {result, reads, locks, deletes};
+};
+const withoutOldest = snapshot([...rawCaches.slice(1), otherRefCache]);
+const acknowledged = () => ({status: 204, redirected: false});
+assert.deepEqual(await verifyRetirement({
+  snapshots: [snapshot(), snapshot(), withoutOldest], response: acknowledged,
+}), {result: {status: 'RETIRED', cacheId: rawCaches[0].id}, reads: 3, locks: 3, deletes: [retirementUrl]});
+for (const [response, last] of [
+  [() => { throw new Error('synthetic network interruption'); }, withoutOldest],
+  [acknowledged, snapshot([...rawCaches.slice(1, -1), otherRefCache])],
+  [() => ({status: 404, redirected: false}), withoutOldest],
+]) {
+  assert.deepEqual(await verifyRetirement({
+    snapshots: [snapshot(), snapshot(), last], response,
+  }), {result: {status: 'HOLD', reason: 'cache-retirement-not-confirmed', retire: []},
+    reads: 3, locks: 3, deletes: [retirementUrl]});
+}
+assert.deepEqual(await verifyRetirement({
+  snapshots: [snapshot(), snapshot()], response: acknowledged, inputs: {saved: undefined},
+}), {result: {status: 'HOLD', reason: 'retirement-requires-successor-save', retire: []},
+  reads: 0, locks: 0, deletes: []});
+assert.deepEqual(await verifyRetirement({
+  snapshots: [snapshot(), snapshot(undefined, [retained[1], rawIdentity(rawCaches[0])])],
+  response: acknowledged,
+}), {result: {status: 'HOLD', reason: 'raw-cache-protection-changed', retire: []},
+  reads: 2, locks: 1, deletes: []});
+console.log('OK: one exact DELETE at most; confirmed only when expected retained inventory agrees.');
