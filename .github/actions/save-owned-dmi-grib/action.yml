@@ -13,6 +13,8 @@ inputs:
 outputs:
   saved:
     description: True only after v2 finalization, physical cohort closure and own claim release.
+  archive_capacity_skipped:
+    description: True only after the local RAW archive exceeded its configured budget before any cache write.
   uploaded:
     description: True only after fixed cipher byte checks, v2 finalization, physical cohort closure and own claim release.
 runs:

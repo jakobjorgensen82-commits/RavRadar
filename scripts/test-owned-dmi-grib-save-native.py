@@ -661,13 +661,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_archive_file_limit_closes_before_cache_reservation(self):
         # One identical incompressible input and the real SDK for both limits.
         self.official_chain(finalize_ok=True, archive_limit=64 * 1024)
-        self.official_chain(finalize_ok=True, archive_limit=1024,
-            archive_refusal=b'stage=API reason=DMI_RAW_SAVE_API_FAILED\n')
+        self.official_chain(finalize_ok=True, archive_limit=1024, archive_capacity_skipped=True)
         self.official_chain(finalize_ok=True, archive_limit='01024',
             archive_refusal=b'stage=INPUT reason=DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED\n')
 
     def test_official_sdk_finalize_http_200_false_never_saves(self):
-        self.official_chain(finalize_ok=False)
+        self.official_chain(finalize_ok=False, archive_limit=64 * 1024)
 
     def test_official_sdk_fixed_cipher_finalize_17_closes_before_uploaded(self):
         self.official_chain(finalize_ok=True, ciphertext=True)
@@ -682,7 +681,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                          ['ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP'])
 
     def official_chain(self, *, finalize_ok, ciphertext=False, archive_limit=None,
-                       archive_refusal=None):
+                       archive_refusal=None, archive_capacity_skipped=False):
         import hashlib
         import random
         import resource
@@ -1002,23 +1001,26 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             fds['action'] = retain_pidfd(parent.pid)
             while not finished:
                 if exited(fds['action']):
-                    self.assertIsNotNone(archive_refusal, 'Official SDK exited before complete protocol')
+                    self.assertTrue(archive_capacity_skipped or archive_refusal is not None,
+                                    'Official SDK exited before complete protocol')
                     break
                 server.handle_request()
                 if server_failure:
                     raise server_failure[0]
-            if archive_refusal is not None:
+            if archive_capacity_skipped or archive_refusal is not None:
                 # Drain a queued connection as well as requests observed before exit.
                 server.handle_request()
                 if server_failure:
                     raise server_failure[0]
-                self.assertEqual(parent.wait(timeout=1.0), 1)
+                self.assertEqual(parent.wait(timeout=1.0), 0 if archive_capacity_skipped else 1)
                 self.assertEqual(calls, [])
                 self.assertEqual(connections, 0)
-                self.assertEqual(small(output), b'')
-                self.assertEqual(small(root / 'stderr'), b'DMI_RAW_SAVE_REFUSED\n'
-                    b'DMI_RAW_SAVE_DIAGNOSTIC ' + archive_refusal)
+                self.assertEqual(small(output),
+                                 b'archive_capacity_skipped=true\n' if archive_capacity_skipped else b'')
+                self.assertEqual(small(root / 'stderr'), b'' if archive_capacity_skipped else (
+                    b'DMI_RAW_SAVE_REFUSED\nDMI_RAW_SAVE_DIAGNOSTIC ' + archive_refusal))
                 self.assertFalse((root / CLAIM).exists())
+                self.assertFalse(any((root / 'sdk-temp').glob('rr-dmi-raw-archive-*')))
                 self.assertEqual(raw.read_bytes(), own_raw)
                 no_children()
                 return
@@ -1048,6 +1050,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             self.assertEqual(raw.read_bytes(), own_raw)
             self.assertFalse(any(p.name in {'cache.tgz', 'cache.tzst'}
                                  for p in (root / 'sdk-temp').rglob('*')), 'SDK archive still present')
+            self.assertFalse(any((root / 'sdk-temp').glob('rr-dmi-raw-archive-*')))
         finally:
             primary = sys.exc_info()[1]
             signal.setitimer(signal.ITIMER_REAL, CLEANUP_SECONDS)

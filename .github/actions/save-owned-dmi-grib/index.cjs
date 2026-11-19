@@ -74,7 +74,7 @@ function fixedInputs() {
   try { github = new URL(env.GITHUB_SERVER_URL || 'https://github.com'); } catch {}
   if (!github || github.origin !== 'https://github.com' || github.username || github.password
       || !env.ACTIONS_CACHE_SERVICE_V2) throw refused('DMI_RAW_SAVE_V2_REQUIRED');
-  return { key, path: CACHE_PATH };
+  return { key, path: CACHE_PATH, archiveLimit };
 }
 
 function fixedDistributionInputs() {
@@ -311,6 +311,18 @@ async function runApiWorker() {
   // Same default options/cross-OS behavior as the existing save action. Only
   // the reviewed v2 API's returned positive ID is a finalization candidate.
   const cacheId = await cache.saveCache([CACHE_PATH], input.key, undefined, false);
+  const archiveRefusal = input.archiveLimit !== undefined
+      && process.env.RAVRADAR_DMI_RAW_ARCHIVE_OBSERVER === '1'
+    ? fs.lstatSync(path.join(process.env.RUNNER_TEMP, 'raw-archive-budget-exceeded'),
+      { throwIfNoEntry: false }) : undefined;
+  if (archiveRefusal) {
+    if (cacheId !== -1 || !archiveRefusal.isFile() || archiveRefusal.size !== 0) {
+      throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+    }
+    fs.writeSync(3, JSON.stringify({ schemaVersion: 1, kind: 'DMI_RAW_ARCHIVE_BUDGET_EXCEEDED',
+      apiVersion: API_VERSION, path: input.path, key: input.key, archiveLimit: input.archiveLimit }));
+    return;
+  }
   if (!Number.isSafeInteger(cacheId) || cacheId <= 0) {
     throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
   }
@@ -450,6 +462,7 @@ async function runOwnedOperation(operation) {
   let physicalClosed = false;
   let firstFailure = null;
   let interrupted = false;
+  let archiveCapacitySkipped = false;
   const interrupt = () => {
     interrupted = true;
     // Request only. The Python owner must still prove its entire group absent.
@@ -503,10 +516,17 @@ async function runOwnedOperation(operation) {
           || typeof receipt.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(receipt.sha256)) {
         throw refused('WEATHER_CIPHER_UPLOAD_NOT_FINALIZED');
       }
-    } else if (receipt.schemaVersion !== 1 || receipt.kind !== 'DMI_RAW_SAVE_V2_FINALIZED'
-        || receipt.apiVersion !== API_VERSION || receipt.path !== input.path
-        || receipt.key !== input.key || !Number.isSafeInteger(receipt.cacheId) || receipt.cacheId <= 0) {
-      throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+    } else {
+      if (receipt.schemaVersion !== 1 || receipt.apiVersion !== API_VERSION
+          || receipt.path !== input.path || receipt.key !== input.key) {
+        throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+      }
+      archiveCapacitySkipped = receipt.kind === 'DMI_RAW_ARCHIVE_BUDGET_EXCEEDED'
+        && input.archiveLimit !== undefined && receipt.archiveLimit === input.archiveLimit;
+      if (!archiveCapacitySkipped && (receipt.kind !== 'DMI_RAW_SAVE_V2_FINALIZED'
+          || !Number.isSafeInteger(receipt.cacheId) || receipt.cacheId <= 0)) {
+        throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
+      }
     }
     if (require.main === module) cliPhase = 'LEASE';
     await owner.assertWeatherAcquisitionWriter(lease);
@@ -537,6 +557,10 @@ async function runOwnedOperation(operation) {
   if (operation === 'cipher') {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'uploaded=true\n');
     return { uploaded: true };
+  }
+  if (archiveCapacitySkipped) {
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'archive_capacity_skipped=true\n');
+    return { archiveCapacitySkipped: true };
   }
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'saved=true\n');
   return { saved: true };
