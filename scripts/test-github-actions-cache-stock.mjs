@@ -89,7 +89,8 @@ const stockForPlan = async (rows, reportedBytes = rows.reduce((sum, row) => sum 
 
 test('a new copy gets only the budget remaining after two RAW copies, all other refs, and the reserve', async () => {
   const rows = [rawCache(1, 2_599_638_595), rawCache(2, 2_983_120_870), cache(3, 336_806_586, 'refs/heads/testing')];
-  const stock = await stockForPlan(rows);
+  // The live repository had a stale lower entry count with equal bytes.
+  const stock = await stockForPlan(rows, 5_919_566_051, 2);
   assert.deepEqual(planRawCacheUpload(stock, rawKey(4), 500_000_000), {
     status: 'ADMIT', rawCopies: 2, accountedBytes: 5_919_566_051,
     concurrentSaveReserveBytes: 500_000_000, rawUploadBudgetBytes: 3_580_433_949,

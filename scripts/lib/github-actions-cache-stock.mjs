@@ -106,7 +106,9 @@ export function planRawCacheUpload(stock, key, concurrentSaveReserveBytes) {
   const raw = rawCacheStockRows(stock);
   const hold = reason => ({status: 'HOLD', reason, rawCopies: raw.length, ...usage});
 
-  if (stock.inventory.total_count !== stock.reportedUsageCount) return hold('stock-count-unconfirmed');
+  // The stable full listing can be ahead of the usage meter. It is
+  // only incomplete evidence when the meter reports additional entries.
+  if (stock.reportedUsageCount > stock.inventory.total_count) return hold('stock-count-unconfirmed');
   if (raw.some(row => !isMainRawCache(row)) || new Set(raw.map(row => row.key)).size !== raw.length
       || new Set(raw.map(row => row.version)).size > 1) return hold('raw-identity-unconfirmed');
   if (raw.some(row => row.key === key)) return hold('requested-raw-copy-already-present');
