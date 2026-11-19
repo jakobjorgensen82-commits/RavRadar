@@ -240,7 +240,7 @@ test('current installed code-only normal workflow keeps read-only SQL, hard curr
   assert.equal(activeCondition('Deploy exact rebound trip Edges without Worker or D1 replay'),false);
   const installed=step('Require the current exact installed source and empty SQL plan before private work');
   assert.match(installed,/--verify-current-installed-plan/);assert.match(installed,/integrated-cutover-readiness\.mjs verify-db/);
-  assert.ok(source.indexOf('      - name: Hydrate only already-applied migration identities')
+  assert.ok(source.indexOf(step('Hydrate only already-applied migration identities'))
     <source.indexOf(installed),'Read the installed list after preparing the exact local migration view');
   assert.match(installed,/supabase migration list --linked[^\n]*code-only-current-installed-list\.txt[\s\S]*--migration-list "\$RUNNER_TEMP\/code-only-current-installed-list\.txt"/);
   assert.doesNotMatch(installed,/code-only-migrations-before\.txt/);
