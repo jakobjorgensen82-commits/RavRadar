@@ -11,11 +11,15 @@ const PROOF_UPLOAD = 'Publish the bounded RAW rotation handoff before DMI';
 const PROOF_WAIT = 'Wait for the RAW rotation decision before DMI';
 const RESULT_JOB = 'Retire verified older DMI RAW archives';
 const RESULT_UPLOAD = 'Publish the RAW rotation decision';
+const SAVED_OBSERVATION = 'Prove that this run saved the required DMI originals';
+const SAVED_UPLOAD = 'Publish same-run DMI RAW coverage receipt';
+const TERMINAL_JOB = 'Require a verified current-weather deployment';
+const TERMINAL_STEP = 'Summarize and require the complete normal production path';
 const SHA40 = /^[a-f0-9]{40}$/;
 const ARTIFACT_DIGEST = /^sha256:[a-f0-9]{64}$/;
 const MAX_ARTIFACT_BYTES = 16 * 1024;
 const POLL_MS = 3000;
-const DEADLINE_MS = { proof: 15 * 60_000, 'observe-proof': 90_000, result: 180_000 };
+const DEADLINE_MS = { proof: 15 * 60_000, 'observe-proof': 90_000, result: 180_000, 'saved-coverage': 30_000 };
 const positive = value => Number.isSafeInteger(value) && value > 0;
 const timestamp = value => typeof value === 'string' ? Date.parse(value) : NaN;
 const hold = reason => ({ status: 'HOLD', reason });
@@ -50,7 +54,8 @@ function publicationStep(response, { kind, runId, attempt, head }) {
   if (!(job.status === 'in_progress' && job.conclusion === null)
       && !(job.status === 'completed' && job.conclusion === 'success')) return hold('publisher-not-successful');
 
-  const uploadName = result ? RESULT_UPLOAD : PROOF_UPLOAD;
+  const saved = kind === 'saved-coverage';
+  const uploadName = saved ? SAVED_UPLOAD : result ? RESULT_UPLOAD : PROOF_UPLOAD;
   const upload = successfulStep(job, uploadName);
   if (!upload) {
     const rows = job.steps.filter(step => step?.name === uploadName);
@@ -58,7 +63,7 @@ function publicationStep(response, { kind, runId, attempt, head }) {
       ? hold('upload-not-successful') : null;
   }
   if (result) return upload;
-  const observed = successfulStep(job, OBSERVE);
+  const observed = successfulStep(job, saved ? SAVED_OBSERVATION : OBSERVE);
   if (!observed || observed.number >= upload.number || observed.completedAt > upload.startedAt) {
     return hold('observation-not-successful');
   }
@@ -74,6 +79,17 @@ function publicationStep(response, { kind, runId, attempt, head }) {
       return hold('producer-not-waiting');
     }
   }
+  if (saved) {
+    const terminal = response.jobs.filter(row => row?.name === TERMINAL_JOB);
+    const [completion] = terminal;
+    const finalized = successfulStep(completion ?? {}, TERMINAL_STEP);
+    if (job.status !== 'completed' || terminal.length !== 1 || completion.run_id !== runId
+        || completion.run_attempt !== attempt || completion.head_sha !== head || completion.head_branch !== 'main'
+        || completion.status !== 'completed' || completion.conclusion !== 'success'
+        || !finalized || finalized.startedAt < upload.completedAt) {
+      return hold('terminal-coverage-owner-unproved');
+    }
+  }
   return upload;
 }
 
@@ -87,7 +103,8 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
       || (expectedDigest !== undefined && (typeof expectedDigest !== 'string' || !ARTIFACT_DIGEST.test(expectedDigest)))) {
     return hold('invalid-context');
   }
-  const name = `raw-rotation-${kind === 'result' ? 'result' : 'proof'}-${runId}-${attempt}`;
+  const label = kind === 'saved-coverage' ? 'raw-saved-coverage' : kind === 'result' ? 'raw-rotation-result' : 'raw-rotation-proof';
+  const name = `${label}-${runId}-${attempt}`;
   const context = { kind, name, repositoryId, runId, attempt, head };
   const runPath = `/repos/${REPOSITORY}/actions/runs/${runId}`;
   const attemptPath = `${runPath}/attempts/${attempt}`;

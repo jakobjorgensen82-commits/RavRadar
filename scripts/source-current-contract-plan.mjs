@@ -45,7 +45,7 @@ const LOCAL_RESTORE_INVENTORY_DISPATCH=[
 
 
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
-const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs';
+const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs scripts/test-committed-raw-current-capture-union.mjs';
 
 export const CURRENT_CONTRACT_COMMANDS=freeze({
   core:[
@@ -286,15 +286,21 @@ const PATH_AREAS=freeze({
     '.github/workflows/build-ravscore-historical-wave-pilot.yml',
     'scripts/check-weather-cadence-watchdog.mjs',
     'scripts/find-raw-rotation-artifact.mjs',
+    'scripts/lib/committed-raw-current-capture-union.mjs',
     'scripts/lib/github-actions-cache-stock.mjs',
     'scripts/lib/raw-rotation-handoff.mjs',
     'scripts/lib/terminal-dmi-cache.mjs',
+    'scripts/lib/verify-saved-raw-capture-coverage.mjs',
     'scripts/lib/verified-raw-cache-rotation.mjs',
     'scripts/observe-github-raw-cache-stock.mjs',
+    'scripts/prove-post-publish-saved-raw.mjs',
     'scripts/prove-pre-dmi-restored-raw-successor.mjs',
     'scripts/prove-restored-raw-successor.py',
+    'scripts/prove-saved-raw-cache.py',
+    'scripts/read-published-raw-rotation-runtime.mjs',
     'scripts/reconcile-private-runtime-checkpoint.mjs',
     'scripts/retire-verified-raw-caches.mjs',
+    'scripts/test-committed-raw-current-capture-union.mjs',
     'scripts/test-find-raw-rotation-artifact.mjs',
     'scripts/test-github-actions-cache-stock.mjs',
     'scripts/test-prove-restored-raw-successor.py',

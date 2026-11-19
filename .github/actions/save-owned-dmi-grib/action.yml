@@ -16,6 +16,8 @@ inputs:
 outputs:
   saved:
     description: True only after v2 finalization, physical cohort closure and own claim release.
+  saved_inventory:
+    description: Finalized cache ID and unchanged local archive inventory digest when measured.
   archive_capacity_skipped:
     description: True only after the local RAW archive exceeded its configured budget before any cache write.
   uploaded:

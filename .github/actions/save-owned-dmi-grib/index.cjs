@@ -455,6 +455,31 @@ function rawMembershipIdentity(stat) {
   return [stat.dev, stat.ino, stat.mode, stat.size, stat.mtimeNs, stat.ctimeNs].map(String);
 }
 
+// The owner snapshots the fixed archive input on both sides of SAVE. A later
+// byte check can use this inventory to tie local originals to that exact SAVE.
+function rawInventorySha256() {
+  const raw = path.join(ROOT, CACHE_PATH);
+  try {
+    if (fs.realpathSync(raw) !== raw) return null;
+    const directory = fs.lstatSync(raw, { bigint: true });
+    if (!directory.isDirectory()) return null;
+    const names = fs.readdirSync(raw).sort();
+    if (names.length > 4097 || !names.includes('asset-manifest.json')) return null;
+    const members = [];
+    for (const name of names) {
+      const file = fs.lstatSync(path.join(raw, name), { bigint: true });
+      if (!file.isFile() || file.nlink !== 1n) return null;
+      members.push([name, rawMembershipIdentity(file)]);
+    }
+    const identity = rawMembershipIdentity(directory);
+    if (rawMembershipIdentity(fs.lstatSync(raw, { bigint: true }))
+      .some((value, index) => value !== identity[index])) return null;
+    return crypto.createHash('sha256').update(JSON.stringify([identity, members])).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
 async function runOwnedOperation(operation) {
   if (require.main === module) cliPhase = 'INPUT';
   const input = operation === 'save' ? fixedInputs()
@@ -467,6 +492,7 @@ async function runOwnedOperation(operation) {
   let firstFailure = null;
   let interrupted = false;
   let archiveCapacitySkipped = false;
+  let finalizedInventory;
   const interrupt = () => {
     interrupted = true;
     // Request only. The Python owner must still prove its entire group absent.
@@ -479,6 +505,9 @@ async function runOwnedOperation(operation) {
     lease = await owner.acquireWeatherAcquisitionWriter();
     await owner.assertWeatherAcquisitionWriter(lease);
     if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
+    const inventoryBefore = operation === 'save'
+      && (input.archiveLimit !== undefined || process.env.RAVRADAR_MEASURE_RAW_SAVE_INVENTORY === 'true')
+      ? rawInventorySha256() : null;
     if (require.main === module) cliPhase = 'SPAWN';
     child = spawn('python3', ['-B', path.join(ROOT, 'scripts/run-owned-dmi-grib-save.py'),
       ...(operation === 'distribution' ? ['--prepare-distribution']
@@ -536,6 +565,9 @@ async function runOwnedOperation(operation) {
     }
     if (require.main === module) cliPhase = 'LEASE';
     await owner.assertWeatherAcquisitionWriter(lease);
+    if (inventoryBefore !== null && !archiveCapacitySkipped && rawInventorySha256() === inventoryBefore) {
+      finalizedInventory = { cacheId: receipt.cacheId, inventorySha256: inventoryBefore };
+    }
   } catch (error) {
     firstFailure = { value: error };
   } finally {
@@ -568,14 +600,20 @@ async function runOwnedOperation(operation) {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'archive_capacity_skipped=true\n');
     return { archiveCapacitySkipped: true };
   }
-  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'saved=true\n');
+  if (process.env.GITHUB_OUTPUT) {
+    let output = 'saved=true\n';
+    if (finalizedInventory) {
+      output += 'saved_inventory=' + JSON.stringify(finalizedInventory) + '\n';
+    }
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
+  }
   return { saved: true };
 }
 
 async function runOwnedSave() { return runOwnedOperation('save'); }
 async function runOwnedDistribution() { return runOwnedOperation('distribution'); }
 async function runOwnedCipherUpload() { return runOwnedOperation('cipher'); }
-module.exports = { runApiWorker, runOwnedSave, runOwnedDistribution };
+module.exports = { rawInventorySha256, runApiWorker, runOwnedSave, runOwnedDistribution };
 if (require.main === module) {
   cliPhase = 'INPUT';
   const selectedSave = process.env.INPUT_OPERATION === 'upload-encrypted-progress' ? runOwnedCipherUpload

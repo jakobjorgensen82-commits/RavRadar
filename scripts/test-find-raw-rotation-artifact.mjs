@@ -12,7 +12,9 @@ const successful = (name, number, start, end) => ({ name, number, status: 'compl
 
 function fixture(kind = 'proof') {
   const context = { kind, head, repositoryId: 11, runId: 12, attempt: 1, now: () => Date.parse(time(20)) };
-  const name = `raw-rotation-${kind === 'result' ? 'result' : 'proof'}-12-1`;
+  const name = kind === 'saved-coverage'
+    ? 'raw-saved-coverage-12-1'
+    : `raw-rotation-${kind === 'result' ? 'result' : 'proof'}-12-1`;
   const route = `/repos/${repository}/actions/runs/12`;
   const run = { id: 12, run_attempt: 1, head_sha: head, head_branch: 'main', repository: { id: 11, full_name: repository },
     head_repository: { id: 11 }, path: '.github/workflows/run-current-weather-once.yml', event: 'workflow_dispatch',
@@ -69,6 +71,24 @@ test('execution waits for real proof success and for the upstream producer to be
   const failed = fixture();
   failed.job.steps[0].conclusion = 'failure';
   assert.deepEqual(await failed.find(), { status: 'HOLD', reason: 'observation-not-successful' });
+});
+
+test('saved RAW proof also requires the same run to complete its public weather verification', async () => {
+  const subject = fixture('saved-coverage');
+  subject.job.steps = [
+    successful('Prove that this run saved the required DMI originals', 2, 1, 4),
+    successful('Publish same-run DMI RAW coverage receipt', 3, 6, 9),
+  ];
+  subject.job.status = 'completed';
+  subject.job.conclusion = 'success';
+  assert.deepEqual(await subject.find(), { status: 'HOLD', reason: 'terminal-coverage-owner-unproved' });
+  const terminal = { ...subject.job, id: 15, name: 'Require a verified current-weather deployment',
+    steps: [successful('Summarize and require the complete normal production path', 2, 12, 15)] };
+  subject.jobs.jobs.push(terminal);
+  subject.jobs.total_count++;
+  assert.deepEqual(await subject.find(), { status: 'FOUND', artifactId: 14, digest });
+  terminal.steps[0].conclusion = 'failure';
+  assert.deepEqual(await subject.find(), { status: 'HOLD', reason: 'terminal-coverage-owner-unproved' });
 });
 
 test('foreign or ambiguous metadata cannot expose a download ID', async () => {

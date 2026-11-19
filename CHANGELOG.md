@@ -1,6 +1,7 @@
 ## Drift — rotation af DMI-råcacher
 
 - Arbejdsforløbet er lokalt ændret til at kontrollere den næste låste times behov og fjerne én ældre kopi ad gangen efter verificeret genlæsning.
+- Når en normal kørsel har gemt og verificeret den nye kopi og udgivet prognosen, kan den afslutte rotationen samme gang. En gyldig genoptagelse, som bruger den ældste kopi, bevarer den.
 - Når funktionen er aktiveret, måles hele GitHub-cachebestanden før en ny upload. Den første driftsprøve gennemføres i observationstilstand.
 
 ## 4.0.602 — spørgsmål om ravfund

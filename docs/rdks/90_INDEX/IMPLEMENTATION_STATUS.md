@@ -3,6 +3,7 @@
 ## 19. november — RAW-rotation og plads til næste upload
 
 - [x] Lokal prøve af den normale kalder, fysisk læsning af gendannede originaler, afgrænset GitHub-job og stop efter uklart sletteudfald.
+- [x] Lokal adfærdsprøve binder sletning af den ene ældste kopi til nøjagtig afsluttet upload og verificerede originaler efter leveret prognose. Beskyttelse af den ældste kopi stopper sletning.
 - [ ] Præcis kilde- og Linux-kontrol for den samlede kandidat.
 - [ ] Verificér den næste normale observationskørsel, før oprydning aktiveres.
 - [ ] Verificér faktisk overgang til to kopier, gentagen rotation og margin under målt almindelig drift.

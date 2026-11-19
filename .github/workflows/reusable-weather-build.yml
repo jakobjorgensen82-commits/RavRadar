@@ -130,6 +130,9 @@ on:
       raw_bootstrap_coverage_sha256:
         description: "SHA-256 of the exact UTF-8 proof.json bytes"
         value: ${{ jobs.build-and-prepare.outputs.raw_bootstrap_coverage_sha256 }}
+      raw_saved_coverage_uploaded:
+        description: "A same-run DMI RAW coverage receipt was uploaded"
+        value: ${{ jobs.build-and-prepare.outputs.raw_saved_coverage_uploaded }}
       should_deploy:
         description: "Forwarded build-and-prepare should_deploy contract"
         value: ${{ jobs.build-and-prepare.outputs.should_deploy }}
@@ -293,6 +296,7 @@ jobs:
       pages_privacy_outcome: ${{ steps.pages-privacy.outcome }}
       pages_artifact_seal_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-artifact-seal.outcome || steps.pages-artifact-seal.outcome }}
       handoff_upload_outcome: ${{ steps.handoff-upload.outcome }}
+      raw_saved_coverage_uploaded: ${{ steps.raw-saved-coverage-upload.outcome == 'success' }}
       checkpoint_disposition: ${{ steps.checkpoint-disposition.outputs.disposition }}
       checkpoint_disposition_sha256: ${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}
       checkpoint_dataset_id: ${{ steps.checkpoint-disposition.outputs.dataset_id }}
@@ -305,6 +309,12 @@ jobs:
       artifact_built: ${{ steps.pages-build.outputs.built }}
 
     steps:
+      - name: Record build time for the optional DMI RAW proof
+        if: (inputs.enforce_raw_cache_rotation == true || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe') && github.actor == 'github-actions[bot]'
+        continue-on-error: true
+        shell: bash
+        run: printf 'RAW_BUILD_STARTED_AT=%s\n' "$(date +%s)" >> "$GITHUB_ENV"
+
       - name: Record the actual epoch build start before checkout
         if: inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true
         shell: bash
@@ -2687,6 +2697,8 @@ jobs:
           steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true' &&
           (inputs.enforce_raw_cache_rotation != true || (steps.dmi-raw-upload-admission.outcome == 'success' && steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes != ''))
         uses: ./.github/actions/save-owned-dmi-grib
+        env:
+          RAVRADAR_MEASURE_RAW_SAVE_INVENTORY: ${{ vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe' && 'true' || 'false' }}
         with:
           archive_limit: ${{ steps.dmi-raw-upload-admission.outputs.raw_upload_budget_bytes }}
           path: .cache/dmi-grib
@@ -3798,6 +3810,7 @@ jobs:
           --publish
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
         env:
+          RAVRADAR_RAW_PUBLICATION_RECEIPT: ${{ steps.dmi-raw-save.outputs.saved_inventory != '' && 'true' || 'false' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -4883,3 +4896,47 @@ jobs:
           path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
           retention-days: 14
           if-no-files-found: error
+
+      - name: Prove that this run saved the required DMI originals
+        id: raw-post-publish-proof
+        if: >-
+          success() && steps.handoff-upload.outcome == 'success' &&
+          (inputs.enforce_raw_cache_rotation == true || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe') &&
+          steps.private-runtime-publish.outcome == 'success' && steps.checkpoint-publish.outcome == 'success' &&
+          steps.dmi-raw-save.outputs.saved_inventory != '' && steps.checkpoint-publish.outputs.raw_s_central_version != '' &&
+          steps.dmi-part-continuity-donor.outputs.continuity_schema == '2' &&
+          steps.operational-action.outputs.action == 'integrated' && inputs.completed_private_runtime != true &&
+          github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+          github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' &&
+          github.run_attempt == '1'
+        continue-on-error: true
+        timeout-minutes: 4
+        env:
+          RAW_SAVED_INVENTORY: ${{ steps.dmi-raw-save.outputs.saved_inventory }}
+          RAW_PUBLISHED_S_VERSION: ${{ steps.checkpoint-publish.outputs.raw_s_central_version }}
+          RAW_PUBLISHED_S_GENERATION_SHA256: ${{ steps.checkpoint-publish.outputs.raw_s_generation_sha256 }}
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          RAW_POWERED_BY_ORDINARY_PUBLICATION: 'true'
+          RAW_PRIOR_CONTINUITY_SCHEMA: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "${RAW_BUILD_STARTED_AT:-}" =~ ^[0-9]{10}$ ]] ||
+            (( $(date +%s) - RAW_BUILD_STARTED_AT > 220 * 60 )); then
+            echo 'DMI_RAW_SAVED_COVERAGE_SKIPPED_BUILD_BUDGET'
+            exit 0
+          fi
+          node scripts/prove-post-publish-saved-raw.mjs
+
+      - name: Publish same-run DMI RAW coverage receipt
+        id: raw-saved-coverage-upload
+        if: steps.raw-post-publish-proof.outcome == 'success' && steps.raw-post-publish-proof.outputs.raw_post_publish_proof == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: raw-saved-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-raw-after-publish/coverage.json
+          if-no-files-found: error
+          retention-days: 1

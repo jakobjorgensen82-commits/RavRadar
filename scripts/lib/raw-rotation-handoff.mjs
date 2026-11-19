@@ -63,6 +63,36 @@ export async function authenticateRawRotationHandoff({bytes, scope, verifyArtifa
   return authenticated;
 }
 
+export async function authenticateSavedRawRotationHandoff({bytes, scope, verifyArtifactProducer,
+  readProtectedB, readProtectedSVersion}) {
+  requireEvidence(Buffer.isBuffer(bytes) && bytes.length > 0 && bytes.length <= 1024);
+  const receipt = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
+  requireEvidence(exactKeys(receipt, ['schemaVersion', 'kind', 'runId', 'runAttempt', 'sourceHead',
+    'targetReferenceAt', 'savedCacheId', 'inventorySha256', 'capturePlanSha256', 'protectedPairSha256',
+    'verifiedCaptureCount'])
+    && receipt.schemaVersion === 1 && receipt.kind === 'DMI_RAW_SAVED_COVERAGE_HANDOFF_V1'
+    && RUN_ID.test(receipt.runId ?? '') && receipt.runAttempt === '1' && HEAD.test(receipt.sourceHead ?? '')
+    && HOUR.test(receipt.targetReferenceAt ?? '') && !receipt.targetReferenceAt.endsWith('.000Z')
+    && ['runId', 'runAttempt', 'sourceHead', 'targetReferenceAt'].every(key => receipt[key] === scope[key])
+    && Number.isSafeInteger(receipt.savedCacheId) && receipt.savedCacheId > 0
+    && [receipt.inventorySha256, receipt.capturePlanSha256, receipt.protectedPairSha256]
+      .every(value => typeof value === 'string' && SHA256.test(value))
+    && Number.isSafeInteger(receipt.verifiedCaptureCount)
+    && receipt.verifiedCaptureCount >= 0 && receipt.verifiedCaptureCount <= 4096);
+  await verifyArtifactProducer();
+  const [b, sVersion] = await Promise.all([readProtectedB(), readProtectedSVersion()]);
+  requireEvidence(b?.expectedZoneCount === 210 && b.expectedPartCount === 673
+    && b.sourceHead === receipt.sourceHead
+    && Date.parse(b.productionReferenceAt) === Date.parse(receipt.targetReferenceAt));
+  const {datasetId, productionReferenceAt, bundleContentSha256, sourceHead: bSourceHead, centralVersion: bVersion} = b;
+  const boundary = Object.freeze({datasetId, productionReferenceAt, bundleContentSha256});
+  const published = Object.freeze({bSourceHead, bVersion, sVersion});
+  requireEvidence(rawRotationPairDigest({...boundary, ...published}) === receipt.protectedPairSha256);
+  const authenticated = Object.freeze({receipt: Object.freeze(receipt), boundary, published});
+  authenticatedHandoffs.add(authenticated);
+  return authenticated;
+}
+
 // The checkout is public. Only operational identity, sizes of sets and hashes
 // cross the job boundary. The protected weather identifiers stay on its runner.
 export function projectPublicRawRotationProof(bytes, expectedProofDigest) {

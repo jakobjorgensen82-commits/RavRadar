@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {spawnSync} from 'node:child_process';
-import { authenticateRawRotationHandoff, isAuthenticatedRawRotationHandoff,
+import { authenticateRawRotationHandoff, authenticateSavedRawRotationHandoff, isAuthenticatedRawRotationHandoff,
   projectPublicRawRotationProof, projectRawRotationDecision, rawRotationPairDigest, requireRawRotationDecision } from './lib/raw-rotation-handoff.mjs';
 import { preparePreDmiRawSuccessorProof } from './prove-pre-dmi-restored-raw-successor.mjs';
 import {
@@ -665,32 +665,36 @@ const sourceRuns = Object.fromEntries(rawCaches.map(row => {
   return [sourceId, {row, run: {...liveOwner, id: sourceId, status: 'completed', conclusion: 'success'}}];
 }));
 const apiRoot = '/repos/' + productionRepo;
+function rotationApi(owner, readRows) {
+  return async route => {
+    const rows = readRows();
+    if (route === apiRoot + '/git/ref/heads/main') return main;
+    if (route.includes('/actions/caches?')) return {total_count: rows.length, actions_caches: rows};
+    if (route.endsWith('/actions/cache/usage')) return {active_caches_count: rows.length, active_caches_size_in_bytes: 0};
+    if (route.includes('/actions/runs?status=')) {
+      const workflow_runs = route.includes('status=in_progress') ? [owner] : [];
+      return {total_count: workflow_runs.length, workflow_runs};
+    }
+    const match = route.match(/\/actions\/runs\/(\d+)\/attempts\/1(\/jobs\?per_page=100)?$/);
+    assert.ok(match, route);
+    if (!match[2] && Number(match[1]) === owner.id) return owner;
+    const source = sourceRuns[match[1]];
+    assert.ok(source);
+    if (!match[2]) return source.run;
+    return {total_count: 1, jobs: [{...sourceJob, run_id: source.run.id,
+      steps: [
+        step(DMI_PRODUCER_STEP, source.row.created_at, source.row.created_at, 'success', 113),
+        step('Save progressed DMI GRIB download cache', source.row.created_at, source.row.created_at, 'success', 117),
+      ],
+    }]};
+  };
+}
 for (const uncertainSecond of [false, true]) {
   let rows = [...rawCaches, {...otherRefCache, size_in_bytes: 1024}];
   const removed = [];
   const choice = await closeRawCacheOverlapFromHandoff({
     ...authenticateArgs, githubToken: 'synthetic-token',
-    getJson: async route => {
-      if (route === apiRoot + '/git/ref/heads/main') return main;
-      if (route.includes('/actions/caches?')) return {total_count: rows.length, actions_caches: rows};
-      if (route.endsWith('/actions/cache/usage')) return {active_caches_count: rows.length, active_caches_size_in_bytes: 0};
-      if (route.includes('/actions/runs?status=')) {
-        const workflow_runs = route.includes('status=in_progress') ? [liveOwner] : [];
-        return {total_count: workflow_runs.length, workflow_runs};
-      }
-      const match = route.match(/\/actions\/runs\/(\d+)\/attempts\/1(\/jobs\?per_page=100)?$/);
-      assert.ok(match, route);
-      if (Number(match[1]) === liveOwner.id) return liveOwner;
-      const source = sourceRuns[match[1]];
-      assert.ok(source);
-      if (!match[2]) return source.run;
-      return {total_count: 1, jobs: [{...sourceJob, run_id: source.run.id,
-        steps: [
-          step(DMI_PRODUCER_STEP, source.row.created_at, source.row.created_at, 'success', 113),
-          step('Save progressed DMI GRIB download cache', source.row.created_at, source.row.created_at, 'success', 117),
-        ],
-      }]};
-    },
+    getJson: rotationApi(liveOwner, () => rows),
     request: async url => {
       const cacheId = Number(url.split('/').at(-1));
       removed.push(cacheId);
@@ -705,6 +709,59 @@ for (const uncertainSecond of [false, true]) {
 }
 console.log('OK: the exact handoff and live paired versions govern both initial RAW retirements.');
 
+const savedScope = {...nextScope, runId: String(sourceRunId)};
+const savedB = {...guardedB, sourceHead: savedScope.sourceHead, productionReferenceAt: savedScope.targetReferenceAt};
+const savedReceipt = {
+  schemaVersion: 1, kind: 'DMI_RAW_SAVED_COVERAGE_HANDOFF_V1', ...savedScope,
+  savedCacheId: rawCandidate.id, inventorySha256: 'a'.repeat(64), capturePlanSha256: 'b'.repeat(64),
+  protectedPairSha256: rawRotationPairDigest({...savedB, bSourceHead: savedB.sourceHead,
+    bVersion: savedB.centralVersion, sVersion: pairedBaseline.sVersion}),
+  verifiedCaptureCount: 0,
+};
+const authenticateSaved = (changes = {}, evidence = {}) => authenticateSavedRawRotationHandoff({
+  ...authenticateArgs, scope: savedScope, bytes: Buffer.from(JSON.stringify({...savedReceipt, ...changes})),
+  readProtectedB: async () => savedB, ...evidence,
+});
+await assert.rejects(authenticateSaved({}, {readProtectedB: async () => guardedB}), /HANDOFF_EVIDENCE_INVALID/);
+await assert.rejects(authenticateSaved({}, {readProtectedSVersion: async () => pairedBaseline.sVersion + 1}),
+  /HANDOFF_EVIDENCE_INVALID/);
+await assert.rejects(authenticateSaved({inventorySha256: ''}), /HANDOFF_EVIDENCE_INVALID/);
+const savedRows = rawCaches.slice(1);
+const savedStock = snapshot(savedRows);
+const evaluateSaved = async (receipt, protection = savedStock.protection) => {
+  const restoredSuccessor = await authenticateSaved(receipt);
+  return planRawDmiCacheRotation({
+    ...bootPlan, before: {...savedStock, protection}, after: {...savedStock, protection},
+    current: {...savedScope, boundary: restoredSuccessor.boundary, requiredCaptures: 0},
+    restoredSuccessor,
+  });
+};
+assert.deepEqual((await evaluateSaved()).retire, [rawIdentity(savedRows[0])]);
+assert.equal((await evaluateSaved({savedCacheId: savedRows[0].id})).status, 'HOLD');
+assert.equal((await evaluateSaved({}, {complete: true, caches: [rawIdentity(savedRows[0])]})).status, 'HOLD');
+console.log('OK: same-run retirement requires the exact newly saved archive and preserves any pinned third copy.');
+
+const savingOwner = {...productionOwner, id: sourceRunId};
+for (const count of [2, 3, 4]) {
+  let rows = rawCaches.slice(-count);
+  const removed = [];
+  const outcome = await closeRawCacheOverlapFromHandoff({
+    ...authenticateArgs, scope: savedScope, bytes: Buffer.from(JSON.stringify(savedReceipt)),
+    readProtectedB: async () => savedB, githubToken: 'synthetic-token', savedCoverage: true,
+    getJson: rotationApi(savingOwner, () => rows),
+    request: async url => {
+      const cacheId = Number(url.split('/').at(-1));
+      removed.push(cacheId);
+      rows = rows.filter(row => row.id !== cacheId);
+      return acknowledged();
+    },
+  });
+  assert.equal(outcome.status, count === 4 ? 'HOLD' : 'READY');
+  assert.equal(outcome.retiredCount, count === 3 ? 1 : 0);
+  assert.deepEqual(removed, count === 3 ? [savedRows[0].id] : []);
+  assert.equal(rows.length, count === 4 ? 4 : 2);
+}
+console.log('OK: post-publication closes exactly one overlap and holds unexpected fourth copies.');
 
 const confirmed = projectRawRotationDecision(nextScope, privateSha256, {status: 'READY', retiredCount: 2});
 assert.deepEqual(requireRawRotationDecision(Buffer.from(JSON.stringify(confirmed)), nextScope, privateSha256), confirmed);

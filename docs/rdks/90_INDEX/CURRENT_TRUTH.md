@@ -4,7 +4,7 @@
 
 Den lokale kandidat genbruger den normale låste time samt det autentificerede vejrgrundlag. Den kontrollerer de nødvendige originaler i den nyeste faktisk gendannede kopi, mens det afgrænsede skrivejob verificerer de to nyeste uploads, aktuelle læsere og hver sletning særskilt. Planen kan først udføres, når den almindelige builder venter og samme vejrgrundlag stadig er aktuelt.
 
-Målet er to færdige RAW-kopier og højst én nyere kopi under overgangen. Måling og oprydning omfatter hele repositoryets cachebestand. Det lokale kildearbejde beviser endnu hverken faktisk oprydning eller sikker Free-drift. Første driftstrin er ren observation. Se håndbog 89.356.
+Målet er to færdige RAW-kopier og højst én nyere kopi under overgangen. Ejerens estimerede eksempel er 5,91 GB for de to færdige og knap 8 GB RAW under udskiftningen. GitHub-jobbet måler hele cachebestanden før upload. Samme kørsel afslutter rotationen efter verificeret publicering på grundlag af identiteten på den nye upload, den fysiske kontrol af de aktuelle beskyttede originaler og friske kontroller af øvrige læsere. Køreplanen bevarer den ældste ved uklarhed eller aktiv beskyttelse. Kildekandidaten afventer GitHub og første skrivefri observationskørsel. Se håndbog 89.356.
 
 Den eksterne AI er målt gennem den normale offentlige brugerflade på tre sprog i en afgrænset prøve. Den særskilte appopdatering på 602 er en lokal kildekandidat, der bruger den samme validerede faktavej for det kendte skånsomme identifikationsspørgsmål og husker fundet ved en snæver opfølgning. Den næste leveringsprøve omfatter den tidligere fejlede tyske formulering.
 

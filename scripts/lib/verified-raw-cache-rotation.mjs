@@ -4,7 +4,8 @@ import {isInertLegacyQueue} from '../check-weather-cadence-watchdog.mjs';
 import {isDeepStrictEqual} from 'node:util';
 import {WEATHER_STATE_EPOCH_ORIGINAL_DATASET} from '../weather-state-epoch-budget.mjs';
 import {isMainRawCache, rawCacheStockRows, readGithubActionsCacheStock} from './github-actions-cache-stock.mjs';
-import {authenticateRawRotationHandoff, isAuthenticatedRawRotationHandoff} from './raw-rotation-handoff.mjs';
+import {authenticateRawRotationHandoff, authenticateSavedRawRotationHandoff,
+  isAuthenticatedRawRotationHandoff} from './raw-rotation-handoff.mjs';
 import {DMI_PRODUCER_JOB, DMI_PRODUCER_STEP, successfulStep} from './terminal-dmi-cache.mjs';
 
 const SHA256 = /^[0-9a-f]{64}$/;
@@ -129,11 +130,14 @@ function matchesRestoredSuccessor(restoredSuccessor, current, cache) {
   const receipt = restoredSuccessor?.receipt;
   if (isAuthenticatedRawRotationHandoff(restoredSuccessor)) {
     const {id, key, version} = cache;
+    const archiveMatches = receipt.kind === 'DMI_RAW_SAVED_COVERAGE_HANDOFF_V1'
+      ? receipt.savedCacheId === id && key.endsWith('-' + current?.runId + '-' + current?.runAttempt)
+      : receipt.cacheIdentitySha256 === flatDigest({id, key, version});
     return current?.boundary === restoredSuccessor.boundary
       && receipt.targetReferenceAt === current.targetReferenceAt
       && receipt.runId === current.runId && receipt.runAttempt === current.runAttempt
       && receipt.sourceHead === current.sourceHead && receipt.verifiedCaptureCount === current.requiredCaptures
-      && receipt.cacheIdentitySha256 === flatDigest({id, key, version});
+      && archiveMatches;
   }
   const bytes = restoredSuccessor?.planBytes;
   if (receipt?.schemaVersion !== 1 || receipt.kind !== 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1'
@@ -410,8 +414,9 @@ export async function closeRawCacheOverlap(options) {
 // that its reader is still waiting and that main and the exact B/S have not
 // advanced before doing anything irreversible.
 export async function closeRawCacheOverlapFromHandoff({bytes, scope, githubToken, getJson,
-  verifyArtifactProducer, readProtectedB, readProtectedSVersion, request = fetch}) {
-  const restoredSuccessor = await authenticateRawRotationHandoff({bytes, scope, verifyArtifactProducer,
+  verifyArtifactProducer, readProtectedB, readProtectedSVersion, savedCoverage = false, request = fetch}) {
+  const authenticateHandoff = savedCoverage ? authenticateSavedRawRotationHandoff : authenticateRawRotationHandoff;
+  const restoredSuccessor = await authenticateHandoff({bytes, scope, verifyArtifactProducer,
     readProtectedB, readProtectedSVersion});
   const {receipt, boundary, published} = restoredSuccessor;
   const ownerRunId = Number(receipt.runId);
@@ -429,7 +434,8 @@ export async function closeRawCacheOverlapFromHandoff({bytes, scope, githubToken
   const readStock = () => readGithubActionsCacheStock(repository, getJson);
   const stock = await readStock();
   const raw = rawCacheStockRows(stock);
-  if (raw.length < 2 || raw.length > 4 || raw.some(row => !isMainRawCache(row))) {
+  const maxRawCopies = savedCoverage ? 3 : 4;
+  if (raw.length < 2 || raw.length > maxRawCopies || raw.some(row => !isMainRawCache(row))) {
     return {status: 'HOLD', reason: 'raw-cache-count-or-identity-unconfirmed', retiredCount: 0};
   }
   raw.sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at) || right.id - left.id);
@@ -438,12 +444,21 @@ export async function closeRawCacheOverlapFromHandoff({bytes, scope, githubToken
     return {status: 'HOLD', reason: 'the-newest-two-raw-saves-are-unconfirmed', retiredCount: 0};
   }
   const readSnapshot = async () => {
-    const {inventory} = await readStock();
+    const snapshot = await readStock();
+    if (savedCoverage && rawCacheStockRows(snapshot).length > maxRawCopies) {
+      throw new Error('RAW_ROTATION_SAVED_OVERLAP_CHANGED');
+    }
+    const {inventory} = snapshot;
     return {inventory, protection: await readRawCacheProtection({inventory, boundary, repository,
       sourceHead, ownerRunId, getJson, restoredSuccessor})};
   };
-  const {retired, lastDecision} = await closeRawCacheOverlap({repository, githubToken, readSnapshot,
-    verifyOwner, current, restoredSuccessor, retained, request});
+  const options = {repository, githubToken, readSnapshot, verifyOwner, current, restoredSuccessor, retained, request};
+  const {retired, lastDecision} = savedCoverage
+    ? await retireVerifiedRawCache(options).then(result => ({
+      retired: result.status === 'RETIRED' ? [result.cacheId] : [],
+      lastDecision: result,
+    }))
+    : await closeRawCacheOverlap(options);
   if ((lastDecision.status === 'RETIRED' && lastDecision.remainingRawCopies === 2)
       || (lastDecision.status === 'READY' && lastDecision.reason === 'already-two-raw-caches')) {
     return {status: 'READY', reason: 'two-verified-raw-caches', retiredCount: retired.length};

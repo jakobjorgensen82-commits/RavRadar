@@ -4,9 +4,9 @@ Behold de to nyeste verificerede råvejrkopier, og mål den samlede GitHub-cache
 
 En almindelig vejrkørsel gendanner den seneste kompatible DMI-råcache. Før næste hentning kan den afprøve, om kopien har alle de originale filer, som den låste prognosetime kræver ifølge den gemte vejrpakke og beregningstilstand. Prøven læser de eksisterende filer og kontrollerer størrelse, SHA-256 og filidentitet.
 
-Et særskilt GitHub-job må kun udføre oprydningen, når den almindelige kørsel venter på dens afgørelse, de to nyeste uploads er verificeret, og ingen anden mulig læser bruger de ældre kopier. Hver sletning bekræftes med en ny aflæsning. Ukendte svar eller afvigelser stopper oplægget til yderligere sletning.
+Før en ny upload må et særskilt GitHub-job rydde gamle rester op, mens den almindelige kørsel venter. Det kræver verificerede uploads, tilstrækkelig dækning for den næste låste prognosetime og kontrol af andre mulige læsere. Hver sletning bekræftes med en ny aflæsning.
 
-Den næste RAW-upload afpasses efter den samlede cachebestand i GitHub og en reserve til andre cachefiler. En tredje kopi beholdes frem til den er verificeret for den næste faktisk låste prognosetime. Den første driftsafprøvning foretages i observationstilstand. Ved denne dokumentationsændring afventes både den faktiske GitHub-afprøvning og aktivering.
+Den næste RAW-upload afpasses efter den samlede cachebestand i GitHub og en reserve til andre cachefiler. To færdige kopier bevares, mens den tredje gemmes. Samme kørsel kan derefter fjerne den ældste, når den nye kopi er færdig, de nødvendige originale vejrfiler er verificeret, den nye prognose er kontrolleret på RavRadar, og ingen genoptagelse stadig kan bruge den gamle kopi. Ved ukendt udfald bevares kopierne. Første ordinære driftsprøve sker i observationstilstand. Den lokale kandidat afventer kontrol i GitHub og aktivering.
 
 ## 89.355 — Når et fund kan ligne rav
 
