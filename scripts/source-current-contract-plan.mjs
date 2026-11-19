@@ -451,6 +451,7 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/audit-pages-artifact-privacy.mjs':['node scripts/test-pages-artifact-privacy.mjs',SHARE_PROJECTION_SOURCE_TEST],
   'scripts/build-forecast-share-projection.mjs':[SHARE_PROJECTION_SOURCE_TEST],
   'scripts/verify-ravscore-operational-pages-deployment.mjs':[SHARE_PROJECTION_SOURCE_TEST],
+  'scripts/test-dmi-native-provenance.py':['node --test scripts/test-current-operational-python-contracts.mjs'],
   'scripts/lib/account-erasure-outbox-native-fixture.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-account-assistant-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-account-erasure-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
