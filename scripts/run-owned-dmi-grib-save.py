@@ -24,21 +24,28 @@ ENTRY = ROOT / '.github/actions/save-owned-dmi-grib/index.cjs'
 SYSTEM_ZSTDMT = ('/usr/local/bin/zstdmt', '/usr/bin/zstdmt')
 ARCHIVE_OBSERVER = 'RAVRADAR_DMI_RAW_ARCHIVE_OBSERVER'
 ARCHIVE_REFUSAL = 'raw-archive-budget-exceeded'
+# Keep the actual sealed-progress archive below this limit, including tar
+# and compression overhead beyond the existing 384 MiB sealed input limit.
+CIPHER_ARCHIVE_MAX_BYTES = 420_000_000
 _retained_children = []
+
+
+def constrain_archive_bytes(maximum):
+    import resource
+    inherited = resource.getrlimit(resource.RLIMIT_FSIZE)
+    limit = min([maximum, *(bound for bound in inherited if bound != resource.RLIM_INFINITY)])
+    resource.setrlimit(resource.RLIMIT_FSIZE, (limit, limit))
+    return limit
 
 
 def constrain_raw_archive_bytes():
     value = os.environ.get('RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES')
     if value is None:
-        return
+        return False
     if not re.fullmatch(r'[1-9][0-9]{0,15}', value) or not 1024 <= int(value) < 2 ** 53:
         raise RuntimeError('DMI_RAW_SAVE_ARCHIVE_LIMIT_REFUSED')
-
-    import resource
-    inherited = resource.getrlimit(resource.RLIMIT_FSIZE)
-    limit = min([int(value), *(bound for bound in inherited if bound != resource.RLIM_INFINITY)])
-    resource.setrlimit(resource.RLIMIT_FSIZE, (limit, limit))
-    return limit == int(value)
+    maximum = int(value)
+    return constrain_archive_bytes(maximum) == maximum
 
 
 def install_archive_observer(scope, environment, codec):
@@ -191,9 +198,11 @@ def main():
                         '--fixed-cipher-worker' if ciphertext else '--fixed-api-worker')
         environment = os.environ.copy()
         environment.pop(ARCHIVE_OBSERVER, None)
-        # Only this owned RAW SAVE cohort and its archive subprocesses
-        # inherit the limit. It does not alter the acquisition directory.
-        if not distribution and not ciphertext and constrain_raw_archive_bytes():
+        # Only the owned cache-save cohort and its archive subprocesses
+        # inherit the limit. The distribution and acquisition paths are separate.
+        if ciphertext:
+            constrain_archive_bytes(CIPHER_ARCHIVE_MAX_BYTES)
+        elif not distribution and constrain_raw_archive_bytes():
             codec = shutil.which('zstdmt', path=environment.get('PATH'))
             if codec and environment.get('RUNNER_TEMP'):
                 # GitHub's Ubuntu image uses /usr/local/bin; distro packages use /usr/bin.

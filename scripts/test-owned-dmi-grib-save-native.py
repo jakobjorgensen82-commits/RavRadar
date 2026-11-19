@@ -743,8 +743,9 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 case.assertEqual(observed[role]['ppid'], ancestor)
                 ancestor = pid
             worker, cohort = observed['worker'], observed['cohort']
-            if archive_limit is not None:
-                limit = (archive_limit, archive_limit)
+            expected_limit = 420_000_000 if ciphertext else archive_limit
+            if expected_limit is not None:
+                limit = (expected_limit, expected_limit)
                 for role in ('cohort', 'worker'):
                     case.assertEqual(resource.prlimit(observed[role]['pid'], resource.RLIMIT_FSIZE), limit)
             case.assertEqual((worker['pgid'], worker['sid']), (worker['pid'], worker['pid']))
