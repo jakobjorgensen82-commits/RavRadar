@@ -957,7 +957,7 @@ async function invokeProtectedCheckpointRpc(rpcRequest, body) {
   }
 }
 
-async function publishCheckpointWithReceipt({
+export async function publishProtectedRavScoreContinuationCheckpoint({
   checkpointPath = PROTECTED_RAVSCORE_CHECKPOINT_PATH,
   targetReference,
   request,
@@ -1020,7 +1020,7 @@ async function publishCheckpointWithReceipt({
     { local, expectedVersion },
   );
   const changed = metadata.disposition !== 'unchanged';
-  const result = {
+  return {
     published: changed,
     reason: changed
       ? `protected-checkpoint-${metadata.disposition}`
@@ -1032,11 +1032,6 @@ async function publishCheckpointWithReceipt({
     preexistingHistoricalVersionsPreserved: true,
     newHistoricalVersionsRetained: false,
   };
-  return { result, generationSha256: metadata.generationSha256 };
-}
-
-export async function publishProtectedRavScoreContinuationCheckpoint(options) {
-  return (await publishCheckpointWithReceipt(options)).result;
 }
 
 export async function restoreProtectedRavScoreContinuationCheckpoint({
@@ -1178,29 +1173,8 @@ function parseArgs(argv) {
   return result;
 }
 
-function prepareRawCheckpointPublicationReceipt(target) {
-  if (process.env.RAVRADAR_RAW_PUBLICATION_RECEIPT !== 'true') return null;
-  const locked = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
-  const output = process.env.GITHUB_OUTPUT;
-  if (!path.isAbsolute(output ?? '') || !/^\d{4}-\d\d-\d\dT\d\d:00:00(?:\.000)?Z$/.test(locked ?? '')
-      || locked.replace(/(?:\.000)?Z$/, '.000Z') !== target) {
-    return null;
-  }
-  return async ({ centralVersion, productionReferenceAt, digest }) => {
-    if (!Number.isSafeInteger(centralVersion) || centralVersion < 1
-        || productionReferenceAt !== target || !/^[a-f0-9]{64}$/.test(digest ?? '')) {
-      throw new Error('RAW_PUBLICATION_RECEIPT_RESULT_INVALID');
-    }
-    await fs.appendFile(output, 'raw_s_central_version=' + centralVersion + '\n'
-      + 'raw_s_generation_sha256=' + digest + '\n');
-  };
-}
-
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const writeReceipt = options.mode === 'publish'
-    ? prepareRawCheckpointPublicationReceipt(options.targetReference)
-    : null;
   const request = options.mode === 'publish'
     ? createProtectedRavScoreCheckpointVersionRequester()
     : createProtectedRavScoreCheckpointRequester();
@@ -1211,17 +1185,11 @@ async function main() {
     ? createProtectedRavScoreCheckpointDiagnosticRequester()
     : null;
   const result = options.mode === 'publish'
-    ? await publishCheckpointWithReceipt({
+    ? await publishProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,
       request,
       rpcRequest,
       diagnosticRequest,
-    }).then(async ({ result, generationSha256 }) => {
-      if (writeReceipt) {
-        await writeReceipt({ centralVersion: result.centralVersion, productionReferenceAt: result.checkpointAt,
-          digest: generationSha256 }).catch(() => console.warn('RAW_PUBLICATION_RECEIPT_UNAVAILABLE'));
-      }
-      return result;
     })
     : await restoreProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,

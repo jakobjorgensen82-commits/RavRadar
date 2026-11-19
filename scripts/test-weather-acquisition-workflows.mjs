@@ -69,6 +69,16 @@ test('ordinary source validation runs on committed files before any runtime over
   }
 });
 
+test('ordinary checkpoint publishes a RAW receipt only for a completed upload inventory', () => {
+  const publish = step(actualNormalWorkflow, 'Publish atomic RavScore checkpoint to protected admin storage');
+  const proof = step(actualNormalWorkflow, 'Prove that this run saved the required DMI originals');
+  assert.match(publish, /RAVRADAR_RAW_PUBLICATION_RECEIPT: .*steps\.dmi-raw-save\.outputs\.saved_inventory != ''/);
+  assert.match(publish, /if \[ "\$RAVRADAR_RAW_PUBLICATION_RECEIPT" = true \]; then\s+node scripts\/publish-checkpoint-with-raw-receipt\.mjs/);
+  assert.match(publish, /else\s+node scripts\/protected-ravscore-continuation-checkpoint\.mjs\s+\\\s+--publish/);
+  assert.match(proof, /RAW_PUBLISHED_S_VERSION: \$\{\{ steps\.checkpoint-publish\.outputs\.raw_s_central_version \}\}/);
+  assert.match(proof, /RAW_PUBLISHED_S_GENERATION_SHA256: \$\{\{ steps\.checkpoint-publish\.outputs\.raw_s_generation_sha256 \}\}/);
+});
+
 function epochCheckpointPreflightGuard(source) {
   const preflight = step(source, 'Decide whether weather needs updating before private runtime download');
   const run = preflight.match(/        run: \|\n([\s\S]*)$/)?.[1]?.replace(/^          /gm, '');

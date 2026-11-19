@@ -2,6 +2,7 @@
 
 - Arbejdsforløbet er lokalt ændret til at kontrollere den næste låste times behov og fjerne én ældre kopi ad gangen efter verificeret genlæsning.
 - Når en normal kørsel har gemt og verificeret den nye kopi og udgivet prognosen, kan den afslutte rotationen samme gang. En gyldig genoptagelse, som bruger den ældste kopi, bevarer den.
+- Kontrollen får samme måltime, versionsnummer og fingeraftryk fra den eksisterende checkpointudgiver, når den har valideret svaret. RavScores modelaftryk er uændret.
 - Når funktionen er aktiveret, måles hele GitHub-cachebestanden før en ny upload. Hvis der allerede er to verificerede kopier, kan vejrhentningen fortsætte samtidig med andre cachelæsere.
 
 ## 4.0.602 — vejrets kildekontrol før driftsklargøring

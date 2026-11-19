@@ -3806,10 +3806,14 @@ jobs:
       - name: Publish atomic RavScore checkpoint to protected admin storage
         id: checkpoint-publish
         if: steps.private-runtime-publish.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
-        run: >-
-          node scripts/protected-ravscore-continuation-checkpoint.mjs
-          --publish
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        shell: bash
+        run: |
+          if [ "$RAVRADAR_RAW_PUBLICATION_RECEIPT" = true ]; then
+            node scripts/publish-checkpoint-with-raw-receipt.mjs "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          else
+            node scripts/protected-ravscore-continuation-checkpoint.mjs \
+              --publish --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          fi
         env:
           RAVRADAR_RAW_PUBLICATION_RECEIPT: ${{ steps.dmi-raw-save.outputs.saved_inventory != '' && 'true' || 'false' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

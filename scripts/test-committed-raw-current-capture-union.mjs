@@ -12,10 +12,27 @@ import { buildProtectedDmiNativeCurrentProofs } from './lib/protected-dmi-native
 import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
 import { canonicalSavedDmiOriginalCapture } from './lib/saved-dmi-original-capture.mjs';
 import { selectQualifiedWeatherComponent } from './lib/weather-component-selection.mjs';
+import { rawCheckpointPublicationOutputs } from './publish-checkpoint-with-raw-receipt.mjs';
 
 const sha = text => crypto.createHash('sha256').update(text).digest('hex');
 const h0 = Date.parse('2026-10-18T00:00:00.000Z');
 const at = hours => new Date(h0 + hours * 3_600_000).toISOString();
+
+test('RAW publication receipt requires the matching validated checkpoint hour and central version', () => {
+  const checkpointAt = at(2);
+  const generationSha256 = sha('published state');
+  const result = { published: false, checkpointAt, centralVersion: 17 };
+  const metadata = { productionReferenceAt: checkpointAt, centralVersion: 17, generationSha256 };
+  assert.equal(rawCheckpointPublicationOutputs(result, metadata, checkpointAt),
+    `raw_s_central_version=17\nraw_s_generation_sha256=${generationSha256}\n`);
+  for (const rejected of [undefined, { ...metadata, centralVersion: 16 },
+    { ...metadata, productionReferenceAt: at(1) }, { ...metadata, generationSha256: 'not a digest' }]) {
+    assert.throws(() => rawCheckpointPublicationOutputs(result, rejected, checkpointAt),
+      /RAW_PUBLICATION_RECEIPT_UNAVAILABLE/);
+  }
+  assert.throws(() => rawCheckpointPublicationOutputs(result, metadata, at(3)),
+    /RAW_PUBLICATION_RECEIPT_UNAVAILABLE/);
+});
 
 test('ordinary RAW capture union retains earlier bank-only DMI and refuses absent original coverage', async t => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-raw-capture-union-'));

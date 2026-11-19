@@ -8,6 +8,8 @@ Før en ny upload må et særskilt GitHub-job rydde gamle rester op, mens den al
 
 Den næste RAW-upload afpasses efter den samlede cachebestand i GitHub og en reserve til andre cachefiler. To færdige kopier bevares, mens den tredje gemmes. Samme kørsel kan derefter fjerne den ældste, når den nye kopi er færdig, de nødvendige originale vejrfiler er verificeret, den nye prognose er kontrolleret på RavRadar, og ingen genoptagelse stadig kan bruge den gamle kopi. Ved ukendt udfald bevares kopierne. Første ordinære driftsprøve med tre eksisterende kopier skal have plads og rotation kontrolleret før den næste upload. Den lokale kandidat afventer kontrol i GitHub og aktivering.
 
+Cacheoprydningen bruger versionsnummer og fingeraftryk fra den eksisterende, validerede gemning af beregningstilstanden. Hvis denne kvittering mangler, bevares kopierne. En allerede bekræftet gemning er stadig gyldig.
+
 ## 89.357 — Kildekontrol før driftsfiler
 
 Den tidlige kontrol af programkoden læser den rene kopi fra GitHub.

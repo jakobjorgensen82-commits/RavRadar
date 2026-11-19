@@ -299,6 +299,7 @@ const PATH_AREAS=freeze({
     'scripts/prove-pre-dmi-restored-raw-successor.mjs',
     'scripts/prove-restored-raw-successor.py',
     'scripts/prove-saved-raw-cache.py',
+    'scripts/publish-checkpoint-with-raw-receipt.mjs',
     'scripts/read-published-raw-rotation-runtime.mjs',
     'scripts/reconcile-private-runtime-checkpoint.mjs',
     'scripts/retire-verified-raw-caches.mjs',
@@ -493,10 +494,6 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   '.github/actions/save-owned-dmi-grib/index.cjs':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
   'scripts/run-owned-dmi-grib-save.py':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
   'scripts/test-owned-dmi-grib-save-native.py':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
-  'scripts/protected-ravscore-continuation-checkpoint.mjs':[
-    'node --test scripts/test-protected-ravscore-continuation-checkpoint.mjs',
-    RAW_CACHE_ROTATION_SOURCE_COMMAND,
-  ],
   'scripts/check-weather-cadence-watchdog.mjs':['node --test scripts/test-weather-cadence-watchdog.mjs'],
   'scripts/read-weather-cadence-github.mjs':['node --test scripts/test-weather-cadence-watchdog.mjs'],
   '.github/workflows/update-and-deploy.yml':[
