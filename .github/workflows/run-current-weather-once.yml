@@ -96,7 +96,7 @@ jobs:
 
   current-main-target:
     needs: operational-recovery-gate
-    if: ${{ !cancelled() && needs.operational-recovery-gate.outputs.closure_deferred != 'true' && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
+    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success' && needs.operational-recovery-gate.outputs.closure_deferred == 'false')) }}
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-24.04
     timeout-minutes: 5

@@ -323,15 +323,29 @@ for (const job of ['reconcile-operational-pending', 'recover-operational-pages-t
 }
 const once=await read('run-current-weather-once');
 for (const [source, job] of [
-  [once, 'current-main-target'], [once, 'terminal-outcome'],
+  [once, 'current-main-target'],
   [await read('update-and-deploy'), 'current-hour-readiness'],
-  [await read('update-and-deploy'), 'production-outcome'],
   [await read('deploy-code-only-repair'), 'build-code-only'],
+  [once, 'terminal-outcome'],
+  [await read('update-and-deploy'), 'production-outcome'],
 ]) {
   const jobStart = source.indexOf('\n  ' + job + ':\n');
   assert.ok(jobStart >= 0);
   const condition = source.slice(jobStart).match(/^    if: (.+)$/m)?.[1];
-  assert.match(condition, /needs\.operational-recovery-gate\.outputs\.closure_deferred != 'true'/);
+  const isReportingJob = job === 'terminal-outcome' || job === 'production-outcome';
+  const expression = condition.replace(/^\$\{\{ | \}\}$/g, '')
+    .replace(/needs\.operational-recovery-gate/g, 'gate');
+  const evaluate = (closureDeferred, result = 'success', coldStart = false) => runInNewContext(expression, {
+    gate: { result, outputs: { closure_deferred: closureDeferred } },
+    inputs: { current_family_cold_start: coldStart },
+    cancelled: () => false,
+    always: () => true,
+  });
+  assert.equal(evaluate('false'), true, job);
+  assert.equal(evaluate('true'), false, job);
+  assert.equal(evaluate(undefined), isReportingJob, job);
+  assert.equal(evaluate('UNKNOWN'), isReportingJob, job);
+  if (job === 'current-main-target') assert.equal(evaluate(undefined, 'skipped', true), true);
 }
 const adminHistory = await read('maintain-admin-document-history');
 const adminAdmission = adminHistory.slice(adminHistory.indexOf('        id: admission\n'), adminHistory.indexOf('      - uses: actions/checkout@v7'));

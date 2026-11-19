@@ -200,7 +200,7 @@ jobs:
 
   build-code-only:
     needs: operational-recovery-gate
-    if: needs.operational-recovery-gate.outputs.closure_deferred != 'true'
+    if: needs.operational-recovery-gate.outputs.closure_deferred == 'false'
     concurrency:
       # Current source deploys the two transitively rebound trip Edges too.
       group: ravradar-trip-storage-production
