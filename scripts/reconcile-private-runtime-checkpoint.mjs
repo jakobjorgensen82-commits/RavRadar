@@ -692,8 +692,12 @@ async function main() {
         need(['bVersion', 'sVersion'].every(key => Number.isSafeInteger(evidence[key]) && evidence[key] > 0)
           && /^[a-f0-9]{40}$/.test(evidence.bSourceHead) && /^[a-f0-9]{64}$/.test(evidence.boundarySha256),
         'RAW_BOOTSTRAP_BASELINE');
-        await fs.appendFile(process.env.GITHUB_OUTPUT,
-          'raw_baseline_evidence=' + JSON.stringify({schemaVersion: 1, kind: 'DMI_PAIRED_RAW_BASELINE_V1', ...evidence}) + '\n');
+        const temporary = process.env.RUNNER_TEMP;
+        need(path.isAbsolute(temporary ?? '') && await fs.realpath(temporary) === temporary, 'RAW_BOOTSTRAP_BASELINE');
+        const metadata = JSON.stringify({schemaVersion: 1, kind: 'DMI_PAIRED_RAW_BASELINE_V1', ...evidence});
+        await fs.writeFile(path.join(temporary, 'ravradar-raw-baseline-evidence.json'),
+          metadata, {mode: 0o600, flag: 'wx'});
+        await fs.appendFile(process.env.GITHUB_OUTPUT, 'raw_baseline_proved=true\n');
       }
       : null;
     const result = await reconcile({ privateRoot: process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,

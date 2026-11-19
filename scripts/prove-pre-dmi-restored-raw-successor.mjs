@@ -74,8 +74,8 @@ async function main(env) {
   requireProof(execFileSync('git', ['rev-parse', 'HEAD^{commit}'], {cwd: ROOT, encoding: 'utf8'}).trim() === run.sourceHead
     && await fs.realpath(env.RUNNER_TEMP) === env.RUNNER_TEMP && await fs.realpath(ROOT) === ROOT
     && await fs.realpath(path.join(ROOT, '.cache')) === path.join(ROOT, '.cache'));
-  const pairedBaseline = JSON.parse(env.RAW_PAIRED_BASELINE_EVIDENCE);
-  const [demand, identity] = await Promise.all([
+  const [pairedBaseline, demand, identity] = await Promise.all([
+    readJson(path.join(env.RUNNER_TEMP, 'ravradar-raw-baseline-evidence.json'), 512),
     readJson(path.join(ROOT, RAVSCORE_CURRENT_HISTORY_DEMAND_PATH), 8 * 1024 * 1024),
     readJson(path.join(ROOT, '.cache/dmi-restored-raw-identity.json'), 512),
   ]);
@@ -92,16 +92,15 @@ async function main(env) {
   });
   const coverage = JSON.parse(result);
   requireProof(isDeepStrictEqual(coverage, expected));
-  // This is a typed step handoff, neither a transported RAW list, an artifact,
-  // nor permission to retire. A writer must authenticate the producing job and
+  // Keep the complete handoff in runner-private scratch. The job output is
+  // only its digest and grants no deletion. A writer must authenticate this job and
   // reconfirm the same protected B/S, producer archive and reader/pin inventory.
   const output = JSON.stringify({
     schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline, boundary, coverage,
   });
   requireProof(Buffer.byteLength(output) <= 4096);
   await fs.writeFile(path.join(work, 'proof.json'), output, {mode: 0o600, flag: 'wx'});
-  await fs.appendFile(env.GITHUB_OUTPUT, 'raw_bootstrap_coverage=' + output + '\n'
-    + 'raw_bootstrap_coverage_sha256=' + digest(output) + '\n');
+  await fs.appendFile(env.GITHUB_OUTPUT, 'raw_bootstrap_coverage_sha256=' + digest(output) + '\n');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
