@@ -20,6 +20,7 @@ import errno
 import json
 import os
 from pathlib import Path
+import re
 import select
 import shutil
 import signal
@@ -1012,12 +1013,18 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 server.handle_request()
                 if server_failure:
                     raise server_failure[0]
-                self.assertEqual(parent.wait(timeout=1.0), 0 if archive_capacity_skipped else 1)
                 self.assertEqual(calls, [])
                 self.assertEqual(connections, 0)
+                diagnostics = small(root / 'stderr')
+                fixed_diagnostic = re.search(
+                    rb'(?m)^DMI_RAW_SAVE_DIAGNOSTIC stage=[A-Z_]{1,32} reason=[A-Z_]{1,80}$',
+                    diagnostics)
+                self.assertEqual(parent.wait(timeout=1.0), 0 if archive_capacity_skipped else 1,
+                                 fixed_diagnostic.group(0).decode('ascii') if fixed_diagnostic else
+                                 'No fixed diagnostic from the owned RAW action')
                 self.assertEqual(small(output),
                                  b'archive_capacity_skipped=true\n' if archive_capacity_skipped else b'')
-                self.assertEqual(small(root / 'stderr'), b'' if archive_capacity_skipped else (
+                self.assertEqual(diagnostics, b'' if archive_capacity_skipped else (
                     b'DMI_RAW_SAVE_REFUSED\nDMI_RAW_SAVE_DIAGNOSTIC ' + archive_refusal))
                 self.assertFalse((root / CLAIM).exists())
                 self.assertFalse(any((root / 'sdk-temp').glob('rr-dmi-raw-archive-*')))
