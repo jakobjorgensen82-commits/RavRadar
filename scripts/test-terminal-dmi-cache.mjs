@@ -11,7 +11,7 @@ import {
 } from './lib/terminal-dmi-cache.mjs';
 import {
   buildRawSuccessorPlanBytes, planRawDmiCacheRotation, readFinalizedRawCache,
-  readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache,
+  readRawCacheProtection, readRawCacheReaderActivity, retireVerifiedRawCache, verifyRawCacheRotationOwner,
 } from './lib/verified-raw-cache-rotation.mjs';
 
 const repository = 'owner/repository';
@@ -369,6 +369,37 @@ const ordinaryOwner = {
   actor: {login: 'github-actions[bot]'}, triggering_actor: {login: 'github-actions[bot]'},
   repository: {full_name: repository},
 };
+const productionRepository = 'jakobjorgensen82-commits/RavRadar';
+const productionOwner = {
+  ...ordinaryOwner, repository: {full_name: productionRepository}, head_repository: {full_name: productionRepository},
+};
+const main = {ref: 'refs/heads/main', object: {type: 'commit', sha: headSha}};
+const actualB = {
+  ...successorBoundary, sourceHead: '0'.repeat(40), centralVersion: 32, expectedZoneCount: 210, expectedPartCount: 673,
+};
+const ownerProof = {
+  sourceHead: headSha, ownerRunId: productionOwner.id, publishedSourceHead: actualB.sourceHead,
+  boundary: successorBoundary, bVersion: 32, sVersion: 47,
+  getJson: async path => {
+    if (path === `/repos/${productionRepository}/git/ref/heads/main`) return main;
+    assert.equal(path, `/repos/${productionRepository}/actions/runs/${productionOwner.id}/attempts/1`);
+    return productionOwner;
+  },
+  readProtectedB: async () => actualB,
+  readProtectedSVersion: async () => 47,
+};
+await verifyRawCacheRotationOwner(ownerProof);
+await assert.rejects(verifyRawCacheRotationOwner({...ownerProof, getJson: async path => path.includes('/git/')
+  ? {...main, object: {...main.object, sha: actualB.sourceHead}} : productionOwner}), /OWNER_MOVED/);
+await assert.rejects(verifyRawCacheRotationOwner({...ownerProof, getJson: async path => path.includes('/git/')
+  ? main : {...productionOwner, status: 'completed', conclusion: 'success'}}), /OWNER_MOVED/);
+for (const change of [{readProtectedSVersion: async () => 48},
+  {readProtectedB: async () => ({...actualB, centralVersion: 33})},
+  {readProtectedB: async () => ({...actualB, bundleContentSha256: '0'.repeat(64)})}]) {
+  await assert.rejects(verifyRawCacheRotationOwner({...ownerProof, ...change}), /PROTECTED_PAIR_MOVED/);
+}
+console.log('OK: rotation must retain the exact active current main and numbered authenticated B/S.');
+
 const inertLegacy = {
   ...ordinaryOwner, id: 34613079069, path: '.github/workflows/update-and-deploy.yml', status: 'queued',
   head_sha: '5587001b45ffea056addaf6cd20084719540336a',

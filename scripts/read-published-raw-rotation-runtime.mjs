@@ -39,6 +39,30 @@ function requireProof(condition, reason) {
   if (!condition) throw new Error('RAW_ROTATION_PUBLISHED_PAIR_' + reason);
 }
 
+// A cache owner can compare the authenticated B pointer and S version without
+// downloading either large protected payload again.
+export function createRawRotationProtectedMetadataReaders() {
+  const {documentRequest} = createProtectedPrivateRuntimeClients({storageBackend: 'supabase'});
+  const requestVersion = createProtectedRavScoreCheckpointVersionRequester();
+  const readProtectedB = async () => {
+    let centralVersion;
+    const identity = await describeCurrentProtectedPrivateProductionRuntime({request: async (...args) => {
+      const rows = await documentRequest(...args);
+      centralVersion = Number(rows?.[0]?.version);
+      return rows;
+    }});
+    requireProof(Number.isSafeInteger(centralVersion) && centralVersion > 0, 'B_VERSION');
+    return {...identity, centralVersion};
+  };
+  const readProtectedSVersion = async () => {
+    const rows = await requestVersion(VERSION_QUERY);
+    requireProof(rows.length === 1 && rows[0].document_key === KEY
+      && Number.isSafeInteger(rows[0].version) && rows[0].version > 0, 'S_VERSION');
+    return rows[0].version;
+  };
+  return {readProtectedB, readProtectedSVersion};
+}
+
 async function readCheckpoint(pathname) {
   const stat = await fs.lstat(pathname, {bigint: true});
   requireProof(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1n && stat.size > 0n
@@ -73,9 +97,8 @@ export async function readPublishedRawRotationRuntime() {
     && new Date(timestamp).toISOString() === target, 'WORKFLOW');
   requireProof(execFileSync('git', ['rev-parse', 'HEAD^{commit}'], {cwd: ROOT, encoding: 'utf8'}).trim() === head, 'HEAD');
 
-  const request = createProtectedPrivateRuntimeClients({storageBackend: 'supabase'}).documentRequest;
-  const describe = () => describeCurrentProtectedPrivateProductionRuntime({request});
-  const current = await describe();
+  const {readProtectedB, readProtectedSVersion} = createRawRotationProtectedMetadataReaders();
+  const current = await readProtectedB();
   requireProof(current.sourceHead === head && current.productionReferenceAt === target
     && current.expectedZoneCount === 210 && current.expectedPartCount === 673
     && SHA256.test(current.bundleContentSha256), 'B_POINTER');
@@ -99,7 +122,6 @@ export async function readPublishedRawRotationRuntime() {
   const builtPath = path.join(ROOT, CHECKPOINT);
   const built = await readCheckpoint(builtPath);
   const readProtected = createProtectedRavScoreCheckpointRequester();
-  const readVersion = createProtectedRavScoreCheckpointVersionRequester();
   const parent = await fs.realpath(os.tmpdir());
   const scratch = await fs.mkdtemp(path.join(parent, 'rr-raw-rotation-'));
   const owned = await fs.lstat(scratch, {bigint: true});
@@ -132,10 +154,8 @@ export async function readPublishedRawRotationRuntime() {
     await fs.rm(scratch, {recursive: true});
   }
   const verifyCurrent = async () => {
-    requireProof(isDeepStrictEqual(await describe(), current), 'B_POINTER_MOVED');
-    const versions = await readVersion(VERSION_QUERY);
-    requireProof(versions.length === 1 && versions[0].document_key === KEY
-      && versions[0].version === postedVersion, 'S_VERSION_MOVED');
+    requireProof(isDeepStrictEqual(await readProtectedB(), current), 'B_POINTER_MOVED');
+    requireProof(await readProtectedSVersion() === postedVersion, 'S_VERSION_MOVED');
     requireProof((await readCheckpoint(builtPath)).sha256 === built.sha256, 'S_LOCAL_MOVED');
   };
   await verifyCurrent();
@@ -144,6 +164,7 @@ export async function readPublishedRawRotationRuntime() {
     requireProof(isDeepStrictEqual(await verifyBundle(), verified), 'B_LOCAL_MOVED');
   };
   return Object.freeze({verified, conditionsPath, checkpoint: built.data,
+    publication: Object.freeze({sourceHead: current.sourceHead, bVersion: current.centralVersion, sVersion: postedVersion}),
     boundary: Object.freeze({datasetId: current.datasetId, productionReferenceAt: target,
       bundleContentSha256: current.bundleContentSha256, checkpointGenerationSha256: built.data.generationSha256,
       conditionsSha256: conditionEntry.sha256}), verify});

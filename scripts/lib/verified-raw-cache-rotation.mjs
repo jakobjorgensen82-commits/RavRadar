@@ -254,10 +254,19 @@ export function planRawDmiCacheRotation({
 const ACTIVE_ACTIONS_STATES = ['queued', 'in_progress', 'waiting', 'requested', 'pending'];
 const LEGACY_WEATHER = '.github/workflows/update-and-deploy.yml';
 const ORDINARY_WEATHER = '.github/workflows/run-current-weather-once.yml';
+const PRODUCTION_REPOSITORY = 'jakobjorgensen82-commits/RavRadar';
 const FIXED_RAW_CACHE_WORKFLOWS = [
   'audit-saved-weather-inputs.yml',
   'recover-saved-dmi-originals.yml',
 ];
+
+function activeOrdinaryOwner(run, repository, sourceHead, ownerRunId) {
+  return run?.id === ownerRunId && run.repository?.full_name === repository
+    && run.path === ORDINARY_WEATHER && run.head_sha === sourceHead && run.head_branch === 'main'
+    && run.status === 'in_progress' && run.conclusion === null && run.run_attempt === 1
+    && run.event === 'workflow_dispatch' && run.actor?.login === 'github-actions[bot]'
+    && run.triggering_actor?.login === 'github-actions[bot]';
+}
 
 // The caller holds the production queue and supplies the exact running owner.
 // This is a read-only census. It cannot reserve a queued request or replace the
@@ -288,10 +297,7 @@ export async function readRawCacheReaderActivity({repository, sourceHead, ownerR
       runs.set(run.id, run);
     }
   }
-  const owner = runs.get(ownerRunId);
-  if (owner?.path !== ORDINARY_WEATHER || owner.head_sha !== sourceHead || owner.head_branch !== 'main'
-      || owner.status !== 'in_progress' || owner.run_attempt !== 1 || owner.event !== 'workflow_dispatch'
-      || owner.actor?.login !== 'github-actions[bot]' || owner.triggering_actor?.login !== 'github-actions[bot]') {
+  if (!activeOrdinaryOwner(runs.get(ownerRunId), repository, sourceHead, ownerRunId)) {
     return hold('rotation-owner-unconfirmed');
   }
   const potentialLegacy = [];
@@ -335,6 +341,33 @@ export async function readRawCacheProtection({inventory, boundary, repository, s
   return {complete: true, caches: rows.filter(row => fixedKeys.has(row.key)).map(cacheIdentity)};
 }
 
+// Authenticated source identity initially comes from the normal B/S producer.
+// Rechecking the exact numbered documents avoids restoring either payload at
+// each cache mutation boundary. Owner head and B source may differ on bootstrap.
+export async function verifyRawCacheRotationOwner({sourceHead, ownerRunId, publishedSourceHead,
+  boundary, bVersion, sVersion, getJson, readProtectedB, readProtectedSVersion}) {
+  if (![sourceHead, publishedSourceHead].every(sha => /^[a-f0-9]{40}$/.test(sha ?? ''))
+      || ![ownerRunId, bVersion, sVersion].every(value => Number.isSafeInteger(value) && value > 0)
+      || !validRawBoundary(boundary)) throw new Error('RAW_ROTATION_OWNER_SCOPE');
+  const repo = '/repos/' + PRODUCTION_REPOSITORY;
+  const [ref, run, currentB, currentSVersion] = await Promise.all([
+    getJson(repo + '/git/ref/heads/main'), getJson(repo + '/actions/runs/' + ownerRunId + '/attempts/1'),
+    readProtectedB(), readProtectedSVersion(),
+  ]);
+  if (!activeOrdinaryOwner(run, PRODUCTION_REPOSITORY, sourceHead, ownerRunId)
+      || run.head_repository?.full_name !== PRODUCTION_REPOSITORY
+      || ref?.ref !== 'refs/heads/main' || ref.object?.type !== 'commit' || ref.object.sha !== sourceHead) {
+    throw new Error('RAW_ROTATION_OWNER_MOVED');
+  }
+  if (currentB?.centralVersion !== bVersion || currentSVersion !== sVersion
+      || currentB.sourceHead !== publishedSourceHead || currentB.datasetId !== boundary.datasetId
+      || currentB.productionReferenceAt !== boundary.productionReferenceAt
+      || currentB.bundleContentSha256 !== boundary.bundleContentSha256
+      || currentB.expectedZoneCount !== 210 || currentB.expectedPartCount !== 673) {
+    throw new Error('RAW_ROTATION_PROTECTED_PAIR_MOVED');
+  }
+}
+
 // Call from the separate production-lock owner with freshly authenticated
 // B/S and archive evidence for the actual next hour. readSnapshot must
 // recompute stock and pins, and verifyOwner must fail on loss of the lock
@@ -343,7 +376,7 @@ export async function retireVerifiedRawCache({
   repository, githubToken, readSnapshot, verifyOwner, current, saved, restoredSuccessor, retained, request = fetch,
 }) {
   const hold = reason => ({status: 'HOLD', reason, retire: []});
-  if (repository !== 'jakobjorgensen82-commits/RavRadar' || typeof githubToken !== 'string' || !githubToken
+  if (repository !== PRODUCTION_REPOSITORY || typeof githubToken !== 'string' || !githubToken
       || typeof readSnapshot !== 'function' || typeof verifyOwner !== 'function' || typeof request !== 'function') {
     throw new Error('RAW_CACHE_RETIREMENT_SCOPE');
   }
