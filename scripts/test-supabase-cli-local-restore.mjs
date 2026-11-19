@@ -19,8 +19,8 @@ import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-nativ
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
 const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.198.0'});
-const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
-const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
+const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.198.0',storage:'supabase/storage-api:v1.86.0'});
+const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
 const NATIVE_ACTIVITY_VENDOR_PINS=Object.freeze({...ARCHIVE_VENDOR_PINS,'gotrue-version':IMAGES.auth.split(':').at(-1)+'\n'});
 const NATIVE_ACTIVITY_B9_ROLE_MARKER='NATIVE_ACTIVITY_B9_ROLE_CONFIRMED';
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
@@ -2966,7 +2966,7 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       assert.equal(syntheticNativeHookConfig({...p,nativeStorageBootstrap:undefined}),original+'\n[auth.hook.custom_access_token]\nenabled = true\n'
         +'uri = "pg-functions://postgres/public/rr_native_activity_test_hook"\n');
       assert.deepEqual(NATIVE_ACTIVITY_VENDOR_PINS,{'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
-      assert.deepEqual(ARCHIVE_VENDOR_PINS,{'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
+      assert.deepEqual(ARCHIVE_VENDOR_PINS,{'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
       for(const [context,project]of [[{...c,archive:true},p],[{...c,owner:'123-2'},p],[c,{...p,side:'A'}],
         [c,{...p,id:'linked-project'}],[c,{...p,dir:c.root}]]){
         assert.throws(()=>archiveVendorPinDirectory(context,project,true),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
@@ -3370,7 +3370,7 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       await fs.mkdir(directory,{mode:0o700});
       await fs.writeFile(path.join(directory,'cli-latest'),'3.1.0\n',{flag:'wx',mode:0o600});
       await prepareArchiveVendorBootstrap(c,p);await verifyArchiveVendorBootstrap(c,p);
-      assert.equal(await fs.readFile(path.join(directory,'gotrue-version'),'utf8'),'v2.197.0\n');
+      assert.equal(await fs.readFile(path.join(directory,'gotrue-version'),'utf8'),'v2.198.0\n');
       assert.equal(await fs.readFile(path.join(directory,'storage-version'),'utf8'),'v1.86.0\n');
       assert.deepEqual((await fs.readdir(directory)).sort(),['cli-latest','gotrue-version','storage-version']);
       await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
@@ -3418,14 +3418,14 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.198.0'),image).id,imageId);
       assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
     }
-    assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),image).id,imageId);
-    for(const tag of ['gotrue:v2.196.0','gotrue:v2.198.0','gotrue:latest'])
+    assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.198.0'),image).id,imageId);
+    for(const tag of ['gotrue:v2.196.0','gotrue:v2.197.0','gotrue:latest'])
       assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info(tag),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
-    assert.throws(()=>serviceImageMetadata({archive:true},{side:'A'},'auth',info('gotrue:v2.197.0'),image),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'A'},'auth',info('gotrue:v2.198.0'),image),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
     for(const service of ['db','kong'])for(const archive of [false,true])
       assert.equal(serviceImageMetadata({archive},{side:'B'},service,info(IMAGES[service].split('/').at(-1)),image).id,imageId);
-    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),{...image,Id:'sha256:'+'b'.repeat(64)}));
-    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),{...image,RepoDigests:[]}),error=>error.code==='IMAGE_DIGEST_REQUIRED');
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.198.0'),{...image,Id:'sha256:'+'b'.repeat(64)}));
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.198.0'),{...image,RepoDigests:[]}),error=>error.code==='IMAGE_DIGEST_REQUIRED');
   });
   async function ownLocalAuthBootstrap(run){
     const data=[
@@ -3447,7 +3447,7 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);c.stage='QUIESCE_B_AUTH';
       const p={side:'B',db:'e'.repeat(64)};
       const report={kind:'ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1',measurementPoint:'AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL',
-        inventorySha256:c.archiveRelationInventory.digest,authTag:'gotrue:v2.197.0',authImageSha256:'d'.repeat(64),
+        inventorySha256:c.archiveRelationInventory.digest,authTag:'gotrue:v2.198.0',authImageSha256:'d'.repeat(64),
         targetCount:5,unclassifiedTargetCount:1,fixedTargets:[
           {label:'AUTH_IDENTITIES',kind:'COPY',state:'TABLE'},
           {label:'AUTH_USERS',kind:'COPY',state:'TABLE'},
