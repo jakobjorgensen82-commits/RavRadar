@@ -2189,11 +2189,12 @@ try{
   try{
     for(const [field,value] of [['merge_commit_sha',base],['head',{...pageDelivery.pull.head,sha:base}]]){
       priorMaps.set(priorPullRoute,{...pageDelivery.pull,[field]:value});
+      rebuildMaps();
       const result=await decide(uiFound.locator,uiContext,{...freshAccess(),readGit});
       assert.equal(result.required,true);
       cases++;
     }
-  }finally{priorMaps.set(priorPullRoute,pageDelivery.pull);}
+  }finally{priorMaps.set(priorPullRoute,pageDelivery.pull);rebuildMaps();}
   cases++;scenarios.push('two successive qualified V4 delta frontiers with an authenticated squash predecessor and rejection of false prior PR identity');
 
   // A later candidate may extend its catalogue while qualifying an older main.
