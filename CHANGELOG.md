@@ -10,6 +10,10 @@
 - Kontrollen får samme måltime, versionsnummer og fingeraftryk fra den eksisterende checkpointudgiver, når den har valideret svaret. RavScores modelaftryk er uændret.
 - Når funktionen er aktiveret, måles hele GitHub-cachebestanden før en ny upload. Hvis der allerede er to verificerede kopier, kan vejrhentningen fortsætte samtidig med andre cachelæsere.
 
+## Drift — oprydning af private vejrpakkekopier
+
+- En afbrudt udgivelse kan efterlade en udgået vejrpakke i R2. Oprydningen gemmer grundlaget inden den centrale opdatering og kan fortsætte ved næste udgivelse. Den aktuelle og den forrige vejrpakke er beskyttet.
+
 ## 4.0.602 — vejrets kildekontrol før driftsklargøring
 
 - Den eksisterende kildekontrol køres på den rene Git-kilde, før de aktive driftsfiler lægges ind. Kørsel #352 stoppede, da kontrollen fandt driftsændringer i sin kildekopi.

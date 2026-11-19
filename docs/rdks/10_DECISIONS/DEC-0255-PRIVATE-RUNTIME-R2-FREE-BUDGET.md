@@ -35,6 +35,12 @@ Den normale syntetiske restore med den uændrede fixture har faktisk bestået al
 
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Genoptagelig oprydning efter en central opdatering
+
+Før den normale udgiver ændrer den centrale peger, gemmer og genlæser den et autentificeret R2-bevis for den eksisterende version. Oprydningen kan genoptages ud fra det bevis. Den kontrollerer den nye centrale version og beholder både den aktuelle vejrpakke og den officielle tilbagefaldspakke. Kun dele fra den bevisligt udgåede ældste pakke med en strengt tidligere prognosereference kan fjernes. Et ukendt skriveudfald kan efterlade kandidatdele, som kræver særskilt proveniens, før de kan ryddes op.
+
+En kodeudgivelses indledende kontrol kan læse peger, ventende oprydning og lagerplads før en overgang på samme prognosetime. Den skriver ikke selv. Den almindelige udgiver håndterer oprydningen under den delte produktionslås.
+
 ## Tillæg 15. november 2026 — korrekt parent-S ved staged genoptagelse
 
 Ved genoptagelse læses forælderens S gennem den normale beskyttede checkpointlæser til et separat tomt, ejet område før lineagekontrollen. En gyldig nyere child-S i arbejdscachen bevares. En anden frisk parent-S-læsning skal bagefter matche den samme hash, og den faktiske B-pointer skal stadig matche. Alle oprindelige lineage-, GCM-, model-, no-loss-, readback- og CAS-krav består; rettelsen giver ingen genoptagelsesret fra lokal cache alene.

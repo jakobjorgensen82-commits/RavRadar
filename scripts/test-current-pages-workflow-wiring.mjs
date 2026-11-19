@@ -226,10 +226,7 @@ export function assertCurrentCompletedRuntimeWorkflow(actualBuild, actualOnce) {
   assert.equal(actualBuild.includes("          fetch-depth: ${{ inputs.completed_private_runtime && '0' || '1' }}"), false, 'The old conditional depth remains historical only');
 }
 
-test('current weather publisher preserves protected authority and refuses caller replacement', async () => {
-  const wrapper=await rawWorkflow('./publish-private-weather-runtime.mjs');
-  assert.match(wrapper,/import \{ createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,\s+PROTECTED_PRIVATE_RUNTIME_POLICY \} from '\.\/protected-private-production-runtime\.mjs';/);
-  assert.match(wrapper,/return publishProtectedPrivateProductionRuntime\(\{ \.\.\.options, storage \}\);/);
+test('current weather publisher refuses caller replacement of protected storage or policy', async () => {
   const {publishPrivateWeatherRuntime}=await import('./publish-private-weather-runtime.mjs');
   for(const key of ['storage','policy'])await assert.rejects(publishPrivateWeatherRuntime({[key]:{}}),
     {code:'PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID'});

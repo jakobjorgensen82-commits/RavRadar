@@ -12,12 +12,17 @@ const SHA = /^[a-f0-9]{40}$/;
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 const BUILD = '.github/workflows/reusable-weather-build.yml';
 const ONCE = '.github/workflows/run-current-weather-once.yml';
-const CODE_ONLY = '.github/workflows/deploy-code-only-repair.yml';
 const BOOK = 'docs/handbook/content.json';
 const INSTALL = 'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
 const wiring = JSON.parse(fs.readFileSync(new URL('./lib/ordinary-completed-stage-workflow-review.json', import.meta.url), 'utf8'));
 const DELIVERY_ONLY = new Set([
+  // A separate dispatch-only entrypoint. Ordinary stage originates in ONCE,
+  // calls BUILD, and never reads or executes this workflow. Its exact source
+  // and write authority are checked by the independent code-only path.
+  '.github/workflows/deploy-code-only-repair.yml',
+  'scripts/check-private-weather-rebind.mjs',
   'scripts/publish-private-weather-runtime.mjs',
+  'scripts/lib/private-weather-runtime-retirement.mjs',
   'scripts/lib/private-weather-publication-workflow.mjs',
   'scripts/test-r2-private-runtime-storage.mjs',
   'scripts/test-source-current-contracts.mjs',
@@ -193,7 +198,7 @@ function compareSource({ root, producerHead, consumerHead }, requireCleanCheckou
       && isAdditivePrivateWeatherPublicationOwnerChange(git(['cat-file', 'blob', old.blob]), git(['cat-file', 'blob', current.blob]))) {
       deliveryPaths++; continue;
     }
-    if ([BUILD, ONCE, CODE_ONLY].includes(name) && old?.mode === '100644' && current?.mode === '100644'
+    if ([BUILD, ONCE].includes(name) && old?.mode === '100644' && current?.mode === '100644'
       && old.type === 'blob' && current.type === 'blob') {
       const beforeBytes = git(['cat-file', 'blob', old.blob]), afterBytes = git(['cat-file', 'blob', current.blob]);
       if (!inversePrivateWeatherPublicationWorkflow(beforeBytes).equals(beforeBytes)

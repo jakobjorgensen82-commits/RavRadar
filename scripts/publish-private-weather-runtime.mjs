@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Normal weather delivery only. The frozen archive/model readers and publisher
-// remain the authority for payload, exact readback, parent CAS and retirement.
+// remain the authority for payload, exact readback and parent CAS.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
 import { createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,
   PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+import { assertRetirementReference, createPrivateWeatherRetirement, decodePrivateWeatherPointerRow,
+  RETIREMENT_MARKER_BYTES } from './lib/private-weather-runtime-retirement.mjs';
 
 // DEC-0255: internal, weather-only transport budget. No environment/CLI override.
 export const PRIVATE_WEATHER_PUBLICATION_POLICY = Object.freeze({
@@ -31,7 +33,7 @@ export function assertPrivateWeatherPublicationBackend(value = process.env.RAVRA
   if (value !== 'r2') fail('PRIVATE_WEATHER_PUBLICATION_BACKEND_MISMATCH');
 }
 
-export function createPrivateWeatherPublicationStorage(options = {}) {
+export function createPrivateWeatherPublicationStorage(options = {}, reserveRetirementMarker = false) {
   const policy = assertPrivateWeatherPublicationPolicy();
   const allowed = new Set(['storageBackend', 'accountId', 'accessKeyId', 'secretAccessKey', 'fetchImpl', 'now', 'delayImpl']);
   if (!options || Object.getPrototypeOf(options) !== Object.prototype
@@ -49,7 +51,8 @@ export function createPrivateWeatherPublicationStorage(options = {}) {
       beforeFirstPut ??= (async () => {
         const { usedBytes } = await storage.bucketUsage();
         if (usedBytes > policy.bucketCeilingBytes - policy.reserveBytes
-          - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes) {
+          - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
+          - (reserveRetirementMarker ? RETIREMENT_MARKER_BYTES : 0)) {
           fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
         }
       })();
@@ -73,18 +76,56 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
   if (!options || Object.hasOwn(options, 'storage') || Object.hasOwn(options, 'policy')) {
     fail('PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID');
   }
-  const storage = createPrivateWeatherPublicationStorage(storageOptions);
+  const policy = PRIVATE_WEATHER_PUBLICATION_POLICY;
+  const retirement = createPrivateWeatherRetirement(storageOptions, policy.bucketCeilingBytes);
+  let before, lastRead, readQuery, priorSettled;
+  const freshPointer = async () => {
+    return decodePrivateWeatherPointerRow(await options.request(readQuery, {}, 'read'));
+  };
+  const settleBeforeMutation = async () => {
+    priorSettled ??= retirement.settle(before, freshPointer);
+    await priorSettled;
+  };
+  const storage = createPrivateWeatherPublicationStorage(storageOptions, true);
+  const validateMarkerCapacity = async bytes => {
+    const { usedBytes } = await storage.bucketUsage();
+    if (usedBytes + bytes + policy.reserveBytes > policy.bucketCeilingBytes) {
+      fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
+    }
+  };
   const createdPaths = new Set();
+  const currentPaths = new Set();
   let pointerWriteStarted = false;
-  return publishProtectedPrivateProductionRuntime({
+  const result = await publishProtectedPrivateProductionRuntime({
     ...options,
     request: async (query, request, phase) => {
+      if (phase === 'read') {
+        const rows = await options.request(query, request, phase);
+        lastRead = decodePrivateWeatherPointerRow(rows);
+        if (!readQuery) {
+          readQuery = query;
+          before = lastRead;
+          const current = before?.payload.current;
+          for (const part of current?.objects ?? (current ? [current] : [])) currentPaths.add(part.objectPath);
+        }
+        return rows;
+      }
+      if (phase === 'compare-and-swap') {
+        await settleBeforeMutation();
+        const next = decodePrivateWeatherPointerRow([{
+          document_key: PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey,
+          version: before.version + 1,
+          payload: JSON.parse(request.body).payload,
+        }]).payload;
+        await retirement.prepare(before, next, validateMarkerCapacity);
+      }
       if (phase === 'compare-and-swap' || phase === 'insert') pointerWriteStarted = true;
       return options.request(query, request, phase);
     },
     storage: {
       ...storage,
       async uploadImmutable(objectPath, bytes) {
+        if (!currentPaths.has(objectPath)) await settleBeforeMutation();
         const result = await storage.uploadImmutable(objectPath, bytes);
         if (result.created === true) createdPaths.add(objectPath);
         return result;
@@ -92,14 +133,23 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
       async removeExact(objectPath) {
         // A read of the old pointer after a lost response cannot exclude a
         // later commit. Keep this candidate's parts once its write may have
-        // reached Supabase. The frozen publisher still retires older parts.
+        // reached Supabase.
         if (pointerWriteStarted && createdPaths.has(objectPath)) {
           fail('PRIVATE_WEATHER_PUBLICATION_CANDIDATE_HELD_AFTER_POINTER_WRITE');
         }
+        // On success the frozen publisher requests deletion of the exact old
+        // previous parts. Their authenticated marker owns this cleanup now.
+        if (pointerWriteStarted) return true;
         return storage.removeExact(objectPath);
       },
     },
   });
+  try {
+    await retirement.settle(lastRead, freshPointer);
+    return result;
+  } catch {
+    return { ...result, retentionCleanupComplete: false, retentionCleanupFailureCount: 1 };
+  }
 }
 
 export function privateWeatherPublicationArguments(argv) {
@@ -129,6 +179,30 @@ async function readJson(file, role) {
   try { return JSON.parse(await fs.readFile(file, 'utf8')); }
   catch { fail(`PRIVATE_WEATHER_PUBLICATION_${role}_INVALID`); }
 }
+export async function checkCodeOnlyPrivateWeatherRebind(request, storageOptions, targetReferenceAt) {
+  const fresh = async () => decodePrivateWeatherPointerRow(await request(
+    `?document_key=eq.${encodeURIComponent(PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey)}&select=document_key,payload,version&limit=2`,
+    {}, 'read',
+  ));
+  const before = await fresh();
+  if (!before) fail('PRIVATE_WEATHER_PUBLICATION_RETIREMENT_POINTER');
+  const liveReference = Date.parse(before.payload.current.productionReferenceAt);
+  if (targetReferenceAt !== undefined
+      && (!/^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(targetReferenceAt)
+        || Date.parse(targetReferenceAt) !== liveReference)) {
+    fail('PRIVATE_WEATHER_PUBLICATION_REBIND_TARGET_CHANGED');
+  }
+  assertRetirementReference(before, liveReference);
+  const policy = PRIVATE_WEATHER_PUBLICATION_POLICY;
+  const retirement = createPrivateWeatherRetirement(storageOptions, policy.bucketCeilingBytes);
+  await retirement.assertCodeOnlyAdmissionClear(before);
+  const { usedBytes } = await createPrivateWeatherPublicationStorage(storageOptions).bucketUsage();
+  if (usedBytes > policy.bucketCeilingBytes - policy.reserveBytes
+      - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes - RETIREMENT_MARKER_BYTES) {
+    fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
+  }
+}
+
 async function main() {
   assertPrivateWeatherPublicationPolicy();
   assertPrivateWeatherPublicationBackend();

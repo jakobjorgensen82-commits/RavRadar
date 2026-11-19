@@ -7,6 +7,8 @@ export const WEATHER_PUBLICATION_COMMANDS = Object.freeze([
 ]);
 export const WEATHER_PUBLICATION_PATHS = Object.freeze([
   "scripts/publish-private-weather-runtime.mjs",
+  "scripts/lib/private-weather-runtime-retirement.mjs",
+  "scripts/check-private-weather-rebind.mjs",
   "scripts/lib/private-weather-publication-workflow.mjs",
   "scripts/ordinary-completed-stage-admission.mjs",
   "scripts/ordinary-completed-stage-source.mjs",
