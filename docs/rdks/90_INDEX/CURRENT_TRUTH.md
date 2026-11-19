@@ -1,3 +1,7 @@
+## 18. november — original backup gendannet og skrivefri lagerkontrol klargjort
+
+Den isolerede prøve #50 gendannede det originale Supabase-arkiv. Data blev sammenlignet med de autentiske SQL-filer, login blev verificeret, og det midlertidige miljø blev lukket. Rotation kræver fortsat et aktuelt arkivindeks og målt lagerplads. Den lokale læser bruger kun det godkendte indeks og lagerets metadata. Ekstra objekter giver uafklaret status. Ugentlig backup og Free-overgang afventer deres egne beviser.
+
 ## App 602: mindre delingskald med samme 601-modelfamilie
 
 Den afgrænsede lokale app 602-kandidat porter den gennemgåede delingsprototype til 601-kilden. Ét separat prognoseindeks indeholder den nødvendige model-, profil-, runtime-, evidens-, kildealder-, tids- og generationsmetadata samt de 210 præcise zonefilers stier, størrelser og hashes. Det nye delingskald henter indekset og én eksisterende zonefil. Det gamle V1-indeks og alle 210 zonefilers format bevares til den gamle Worker; scoretal, kvalitetsmærkning og lokal dækningsstatus kommer fortsat fra de allerede beregnede normale resultater.
