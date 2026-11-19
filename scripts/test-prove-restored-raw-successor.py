@@ -117,7 +117,21 @@ class RestoredSuccessorProof(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing original"):
             self.verify()
 
-    def test_refuses_wrong_hour_empty_plan_and_identity_change_after_byte_check(self):
+    def test_empty_dependencies_still_require_a_verified_member_of_the_restored_archive(self):
+        self.plan["retention"]["captures"] = []
+        self.write_plan()
+        self.assertEqual(self.verify()["requiredCaptures"], 0)
+        self.asset.write_bytes(b"x" * self.asset.stat().st_size)
+        with self.assertRaisesRegex(ValueError, "restored cache member mismatch"):
+            self.verify()
+        self.asset.unlink()
+        with self.assertRaisesRegex(ValueError, "empty restored archive"):
+            self.verify()
+        self.manifest.unlink()
+        with self.assertRaisesRegex(ValueError, "restored archive manifest missing"):
+            self.verify()
+
+    def test_refuses_wrong_hour_and_identity_change_after_byte_check(self):
         self.environment["RAVRADAR_PRODUCTION_TARGET_HOUR"] = "2026-11-19T09:00:00Z"
         with self.assertRaisesRegex(ValueError, "proof input"):
             self.verify()
@@ -125,11 +139,6 @@ class RestoredSuccessorProof(unittest.TestCase):
         self.plan_path.write_bytes(self.plan_path.read_bytes() + b" ")
         with self.assertRaisesRegex(self.producer.AssetDownloadCleanupUnproven, "ARCHIVE_FILE_CHANGED"):
             self.verify()
-        self.plan["retention"]["captures"] = []
-        self.write_plan()
-        with self.assertRaisesRegex(ValueError, "protected demand"):
-            self.verify()
-        self.plan["retention"]["captures"] = [self.capture]
         self.write_plan()
         verify_originals = self.producer.configure_raw_current_retention
 

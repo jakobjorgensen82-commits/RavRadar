@@ -22,6 +22,8 @@ import {PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE, pr
   from './lib/private-weather-component-inventory.mjs';
 import {readDmiBulkDocument} from './lib/dmi-bulk-storage.mjs';
 import {inspectDmiForecastFile} from './lib/dmi-forecast-file.mjs';
+import {readCurrentPrivateRuntimeCompanionInput, readAuthenticatedCurrentCompanions}
+  from './read-authenticated-dmi-current-companions.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = 'jakobjorgensen82-commits/RavRadar';
@@ -46,7 +48,7 @@ async function readCheckpoint(pathname) {
   requireProof(next.isFile() && !next.isSymbolicLink() && next.nlink === 1n && next.dev === stat.dev
     && next.ino === stat.ino && next.size === stat.size && next.mtimeNs === stat.mtimeNs
     && next.ctimeNs === stat.ctimeNs && BigInt(raw.length) === stat.size, 'S_CHANGED');
-  return {data: JSON.parse(raw.toString('utf8')), stat};
+  return {data: JSON.parse(raw.toString('utf8')), stat, sha256: crypto.createHash('sha256').update(raw).digest('hex')};
 }
 
 // Only the existing ordinary workflow after successful publication of B and S
@@ -227,19 +229,25 @@ async function componentRoleBindings(verified, conditions) {
   }
 }
 
-async function readBoundJson(file, expected, maximum) {
-  requireProof(typeof expected?.sha256 === 'string' && SHA256.test(expected.sha256)
-    && Number.isSafeInteger(expected.bytes) && expected.bytes > 0 && expected.bytes <= maximum, 'JSON_BOUND');
+async function readStableJson(file, maximum) {
   const stat = await fs.lstat(file, {bigint: true});
   requireProof(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1n
-    && stat.size === BigInt(expected.bytes), 'JSON_SIZE');
+    && stat.size > 0n && stat.size <= BigInt(maximum), 'JSON_SIZE');
   const bytes = await fs.readFile(file);
-  requireProof(bytes.length === expected.bytes && crypto.createHash('sha256').update(bytes).digest('hex') === expected.sha256,
-    'JSON_CHANGED');
   const verify = async () => {
     requireProof(sameBoundFile(stat, await fs.lstat(file, {bigint: true})), 'JSON_CHANGED');
   };
   await verify();
+  requireProof(BigInt(bytes.length) === stat.size, 'JSON_CHANGED');
+  return {bytes, verify};
+}
+
+async function readBoundJson(file, expected, maximum) {
+  requireProof(typeof expected?.sha256 === 'string' && SHA256.test(expected.sha256)
+    && Number.isSafeInteger(expected.bytes) && expected.bytes > 0 && expected.bytes <= maximum, 'JSON_BOUND');
+  const {bytes, verify} = await readStableJson(file, expected.bytes);
+  requireProof(bytes.length === expected.bytes && crypto.createHash('sha256').update(bytes).digest('hex') === expected.sha256,
+    'JSON_CHANGED');
   return {data: JSON.parse(bytes.toString('utf8')), verify};
 }
 
@@ -290,10 +298,35 @@ export async function readPublishedRawRotationInputs() {
   const workingChecks = [contents.verify];
   for (const relative of ROLES) workingChecks.push(await verifyWorkingWeatherFile(relative, roles.get(relative)));
 
-  const manifestPath = path.join(ROOT, MANIFEST);
+  const {registry, zones, forecast, protectedBulk, verify: verifyInputs} =
+    await readRawRotationWeatherInputs({verified, boundary, manifestPath: path.join(ROOT, MANIFEST)});
+  workingChecks.push(verifyInputs);
+  const dmi = new Map();
+  for (const relative of roles.keys()) {
+    dmi.set(relative, await readDmiBulkDocument(path.join(ROOT, relative)));
+  }
+  const candidate = dmi.get(PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate) ?? null;
+  const active = dmi.get(PRIVATE_WEATHER_COMPONENT_FILES.dmiActive) ?? null;
+  const conditionIdentity = {datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    coastalParts: {parts: Object.fromEntries(Object.keys(conditions.coastalParts.parts).map(id => [id, null]))}};
+  return Object.freeze({
+    registry, conditions: conditionIdentity, checkpoint, boundary, published, protectedBulk, forecast, zones,
+    progressCandidate: candidate ?? active, progressActive: active,
+    // This scope has proven schema2 both before calculation and after publication.
+    // The ordinary historical donor and the one-time schema1 transport preparation are absent.
+    historicalBulk: null, protectedCompanionContexts: [...dmi.values()], transportCaptures: [],
+    verify: async () => {
+      await verify();
+      for (const check of workingChecks) await check();
+    },
+  });
+}
+
+
+async function readRawRotationWeatherInputs({verified, boundary, manifestPath}) {
   const manifestStat = await fs.lstat(manifestPath, {bigint: true});
-  requireProof(manifestStat.isFile() && !manifestStat.isSymbolicLink() && manifestStat.size > 0n
-    && manifestStat.size <= 512n * 1024n, 'MANIFEST_REQUIRED');
+  requireProof(manifestStat.isFile() && !manifestStat.isSymbolicLink() && manifestStat.nlink === 1n
+    && manifestStat.size > 0n && manifestStat.size <= 512n * 1024n, 'MANIFEST_REQUIRED');
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
   requireProof(manifest.complete === true && manifest.datasetId === boundary.datasetId
     && manifest.productionReferenceAt === boundary.productionReferenceAt
@@ -304,32 +337,62 @@ export async function readPublishedRawRotationInputs() {
   const registryFile = await readBoundJson(path.join(ROOT, REGISTRY), registryDescriptor, 16 * 1024 * 1024);
   const zonesFile = await readBoundJson(path.join(ROOT, ZONES), zonesDescriptor, 32 * 1024 * 1024);
   const registry = registryFile.data;
-  requireProof(registry.partCount === 673 && Object.keys(registry.zones ?? {}).length === 210, 'REGISTRY_SCOPE');
-  workingChecks.push(registryFile.verify, zonesFile.verify);
+  return {
+    registry, zones: zonesFile.data, ...await readRawRotationBulkInputs(verified, boundary, registry),
+    verify: async () => {
+      requireProof(sameBoundFile(manifestStat, await fs.lstat(manifestPath, {bigint: true})), 'MANIFEST_CHANGED');
+      await registryFile.verify();
+      await zonesFile.verify();
+    },
+  };
+}
 
+async function readRawRotationBulkInputs(verified, boundary, registry) {
+  requireProof(registry.partCount === 673 && Object.keys(registry.zones ?? {}).length === 210, 'REGISTRY_SCOPE');
   const payload = path.join(verified.bundlePath, 'payload');
   const forecast = await inspectDmiForecastFile(path.join(payload, FORECAST));
   requireProof(forecast.continuity?.metadata.schemaVersion === 2
     && forecast.continuity.metadata.productionReferenceAt === boundary.productionReferenceAt, 'PART_CONTINUITY');
-  const protectedBulk = await readDmiBulkDocument(path.join(payload, BULK));
-  const dmi = new Map();
-  for (const relative of roles.keys()) {
-    dmi.set(relative, await readDmiBulkDocument(path.join(ROOT, relative)));
-  }
-  const candidate = dmi.get(PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate) ?? null;
-  const active = dmi.get(PRIVATE_WEATHER_COMPONENT_FILES.dmiActive) ?? null;
-  const conditionIdentity = {datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
-    coastalParts: {parts: Object.fromEntries(Object.keys(conditions.coastalParts.parts).map(id => [id, null]))}};
-  return Object.freeze({
-    registry, conditions: conditionIdentity, checkpoint, boundary, published, protectedBulk, forecast, zones: zonesFile.data,
-    progressCandidate: candidate ?? active, progressActive: active,
-    // This scope has proven schema2 both before calculation and after publication.
-    // The ordinary historical donor and the one-time schema1 transport preparation are absent.
-    historicalBulk: null, protectedCompanionContexts: [...dmi.values()], transportCaptures: [],
+  return {forecast, protectedBulk: await readDmiBulkDocument(path.join(payload, BULK))};
+}
+
+// Read the authenticated B/S that remains live if this weather run stops.
+// Use its immutable companion roles, even when the work copies were changed
+// by the progressive DMI setup for the newly locked target.
+export async function readRetainedRawRotationInputs({demand}) {
+  const boundary = demand?.rawRetention?.boundary;
+  const expectedCheckpoint = demand?.sourceHashes?.checkpoint;
+  const expectedRegistry = demand?.registrySha256;
+  requireProof(boundary && /^sha256:[a-f0-9]{64}$/.test(expectedCheckpoint ?? '')
+    && /^sha256:[a-f0-9]{64}$/.test(expectedRegistry ?? ''), 'BASELINE_INPUT');
+  const {verified, conditions, conditionsSha256, originalConditions, verify: verifyBundle} =
+    await readCurrentPrivateRuntimeCompanionInput(demand.productionReferenceAt);
+  requireProof(originalConditions === undefined && verified.datasetId === boundary.datasetId
+    && verified.productionReferenceAt === boundary.productionReferenceAt
+    && verified.bundleContentSha256 === boundary.bundleContentSha256
+    && conditionsSha256 === boundary.conditionsSha256, 'BASELINE_INPUT');
+  const checkpointPath = path.join(ROOT, CHECKPOINT);
+  const checkpoint = await readCheckpoint(checkpointPath);
+  requireProof('sha256:' + checkpoint.sha256 === expectedCheckpoint
+    && checkpoint.data.generationSha256 === boundary.checkpointGenerationSha256, 'BASELINE_INPUT');
+  // The public manifest may be unavailable or behind the installed B/S after
+  // a Pages failure. Reuse the registry from the successful normal demand.
+  const registryFile = await readStableJson(path.join(ROOT, REGISTRY), 16 * 1024 * 1024);
+  const zonesFile = await readStableJson(path.join(ROOT, ZONES), 32 * 1024 * 1024);
+  requireProof('sha256:' + crypto.createHash('sha256').update(registryFile.bytes).digest('hex') === expectedRegistry,
+    'REGISTRY_SCOPE');
+  const registry = JSON.parse(registryFile.bytes.toString('utf8'));
+  const inputs = await readRawRotationBulkInputs(verified, boundary, registry);
+  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);
+  return {
+    ...inputs, registry, zones: JSON.parse(zonesFile.bytes.toString('utf8')),
+    conditions, checkpoint: checkpoint.data, boundary, protectedCompanionContexts,
+    progressCandidate: null, progressActive: null, historicalBulk: null, transportCaptures: [],
     verify: async () => {
-      await verify();
-      requireProof(sameBoundFile(manifestStat, await fs.lstat(manifestPath, {bigint: true})), 'MANIFEST_CHANGED');
-      for (const check of workingChecks) await check();
+      await verifyBundle();
+      await registryFile.verify();
+      await zonesFile.verify();
+      requireProof(sameBoundFile(checkpoint.stat, await fs.lstat(checkpointPath, {bigint: true})), 'S_CHANGED');
     },
-  });
+  };
 }

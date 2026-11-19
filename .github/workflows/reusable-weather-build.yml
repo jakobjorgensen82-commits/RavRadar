@@ -2453,8 +2453,9 @@ jobs:
           steps.dmi-raw-restore-identity.outcome == 'success' && steps.dmi-raw-restore-identity.outputs.observed == 'true' &&
           steps.current-history-demand.outcome == 'success'
         continue-on-error: true
-        timeout-minutes: 2
+        timeout-minutes: 5
         env:
+          NODE_OPTIONS: --max-old-space-size=6144
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ inputs.enforce_raw_cache_rotation && 'enforce' || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
           RAW_NORMAL_PRE_DMI_STEPS_VERIFIED: 'true'
