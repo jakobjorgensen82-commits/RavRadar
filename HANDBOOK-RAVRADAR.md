@@ -1,3 +1,13 @@
+## 89.355 — Når et fund kan ligne rav
+
+En kort opfølgning om glød eller gennemsigtighed beholder fundet som emne.
+
+Spørg RavRadar kan følge et spørgsmål om et fund med en kort opfølgning om gennemsigtighed og svag UV-glød. Gennemsigtighed ses også hos efterligninger. Ravets glød varierer, og andre materialer kan lyse. Brug flere skånsomme spor sammen, og få usikre eller værdifulde fund vurderet fagligt.
+
+Når hele spørgsmålet handler om skånsom vurdering af et konkret fund, får AI-tjenesten de eksisterende fakta om UV, efterligninger og ikke-destruktive undersøgelser. Det normaliserede svar kontrolleres på samme måde som andre svar. Ukendte tillæg går gennem den almindelige emnekontrol, og private spørgsmål afvises.
+
+Den offentlige 4.0.601 har leveret verificerede AI-svar på dansk, tysk og engelsk i det afgrænsede forløb. En længere tysk formulering blev afvist, da der manglede et læsbart struktureret svar. Kilderettelsen skal bestå den normale levering og derefter prøves med den længere formulering i brugerfladen.
+
 ## 89.354 — Aktivitet og varsel før automatisk kontosletning
 
 <div class="reader-guide"><p>Registrér aktivitet sikkert, og begynd først et 30-dages varsel på en faktisk leveringskvittering. Installationen aktiverer ingen automatisk sletning.</p></div>

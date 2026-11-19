@@ -1,3 +1,15 @@
+## 18. november — Spørg RavRadar om et muligt ravfund
+
+- [x] Verificér eksternt AI-svar for afgrænset identifikationsspørgsmål på dansk, tysk og engelsk gennem den normale brugerflade på 4.0.601.
+- [x] Reproducér generisk svar på den danske opfølgning og afgræns den længere tyske fejl til udlæsning af svaret.
+- [ ] Kvalificér den nye præcise kilde, lever og gentag det oprindelige spørgsmål og opfølgningen i den offentlige brugerflade.
+
+## 18. november — backup og plan for automatisk rotation
+
+- [x] Gendan det autentiske databasearkiv isoleret og bekræft data og login. Hosted #50 bestod.
+- [x] Klargør en skrivefri måling af plads og aktuelt arkiv. Den er afprøvet lokalt.
+- [ ] Kvalificér og kør den skrivefri måling på aktuel main. Bekræft varig gendannelseskvittering og efterfølgende sikker rotation.
+
 ## App 602: mindre delingskald med samme 601-modelfamilie
 
 Den afgrænsede lokale app 602-kandidat porter den gennemgåede delingsprototype til 601-kilden. Ét separat prognoseindeks indeholder den nødvendige model-, profil-, runtime-, evidens-, kildealder-, tids- og generationsmetadata samt de 210 præcise zonefilers stier, størrelser og hashes. Det nye delingskald henter indekset og én eksisterende zonefil. Det gamle V1-indeks og alle 210 zonefilers format bevares til den gamle Worker; scoretal, kvalitetsmærkning og lokal dækningsstatus kommer fortsat fra de allerede beregnede normale resultater.

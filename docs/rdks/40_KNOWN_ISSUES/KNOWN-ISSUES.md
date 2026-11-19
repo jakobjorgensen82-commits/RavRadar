@@ -1,3 +1,7 @@
+## 18. november — længere svar om identifikation af rav
+
+Et tysk spørgsmål i 4.0.601 gav HTTP 502. Leverandøren svarede HTTP 200, og funktionen kunne ikke finde et struktureret svar. Den afgrænsede variant virkede med valideret AI-oprindelse. Præcis leverandørindpakning eller afkortning er uafklaret. Den lokale rettelse afgrænser faktagrundlaget for hele den observerede spørgeform. Virkningen skal bekræftes i drift.
+
 ## 18. november — afslut Pages-registrering efter den skrivende kørsel
 
 Ved #347 var udgivelsen og den centrale aktivering gennemført. Det sidste trin krævede en afsluttet Pages-ejer, mens det selv var en del af ejerens aktive kørsel. Den særskilte genoptagelse #11 gennemførte den uændrede kontrol og lukning, efter at Pages-ejeren var afsluttet. Den almindelige Pages-kørsel får derfor fjernet sit eget forsøg på at lukke registreringen. Levering og næste almindelige kørsel verificeres særskilt.

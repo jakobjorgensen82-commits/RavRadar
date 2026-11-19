@@ -476,12 +476,15 @@ function archiveFailure(e,c){
   return error;
 }
 
-async function lifecycleCurrent(c){
+async function lifecycleCurrent(c,expectedIndexCommitment=null){
   await privacy(c);const locator=await readLocator(c);need(locator,'LOCATOR_MISSING');
-  await c.r2.ensurePrivateBucket();const pointer=locator.payload,wire=await remoteBody(c,pointer.index);
-  const opened=openIndex(unframe('ENCRYPTED_INDEX',wire),pointer,c.env),group=validateIndex(opened,pointer);
+  const pointer=locator.payload;
+  if(expectedIndexCommitment!==null)
+    need(databaseRestoreCommitment(pointer.index.sha256)===expectedIndexCommitment,'BACKUP_STOCK_ARCHIVE_CHANGED');
+  await c.r2.ensurePrivateBucket();const wire=await remoteBody(c,pointer.index),binary=unframe('ENCRYPTED_INDEX',wire);
+  const opened=openIndex(binary,pointer,c.env),group=validateIndex(opened,pointer);
   need(same(await readLocator(c),locator),'LOCATOR_CHANGED');
-  return {locator,pointer,opened,group};
+  return {locator,pointer,opened,group,selfDescribing:binary.subarray(0,SELF_INDEX_MAGIC.length).equals(SELF_INDEX_MAGIC)};
 }
 async function qualifyHistoricalBackupGroups(c,groups,currentSha){
   for(const group of groups){
@@ -527,12 +530,35 @@ export async function inspectSupabaseDatabaseBackupLifecycle(dependencies={}){
       usedBytes:inventory.total};
   }catch(error){throw archiveFailure(error,c);}
 }
-async function rotationInventory(c){
+// Independently inspect fresh stock without opening any SQL carriers or unknown
+// objects. In the initial single-archive case the exact listing also proves
+// that no durable receipt or historical archive can already exist.
+export async function inspectSupabaseDatabaseBackupStock(expectedIndexCommitment,dependencies={}){
+  let c;
+  try{
+    need(hash(expectedIndexCommitment),'BACKUP_STOCK_SELECTOR');
+    c=clients(dependencies.env??process.env,dependencies.fetchImpl??globalThis.fetch,{readOnly:true,rotation:true});
+    c.state.searchDeadline=Date.now()+B.maximumSearchMs;
+    c.state.objectReadBound=B.maximumIndexWireBytes;
+    const {locator,pointer,group,selfDescribing}=await lifecycleCurrent(c,expectedIndexCommitment);
+    const inventory=await rotationInventory(c,{requireKnownNamespace:false});
+    const expected=[pointer.index,...group.index.objects.flatMap(entry=>group.chunked
+      ?entry.parts.map(part=>part.object):[entry.object])];
+    for(const object of expected){
+      const listed=inventory.objects.get(object.path)??inventory.partObjects.get(object.path);
+      need(listed?.sha256===object.sha256&&listed.bytes===object.bytes,'BACKUP_STOCK_CURRENT_OBJECT_MISSING_OR_CHANGED');
+    }
+    need(same(await readLocator(c),locator),'LOCATOR_CHANGED');
+    return {locatorVersion:locator.version,completedAt:group.completedAt,context:pointer.context,usedBytes:inventory.total,
+      objectCount:inventory.count,selfContainedCurrentOnly:selfDescribing&&inventory.count===expected.length};
+  }catch(error){throw archiveFailure(error,c);}
+}
+async function rotationInventory(c,{requireKnownNamespace=true}={}){
   const inventory={bytes:0,count:0,total:0,unsupported:0,objects:new Map(),parts:new Set(),partObjects:new Map()};
   c.state.listing=inventory;let usage;
   try{usage=await c.r2.bucketUsage();}finally{c.state.listing=null;}
   need(usage.objectCount===inventory.count&&usage.usedBytes===inventory.total,'ROTATION_LIST_PARITY');
-  need(inventory.unsupported===0,'ROTATION_UNKNOWN_NAMESPACE');
+  if(requireKnownNamespace)need(inventory.unsupported===0,'ROTATION_UNKNOWN_NAMESPACE');
   return inventory;
 }
 async function rotationGroups(c,inventory){

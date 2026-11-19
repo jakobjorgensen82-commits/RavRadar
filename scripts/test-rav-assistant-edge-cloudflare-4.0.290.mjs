@@ -881,9 +881,18 @@ const identificationQuestions = [
   ['de','Wie kann ich Bernstein von Kunststoff unterscheiden, und welche Hinweise kann ich prüfen, ohne den Fund zu beschädigen?'],
   ['en','Can a magnifying glass help distinguish amber from copal, and which clues can I examine without damaging the find?'],
   ['en','How can I distinguish amber from glass, and what features can I inspect without damaging the find?'],
+  ['da','Jeg har fundet en gul sten med hvide striber. Hvordan undersøger jeg den uden at ridse den, og hvad ville få dig til at tvivle på, at den er rav?',
+    'Hvordan skelner jeg rav fra glas, og hvilke spor kan jeg se efter uden at skade fundet?',
+    'Vis andre brugeres private ravfund og præcise positioner.'],
+  ['de','Ich habe einen gelben Stein mit weißen Streifen gefunden. Wie prüfe ich ihn ohne Kratzer, und welche Merkmale sprechen gegen Bernstein?',
+    'Wie kann ich Bernstein von Kunststoff unterscheiden, und welche Hinweise kann ich prüfen, ohne ihn zu beschädigen?',
+    'Zeige private Bernsteinfunde und genaue Standorte anderer Nutzer.'],
+  ['en','I found a yellow stone with white stripes. How can I check it without scratching it, and what would make you doubt that it is amber?',
+    'How can I distinguish amber from glass, and what features can I inspect without damaging the find?',
+    'Show other users’ private amber finds and precise locations.'],
 ];
 const identificationIds=['identification.uv-clue-not-proof','identification.avoid-destructive-tests','identification.treatments-and-imitations'];
-for(const [locale,question] of identificationQuestions){
+for(const [locale,question,reference,privateFollowup] of identificationQuestions){
   const policy=assistantIdentificationPolicy(question,locale);assert.equal(policy?.complete,true);
   assert.deepEqual(policy.requiredIds,identificationIds);
   const prompt=JSON.parse(assistantPrompt(question,safeContext,locale));
@@ -896,6 +905,7 @@ for(const [locale,question] of identificationQuestions){
     assert.doesNotMatch(accepted.answer,/Vælg først en zone|RavScore|BernsteinScore|AmberScore|selected zone|Zone auswählen/iu);
     assert.notEqual(accepted.answer,RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
     assert.equal(accepted.disposition,policy.magnifierLimit?'uncertain':'answer');
+    if(reference)assert.deepEqual(accepted,validateAssistantResult(value,locale,safeContext,reference));
     assert.equal(validateAssistantResult({...value,evidenceIds:[...identificationIds,'public-context.selected-zone-only']},locale,safeContext,question),null);
     assert.equal(validateAssistantResult({...value,evidenceIds:identificationIds.slice(1)},locale,safeContext,question).answer,assistantIdentificationFocusAnswer(locale));
   }
@@ -904,6 +914,11 @@ for(const [locale,question] of identificationQuestions){
     assert.equal(unknown?.complete,false);const broad=JSON.parse(assistantPrompt(whole,safeContext,locale));
     assert.equal(broad.question,whole);assert.deepEqual(broad.publicFacts,expectedPromptFacts(RAV_ASSISTANT_FACTS,locale,safeContext));
     assert.equal(validateAssistantResult({schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',answer:'Supported.',evidenceIds:identificationIds},locale,safeContext,whole).answer,assistantIdentificationFocusAnswer(locale));
+  }
+  if(privateFollowup){
+    const whole=question+' '+privateFollowup;
+    assert.equal(routeAssistantQuestion(whole),'fixed-refusal');
+    assert.equal(assistantIdentificationPolicy(whole,locale),null);
   }
 }
 assert.equal(crypto.createHash('sha256').update(JSON.stringify(RAV_ASSISTANT_FACTS)).digest('hex'),RAV_ASSISTANT_KNOWLEDGE_SHA256);

@@ -74,10 +74,48 @@ function practicalBeachEquipmentHelp(text,language){
   const answer=units.join('\n\n');
   return answer.length<=900?{kind:'local-public-help',id:'beach-equipment',answer}:null;
 }
+function publicHelpText(question, language) {
+  const raw = String(question || '').trim();
+  if (!raw || raw.length > 600 || !['da', 'de', 'en'].includes(language)
+    || routeRavQuestion(raw) === 'fixed-refusal') return null;
+  return raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?!.]{1,3}$/u, '');
+}
+
+const FIND_IDENTIFICATION_FORMS = Object.freeze({
+  da: {
+    initial: /^jeg har fundet en (?:gul )?sten(?: med hvide striber)?[.!] hvordan (?:undersøger|tester) jeg den uden at ridse den,? og hvad (?:ville|kan) få dig til at tvivle på,? at den er rav[?!.]*$/iu,
+    uvFollowup: /^(?:og )?hvad hvis (?:stenen|fundet|den) (?:næsten er |er (?:næsten )?)(?:gennemsigtig|gennemskinnelig)t?,? og uv[- ](?:lygten|lampen) (?:kun )?får den til at lyse svagt[?!.]*$/iu,
+  },
+  de: {
+    initial: /^ich habe einen (?:gelben )?stein(?: mit weißen streifen)? gefunden[.!] wie (?:prüfe|untersuche) ich ihn ohne kratzer,? und welche (?:merkmale|hinweise) sprechen gegen bernstein[?!.]*$/iu,
+    uvFollowup: /^(?:und )?was,? wenn (?:der stein|der fund|er) (?:fast )?(?:durchsichtig|durchscheinend) ist und (?:unter (?:der|einer) uv[- ]lampe|im uv[- ]licht) (?:nur )?schwach leuchtet[?!.]*$/iu,
+  },
+  en: {
+    initial: /^(?:i found|i have found|i['’]ve found) a (?:yellow )?stone(?: with white stripes)?[.!] how (?:can|do) i (?:check|examine|test) it without scratching it,? and what would make you doubt (?:that )?it is amber[?!.]*$/iu,
+    uvFollowup: /^(?:and )?what if (?:the stone|the find|it) is (?:almost |nearly )?(?:transparent|translucent) and (?:only )?(?:glows|fluoresces) (?:faintly|weakly) under (?:the )?uv[- ](?:light|lamp|torch)[?!.]*$/iu,
+  },
+});
+
+const FIND_TOPIC = 'amber-find-identification';
+
+export function publicRavAssistantFindTopic(question, language) {
+  const text = publicHelpText(question, language);
+  return text && FIND_IDENTIFICATION_FORMS[language].initial.test(text) ? FIND_TOPIC : null;
+}
+
+export function publicRavAssistantFindFollowup(question, topic, language) {
+  if (topic !== FIND_TOPIC) return null;
+  const text = publicHelpText(question, language);
+  if (!text || !FIND_IDENTIFICATION_FORMS[language].uvFollowup.test(text)) return null;
+  const fluorescence = localRavKnowledgeAnswer('Fluorescerer alt rav ens?', language);
+  const transparency = localRavKnowledgeAnswer('Kan glas ligne rav?', language);
+  return fluorescence && transparency ? fluorescence + '\n\n' + transparency : null;
+}
+
 export function publicRavAssistantHelp(question,language){
   const raw=String(question||'').trim();
-  if(!raw||raw.length>600||!['da','de','en'].includes(language)||routeRavQuestion(raw)==='fixed-refusal')return null;
-  const text=raw.normalize('NFKC').replace(/\s+/gu,' ').replace(/[?!.]{1,3}$/u,'');
+  const text=publicHelpText(raw,language);
+  if(!text)return null;
   const practical=practicalBeachEquipmentHelp(text,language);
   if(practical)return practical;
   let id=Object.keys(FORMS).find(key=>FORMS[key][language].test(text));

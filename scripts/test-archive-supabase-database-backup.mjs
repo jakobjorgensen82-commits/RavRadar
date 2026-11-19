@@ -9,6 +9,8 @@ import {EventEmitter} from 'node:events';
 import {PassThrough} from 'node:stream';
 import {runSupabaseDatabaseArchive as run,auditSupabaseDatabaseArchiveRoleGrant as auditGrant,FIXED_844_ROLE_GRANT_COMMITMENTS as commitments,DB_REMOTE_BACKUP_POLICY as P,DB_BOOTSTRAP_POLICY as B} from './archive-supabase-database-backup.mjs';
 import {PRIVATE_STUDY_ADMIN_FUNCTIONS} from './lib/private-trip-study-admin-transport.mjs';
+import {databaseRestoreCommitment} from './supabase-backup-lifecycle.mjs';
+import {inspectDatabaseBackupPlan} from './inspect-supabase-database-backup.mjs';
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex'),clone=x=>JSON.parse(JSON.stringify(x));
 const names=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
 const sql=name=>Buffer.from('-- synthetic '+name+'\nINSERT INTO synthetic VALUES (9007199254740993,0.12345678901234567890123456789);\n');
@@ -821,6 +823,67 @@ function tinyOwnedParts(f){
   f.objects.delete(original.payload.index.path);for(const entry of index.objects)f.objects.delete(entry.object.path);
   return clone(f.locator);
 }
+
+test('hosted stock plan reads only current archive metadata and listing; extra objects remain unclassified',async t=>{
+  const {f}=await captured(t);
+  tinyOwnedParts(f);
+  const locator=clone(f.locator),children=f.children.length,objectCount=f.objects.size;
+  const usedBytes=[...f.objects.values()].reduce((total,object)=>total+object.length,0);
+  const archivedReceipt=Buffer.from(encryptedIndex(f).index.exportReceiptBase64,'base64');
+  const commitment=databaseRestoreCommitment(locator.payload.index.sha256);
+  Object.assign(f.env,{GITHUB_WORKFLOW:'Inspect RavRadar database backup stock',GITHUB_REF:'refs/heads/main',
+    GITHUB_EVENT_NAME:'workflow_dispatch',RESTORE_ARCHIVE_INDEX_COMMITMENT:'rr-supabase-restore-v1:'+commitment});
+  const historyReads=[];
+  let mainChecks=0;
+  const options={...f.dependencies(),confirmMain:()=>{mainChecks++;},readGithub:path=>{
+    historyReads.push(path);return {total_count:0,workflow_runs:[]};}};
+  const start=f.calls.length;
+  const plan=await inspectDatabaseBackupPlan(options);
+  assert.deepEqual(plan,{status:'DATABASE_BACKUP_STOCK_INSPECTED',expectedArchiveCurrent:true,
+    locatorVersion:locator.version,archiveCompletedAt:JSON.parse(archivedReceipt).completedAt,
+    objectCount,usedBytes,bucketLimitBytes:2_000_000_000,reservedCaptureBytes:300_000_000,
+    captureHeadroomAvailable:true,rotationState:'SINGLE_CURRENT_ARCHIVE',durableRestoreReceipt:false,nextEligibleWeeklyAction:'restore'});
+  assert.equal(historyReads.length,2);
+  assert.equal(mainChecks,2);
+  // A plausible small flat object can be either encrypted SQL or metadata.
+  f.objects.set('bundles/sha256/'+'e'.repeat(64)+'.json.gz',Buffer.from('synthetic ambiguous body'));
+  f.behavior.existingUsageBytes=1_700_000_001-usedBytes;
+  const held=await inspectDatabaseBackupPlan(options);
+  assert.equal(held.rotationState,'UNCLASSIFIED_STOCK');
+  assert.equal(held.durableRestoreReceipt,null);
+  assert.equal(held.nextEligibleWeeklyAction,null);
+  assert.equal(held.objectCount,objectCount+2);
+  assert.equal(held.captureHeadroomAvailable,false);
+  assert.equal(historyReads.length,2);
+  assert.equal(f.children.length,children);
+  assert.deepEqual(f.locator,locator);
+  const reads=f.calls.slice(start);
+  const objectReads=reads.filter(call=>call.method==='GET'&&new URL(call.url).hostname.endsWith('.cloudflarestorage.com')
+    &&new URL(call.url).pathname!=='/'+P.bucket);
+  assert.equal(objectReads.length,2);
+  assert(objectReads.every(call=>new URL(call.url).pathname==='/'+P.bucket+'/'+locator.payload.index.path));
+  assert(reads.every(call=>['GET','HEAD'].includes(call.method)||call.method==='POST'&&new URL(call.url).hostname==='api.supabase.com'));
+  assert(!JSON.stringify(plan).includes(locator.payload.index.sha256));
+});
+
+test('stock plan refuses a wrong commitment, missing body, or locator changed during listing',async t=>{
+  const {inspectSupabaseDatabaseBackupStock:inspect}=await import('./archive-supabase-database-backup.mjs');
+  const {f}=await captured(t),locator=clone(f.locator);
+  const commitment=databaseRestoreCommitment(locator.payload.index.sha256);
+  let start=f.calls.length;
+  await rejectCode(()=>inspect('d'.repeat(64),f.dependencies()),'BACKUP_STOCK_ARCHIVE_CHANGED');
+  assert(f.calls.slice(start).every(call=>!new URL(call.url).hostname.endsWith('.cloudflarestorage.com')));
+  const object=[...f.objects.keys()].find(key=>key!==locator.payload.index.path),before=f.objects.get(object);
+  f.objects.delete(object);
+  await rejectCode(()=>inspect(commitment,f.dependencies()),'BACKUP_STOCK_CURRENT_OBJECT_MISSING_OR_CHANGED');
+  f.objects.set(object,before);
+  start=f.calls.length;
+  f.behavior.beforeLocatorGet=()=>{
+    if(f.calls.slice(start).some(call=>new URL(call.url).searchParams.get('list-type')==='2'))f.locator.version++;
+  };
+  await rejectCode(()=>inspect(commitment,f.dependencies()),'LOCATOR_CHANGED');
+});
+
 async function tinyRotation(t,{verifyCurrent=true}={}){
   const {f}=await captured(t,{allowRetirement:true}),retiring=tinyOwnedParts(f);
   f.env.GITHUB_RUN_ID='12346';await run({mode:'capture'},f.dependencies());const reserve=clone(f.locator);

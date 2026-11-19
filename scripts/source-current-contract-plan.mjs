@@ -250,6 +250,7 @@ const PATH_AREAS=freeze({
   assistantDiagnostic:[FIXED_ASSISTANT_LOG_TEST,'scripts/read-fixed-assistant-failure-log-20261101.mjs'],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
+    'js/services/rav-assistant-public-help.js','scripts/test-assistant-ui-error-boundary.mjs',
     'scripts/test-ravscore-public-data-service-binding.mjs',
     'scripts/test-ravscore-public-browser-closure.mjs',
     'scripts/test-map-forecast-timeline.mjs',
@@ -323,7 +324,9 @@ const PATH_AREAS=freeze({
     'scripts/run-autonomous-supabase-backup.mjs',
     'scripts/test-supabase-backup-lifecycle.mjs',
     '.github/workflows/backup-supabase-database.yml',
+    '.github/workflows/inspect-supabase-database-backup.yml',
     LOCAL_RESTORE_WORKFLOW,
+    'scripts/inspect-supabase-database-backup.mjs',
     'scripts/run-hosted-supabase-backup.mjs',
     'scripts/test-supabase-database-backup-workflow.mjs',
     LOCAL_RESTORE_FIXTURE,
