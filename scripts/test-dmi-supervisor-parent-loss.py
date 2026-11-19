@@ -18,6 +18,7 @@ from pathlib import Path
 import select
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -50,8 +51,10 @@ if caller == "cp":
     supervisor = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(supervisor)
     supervisor.PILOT = pathlib.Path(sys.argv[2])
+    pilot_argument = ("--synthetic-source" if os.environ.get("OWN_HOSTED_CGROUP_PROBE")
+                      else "--refresh-only")
     sys.argv = [str(spec.origin), "--attempts", "1", "--timeout-seconds", "6",
-                "--backoff-seconds", "0", "--", "--refresh-only"]
+                "--backoff-seconds", "0", "--", pilot_argument]
 normal_run = getattr(supervisor, "run_supervised", None)
 normal_popen = supervisor.subprocess.Popen
 normal_thread = getattr(getattr(supervisor, "threading", None), "Thread", None)
@@ -156,7 +159,8 @@ state = pathlib.Path("/proc/self/stat").read_text().rsplit(")", 1)[1].split()
 identity = {"pid": os.getpid(), "ppid": os.getppid(), "pgid": os.getpgrp(),
             "sid": os.getsid(0), "start": int(state[19])}
 if os.environ.get("OWN_PROCESS_DESCENDANT") == "1":
-    subprocess.Popen([sys.executable, "-u", str(root / "descendant.py")])
+    subprocess.Popen([sys.executable, "-u", str(root / "descendant.py")],
+                     start_new_session=os.environ.get("OWN_HOSTED_CGROUP_PROBE") == "1")
 with (root / "heartbeat").open("wb", buffering=0) as output:
     output.write(b".")
     (root / "ready.new").write_text(json.dumps(identity), encoding="ascii")
@@ -765,5 +769,170 @@ raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
                 signal.signal(signal.SIGALRM, old_handler)
 
 
+def hosted_cgroup_probe():
+    """Explicit synthetic source probe. The ordinary Linux support test is unchanged."""
+    if (sys.platform != "linux" or os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted"
+            or os.environ.get("ImageOS") != "ubuntu24" or os.geteuid() == 0):
+        raise SystemExit("HOSTED_UBUNTU24_NONROOT_REQUIRED")
+    uid = os.geteuid()
+    base = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+    runtime = Path(f"/run/user/{uid}")
+    cgroups = Path("/sys/fs/cgroup")
+    try:
+        bus = (runtime / "bus").stat()
+        available = (base.is_dir() and base.stat().st_uid == uid and runtime.stat().st_uid == uid
+                     and stat.S_ISSOCK(bus.st_mode) and bus.st_uid == uid
+                     and (cgroups / "cgroup.controllers").is_file())
+    except OSError:
+        available = False
+    if not available:
+        raise SystemExit("HOSTED_CGROUP_OR_USER_BUS_UNAVAILABLE")
+    control_environment = {"PATH": "/usr/bin:/bin", "LANG": "C",
+                           "XDG_RUNTIME_DIR": str(runtime)}
+
+    def control(*args):
+        return subprocess.run(["/usr/bin/systemctl", "--user", *args], env=control_environment,
+                              text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                              stdin=subprocess.DEVNULL, timeout=3, check=False)
+
+    def run_case(test, caller, interruption):
+        root = Path(tempfile.mkdtemp(prefix="rr-provider-cgroup-", dir=base))
+        unit = root.name + ".service"
+        descriptors = []
+        producer, descendant = root / "producer.py", root / "descendant.py"
+        parent, original = root / "supervisor.py", root / "original-BS"
+        launch = None
+        owned = False
+        try:
+            parent.write_text(SUPERVISOR, encoding="utf-8")
+            producer.write_text(PRODUCER, encoding="utf-8")
+            descendant.write_text(DESCENDANT, encoding="utf-8")
+            original.write_bytes(b"own unchanged synthetic B/S\n")
+            test.assertEqual(stat.S_IMODE(root.stat().st_mode), 0o700)
+            properties = ("ExitType=main", "KillMode=mixed", "TimeoutStopSec=2s",
+                          "RuntimeMaxSec=12s", "Restart=no", "UMask=0077",
+                          f"WorkingDirectory={ROOT}", "NoNewPrivileges=yes",
+                          "StandardOutput=null", "StandardError=null")
+            fixed_environment = (
+                "PATH=/usr/bin:/bin", "LANG=C.UTF-8", "PYTHONNOUSERSITE=1", "PYTHONUTF8=1",
+                "PYTHONDONTWRITEBYTECODE=1",
+                "OWN_HOSTED_CGROUP_PROBE=1", "OWN_PROCESS_DESCENDANT=1",
+                f"OWN_PROCESS_CALLER={caller}", f"OWN_SUPERVISOR_LOSS_ROOT={root}",
+            )
+            test.assertNotEqual(control("is-active", unit).returncode, 0)
+            launch = subprocess.Popen(
+                ["/usr/bin/systemd-run", "--user", "--quiet", "--wait", "--service-type=exec",
+                 "--expand-environment=no",
+                 f"--unit={unit}", *[f"--property={item}" for item in properties],
+                 "--", "/usr/bin/env", "-i", *fixed_environment, sys.executable, "-B", "-u",
+                 str(parent), str(TEST_SEAM), str(producer)], env=control_environment,
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            owned = True
+            markers = [root / name for name in ("ready", "descendant-ready", "supervisor-reader-ready")]
+            deadline = time.monotonic() + 4
+            while not all(path.exists() for path in markers):
+                test.assertIsNone(launch.poll(), "HOSTED_TRANSIENT_SERVICE_START_REFUSED")
+                test.assertLess(time.monotonic(), deadline, "HOSTED_TRANSIENT_SERVICE_START_TIMEOUT")
+                time.sleep(0.01)
+            show = control("show", "--property=MainPID,ControlGroup,ActiveState", unit)
+            test.assertEqual(show.returncode, 0, "HOSTED_TRANSIENT_SERVICE_IDENTITY_UNAVAILABLE")
+            props = dict(line.split("=", 1) for line in show.stdout.splitlines())
+            main = int(props["MainPID"])
+            group = Path(props["ControlGroup"])
+            user_group = Path(f"/user.slice/user-{uid}.slice/user@{uid}.service")
+            test.assertEqual(props["ActiveState"], "active")
+            test.assertTrue(group.is_relative_to(user_group) and group.name == unit
+                            and ".." not in group.parts)
+            events = cgroups.joinpath(*group.parts[1:], "cgroup.events")
+            test.assertIn(b"populated 1", read_small(events).splitlines())
+            group_identity = events.parent.stat()
+            first, last, reader = [json.loads(read_small(path)) for path in markers]
+            test.assertEqual((first["ppid"], last["ppid"], reader["producerPid"]),
+                             (main, first["pid"], first["pid"]))
+            test.assertEqual((last["pgid"], last["sid"]), (last["pid"], last["pid"]))
+            test.assertNotEqual(last["pgid"], first["pgid"])
+            for pid in (main, first["pid"], last["pid"]):
+                test.assertGreater(pid, 1)
+                descriptor = os.pidfd_open(pid, 0)
+                descriptors.append(descriptor)
+                assert_pidfd_identity(descriptor, pid)
+                test.assertIn(os.fsencode(f"0::{group}"),
+                              read_small(Path(f"/proc/{pid}/cgroup")).splitlines())
+            test.assertEqual(read_small(Path(f"/proc/{main}/cmdline")).split(b"\0")[:-1],
+                             [os.fsencode(arg) for arg in (sys.executable, "-B", "-u",
+                                                          str(parent), str(TEST_SEAM), str(producer))])
+            test.assertEqual(process_identity(first["pid"]), first)
+            test.assertEqual(process_identity(last["pid"]), last)
+            heartbeats = [root / "heartbeat", root / "descendant-heartbeat"]
+            test.assertTrue(all(path.stat().st_uid == uid and stat.S_IMODE(path.stat().st_mode) == 0o600
+                                for path in heartbeats))
+            before = [path.stat().st_size for path in heartbeats]
+            time.sleep(0.05)
+            test.assertTrue(all(path.stat().st_size > size for path, size in zip(heartbeats, before)))
+            stop_at = time.monotonic()
+            if interruption is None:
+                (root / "finish-own-producer").touch()
+            else:
+                signal.pidfd_send_signal(descriptors[0], interruption)
+            for descriptor in descriptors:
+                test.assertTrue(exited(descriptor, max(0, stop_at + 3 - time.monotonic())),
+                                "HOSTED_DESCENDANT_STILL_LIVE")
+            closure_ms = round((time.monotonic() - stop_at) * 1000)
+            test.assertLessEqual(closure_ms, 3000)
+            code = launch.wait(timeout=2)
+            if interruption == signal.SIGTERM:
+                test.assertEqual(code, 128 + signal.SIGTERM)
+            else:
+                test.assertEqual(code == 0, interruption is None)
+            test.assertEqual((root / "supervisor-completed").exists(), interruption != signal.SIGKILL)
+            try:
+                test.assertIn(b"populated 0", read_small(events).splitlines())
+                test.assertTrue(os.path.samestat(group_identity, events.parent.stat()))
+                disposition = "EMPTY"
+            except FileNotFoundError:
+                # The kernel permits removal only without live tasks or child groups.
+                test.assertFalse(events.parent.exists())
+                disposition = "RETIRED_EMPTY"
+            sizes = [path.stat().st_size for path in heartbeats]
+            time.sleep(0.05)
+            test.assertEqual([path.stat().st_size for path in heartbeats], sizes)
+            test.assertEqual(original.read_bytes(), b"own unchanged synthetic B/S\n")
+            mode = interruption.name if interruption else "NORMAL"
+            print(f"HOSTED_PROVIDER_CGROUP {caller} {mode} {disposition} closure_ms={closure_ms}")
+        finally:
+            primary = sys.exc_info()[1]
+            try:
+                if owned:
+                    stopped = control("stop", unit)
+                    if launch.poll() is None:
+                        launch.wait(timeout=3)
+                    state = control("show", "--property=ActiveState,LoadState", unit).stdout.splitlines()
+                    disappeared = "LoadState=not-found" in state and "ActiveState=inactive" in state
+                    known_stopped = stopped.returncode == 0 and "ActiveState=inactive" in state
+                    if (not (disappeared or known_stopped) or any(not exited(fd) for fd in descriptors)):
+                        raise RuntimeError("HOSTED_SYNTHETIC_CLEANUP_UNPROVED")
+                shutil.rmtree(root)
+            except BaseException:
+                if primary is None:
+                    raise
+                primary.add_note("HOSTED_SYNTHETIC_CLEANUP_UNPROVED")
+            finally:
+                for descriptor in descriptors:
+                    os.close(descriptor)
+
+    class HostedCgroup(unittest.TestCase):
+        def test_normal_provider_cgroups(self):
+            for caller in ("supervised", "cp"):
+                for interruption in (None, signal.SIGTERM, signal.SIGKILL):
+                    with self.subTest(caller=caller, interruption=interruption):
+                        run_case(self, caller, interruption)
+
+    result = unittest.TextTestRunner().run(unittest.defaultTestLoader.loadTestsFromTestCase(HostedCgroup))
+    raise SystemExit(not result.wasSuccessful())
+
+
 if __name__ == "__main__":
-    unittest.main()
+    if sys.argv[1:] == ["--hosted-cgroup-probe"]:
+        hosted_cgroup_probe()
+    else:
+        unittest.main()
