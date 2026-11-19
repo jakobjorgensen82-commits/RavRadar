@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { preparePreDmiRawSuccessorProof } from './prove-pre-dmi-restored-raw-successor.mjs';
 import {
   DMI_CACHE_SAVE_STEP,
   DMI_PRODUCER_JOB,
@@ -612,6 +613,26 @@ const bootProof = {
   planSha256: createHash('sha256').update(planBytes).digest('hex'),
   allRequiredVerified: true, requiredCaptures: 1, protectedFiles: 1, unavailableCaptures: 0,
 };
+const pairedBaseline = {
+  schemaVersion: 1, kind: 'DMI_PAIRED_RAW_BASELINE_V1', bVersion: 31, sVersion: 47,
+  bSourceHead: headSha, boundarySha256: bootProof.baselineBoundarySha256,
+};
+const {id, key, version} = rawCandidate;
+const bridgeInputs = {
+  demand: normalDemand, pairedBaseline, identity: {id, key, version}, matchedKey: key,
+  run: {runId: bootProof.runId, runAttempt: '1', sourceHead: bootProof.sourceHead,
+    targetReferenceAt: bootProof.targetReferenceAt},
+};
+assert.deepEqual(preparePreDmiRawSuccessorProof(bridgeInputs),
+  {planBytes, expected: bootProof, boundary: successorBoundary});
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  pairedBaseline: {...pairedBaseline, boundarySha256: '3'.repeat(64)}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  pairedBaseline: {...pairedBaseline, sVersion: 0}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  matchedKey: rawCaches[0].key}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
+  run: {...bridgeInputs.run, targetReferenceAt: '2026-09-05T05:00:00Z'}}), /RETENTION_SUCCESSOR_TARGET/);
 const restoredSuccessor = {receipt: bootProof, planBytes};
 const bootPlan = {...savePlan, saved: undefined, restoredSuccessor};
 assert.deepEqual(planRawDmiCacheRotation(bootPlan).retire, [rawIdentity(rawCaches[0])]);

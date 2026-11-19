@@ -123,6 +123,9 @@ on:
       TRIP_GATEWAY_SHARED_SECRET:
         required: true
     outputs:
+      raw_bootstrap_coverage:
+        description: "Opt-in pre-DMI RAW coverage receipt; no RAW captures or deletion authority"
+        value: ${{ jobs.build-and-prepare.outputs.raw_bootstrap_coverage }}
       should_deploy:
         description: "Forwarded build-and-prepare should_deploy contract"
         value: ${{ jobs.build-and-prepare.outputs.should_deploy }}
@@ -266,6 +269,7 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
       RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD: ${{ github.sha }}
     outputs:
+      raw_bootstrap_coverage: ${{ steps.raw-bootstrap-pre-dmi-proof.outputs.raw_bootstrap_coverage }}
       should_deploy: ${{ steps.deployment-decision.outputs.should_deploy }}
       preflight_should_run: ${{ steps.preflight.outputs.should_run }}
       operational_action: ${{ steps.operational-action.outputs.action }}
@@ -1448,6 +1452,7 @@ jobs:
           NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
 
       - name: Classify one-time DMI PART continuity donor
         id: dmi-part-continuity-donor
@@ -2410,6 +2415,37 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
           RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
+
+      - name: Observe exact restored RAW coverage for the locked successor before DMI
+        id: raw-bootstrap-pre-dmi-proof
+        if: >-
+          vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'observe' &&
+          github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+          github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+          github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' && github.run_attempt == 1 &&
+          steps.preflight.outputs.should_run == 'true' &&
+          inputs.completed_private_runtime != true && inputs.completed_stage_source == '' &&
+          inputs.current_family_cold_start != true && inputs.checkpoint_only != true &&
+          inputs.quick_confirmation != true && inputs.quick_progress_source == '' &&
+          inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&
+          inputs.native_sampling_identity_original_recovery != true && inputs.produce_weather_handoff != true &&
+          steps.operational-action.outputs.action == 'integrated' && steps.operational-model.outputs.binding_current == 'true' &&
+          steps.private-runtime-install.outcome == 'success' &&
+          steps.paired-checkpoint-reconcile.outcome == 'success' && steps.paired-checkpoint-reconcile.outputs.paired == 'true' &&
+          steps.paired-checkpoint-reconcile.outputs.raw_baseline_evidence != '' &&
+          steps.dmi-part-continuity-donor.outputs.continuity_schema == '2' &&
+          steps.dmi-grib-cache-restore.outcome == 'success' &&
+          steps.dmi-raw-restore-identity.outcome == 'success' && steps.dmi-raw-restore-identity.outputs.observed == 'true' &&
+          steps.current-history-demand.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
+          RAW_NORMAL_PRE_DMI_STEPS_VERIFIED: 'true'
+          RAW_PAIRED_BASELINE_EVIDENCE: ${{ steps.paired-checkpoint-reconcile.outputs.raw_baseline_evidence }}
+          RAW_MATCHED_CACHE_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
+        run: node scripts/prove-pre-dmi-restored-raw-successor.mjs
 
       - name: Bind causal OLD current reconstruction to the materialized saved inputs
         id: legacy-current-requests
