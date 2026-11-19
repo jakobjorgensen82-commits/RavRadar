@@ -103,6 +103,12 @@ test('ordinary RAW capture union retains earlier bank-only DMI and refuses absen
   assert.deepEqual(plan, { schemaVersion: 1, kind: 'PUBLISHED_ORDINARY_RAW_CAPTURE_UNION',
     boundary, captures: [capture] });
   assert.equal(verified, 2);
+  const reacquired = canonicalSavedDmiOriginalCapture({...capture, acquiredAt: at(-2)});
+  assert.notEqual(reacquired.acquiredAt, capture.acquiredAt);
+  const samePhysicalFile = await collectPublishedRawCurrentCaptureUnion({
+    ...view, forecast, transportCaptures: [capture, reacquired],
+  });
+  assert.deepEqual(samePhysicalFile.captures, [capture]);
 
   const missingBank = await save(null);
   await assert.rejects(collectPublishedRawCurrentCaptureUnion({ ...view, forecast: missingBank }),

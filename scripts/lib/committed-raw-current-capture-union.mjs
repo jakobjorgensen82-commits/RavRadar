@@ -17,10 +17,18 @@ function requireCoverage(condition, reason) {
   if (!condition) throw new Error('RAW_CAPTURE_UNION_' + reason);
 }
 
+// Only canonical captures enter the rotation plan. Match Python's physical
+// asset identity, which excludes when those same bytes were acquired.
+export function savedRawPhysicalKey(capture) {
+  const {acquiredAt, ...identity} = capture;
+  return JSON.stringify(identity, Object.keys(identity).sort());
+}
+
 function addCapture(captures, source) {
   const capture = canonicalSavedDmiOriginalCapture(source);
   requireCoverage(capture, 'CAPTURE_UNPROVED');
-  captures.set(JSON.stringify(capture), capture);
+  const key = savedRawPhysicalKey(capture);
+  if (!captures.has(key)) captures.set(key, capture);
   requireCoverage(captures.size <= MAX_CAPTURES, 'CAPTURE_BOUND');
 }
 
