@@ -458,8 +458,11 @@ const pairedBaseline = {
   bSourceHead: headSha, boundarySha256: bootProof.baselineBoundarySha256,
 };
 const {id, key, version} = rawCaches.at(-1);
+const retainedGeneration = {
+  schemaVersion: 1, kind: 'PUBLISHED_ORDINARY_RAW_CAPTURE_UNION', boundary: successorBoundary, captures: [capture],
+};
 const bridgeInputs = {
-  demand: normalDemand, pairedBaseline, identity: {id, key, version}, matchedKey: key,
+  demand: normalDemand, retainedGeneration, pairedBaseline, identity: {id, key, version}, matchedKey: key,
   run: {runId: bootProof.runId, runAttempt: '1', sourceHead: bootProof.sourceHead,
     targetReferenceAt: bootProof.targetReferenceAt},
 };
@@ -468,9 +471,28 @@ assert.deepEqual(preparePreDmiRawSuccessorProof(bridgeInputs),
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
   pairedBaseline: {...pairedBaseline, boundarySha256: '3'.repeat(64)}}),
   {message: 'RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED', cause: 'BASELINE_BINDING'});
+const emptyDemand = {...normalDemand, rawRetention: {...normalDemand.rawRetention, captures: []}};
+assert.deepEqual(preparePreDmiRawSuccessorProof({...bridgeInputs, demand: emptyDemand}),
+  {planBytes, expected: bootProof, boundary: successorBoundary});
+const emptyUnion = preparePreDmiRawSuccessorProof({
+  ...bridgeInputs, demand: emptyDemand, retainedGeneration: {...retainedGeneration, captures: []},
+});
+assert.deepEqual(JSON.parse(emptyUnion.planBytes.toString()).retention.captures, []);
+assert.equal(emptyUnion.expected.requiredCaptures, 0);
+assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs, retainedGeneration: undefined}),
+  {message: 'RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED', cause: 'RETAINED_GENERATION_BINDING'});
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
-  demand: {...normalDemand, rawRetention: {...normalDemand.rawRetention, captures: []}}}),
-  {message: 'RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED', cause: 'DEMAND_NO_REQUIRED_CAPTURES'});
+  retainedGeneration: {...retainedGeneration, boundary: {...successorBoundary, checkpointGenerationSha256: 'f'.repeat(64)}}}),
+  {message: 'RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED', cause: 'RETAINED_GENERATION_BINDING'});
+const laterCapture = {...capture, validTime: '2026-09-05T10:00:00Z', itemId: 'future-recovery'};
+const combined = preparePreDmiRawSuccessorProof({...bridgeInputs,
+  retainedGeneration: {...retainedGeneration, captures: [laterCapture]}});
+assert.equal(combined.expected.requiredCaptures, 2);
+const reacquired = {...capture, acquiredAt: '2026-09-05T01:14:58Z'};
+assert.equal(preparePreDmiRawSuccessorProof({...bridgeInputs,
+  retainedGeneration: {...retainedGeneration, captures: [reacquired]},
+}).expected.requiredCaptures, 1);
+assert.deepEqual(JSON.parse(combined.planBytes.toString()).retention.captures, [capture, laterCapture]);
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
   pairedBaseline: {...pairedBaseline, sVersion: 0}}), /RAW_BOOTSTRAP_PRE_DMI_PROOF_REFUSED/);
 assert.throws(() => preparePreDmiRawSuccessorProof({...bridgeInputs,
@@ -593,14 +615,14 @@ assert.equal(await finalized({jobs:[{...sourceJob, steps:[sourceJob.steps[0],
 console.log('OK: RAW archive finalization matches an exact successful save step, even if a later stage failed.');
 
 const privateHandoff = {
-  schemaVersion: 1, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V1', pairedBaseline,
+  schemaVersion: 2, kind: 'DMI_RAW_BOOTSTRAP_PRE_DMI_HANDOFF_V2', pairedBaseline,
   boundary: successorBoundary, coverage: bootProof,
 };
 const privateBytes = Buffer.from(JSON.stringify(privateHandoff));
 const privateSha256 = createHash('sha256').update(privateBytes).digest('hex');
 const publicHandoff = projectPublicRawRotationProof(privateBytes, privateSha256);
 assert.deepEqual(publicHandoff, {
-  schemaVersion: 1, kind: 'DMI_RAW_RESTORED_COVERAGE_HANDOFF_V1',
+  schemaVersion: 2, kind: 'DMI_RAW_RESTORED_BASELINE_COVERAGE_HANDOFF_V2',
   ...bridgeInputs.run, cacheIdentitySha256: bootProof.cacheIdentitySha256,
   protectedPairSha256: rawRotationPairDigest({...successorBoundary, ...pairedBaseline}),
   privateProofSha256: privateSha256, verifiedCaptureCount: 1,
@@ -651,6 +673,10 @@ const protectedReaders = {
 };
 const authenticateArgs = {bytes: wire, scope: nextScope, verifyArtifactProducer: verifyProducer, ...protectedReaders};
 const authenticated = await authenticateRawRotationHandoff(authenticateArgs);
+const legacyWire = Buffer.from(JSON.stringify({
+  ...publicHandoff, runId: nextScope.runId, schemaVersion: 1, kind: 'DMI_RAW_RESTORED_COVERAGE_HANDOFF_V1',
+}));
+await assert.rejects(authenticateRawRotationHandoff({...authenticateArgs, bytes: legacyWire}), /HANDOFF_EVIDENCE_INVALID/);
 assert.ok(isAuthenticatedRawRotationHandoff(authenticated));
 assert.equal(isAuthenticatedRawRotationHandoff({...authenticated}), false);
 await assert.rejects(authenticateRawRotationHandoff({...authenticateArgs,

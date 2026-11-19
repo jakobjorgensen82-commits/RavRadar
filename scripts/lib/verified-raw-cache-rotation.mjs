@@ -105,8 +105,8 @@ function requirePublishedRawRotationRetention(plan, {targetReferenceAt, boundary
   return retention;
 }
 
-// The normal pre-DMI planner already derived this demand from the installed
-// protected B/S at the actual next lock. Reuse it; do not restore B/S again.
+// Serialize the combined locked demand and retained B/S originals. This is
+// measurement input, not permission to admit sources or delete an archive.
 export function buildRawSuccessorPlanBytes({demand, targetReferenceAt, boundary}) {
   if (demand?.schemaVersion !== 2 || demand.kind !== 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND'
       || !Array.isArray(demand.demands) || demand.demands.length !== 673
@@ -118,12 +118,9 @@ export function buildRawSuccessorPlanBytes({demand, targetReferenceAt, boundary}
     schemaVersion: 1, kind: 'PUBLISHED_RAW_ROTATION_SUCCESSOR_PLAN',
     targetReferenceAt: demand.productionReferenceAt, retention: demand.rawRetention,
   };
-  const retention = requirePublishedRawRotationRetention(plan, {targetReferenceAt, boundary});
+  requirePublishedRawRotationRetention(plan, {targetReferenceAt, boundary});
   const bytes = Buffer.from(JSON.stringify(plan) + '\n', 'utf8');
-  if (retention.captures.length === 0) {
-    throw new Error('RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED');
-  }
-  if (bytes.length > 1024 * 1024) {
+  if (bytes.length > 4 * 1024 * 1024) {
     throw new Error('RAW_ROTATION_NORMAL_DEMAND_UNCONFIRMED', {cause: 'DEMAND_PLAN_SIZE'});
   }
   return bytes;
@@ -144,7 +141,7 @@ function matchesRestoredSuccessor(restoredSuccessor, current, cache) {
   }
   const bytes = restoredSuccessor?.planBytes;
   if (receipt?.schemaVersion !== 1 || receipt.kind !== 'DMI_RESTORED_RAW_SUCCESSOR_COVERAGE_V1'
-      || !Buffer.isBuffer(bytes) || bytes.length < 1 || bytes.length > 1024 * 1024
+      || !Buffer.isBuffer(bytes) || bytes.length < 1 || bytes.length > 4 * 1024 * 1024
       || createHash('sha256').update(bytes).digest('hex') !== receipt.planSha256) return false;
   let retention;
   try {
