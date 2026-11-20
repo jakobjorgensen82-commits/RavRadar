@@ -142,6 +142,12 @@ Den afgrænsede rettelse udsætter alene de katalogbestemte ikke-validerede almi
 Ejeren accepterer de faktisk målte egress-tal og den konservative periodefremskrivning som budgetgrundlag for den planlagte Free-overgang. Den interne varslingsgrænse på 3,5 GB er ikke i sig selv en leveringsblokering. Der kræves ikke en ny særskilt målerunde med seks fejlfri døgnkørsler alene for at genbekræfte budgetaccepten.
 
 Accepten er ikke en garanti for senere trafik eller bevis for, at abonnementet allerede er Free. Fysisk database-/TOAST-margin, eksisterende automatisk retention samt faktisk original-/Auth-gendannelse og autonom backupkvittering/rotation færdiggøres på deres normale egne krav. Skiftende målinger, kvitteringer og konkrete abonnementsdatoer føres i det private checkpoint. Plan eller betalingsoplysninger ændres først efter de nødvendige faktiske driftsbeviser.
+
+### Lokalt forberedt besparelse ved synkronisering af håndbogen
+
+Den almindelige udgivelse har hentet både den centrale håndbog og dens kildebaseline i fuld længde ved hver håndbogssynkronisering. Kandidaten genbruger seneste verificerede resultat, når kildehashen og begge centrale rækkers version og opdateringstid stadig matcher. Supabase returnerer da kun metadata om de to rækker. Ændring eller manglende bevis udløser fuld læsning og den eksisterende sammenfletning, som bevarer ekspertredigeringer. Betingede skrivninger beskytter mod en samtidig ændring. En ny kvittering kræver verificeret centralt indhold for begge rækker.
+
+De målrettede lokale prøver dækker læsemængde, nye kilder, ekspertrettelser, genoprettede rækker, den eksisterende tidligere kilde og afvist samtidig skrivning eller genlæsning. Faktisk besparelse på Supabase kræver måling efter levering.
 ## Aktuelt — originalarkivets CHECK-fejl er endnu ikke forklaret
 
 Det autentiske arkivforsøg stopper i DATA med SQLSTATE 23514 efter bestået relations- og systemrollekontrol; ejet Dockerlukning er bekræftet. Den bevarede rapport indeholder ingen constraint-identitet. Den lokale readerdiagnostic udleder et begrænset katalogfingeraftryk før DATA i samme transaktion og tillader kun hash/faste metadata for den præcise primære fejl; ukendt forbliver UNAVAILABLE. Lokal selvtest og normal lifecycle-prøve består, men dette er ikke en restore-rettelse, faktisk ny diagnostic, kildekvalifikation eller installation.
