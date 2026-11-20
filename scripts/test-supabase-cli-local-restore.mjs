@@ -21,6 +21,7 @@ const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
 const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.198.0'});
 const MAILPIT_IMAGE='axllent/mailpit:v1.30.2'; // Built into Supabase CLI 2.117.0.
 const LOCAL_SITE_URL='http://127.0.0.1:3000';
+const LOCAL_CONFIRMATION_HOOK='pg-functions://postgres/public/account_native_activity_token_hook';
 const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.198.0',storage:'supabase/storage-api:v1.86.0'});
 const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
 const NATIVE_ACTIVITY_VENDOR_PINS=Object.freeze({...ARCHIVE_VENDOR_PINS,'gotrue-version':IMAGES.auth.split(':').at(-1)+'\n'});
@@ -812,7 +813,7 @@ site_url = "${LOCAL_SITE_URL}"
 additional_redirect_urls = []
 [auth.email]
 enable_confirmations = ${emailConfirmation}
-[local_smtp]
+${emailConfirmation?`[auth.hook.custom_access_token]\nenabled = true\nuri = "${LOCAL_CONFIRMATION_HOOK}"\n`:''}[local_smtp]
 enabled = ${emailConfirmation}${emailConfirmation?'\nport = 54324':''}
 [storage]
 enabled = ${target&&archive}
@@ -922,6 +923,8 @@ function assertLocalConfirmationMailer(authInfo,mailpitInfo){
   need(Array.isArray(authEnv)&&Array.isArray(mailpitEnv)&&uses('GOTRUE_MAILER_AUTOCONFIRM','false')
     &&uses('GOTRUE_SMTP_HOST',mailpitInfo.Name.slice(1))&&uses('GOTRUE_SMTP_PORT','1025')
     &&!mailpitEnv.some(entry=>/^MP_SMTP_(?:RELAY|FORWARD)/u.test(entry)),'LOCAL_CONFIRMATION_MAILER');
+  need(uses('GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED','true')
+    &&uses('GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI',LOCAL_CONFIRMATION_HOOK),'LOCAL_CONFIRMATION_HOOK');
 }
 async function startProject(c,p,{nativeActivity=false,emailConfirmation=false}={}){
   need(typeof nativeActivity==='boolean','NATIVE_ACTIVITY_BOOTSTRAP_MODE');
@@ -1132,7 +1135,21 @@ function localConfirmationLink(html,api){
   need(redirect.href===new URL(LOCAL_SITE_URL).href,'LOCAL_CONFIRMATION_LINK_DESTINATION');
   return url;
 }
-async function verifySyntheticEmailConfirmation(c,p){
+async function confirmationActivity(c,p,id){
+  need(uuid(id),'LOCAL_CONFIRMATION_ACTIVITY_USER');
+  return query(c,p,'LOCAL_CONFIRMATION_ACTIVITY',`select jsonb_build_object(
+    'ordinaryProfile',exists(select 1 from public.profiles where id='${id}' and is_active)
+      and not exists(select 1 from public.user_permissions where user_id='${id}'),
+    'journalPresent',exists(select 1 from public.account_activity_journal where user_id='${id}'),
+    'activityRevision',coalesce((select revision from public.account_lifecycle_activity where user_id='${id}'),0),
+    'recordsMatch',exists(select 1 from public.account_activity_journal j join public.account_lifecycle_activity a using(user_id)
+      where j.user_id='${id}' and j.last_activity_at=a.last_activity_at and a.coverage_epoch is null),
+    'policyOff',(select not notices_enabled and not delivery_qualified and coverage_status='UNKNOWN'
+      and coverage_started_at is null from public.account_inactivity_policy where singleton),
+    'noticesEmpty',not exists(select 1 from public.account_inactivity_notices));`);
+}
+
+async function verifySyntheticEmailConfirmation(c,p,readActivity=confirmationActivity){
   c.stage='LOCAL_CONFIRMATION_SIGNUP';
   need(c.emailConfirmation===true&&c.archive===false&&p.side==='B'&&p.mailpit&&p.inbucket,'LOCAL_CONFIRMATION_PROJECT');
   const email='owned-native-'+crypto.randomBytes(16).toString('hex')+'@example.invalid';
@@ -1141,6 +1158,13 @@ async function verifySyntheticEmailConfirmation(c,p){
   need(uuid(signup?.id)&&signup.email===email&&!signup.email_confirmed_at
     &&!signup.access_token&&!signup.refresh_token&&!signup.session,'LOCAL_CONFIRMATION_SIGNUP_RESULT');
   await auth(c,p,'/token?grant_type=password',{body,status:400,expectUnconfirmed:true});
+  const checkActivity=async(revision)=>{
+    const state=await readActivity(c,p,signup.id);
+    need(state?.ordinaryProfile===true&&state.policyOff===true&&state.noticesEmpty===true
+      &&state.activityRevision===revision&&state.journalPresent===(revision>0)
+      &&state.recordsMatch===(revision>0),'LOCAL_CONFIRMATION_ACTIVITY_STATE');
+  };
+  await checkActivity(0);
 
   c.stage='LOCAL_CONFIRMATION_CAPTURE';
   const search=new URL('/api/v1/search',p.mailpit);search.search=new URLSearchParams({query:'to:'+email,limit:'2'});
@@ -1163,21 +1187,31 @@ async function verifySyntheticEmailConfirmation(c,p){
   c.stage='LOCAL_CONFIRMATION_VERIFY';
   need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   const verified=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(Math.min(5_000,c.deadline-Date.now()))});
+  let confirmationAccess;
   try{
     need(verified.status===303&&verified.headers.has('location'),'LOCAL_CONFIRMATION_VERIFY_RESPONSE');
     const destination=new URL(verified.headers.get('location'));
     const params=new URLSearchParams(destination.hash.slice(1));destination.hash='';
-    need(destination.href===new URL(LOCAL_SITE_URL).href&&params.get('type')==='signup'&&!params.has('error'),
+    confirmationAccess=params.get('access_token');
+    need(destination.href===new URL(LOCAL_SITE_URL).href&&params.get('type')==='signup'&&!params.has('error')&&confirmationAccess,
       'LOCAL_CONFIRMATION_VERIFY_DESTINATION');
   }finally{await verified.body?.cancel().catch(()=>{});}
 
+  // The vendor's verification request must record native activity before any
+  // browser activity RPC or password login can hide a missed first issuance.
+  await checkActivity(1);
+  const confirmedUser=await auth(c,p,'/user',{token:confirmationAccess});
+  need(confirmedUser?.id===signup.id&&confirmedUser.email===email&&Number.isFinite(Date.parse(confirmedUser.email_confirmed_at)),
+    'LOCAL_CONFIRMATION_INITIAL_SESSION');
   const login=await auth(c,p,'/token?grant_type=password',{body});
   need(login?.user?.id===signup.id&&typeof login.access_token==='string','LOCAL_CONFIRMATION_LOGIN');
   const user=await auth(c,p,'/user',{token:login.access_token});
   need(user?.id===signup.id&&user.email===email&&Number.isFinite(Date.parse(user.email_confirmed_at)),
     'LOCAL_CONFIRMATION_CONFIRMED_USER');
+  await checkActivity(2);
   return {confirmationEnabled:true,loginDeniedBeforeConfirmation:true,mailpitConfirmationCaptured:true,
-    localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true};
+    localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true,
+    noActivityBeforeConfirmation:true,nativeActivityOnConfirmation:true,nativeActivityOnPasswordLogin:true,noticesStayedOff:true};
 }
 async function verifyArchiveAuthFunction(c,p){
   const email='isolated-archive-'+crypto.randomBytes(16).toString('hex')+'@example.invalid';
@@ -1364,6 +1398,10 @@ create trigger rr_native_cancel_failure before update on public.account_inactivi
 `;}
 const NATIVE_ACTIVITY_APP_PARTS=Object.freeze(['PRIOR_FIXTURE_REMOVAL','APP_RELATIONS','MANUAL_SQL',
   'NOTICE_SQL','CAPTURE_SQL','OWNER_PROFILE','INSTRUMENTATION']);
+function syntheticNativeActivitySchemaParts(source,manual){
+  return [['APP_RELATIONS',accountErasureNativeFixtureSql(source.root,{nativeAuth:true})+'\n'+syntheticNativeProfileBootstrapSql()],
+    ['MANUAL_SQL',manual.sql+'\n'],['NOTICE_SQL',source.notice+'\n'],['CAPTURE_SQL',source.sql+'\n']];
+}
 function syntheticNativeActivityAppInput(source,manual,fixtureActorId){
   need(uuid(fixtureActorId),'NATIVE_ACTIVITY_FIXTURE_ACTOR');
   const parts=[['PRIOR_FIXTURE_REMOVAL',String.raw`
@@ -1371,8 +1409,7 @@ drop trigger account_erasure_auth_uuid_insert_guard on auth.users;
 drop function public.account_erasure_auth_uuid_guard();
 drop table public.account_erasure_operations;
 drop table public.profiles;
-`],['APP_RELATIONS',accountErasureNativeFixtureSql(source.root,{nativeAuth:true})+'\n'+syntheticNativeProfileBootstrapSql()],
-    ['MANUAL_SQL',manual.sql+'\n'],['NOTICE_SQL',source.notice+'\n'],['CAPTURE_SQL',source.sql+'\n'],
+`],...syntheticNativeActivitySchemaParts(source,manual),
     ['OWNER_PROFILE',`insert into public.profiles(id,email,role) values('${fixtureActorId}','owned-native-owner@example.invalid','owner');\n`],
     ['INSTRUMENTATION',syntheticNativeActivityInstrumentationSql()]];
   const inputLines={next:1,ranges:new Map(),nativeActivityAppParts:true},chunks=[];
@@ -2791,6 +2828,8 @@ async function fixture({archive=false,inventoryOnly=false,emailConfirmation=fals
     const [a]=projects,b=projects.at(-1);
     if(emailConfirmation){
       await startProject(c,b,{emailConfirmation:true});
+      const schema=syntheticNativeActivitySchemaParts(await syntheticNativeActivitySource(),readAccountErasureSource());
+      await psql(c,b,'LOCAL_CONFIRMATION_SCHEMA',Buffer.from(schema.map(([,sql])=>sql).join('')));
       result=await verifySyntheticEmailConfirmation(c,b);
     }else if(archive){
       await requireArchiveCurrentMain(c);
@@ -2871,13 +2910,14 @@ async function fixture({archive=false,inventoryOnly=false,emailConfirmation=fals
 
 async function selfTest(){
   const {test}=await import('node:test');
-  test('local email confirmation changes only the opt-in synthetic config and requires the owned SMTP binding',()=>{
+  test('only the opt-in confirmation mode binds the owned SMTP and real activity hook',()=>{
     const ordinary=config('fixture',true),archive=config('fixture',true,true),mail=config('fixture',true,false,true);
     for(const original of [ordinary,archive])assert.match(original,/enable_confirmations = false\n\[local_smtp\]\nenabled = false/u);
     assert.equal(mail,ordinary.replace('enable_confirmations = false\n[local_smtp]\nenabled = false',
-      'enable_confirmations = true\n[local_smtp]\nenabled = true\nport = 54324'));
+      'enable_confirmations = true\n[auth.hook.custom_access_token]\nenabled = true\nuri = "'+LOCAL_CONFIRMATION_HOOK+'"\n[local_smtp]\nenabled = true\nport = 54324'));
     const name='/supabase_inbucket_fixture';
-    const auth={Config:{Env:['GOTRUE_MAILER_AUTOCONFIRM=false','GOTRUE_SMTP_HOST='+name.slice(1),'GOTRUE_SMTP_PORT=1025']}};
+    const auth={Config:{Env:['GOTRUE_MAILER_AUTOCONFIRM=false','GOTRUE_SMTP_HOST='+name.slice(1),'GOTRUE_SMTP_PORT=1025',
+      'GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED=true','GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI='+LOCAL_CONFIRMATION_HOOK]}};
     const mailpit={Name:name,Config:{Env:['MP_SMTP_DISABLE_RDNS=true']}};
     assert.doesNotThrow(()=>assertLocalConfirmationMailer(auth,mailpit));
     for(const edit of [x=>x.Config.Env[0]='GOTRUE_MAILER_AUTOCONFIRM=true',x=>x.Config.Env[1]='GOTRUE_SMTP_HOST=remote.invalid',
@@ -2887,6 +2927,8 @@ async function selfTest(){
     }
     const relay=structuredClone(mailpit);relay.Config.Env.push('MP_SMTP_RELAY_CONFIG=/smtp-relay');
     assert.throws(()=>assertLocalConfirmationMailer(auth,relay),{code:'LOCAL_CONFIRMATION_MAILER'});
+    const wrongHook=structuredClone(auth);wrongHook.Config.Env[4]='GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI=pg-functions://postgres/public/another_hook';
+    assert.throws(()=>assertLocalConfirmationMailer(wrongHook,mailpit),{code:'LOCAL_CONFIRMATION_HOOK'});
     assert.throws(()=>localUrl('http://localhost:54324','mailpit'),{code:'LOOPBACK_URL_REQUIRED'});
   });
   test('local confirmation accepts the stock signup link and rejects any different origin, action or redirect',()=>{
@@ -2909,7 +2951,7 @@ async function selfTest(){
     const id=crypto.randomUUID(),mailId='fixture-1',link=new URL('/auth/v1/verify',p.api);
     const confirmed='2026-11-20T00:00:00Z',seen=[];
     link.search=new URLSearchParams({token:'b'.repeat(56),type:'signup',redirect_to:LOCAL_SITE_URL});
-    let email,beforeConfirmation='email_not_confirmed';
+    let email,beforeConfirmation='email_not_confirmed',revision=0;
     t.mock.method(globalThis,'fetch',async(url,options)=>{
       seen.push(url.pathname);
       if(url.pathname==='/auth/v1/signup'){
@@ -2917,9 +2959,11 @@ async function selfTest(){
         email=JSON.parse(options.body).email;
         return Response.json({id,email});
       }
-      if(url.pathname==='/auth/v1/token')return seen.length===2
-        ?Response.json({error_code:beforeConfirmation},{status:400})
-        :Response.json({access_token:'synthetic-session',user:{id}});
+      if(url.pathname==='/auth/v1/token'){
+        if(seen.length===2)return Response.json({error_code:beforeConfirmation},{status:400});
+        revision++;
+        return Response.json({access_token:'synthetic-session',user:{id}});
+      }
       if(url.pathname==='/api/v1/search'){
         assert.ok(url.origin===p.mailpit.origin&&url.searchParams.get('query')==='to:'+email);
         return Response.json({messages:[{ID:mailId,To:[{Address:email}]}]});
@@ -2928,19 +2972,38 @@ async function selfTest(){
         HTML:'<a href="'+link.href.replaceAll('&','&amp;')+'">Confirm email address</a>'});
       if(url.pathname==='/auth/v1/verify'){
         assert.ok(url.href===link.href&&options.redirect==='manual');
-        return new Response(null,{status:303,headers:{location:LOCAL_SITE_URL+'/#type=signup'}});
+        revision++;
+        return new Response(null,{status:303,headers:{location:LOCAL_SITE_URL+'/#type=signup&access_token=synthetic-confirmation'}});
       }
-      if(url.pathname==='/auth/v1/user')return Response.json({id,email,email_confirmed_at:confirmed});
+      if(url.pathname==='/auth/v1/user'){
+        assert.equal(options.headers.Authorization,revision===1?'Bearer synthetic-confirmation':'Bearer synthetic-session');
+        return Response.json({id,email,email_confirmed_at:confirmed});
+      }
       assert.fail('Unexpected synthetic confirmation endpoint');
     });
-    assert.deepEqual(await verifySyntheticEmailConfirmation(c,p),{confirmationEnabled:true,loginDeniedBeforeConfirmation:true,
-      mailpitConfirmationCaptured:true,localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true});
+    const observed=[];
+    const readActivity=async(context,project,target)=>{
+      assert(context===c&&project===p&&target===id);
+      observed.push(revision);
+      return {ordinaryProfile:true,policyOff:true,noticesEmpty:true,activityRevision:revision,
+        journalPresent:revision>0,recordsMatch:revision>0};
+    };
+    assert.deepEqual(await verifySyntheticEmailConfirmation(c,p,readActivity),{confirmationEnabled:true,loginDeniedBeforeConfirmation:true,
+      mailpitConfirmationCaptured:true,localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true,
+      noActivityBeforeConfirmation:true,nativeActivityOnConfirmation:true,nativeActivityOnPasswordLogin:true,noticesStayedOff:true});
+    assert.deepEqual(observed,[0,1,2]);
     assert.deepEqual(seen,['/auth/v1/signup','/auth/v1/token','/api/v1/search','/api/v1/message/'+mailId,
-      '/auth/v1/verify','/auth/v1/token','/auth/v1/user']);
+      '/auth/v1/verify','/auth/v1/user','/auth/v1/token','/auth/v1/user']);
     seen.length=0;
     beforeConfirmation='invalid_credentials';
-    await assert.rejects(verifySyntheticEmailConfirmation(c,p),{code:'LOCAL_CONFIRMATION_UNCONFIRMED_RESULT'});
+    await assert.rejects(verifySyntheticEmailConfirmation(c,p,readActivity),{code:'LOCAL_CONFIRMATION_UNCONFIRMED_RESULT'});
     assert.deepEqual(seen,['/auth/v1/signup','/auth/v1/token']);
+    seen.length=0;revision=0;beforeConfirmation='email_not_confirmed';
+    await assert.rejects(verifySyntheticEmailConfirmation(c,p,async(...args)=>{
+      const state=await readActivity(...args);
+      return revision===1?{...state,activityRevision:0,journalPresent:false,recordsMatch:false}:state;
+    }),{code:'LOCAL_CONFIRMATION_ACTIVITY_STATE'});
+    assert.equal(seen.at(-1),'/auth/v1/verify','A password login must not mask missing activity on confirmation');
   });
   async function ownArchive(run,{large=false,receiptEdit=null,roleSql=null,fileSql={}}={}){
     const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-archive-stream-self-'));await fs.chmod(root,0o700);
