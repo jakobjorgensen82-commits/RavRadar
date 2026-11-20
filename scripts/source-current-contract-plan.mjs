@@ -495,6 +495,10 @@ export function currentWorkflowTargets(relative){
 // selects test commands without adding short-path qualification authority.
 const ACCOUNT_SCHEMA_SOURCE_TEST='node --test scripts/test-account-erasure-outbox.mjs';
 const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
+const PROTECTED_HANDBOOK_SOURCE_TESTS=[
+  'node scripts/test-protected-handbook-merge-4.0.270.mjs',
+  'node --test scripts/test-supabase-quota-controls.mjs',
+];
 const SOURCE_EXECUTION_TARGETS=freeze({
   // The actual Node24 dependency and physical archive proofs run once in the
   // dedicated native phases. The Node22 source driver checks the normal callers.
@@ -510,6 +514,9 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   ],
   'scripts/audit-pages-artifact-privacy.mjs':['node scripts/test-pages-artifact-privacy.mjs',SHARE_PROJECTION_SOURCE_TEST],
   'scripts/build-forecast-share-projection.mjs':[SHARE_PROJECTION_SOURCE_TEST],
+  'scripts/lib/merge-protected-handbook.mjs':PROTECTED_HANDBOOK_SOURCE_TESTS,
+  'scripts/sync-protected-admin-assets.mjs':PROTECTED_HANDBOOK_SOURCE_TESTS,
+  'scripts/release-gate.mjs':['node --test scripts/test-release-gate-error-aggregation.mjs'],
   'scripts/verify-ravscore-operational-pages-deployment.mjs':[SHARE_PROJECTION_SOURCE_TEST],
   'scripts/test-dmi-native-provenance.py':['node --test scripts/test-current-operational-python-contracts.mjs'],
   'scripts/lib/weather_acquisition_plan.py':COMMANDS.dmiCollectionRecovery,

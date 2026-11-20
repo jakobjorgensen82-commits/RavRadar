@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
-const [reader,writer,migration,audit,workflow,schema,operationalMigration]=await Promise.all([
+const [reader,writer,handbookSync,migration,audit,workflow,schema,operationalMigration]=await Promise.all([
  fs.readFile('scripts/sync-admin-config.py','utf8'),
  fs.readFile('scripts/sync-protected-admin-assets.mjs','utf8'),
+ fs.readFile('scripts/lib/merge-protected-handbook.mjs','utf8'),
  fs.readFile('supabase/RavRadar-4.0.153-supabase-quota-controls.sql','utf8'),
  fs.readFile('supabase/RavRadar-4.0.153-supabase-quota-audit.sql','utf8'),
  readProductionWorkflowSource('build'),
@@ -13,7 +14,8 @@ const [reader,writer,migration,audit,workflow,schema,operationalMigration]=await
 assert.match(reader,/document_key.*in\.\(/s,'Admin-readback skal filtrere server-side på nødvendige nøgler');
 assert.ok(!reader.includes("admin_documents?select=document_key,payload,updated_at"),'Ufiltreret fuld payload-readback er forbudt');
 for(const token of ['preserve_newer_owner_approved_activation','local_version > central_version','automaticActivationAllowed','activationAuthority'])assert.ok(reader.includes(token),`Central sync mangler sikker engangspromotion: ${token}`);
-for(const token of ['protected-asset-manifest','sha256','springer skrivning over','buildRuntimeDiagnosticsEnvelope','pakket tabsfrit','handbook-source-baseline','mergeProtectedHandbook','RAVRADAR_PREVIOUS_HANDBOOK_URL','fc13fb5ab326d8824ca55235ac454ac230e3db3e','fetchPreviousHandbookSource'])assert.ok(`${writer}\n${workflow}`.includes(token),`Idempotent protected sync mangler ${token}`);
+for(const token of ['protected-asset-manifest','sha256','springer skrivning over','buildRuntimeDiagnosticsEnvelope','pakket tabsfrit','syncProtectedHandbook','RAVRADAR_PREVIOUS_HANDBOOK_URL','fc13fb5ab326d8824ca55235ac454ac230e3db3e'])assert.ok(`${writer}\n${workflow}`.includes(token),`Idempotent protected sync mangler ${token}`);
+assert.doesNotMatch(handbookSync,/admin_document_versions|method:\s*['"]DELETE['"]/,'Håndbogssynk må ikke slette eller læse beskyttet historik');
 for(const token of ['ravscore-profile-selection','preserve_newer_owner_approved_ravscore_selection','prePublicWarmupAccepted'])assert.ok(reader.includes(token),`Central RavScore-hydrering mangler ${token}`);
 for(const token of ['ravscore-profile-selection','Central RavScore-profil verificeret'])assert.ok(writer.includes(token),`Central RavScore-readback mangler ${token}`);
 for(const token of ['stableJsonDigest','stableJsonDigest(activationCentral)','stableJsonDigest(activationLocal)'])assert.ok(writer.includes(token),`Beskyttet aktiveringsreadback mangler stabil JSON-sammenligning: ${token}`);

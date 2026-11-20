@@ -218,6 +218,8 @@ const sql=await read('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql');
 ok(/select\s+oid\s*,\s*conname\s+from\s+pg_constraint/i.test(sql),'Supabase SQL mangler oid-rettelsen');
 ok(sql.includes(`\"handbookVersion\":\"${version}\"`)||sql.includes(`\"handbookVersion\": \"${version}\"`),'Supabase-installationsscriptets håndbog er forældet');
 const sync=await read('scripts/sync-protected-admin-assets.mjs');
+const handbookSyncPath='scripts/lib/merge-protected-handbook.mjs';
+const handbookSync=await read(handbookSyncPath);
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
@@ -228,7 +230,11 @@ const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
-ok(sync.includes('mergeProtectedHandbook')&&sync.includes('handbook-source-baseline'),'Beskyttet håndbog mangler tabsfri trevejsfletning ved deploy');
+ok(/import\s*\{[^}]*\bsyncProtectedHandbook\b[^}]*\}\s*from\s*['"]\.\/lib\/merge-protected-handbook\.mjs['"]/.test(sync)
+  &&/\bawait\s+syncProtectedHandbook\s*\(\s*\{\s*request\b/.test(sync)
+  &&/=\s*mergeProtectedHandbook\s*\(\s*\{\s*source\s*,\s*central\s*,\s*baseline\s*\}\s*\)/.test(handbookSync)
+  &&handbookSync.includes('handbook-source-baseline'),
+  'Beskyttet håndbog mangler tabsfri trevejsfletning ved deploy');
 ok(supabaseAdminRest.includes("startsWith('sb_secret_')")&&supabaseAdminRest.includes('headers={apikey:key'),'Supabase requester mangler korrekt sb_secret_-apikey-kontrakt');
 ok(supabaseAdminRest.includes("parseJson(body)?.code==='PGRST303'")&&supabaseAdminRest.includes('attempt===1'),'Supabase requester mangler snæver én-gangs PGRST303-genprøvning');
 ok(supabaseAdminRest.includes("status===500&&parseJson(body)?.code==='57014'")&&supabaseAdminRest.includes('statement-timeout 57014'),'Supabase requester mangler snæver én-gangs statement-timeout-genprøvning');
@@ -2081,7 +2087,7 @@ ok(decision.includes('Obligatorisk Release Governance'),'RDKS release-governance
 const rules=await read('docs/rdks/01_AI_OPERATING_RULES.md');
 ok(rules.includes('Bindende release-gate'),'AI operating rules mangler bindende release-gate');
 const trackedSecretPatterns=[/SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?(sb_secret_|eyJ)/i,/DMI_API_KEY\s*[:=]\s*["'][^$]/i,/DATAFORDELER_API_KEY\s*[:=]\s*["'][^$]/i];
-for(const rel of ['config.js',...Object.values(PRODUCTION_WORKFLOW_SOURCES),'.github/workflows/deploy-code-only-repair.yml','scripts/sync-admin-config.py','scripts/sync-protected-admin-assets.mjs','scripts/lib/supabase-admin-rest.mjs']){
+for(const rel of ['config.js',...Object.values(PRODUCTION_WORKFLOW_SOURCES),'.github/workflows/deploy-code-only-repair.yml','scripts/sync-admin-config.py','scripts/sync-protected-admin-assets.mjs',handbookSyncPath,'scripts/lib/supabase-admin-rest.mjs']){
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}
