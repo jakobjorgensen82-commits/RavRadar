@@ -8,10 +8,10 @@ on:
         required: true
         type: string
       restore_mode:
-        description: Synthetic by default; archive restores locally; archive-inventory reads only authenticated target metadata
+        description: Synthetic restore by default; synthetic-email-confirmation verifies local signup; archive modes inspect or restore an authenticated archive
         type: choice
         default: synthetic
-        options: [synthetic, archive, archive-inventory]
+        options: [synthetic, synthetic-email-confirmation, archive, archive-inventory]
       archive_index_commitment:
         description: Domain-separated commitment for an already authenticated archive index; archive modes only
         type: string
@@ -56,7 +56,7 @@ jobs:
           [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
           test "$EXPECTED_HEAD_SHA" = "$GITHUB_SHA"
           case "$RESTORE_MODE" in
-            synthetic)
+            synthetic|synthetic-email-confirmation)
               test -z "$RESTORE_ARCHIVE_INDEX_COMMITMENT"
               test -z "$RESTORE_ARCHIVE_CONFIRMATION"
               ;;
@@ -111,6 +111,18 @@ jobs:
         env:
           EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
         run: node scripts/test-supabase-cli-local-restore.mjs --run-local-fixture
+      - name: Verify signup confirmation in owned local Mailpit
+        if: inputs.restore_mode == 'synthetic-email-confirmation'
+        timeout-minutes: 23
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+        run: |
+          set -euo pipefail
+          for image in postgres:17.6.1.167 kong:2.8.1 gotrue:v2.198.0 mailpit:v1.30.2; do
+            docker pull "$SUPABASE_INTERNAL_IMAGE_REGISTRY/supabase/$image"
+          done
+          node scripts/test-supabase-cli-local-restore.mjs --run-local-email-confirmation
       - name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL
         if: inputs.restore_mode == 'archive'
         timeout-minutes: 23

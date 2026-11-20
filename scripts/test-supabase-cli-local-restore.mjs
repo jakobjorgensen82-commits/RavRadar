@@ -4462,13 +4462,22 @@ ${syntheticNativeActivityInstrumentationSql()}`);
     assert.doesNotMatch(workflow,/archive_index_sha|RESTORE_ARCHIVE_INDEX_SHA/);
     assert.equal(workflow.split('inputs.archive_index_commitment').length,4);
     assert(workflow.includes('^rr-supabase-restore-v1:[a-f0-9]{64}$'));
-    assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive, archive-inventory\]/);
+    assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, synthetic-email-confirmation, archive, archive-inventory\]/);
     assert(workflow.indexOf('group: ${{ (inputs.restore_mode')<workflow.indexOf('ravradar-trip-storage-production'));
     assert(workflow.indexOf('Refuse missing exact source proof')<workflow.indexOf('SUPABASE_SERVICE_ROLE_KEY:'));
     const archiveStep=workflow.split('name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL')[1].split('\n      - name:')[0];
     assert(archiveStep);assert.match(archiveStep,/if: inputs.restore_mode == 'archive'/);
     assert(!/SUPABASE_DB_PASSWORD|SUPABASE_ACCESS_TOKEN|CLOUDFLARE_API_TOKEN|GITHUB_TOKEN|upload-artifact|continue-on-error/.test(archiveStep));
     assert.match(archiveStep,/--run-archive-restore/);assert.match(workflow,/if: inputs.restore_mode == 'synthetic'[\s\S]*--run-local-fixture/);
+    assert.match(workflow,/synthetic\|synthetic-email-confirmation\)\s+test -z "\$RESTORE_ARCHIVE_INDEX_COMMITMENT"\s+test -z "\$RESTORE_ARCHIVE_CONFIRMATION"/);
+    assert.match(workflow,/supabase\/setup-cli@[a-f0-9]{40}\s+if: inputs\.restore_mode != 'archive-inventory'\s+timeout-minutes: 2\s+with:\s+version: 2\.117\.0/);
+    const mailStep=workflow.split('name: Verify signup confirmation in owned local Mailpit')[1]?.split('\n      - name:')[0];
+    assert(mailStep);
+    assert.match(mailStep,/if: inputs\.restore_mode == 'synthetic-email-confirmation'\s+timeout-minutes: 23\s+env:\s+EXPECTED_HEAD_SHA: \$\{\{ inputs\.expected_head \}\}\s+SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr\.io\s+run: \|/);
+    const imageTags=[...Object.values(IMAGES),MAILPIT_IMAGE].map(image=>image.split('/').at(-1));
+    assert(mailStep.includes('for image in '+imageTags.join(' ')+'; do\n            docker pull "$SUPABASE_INTERNAL_IMAGE_REGISTRY/supabase/$image"'));
+    assert.match(mailStep,/node scripts\/test-supabase-cli-local-restore\.mjs --run-local-email-confirmation\s*$/);
+    assert.doesNotMatch(mailStep,/secrets\.|github\.token|RESTORE_ARCHIVE_|SUPABASE_SERVICE_ROLE_KEY|--run-archive|--run-local-fixture|upload-artifact|continue-on-error/);
   });
   test('archive parity emits COPY-preserving PostgreSQL content duplicate and sequence checks',async()=>{
     const payload='--row-is-data\t9007199254740993.123456789\tt\tfirst\nsame\t1\tf\tduplicate\nsame\t1\tf\tduplicate\n'

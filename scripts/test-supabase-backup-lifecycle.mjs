@@ -143,7 +143,7 @@ test('manual archive keeps the retention lock and does not acquire the weather q
   assert(workflow.includes("group: ${{ (inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory') && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}"));
   assert(workflow.includes("group: ${{ (inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory') && 'ravradar-trip-storage-production' || format('ravradar-synthetic-standard-local-restore-{0}', github.run_id) }}"));
   assert(!workflow.includes("'ravradar-weather-production-v2'"));
-  assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive, archive-inventory\]/);
+  assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, synthetic-email-confirmation, archive, archive-inventory\]/);
   assert.equal((workflow.match(/cancel-in-progress: false/g)??[]).length,2);
   assert(!workflow.includes('persistSupabaseDatabaseRestoreReceipt'));
 });
