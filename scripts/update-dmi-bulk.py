@@ -2366,7 +2366,8 @@ def prioritize_marine_assets_for_current_gaps(
     verified_reusable_valid_times: set[str] | None = None,
     critical_cursor_valid_time: str | None = None,
     water_trend_gap_times: frozenset[str] = frozenset(),
-    scalar_value_gap_counts: dict[str, int] | None = None,
+    scoped_value_gap_counts: dict[str, tuple[int, int]] | None = None,
+    pending_water_support: str | None = None,
 ) -> list[dict[str, Any]]:
     """Serve real holes first, rotating their native-hour order across runs.
 
@@ -2431,16 +2432,33 @@ def prioritize_marine_assets_for_current_gaps(
         )
 
     ranked = sorted(((priority(asset), asset) for asset in assets), key=lambda item: item[0])
-    if not water_trend_gap_times:
+    if not (water_trend_gap_times or pending_water_support):
         return [asset for _, asset in ranked]
 
     # The collection loop has already chosen a single model run. Pair a trend
     # hour only with its exact later support in that same queue. Interleave
     # equal-priority work without displacing larger holes or cursor/near-term
     # groups. The existing runtime limit and endpoint admission still apply.
-    value_gaps = scalar_value_gap_counts or {}
+    value_gaps = scoped_value_gap_counts or {}
+
+    def work_group(item):
+        rank, asset = item
+        return rank[:5] + rank[6:8] + (value_gaps.get(canonical_time(asset.get("valid"))),)
+
     ordered = []
     scheduled_indices: set[int] = set()
+    if pending_water_support and ranked:
+        # LF can recalculate after a completed asset. Keep its pending support
+        # first only where the fresh plan still gives it equal priority.
+        first_group = work_group(ranked[0])
+        for idx, item in enumerate(ranked[:3]):
+            if work_group(item) != first_group or first_group[-1] is None:
+                break
+            if canonical_time(item[1].get("valid")) == pending_water_support:
+                ordered.append(item[1])
+                scheduled_indices.add(idx)
+                break
+
     for idx, (rank, asset) in enumerate(ranked):
         if idx in scheduled_indices:
             continue
@@ -2450,11 +2468,10 @@ def prioritize_marine_assets_for_current_gaps(
         if valid_time not in water_trend_gap_times or value_gap_count is None:
             continue
         support_epoch = rank[5] + 3 * 3600
-        bucket = rank[:5] + rank[6:8]
+        bucket = work_group(ranked[idx])
         for future in range(idx + 1, min(idx + 4, len(ranked))):
             next_rank, support = ranked[future]
-            next_value_gap_count = value_gaps.get(canonical_time(support.get("valid")))
-            if next_rank[:5] + next_rank[6:8] != bucket or next_value_gap_count != value_gap_count:
+            if work_group(ranked[future]) != bucket:
                 break
             if next_rank[5] == support_epoch and future not in scheduled_indices:
                 ordered.append(support)
@@ -2474,6 +2491,7 @@ def prioritize_dkss_primary_assets(
     verified_reusable_valid_times: set[str],
     critical_cursor_valid_time: str | None,
     pair_water_trends: bool = True,
+    pending_water_support: str | None = None,
 ) -> list[dict[str, Any]]:
     """Use the same component priorities for initial and dynamic LF plans."""
     return prioritize_marine_assets_for_current_gaps(
@@ -2501,11 +2519,12 @@ def prioritize_dkss_primary_assets(
             valid_time for valid_time, row in requirements.items()
             if pair_water_trends and row.get("retainedWaterTrendGap") is True
         ),
-        scalar_value_gap_counts={
-            valid_time: row["retainedScalarValueGapPairCount"]
+        scoped_value_gap_counts={
+            valid_time: (row["retainedScalarValueGapPairCount"], row["currentMissingPairCount"])
             for valid_time, row in requirements.items()
             if "retainedScalarValueGapPairCount" in row
         },
+        pending_water_support=pending_water_support if pair_water_trends else None,
     )
 
 
@@ -17983,6 +18002,15 @@ def main() -> int:
                                 | latest_regional_planning_pairs
                             )
                             remaining_assets = list(assets[asset_number:])
+                            pending_water_support = None
+                            if (
+                                asset_processed_this_invocation
+                                and "sea-mean-deviation" in found
+                                and acquisition_requirements.get(str(asset["valid"]), {}).get("retainedWaterTrendGap") is True
+                                and remaining_assets
+                                and epoch(remaining_assets[0]["valid"]) == epoch(asset["valid"]) + 3 * 3600
+                            ):
+                                pending_water_support = canonical_time(remaining_assets[0]["valid"])
                             regional_gap_pairs_by_time = (
                                 regional_lf_asset_gap_pairs_by_time(
                                     remaining_assets,
@@ -18062,6 +18090,7 @@ def main() -> int:
                                         if not collection_is_maintenance else None
                                     ),
                                     pair_water_trends=not collection_is_maintenance,
+                                    pending_water_support=pending_water_support,
                                 )
                             )
                             if collection_is_maintenance:

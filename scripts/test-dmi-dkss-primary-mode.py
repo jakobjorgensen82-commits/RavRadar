@@ -1354,7 +1354,8 @@ def check_qualified_production_gaps_precede_native_only_deficits():
     seam_assets = [{"valid": time, "id": f"seam-{i}"} for i, time in enumerate(seam_times)]
     seam_covered = {(TARGET_ID, time) for time in seam_times}
 
-    def seam_order(covered, *, pair_water_trends=True, cursor=None):
+    def seam_order(covered, *, pair_water_trends=True, cursor=None, replan=False):
+        available = seam_assets[1:] if replan else seam_assets
         requirements = {
             asset["valid"]: producer.classify_dkss_primary_asset(
                 collection="dkss_lf", model_run=MODEL_RUN, asset=asset,
@@ -1363,21 +1364,37 @@ def check_qualified_production_gaps_precede_native_only_deficits():
                 planning_covered_pair_keys=covered, required_valid_times=required_trend_times,
                 require_native_grid_sampling=True, scalar_gap_plan=seam_plan,
             )
-            for asset in seam_assets
+            for asset in available
         }
         ordered = producer.prioritize_dkss_primary_assets(
-            seam_assets, [TARGET_ID], covered, requirements,
+            available, [TARGET_ID], covered, requirements,
             direct_valid_times=required_trend_times, regional_gap_pairs_by_time={},
             verified_reusable_valid_times=set(), critical_cursor_valid_time=cursor,
             pair_water_trends=pair_water_trends,
+            pending_water_support=seam_times[3] if replan else None,
         )
-        assert sorted(asset["valid"] for asset in ordered) == seam_times
+        assert sorted(asset["valid"] for asset in ordered) == [asset["valid"] for asset in available]
         return [asset["id"] for asset in ordered]
 
     assert seam_order(seam_covered, pair_water_trends=False) == ["seam-0", "seam-1", "seam-2", "seam-3"]
     assert seam_order(seam_covered) == ["seam-0", "seam-3", "seam-1", "seam-2"]
     assert seam_order(seam_covered - {(TARGET_ID, seam_times[2])})[0] == "seam-2"
     assert seam_order(seam_covered, cursor=seam_times[1]) == ["seam-2", "seam-3", "seam-0", "seam-1"]
+    assert seam_order(seam_covered, replan=True) == ["seam-3", "seam-1", "seam-2"]
+    assert seam_order(seam_covered - {(TARGET_ID, seam_times[2])}, replan=True)[0] == "seam-2"
+    # The regional/direct union can be equal despite different direct needs.
+    # Even then H10 must not move ahead of the larger direct-current gap H8.
+    overlapping_regional = {time: {("SECOND", time)} for time in seam_times}
+    direct_covered = {("SECOND", time) for time in seam_times if time != seam_times[1]}
+    independent_value_counts = {time: (0, 2 if i == 1 else 1) for i, time in enumerate(seam_times)}
+    ordered = producer.prioritize_marine_assets_for_current_gaps(
+        seam_assets, [TARGET_ID, "SECOND"], direct_covered,
+        qualified_gap_pair_counts_by_time=dict.fromkeys(seam_times, 3),
+        direct_valid_times=required_trend_times, regional_gap_pairs_by_time=overlapping_regional,
+        water_trend_gap_times=frozenset({seam_times[0]}),
+        scoped_value_gap_counts=independent_value_counts,
+    )
+    assert [asset["valid"] for asset in ordered] == seam_times
     cache = {ZONE_ID: cached_zone(early)}
     for valid in (late, optional_late): cache[ZONE_ID]["hourly"].update(cached_zone(valid)["hourly"])
     for valid in (early, late, optional_late):
