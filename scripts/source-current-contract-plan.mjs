@@ -512,6 +512,8 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/build-forecast-share-projection.mjs':[SHARE_PROJECTION_SOURCE_TEST],
   'scripts/verify-ravscore-operational-pages-deployment.mjs':[SHARE_PROJECTION_SOURCE_TEST],
   'scripts/test-dmi-native-provenance.py':['node --test scripts/test-current-operational-python-contracts.mjs'],
+  'scripts/lib/weather_acquisition_plan.py':COMMANDS.dmiCollectionRecovery,
+  'scripts/test-dmi-dkss-primary-mode.py':COMMANDS.dmiCollectionRecovery,
   'scripts/lib/account-erasure-outbox-native-fixture.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-account-assistant-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-account-erasure-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
@@ -1065,6 +1067,97 @@ export function isDmiCollectionRecoveryOnlyFixtureChange(before,after){
   }catch{return false;}
 }
 
+const DKSS_WATER_TREND_INPUTS = new Set([
+  'scripts/update-dmi-bulk.py',
+  'scripts/lib/weather_acquisition_plan.py',
+  'scripts/test-dmi-dkss-primary-mode.py',
+]);
+
+// Read both committed sources and preserve every byte outside these actual
+// planning call sites. A match selects the existing native test and requires
+// independent review. It is not an exemption for the producer or its fixtures.
+function withoutDkssWaterTrendFrames(source, file) {
+  let text = dmiText(source);
+  const indented = (frame, spaces) => frame.split('\n').every(line => !line || line.startsWith(' '.repeat(spaces)));
+  const added = expected => frame => !frame || frame === expected;
+  const erase = (left, right, maximum, accept = () => true) => {
+    const start = dmiUnique(text, left) + left.length;
+    const end = right ? text.indexOf(right, start) : text.length;
+    assert(end >= start && end - start <= maximum);
+    assert(accept(text.slice(start, end)));
+    text = text.slice(0, start) + text.slice(end);
+  };
+  const eraseIn = (begin, end, callback) => {
+    const from = dmiUnique(text, begin), to = dmiUnique(text, end);
+    assert(to > from);
+    const before = text.slice(0, from), after = text.slice(to);
+    text = text.slice(from, to);
+    callback();
+    text = before + text + after;
+  };
+
+  if (file === 'scripts/lib/weather_acquisition_plan.py') {
+    eraseIn('\ndef read_qualified_acquisition_plan(', '\ndef scalar_gap_components_at(', () => {
+      erase('    return compiled\n\n', '', 1100, frame => !frame.trim()
+        || /^\ndef qualified_scalar_gap_reasons_at\(\n(?:    [^\n]*\n)+\) -> tuple\[bool, int\]:\n(?:    [^\n]*\n|\n)+$/.test(frame));
+    });
+  } else if (file === 'scripts/test-dmi-dkss-primary-mode.py') {
+    erase('const routing={zones:{[part.zoneId]:{enabled:true,requireAll:true,method:\'manual-weights\',stations:[{sourceKey:station.sourceKey,weight:1}]}}};\n',
+      'const routed=route(Array.from({length:49}', 1100, frame => /^function route\([^\n]+\n$/.test(frame));
+    erase('    sourceT:time(117),sourceSupport:time(120),currentPairs};\n}\n',
+      '  early:time(4),late:time(96),optionalLate:time(95),currentQualified:', 1300);
+    erase('    assert support_requirement["currentNativeDeficitCount"] == 0\n',
+      '    cache = {ZONE_ID: cached_zone(early)}\n', 4800, frame => indented(frame, 4));
+  } else {
+    assert.equal(file, 'scripts/update-dmi-bulk.py');
+    erase('    read_qualified_acquisition_plan, scalar_snapshot_paths, scalar_gap_components_at,\n',
+      ')\nfrom lib.copernicus_current import (', 72, added('    qualified_scalar_gap_reasons_at,\n'));
+    eraseIn('\ndef prioritize_marine_assets_for_current_gaps(', '\ndef prioritize_dkss_primary_assets(', () => {
+      erase('    critical_cursor_valid_time: str | None = None,\n', ') -> list[dict[str, Any]]:', 300,
+        added('    water_trend_gap_times: frozenset[str] = frozenset(),\n'
+          +'    scoped_value_gap_counts: dict[str, tuple[int, int]] | None = None,\n'
+          +'    pending_water_support: str | None = None,\n'));
+      erase('            str(asset.get("assetIdentitySha256") or ""),\n        )\n\n', '', 3500,
+        frame => indented(frame, 4) && (frame.trim() === 'return sorted(assets, key=priority)'
+          || frame.startsWith('    ranked = sorted(') && frame.trimEnd().endsWith('    return ordered')));
+    });
+    eraseIn('\ndef prioritize_dkss_primary_assets(', '\ndef dkss_first_turn_order_diagnostic(', () => {
+      erase('    critical_cursor_valid_time: str | None,\n', ') -> list[dict[str, Any]]:', 210,
+        added('    pair_water_trends: bool = True,\n    pending_water_support: str | None = None,\n'));
+      erase('        critical_cursor_valid_time=critical_cursor_valid_time,\n', '    )\n', 920, frame => indented(frame, 8));
+    });
+    erase('        "missingComponentKinds": sorted(missing_components),\n    }\n    if scalar_domain_qualified:\n',
+      '        result.update({', 300, frame => indented(frame, 8));
+    erase('            "retainedScalarGapPairCount": len(scoped_scalar_gap_pairs),\n',
+      '            "criticalGapPairCount":', 245, added('            "retainedWaterTrendGap": water_trend_gap,\n'
+        +'            "retainedScalarValueGapPairCount": value_gap_count,\n'));
+
+    eraseIn('\n                assets = prioritize_dkss_primary_assets(',
+      '\n                # Freeze the first actual collection queue.', () => {
+      erase('                        if not collection_is_maintenance else None\n                    ),\n', '                )\n', 100,
+        added('                    pair_water_trends=not collection_is_maintenance,\n'));
+    });
+    erase('                            remaining_assets = list(assets[asset_number:])\n',
+      '                            regional_gap_pairs_by_time =', 960, frame => indented(frame, 28));
+    eraseIn('\n                                prioritize_dkss_primary_assets(',
+      '\n                            if collection_is_maintenance:\n                                assets[asset_number:] = rotate_native_refresh_assets(', () => {
+      erase('                                        if not collection_is_maintenance else None\n                                    ),\n',
+        '                                )\n', 250, added('                                    pair_water_trends=not collection_is_maintenance,\n'
+          +'                                    pending_water_support=pending_water_support,\n'));
+    });
+  }
+  return text;
+}
+
+export function isDkssWaterTrendPairOnlyChange(file, before, after) {
+  try {
+    if (before === after || !DKSS_WATER_TREND_INPUTS.has(file)) return false;
+    return withoutDkssWaterTrendFrames(before, file) === withoutDkssWaterTrendFrames(after, file);
+  } catch {
+    return false;
+  }
+}
+
 // The manual workflow also owns geometry and weather generation. Only the
 // two recovery conditions below are within the Pages contract's test scope.
 function manualWeatherRecoveryOnly(before, after) {
@@ -1151,9 +1244,12 @@ export function planSourceCurrentContractsFromGit(input){
         return refuse('CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(DMI_BUDGET_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_DMI_BUDGET_REQUIRES_EXISTING_REGULAR_SOURCE');
-      const recoveryAreas=file==='scripts/update-dmi-bulk.py'?dmiCollectionRecoveryUpdaterAreas(
+      const waterTrendPair=DKSS_WATER_TREND_INPUTS.has(file)&&row.status==='M'
+        &&row.beforeMode==='100644'&&row.afterMode==='100644'&&isDkssWaterTrendPairOnlyChange(file,
+          readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
+      const recoveryAreas=file==='scripts/update-dmi-bulk.py'&&!waterTrendPair?dmiCollectionRecoveryUpdaterAreas(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)):null;
-      const recoveryScope=Boolean(recoveryAreas)||(file==='scripts/test-dmi-dkss-primary-mode.py'
+      const recoveryScope=waterTrendPair||Boolean(recoveryAreas)||(file==='scripts/test-dmi-dkss-primary-mode.py'
         &&isDmiCollectionRecoveryOnlyFixtureChange(readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)));
       if(DMI_COLLECTION_RECOVERY_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_DMI_RECOVERY_REQUIRES_EXISTING_REGULAR_SOURCE',['DMI_PRODUCER_CONTRACTS']);

@@ -1,3 +1,7 @@
+## 20. november — vandstandsændringen falder bort ved skift mellem DMI-serier
+
+Den gemte #358 viste, at kildevalget gav to vandstandstal uden en fælles modelkørsel, samling eller gitter i 208 af 220 undersøgte manglende trends. De øvrige 12 manglede en kvalificeret støttetime. I Sibirien viste de autentiske direkte rækker et skift mellem DMI-samlinger ved det første hul. #359 viste endnu et samtidigt bortfald på 329 kystdele på trods af tilgængelige vandstande ved begge tider. Årsagen er verificeret for #358. Den lokale køændring og virkningen i en ny almindelig kørsel følger DEC-0261.
+
 ## 19. november — cachekontrollen skjulte årsagen i #353
 
 Vejrkørsel #353 gendannede råcachen og planlagde de krævede historiktimer for 673 kystdele. Kontrollen stoppede ved overdragelsen til cacheoprydning. Loggen viste ét fælles afslag. De tre kopier blev bevaret, og leverandørhentningen startede aldrig. Oprydningsjobbet ventede på et bevis fra en allerede afsluttet kørsel.
