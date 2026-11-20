@@ -19,6 +19,8 @@ import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-nativ
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
 const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.198.0'});
+const MAILPIT_IMAGE='axllent/mailpit:v1.30.2'; // Built into Supabase CLI 2.117.0.
+const LOCAL_SITE_URL='http://127.0.0.1:3000';
 const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.198.0',storage:'supabase/storage-api:v1.86.0'});
 const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
 const NATIVE_ACTIVITY_VENDOR_PINS=Object.freeze({...ARCHIVE_VENDOR_PINS,'gotrue-version':IMAGES.auth.split(':').at(-1)+'\n'});
@@ -62,10 +64,10 @@ const uuid=value=>typeof value==='string'&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f
 function localUrl(raw,kind){
   const u=new URL(raw);
   need(u.hostname==='127.0.0.1'&&!u.hash&&!u.search,'LOOPBACK_URL_REQUIRED');
-  if(kind==='api')need(u.protocol==='http:'&&!u.username&&!u.password&&u.pathname==='/','LOCAL_API_URL');
+  if(kind==='api'||kind==='mailpit')need(u.protocol==='http:'&&!u.username&&!u.password&&u.pathname==='/','LOCAL_API_URL');
   else need(['postgres:','postgresql:'].includes(u.protocol)&&u.username==='postgres'&&u.password.length>0
     &&u.pathname==='/postgres','LOCAL_DATABASE_URL');
-  need(u.port===(kind==='api'?'54321':'54322'),'LOCAL_PORT_REQUIRED');return u;
+  need(u.port===(kind==='api'?'54321':kind==='mailpit'?'54324':'54322'),'LOCAL_PORT_REQUIRED');return u;
 }
 function ownedContainer(info,project,service,archive=false){
   need(/^[a-f0-9]{64}$/.test(info?.Id??''),'CONTAINER_ID');
@@ -76,7 +78,7 @@ function ownedContainer(info,project,service,archive=false){
   let published=0;
   for(const values of Object.values(info.NetworkSettings.Ports??{}))for(const v of values??[]){
     need(v.HostIp==='127.0.0.1','CONTAINER_NOT_LOOPBACK_BOUND');
-    need(service!=='auth'&&v.HostPort===(service==='db'?'54322':'54321'),'CONTAINER_UNEXPECTED_HOST_PORT');published++;
+    need(service!=='auth'&&v.HostPort===(service==='db'?'54322':service==='inbucket'?'54324':'54321'),'CONTAINER_UNEXPECTED_HOST_PORT');published++;
   }
   need(published===(archive||service==='auth'?0:1),'CONTAINER_PORT_COUNT');
   if(archive)need(info.NetworkSettings.Networks[project.network]?.NetworkID===project.networkId,'ARCHIVE_CONTAINER_NETWORK_ID');
@@ -790,7 +792,7 @@ async function stopProject(c,p){
   }
   p.closed=true;return true;
 }
-function config(id,target,archive=false){return `project_id = "${id}"
+function config(id,target,archive=false,emailConfirmation=false){return `project_id = "${id}"
 [api]
 enabled = true
 port = 54321
@@ -806,12 +808,12 @@ enabled = false
 enabled = false
 [auth]
 enabled = true
-site_url = "http://127.0.0.1:3000"
+site_url = "${LOCAL_SITE_URL}"
 additional_redirect_urls = []
 [auth.email]
-enable_confirmations = false
+enable_confirmations = ${emailConfirmation}
 [local_smtp]
-enabled = false
+enabled = ${emailConfirmation}${emailConfirmation?'\nport = 54324':''}
 [storage]
 enabled = ${target&&archive}
 [realtime]
@@ -904,7 +906,8 @@ async function syntheticAuthVersionPin(c,p,create){
 }
 function serviceImageMetadata(c,p,service,info,image){
   need(c.archive!==true||p.side==='B','ARCHIVE_VENDOR_PROJECT');
-  const expected=c.archive===true&&service==='auth'?ARCHIVE_VENDOR_IMAGES.auth:IMAGES[service];
+  const expected=c.emailConfirmation===true&&service==='inbucket'?MAILPIT_IMAGE
+    :c.archive===true&&service==='auth'?ARCHIVE_VENDOR_IMAGES.auth:IMAGES[service];
   need(typeof expected==='string','UNEXPECTED_SERVICE_IMAGE');
   // Keep normal registry/mirror selection, exact tag, content identity and digest checks.
   const short=expected.split('/').at(-1);
@@ -913,8 +916,24 @@ function serviceImageMetadata(c,p,service,info,image){
   need(Array.isArray(image.RepoDigests)&&image.RepoDigests.length>0,'IMAGE_DIGEST_REQUIRED');
   return {id:image.Id,digests:[...image.RepoDigests].sort()};
 }
-async function startProject(c,p,{nativeActivity=false}={}){
+function assertLocalConfirmationMailer(authInfo,mailpitInfo){
+  const authEnv=authInfo.Config?.Env,mailpitEnv=mailpitInfo.Config?.Env;
+  const uses=(key,value)=>authEnv.filter(entry=>entry.startsWith(key+'=')).join('\n')===key+'='+value;
+  need(Array.isArray(authEnv)&&Array.isArray(mailpitEnv)&&uses('GOTRUE_MAILER_AUTOCONFIRM','false')
+    &&uses('GOTRUE_SMTP_HOST',mailpitInfo.Name.slice(1))&&uses('GOTRUE_SMTP_PORT','1025')
+    &&!mailpitEnv.some(entry=>/^MP_SMTP_(?:RELAY|FORWARD)/u.test(entry)),'LOCAL_CONFIRMATION_MAILER');
+}
+async function startProject(c,p,{nativeActivity=false,emailConfirmation=false}={}){
   need(typeof nativeActivity==='boolean','NATIVE_ACTIVITY_BOOTSTRAP_MODE');
+  need(typeof emailConfirmation==='boolean'&&(!emailConfirmation||c.emailConfirmation===true&&c.archive===false&&p.side==='B'&&!nativeActivity),
+    'LOCAL_CONFIRMATION_PROJECT');
+  if(emailConfirmation){
+    // The CLI may otherwise pull images itself. Use only the already cached first-choice mirror.
+    const registry=process.env.SUPABASE_INTERNAL_IMAGE_REGISTRY==='ghcr.io'?'ghcr.io':'public.ecr.aws';
+    for(const image of [...Object.values(IMAGES),MAILPIT_IMAGE]){
+      await command(c,'LOCAL_CONFIRMATION_IMAGE_CACHE','docker',['image','inspect',registry+'/supabase/'+image.split('/').at(-1)],{maxMs:10_000});
+    }
+  }
   if(nativeActivity){
     archiveVendorPinDirectory(c,p,true);need(!Object.hasOwn(p,'nativeStorageBootstrap'),'NATIVE_ACTIVITY_BOOTSTRAP_REENTRY');
     Object.defineProperty(p,'nativeStorageBootstrap',{value:true});
@@ -923,7 +942,9 @@ async function startProject(c,p,{nativeActivity=false}={}){
   const before=(await command(c,'NETWORK_ABSENCE','docker',['network','ls','-q','--filter','name=^'+p.network+'$'])).toString().trim();
   need(!before,'NETWORK_ALREADY_EXISTS');
   await command(c,'INIT_'+p.side,'supabase',['init','--yes'],{cwd:p.dir,maxMs:30_000});
-  await fs.writeFile(path.join(p.dir,'supabase/config.toml'),nativeActivity?syntheticNativeStorageConfig(p):config(p.id,p.side==='B',c.archive===true),{mode:0o600});
+  const projectConfig=emailConfirmation?config(p.id,true,false,true)
+    :nativeActivity?syntheticNativeStorageConfig(p):config(p.id,p.side==='B',c.archive===true);
+  await fs.writeFile(path.join(p.dir,'supabase/config.toml'),projectConfig,{mode:0o600});
   if(nativeActivity)await prepareArchiveVendorBootstrap(c,p,true);
   else if(c.archive===true)await prepareArchiveVendorBootstrap(c,p);
   else await syntheticAuthVersionPin(c,p,true);
@@ -939,24 +960,32 @@ async function startProject(c,p,{nativeActivity=false}={}){
   const relay=c.archive?await openArchiveDbRelay(c,p):null;
   p.startAttempted=true;
   try{
-    await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
+    const exclusions=emailConfirmation?EXCLUDE.replace(',mailpit',''):EXCLUDE;
+    await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',exclusions],{cwd:p.dir});
   }finally{if(relay)await relay.close();}
   if(nativeActivity)await verifyArchiveVendorBootstrap(c,p,true);
   else if(c.archive===true)await verifyArchiveVendorBootstrap(c,p);
   else await syntheticAuthVersionPin(c,p,false);
-  const actual={};
-  for(const service of ['db','kong','auth']){
+  const actual={},services=emailConfirmation?['db','kong','auth','inbucket']:['db','kong','auth'];
+  for(const service of services){
     const info=(await jsonCommand(c,'INSPECT_'+p.side+'_'+service,['inspect','supabase_'+service+'_'+p.id]))[0];
     p[service]=ownedContainer(info,p,service,c.archive);const image=(await jsonCommand(c,'IMAGE_'+service,['image','inspect',info.Image]))[0];
     actual[service]=serviceImageMetadata(c,p,service,info,image);
   }
   const found=(await command(c,'EXACT_SERVICE_SET','docker',['ps','--no-trunc','-aq','--filter','label=com.supabase.cli.project='+p.id])).toString().trim().split(/\s+/).filter(Boolean);
-  assert.deepEqual(found.sort(),[p.db,p.kong,p.auth].sort());
+  assert.deepEqual(found.sort(),services.map(service=>p[service]).sort());
   if(c.images)assert.deepEqual(actual,c.images);else c.images=actual;
   const status=JSON.parse((await command(c,'STATUS_'+p.side,'supabase',['status','--output','json'],{cwd:p.dir,maxMs:30_000})).toString());
   p.api=localUrl(status.API_URL,'api');p.dbUrl=localUrl(status.DB_URL,'db');
   need(typeof status.ANON_KEY==='string'&&status.ANON_KEY.length>32&&typeof status.SERVICE_ROLE_KEY==='string'
     &&status.SERVICE_ROLE_KEY.length>32,'LOCAL_RUNTIME_KEYS_REQUIRED');p.anon=status.ANON_KEY;p.service=status.SERVICE_ROLE_KEY;
+  if(emailConfirmation){
+    p.mailpit=localUrl(status.MAILPIT_URL,'mailpit');
+    const [authInfo]=await jsonCommand(c,'LOCAL_CONFIRMATION_OWN_AUTH',['inspect',p.auth]);
+    const [mailpitInfo]=await jsonCommand(c,'LOCAL_CONFIRMATION_OWN_MAILPIT',['inspect',p.inbucket]);
+    need(ownedContainer(authInfo,p,'auth')===p.auth&&ownedContainer(mailpitInfo,p,'inbucket')===p.inbucket,'LOCAL_CONFIRMATION_IDENTITY');
+    assertLocalConfirmationMailer(authInfo,mailpitInfo);
+  }
 }
 function psqlArguments(c,p,stage,inputLines){
   const archiveHistory=c.archive===true&&p.side==='B'&&stage==='RESTORE_ARCHIVE_HISTORY'&&inputLines!==null;
@@ -1044,9 +1073,11 @@ function authRequestShape(c,p,route,body,method,status){
   return {method:actualMethod,admin:route==='/admin/users'||Boolean(adminUser),readback,
     kind:adminUser?(actualMethod==='DELETE'?'DELETE':'ADMIN_USER'):signup?'SIGNUP':logout?'LOGOUT':refresh?'REFRESH':route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD'};
 }
-async function auth(c,p,route,{body=null,token=null,status=200,method=null}={}){
+async function auth(c,p,route,{body=null,token=null,status=200,method=null,expectUnconfirmed=false}={}){
   const shape=authRequestShape(c,p,route,body,method,status);
   need(shape.kind!=='SIGNUP'||token===null,'AUTH_SIGNUP_AUTHORIZATION');
+  need(!expectUnconfirmed||c.emailConfirmation===true&&c.archive===false&&p.side==='B'
+    &&shape.kind==='PASSWORD'&&status===400&&token===null,'LOCAL_CONFIRMATION_UNCONFIRMED_AUTH');
   c.stage=p.side+'_AUTH_'+shape.kind;
   need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.min(10_000,c.deadline-Date.now()));
@@ -1063,9 +1094,90 @@ async function auth(c,p,route,{body=null,token=null,status=200,method=null}={}){
     if(endpoint)assert.deepEqual(await archiveAuthEndpoint(c,p),endpoint,'ARCHIVE_AUTH_ENDPOINT_MOVED');
     c.authRequests.push({project:p.side,kind:c.stage,status:response.status,bodyBytes:n});
     need(shape.readback?status.includes(response.status):response.status===status,'AUTH_STATUS_'+response.status);
+    if(expectUnconfirmed)need(JSON.parse(Buffer.concat(chunks).toString('utf8')).error_code==='email_not_confirmed',
+      'LOCAL_CONFIRMATION_UNCONFIRMED_RESULT');
     const user=response.status===200?JSON.parse(Buffer.concat(chunks).toString('utf8')):null;
     return shape.readback?{status:response.status,user}:user;
   }finally{clearTimeout(timer);controller.abort();}
+}
+
+async function mailpitJson(url,deadline){
+  need(Date.now()<deadline,'LOCAL_CONFIRMATION_MAIL_TIMEOUT');
+  const response=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(Math.min(2_000,deadline-Date.now()))});
+  const reader=response.body?.getReader(),chunks=[];
+  try{
+    need(response.status===200&&reader,'LOCAL_CONFIRMATION_MAIL_RESPONSE');
+    let n=0;
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      n+=value.length;need(n<=64*1024,'LOCAL_CONFIRMATION_MAIL_BOUND');chunks.push(Buffer.from(value));
+    }
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  }finally{await reader?.cancel().catch(()=>{});}
+}
+function confirmationMailAddress(rows,email){
+  return Array.isArray(rows)&&rows.length===1&&rows[0]?.Address===email;
+}
+function localConfirmationLink(html,api){
+  need(typeof html==='string'&&html.length<=64*1024,'LOCAL_CONFIRMATION_HTML');
+  const hrefs=[...html.matchAll(/\bhref=["']([^"']+)["']/giu)];
+  need(hrefs.length===1,'LOCAL_CONFIRMATION_LINK_COUNT');
+  const url=new URL(hrefs[0][1].replaceAll('&amp;','&'));
+  need(url.origin===api.origin&&url.pathname==='/auth/v1/verify'&&!url.username&&!url.password&&!url.hash
+    &&[...url.searchParams.keys()].sort().join(',')==='redirect_to,token,type'
+    &&url.searchParams.get('type')==='signup'&&/^[a-f0-9]{56}$/.test(url.searchParams.get('token')??''),
+    'LOCAL_CONFIRMATION_LINK');
+  const redirect=new URL(url.searchParams.get('redirect_to'));
+  need(redirect.href===new URL(LOCAL_SITE_URL).href,'LOCAL_CONFIRMATION_LINK_DESTINATION');
+  return url;
+}
+async function verifySyntheticEmailConfirmation(c,p){
+  c.stage='LOCAL_CONFIRMATION_SIGNUP';
+  need(c.emailConfirmation===true&&c.archive===false&&p.side==='B'&&p.mailpit&&p.inbucket,'LOCAL_CONFIRMATION_PROJECT');
+  const email='owned-native-'+crypto.randomBytes(16).toString('hex')+'@example.invalid';
+  const password=crypto.randomBytes(32).toString('base64url'),body={email,password};
+  const signup=await auth(c,p,'/signup',{body});
+  need(uuid(signup?.id)&&signup.email===email&&!signup.email_confirmed_at
+    &&!signup.access_token&&!signup.refresh_token&&!signup.session,'LOCAL_CONFIRMATION_SIGNUP_RESULT');
+  await auth(c,p,'/token?grant_type=password',{body,status:400,expectUnconfirmed:true});
+
+  c.stage='LOCAL_CONFIRMATION_CAPTURE';
+  const search=new URL('/api/v1/search',p.mailpit);search.search=new URLSearchParams({query:'to:'+email,limit:'2'});
+  const deadline=Math.min(c.deadline,Date.now()+15_000);
+  let mailId;
+  while(Date.now()<deadline){
+    const found=await mailpitJson(search,deadline);
+    need(Array.isArray(found?.messages)||found?.messages===null,'LOCAL_CONFIRMATION_MAIL_SEARCH');
+    const rows=found.messages??[];
+    if(!rows.length){await sleep(250);continue;}
+    need(rows.length===1&&confirmationMailAddress(rows[0].To,email)
+      &&/^[A-Za-z0-9_-]{1,128}$/.test(rows[0].ID??''),'LOCAL_CONFIRMATION_MAIL_ID');
+    mailId=rows[0].ID;break;
+  }
+  need(mailId,'LOCAL_CONFIRMATION_MAIL_TIMEOUT');
+  const captured=await mailpitJson(new URL('/api/v1/message/'+mailId,p.mailpit),deadline);
+  need(captured?.ID===mailId&&confirmationMailAddress(captured.To,email),'LOCAL_CONFIRMATION_MAIL_RECIPIENT');
+  const link=localConfirmationLink(captured.HTML,p.api);
+
+  c.stage='LOCAL_CONFIRMATION_VERIFY';
+  need(Date.now()<c.deadline,'OPERATION_DEADLINE');
+  const verified=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(Math.min(5_000,c.deadline-Date.now()))});
+  try{
+    need(verified.status===303&&verified.headers.has('location'),'LOCAL_CONFIRMATION_VERIFY_RESPONSE');
+    const destination=new URL(verified.headers.get('location'));
+    const params=new URLSearchParams(destination.hash.slice(1));destination.hash='';
+    need(destination.href===new URL(LOCAL_SITE_URL).href&&params.get('type')==='signup'&&!params.has('error'),
+      'LOCAL_CONFIRMATION_VERIFY_DESTINATION');
+  }finally{await verified.body?.cancel().catch(()=>{});}
+
+  const login=await auth(c,p,'/token?grant_type=password',{body});
+  need(login?.user?.id===signup.id&&typeof login.access_token==='string','LOCAL_CONFIRMATION_LOGIN');
+  const user=await auth(c,p,'/user',{token:login.access_token});
+  need(user?.id===signup.id&&user.email===email&&Number.isFinite(Date.parse(user.email_confirmed_at)),
+    'LOCAL_CONFIRMATION_CONFIRMED_USER');
+  return {confirmationEnabled:true,loginDeniedBeforeConfirmation:true,mailpitConfirmationCaptured:true,
+    localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true};
 }
 async function verifyArchiveAuthFunction(c,p){
   const email='isolated-archive-'+crypto.randomBytes(16).toString('hex')+'@example.invalid';
@@ -2652,8 +2764,9 @@ async function archiveInventoryFixture(c,indexCommitmentSha256,temp,rootIdentity
     if(error)process.exitCode=1;
   }
 }
-async function fixture({archive=false,inventoryOnly=false}={}){
+async function fixture({archive=false,inventoryOnly=false,emailConfirmation=false}={}){
   need(typeof inventoryOnly==='boolean'&&(!inventoryOnly||archive===true),'ARCHIVE_INVENTORY_MODE');
+  need(typeof emailConfirmation==='boolean'&&(!emailConfirmation||!archive&&!inventoryOnly),'LOCAL_CONFIRMATION_MODE');
   need(process.platform==='linux'&&process.env.GITHUB_ACTIONS==='true'&&process.env.RUNNER_ENVIRONMENT==='github-hosted'
     &&process.env.RUNNER_OS==='Linux'&&process.env.GITHUB_EVENT_NAME==='workflow_dispatch','HOSTED_LINUX_ONLY');
   need(process.env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'&&process.env.GITHUB_RUN_ATTEMPT==='1','FIXED_REPOSITORY_ATTEMPT');
@@ -2667,16 +2780,19 @@ async function fixture({archive=false,inventoryOnly=false}={}){
   const root=await fs.mkdtemp(path.join(temp,'rr-standard-restore-'));need(inside(temp,root),'OWNED_ROOT');await fs.chmod(root,0o700);
   const rootIdentity=await fs.lstat(root,{bigint:true});
   const home=path.join(root,'home');await fs.mkdir(home,{mode:0o700});const owner=run+'-1';
-  const c={root,home,owner,archive,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
+  const c={root,home,owner,archive,emailConfirmation,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
   if(inventoryOnly)return archiveInventoryFixture(c,indexCommitmentSha256,temp,rootIdentity);
-  const projects=['A','B'].map(side=>({side,id:'rr_restore_'+run+'_1_'+side.toLowerCase(),dir:path.join(root,side),network:'rr-restore-'+owner+'-'+side.toLowerCase()}));
+  const projects=(emailConfirmation?['B']:['A','B']).map(side=>({side,id:'rr_restore_'+run+'_1_'+side.toLowerCase(),dir:path.join(root,side),network:'rr-restore-'+owner+'-'+side.toLowerCase()}));
   let result,error=null;
   try{
     need((await command(c,'CLI_VERSION','supabase',['--version'],{maxMs:20_000})).toString().trim()===P.cli,'CLI_VERSION');
     need((await command(c,'DOCKER_LINUX','docker',['info','--format','{{.OSType}}'],{maxMs:20_000})).toString().trim()==='linux','DOCKER_LINUX');
     need((await command(c,'LOCAL_DAEMON','docker',['context','inspect','default','--format','{{.Endpoints.docker.Host}}'],{maxMs:20_000})).toString().trim()==='unix:///var/run/docker.sock','LOCAL_DAEMON');
-    const [a,b]=projects;
-    if(archive){
+    const [a]=projects,b=projects.at(-1);
+    if(emailConfirmation){
+      await startProject(c,b,{emailConfirmation:true});
+      result=await verifySyntheticEmailConfirmation(c,b);
+    }else if(archive){
       await requireArchiveCurrentMain(c);
       result=await restoreArchive(c,b,indexCommitmentSha256);
     }else{
@@ -2745,13 +2861,87 @@ async function fixture({archive=false,inventoryOnly=false}={}){
     if(closed)try{const st=await fs.lstat(root,{bigint:true});need(st.isDirectory()&&!st.isSymbolicLink()
       &&st.dev===rootIdentity.dev&&st.ino===rootIdentity.ino&&inside(temp,await fs.realpath(root)),'SCRATCH_IDENTITY');
       await fs.rm(root,{recursive:true,force:false});}catch(e){error??=safeError(e,'SCRATCH_CLEANUP');}
-    const report=restorePublicReport(c,result,error,closed);
+    const report=emailConfirmation?{
+      status:error?'FAILED_CLOSED':'PASS',scope:'synthetic-local-email-confirmation',
+      ...(error?{firstFailure:error}:result),ownedDockerClosed:closed,
+    }:restorePublicReport(c,result,error,closed);
     console.log(JSON.stringify(report));if(error)process.exitCode=1;
   }
 }
 
 async function selfTest(){
   const {test}=await import('node:test');
+  test('local email confirmation changes only the opt-in synthetic config and requires the owned SMTP binding',()=>{
+    const ordinary=config('fixture',true),archive=config('fixture',true,true),mail=config('fixture',true,false,true);
+    for(const original of [ordinary,archive])assert.match(original,/enable_confirmations = false\n\[local_smtp\]\nenabled = false/u);
+    assert.equal(mail,ordinary.replace('enable_confirmations = false\n[local_smtp]\nenabled = false',
+      'enable_confirmations = true\n[local_smtp]\nenabled = true\nport = 54324'));
+    const name='/supabase_inbucket_fixture';
+    const auth={Config:{Env:['GOTRUE_MAILER_AUTOCONFIRM=false','GOTRUE_SMTP_HOST='+name.slice(1),'GOTRUE_SMTP_PORT=1025']}};
+    const mailpit={Name:name,Config:{Env:['MP_SMTP_DISABLE_RDNS=true']}};
+    assert.doesNotThrow(()=>assertLocalConfirmationMailer(auth,mailpit));
+    for(const edit of [x=>x.Config.Env[0]='GOTRUE_MAILER_AUTOCONFIRM=true',x=>x.Config.Env[1]='GOTRUE_SMTP_HOST=remote.invalid',
+      x=>x.Config.Env.push('GOTRUE_SMTP_PORT=25')]){
+      const bad=structuredClone(auth);edit(bad);
+      assert.throws(()=>assertLocalConfirmationMailer(bad,mailpit),{code:'LOCAL_CONFIRMATION_MAILER'});
+    }
+    const relay=structuredClone(mailpit);relay.Config.Env.push('MP_SMTP_RELAY_CONFIG=/smtp-relay');
+    assert.throws(()=>assertLocalConfirmationMailer(auth,relay),{code:'LOCAL_CONFIRMATION_MAILER'});
+    assert.throws(()=>localUrl('http://localhost:54324','mailpit'),{code:'LOOPBACK_URL_REQUIRED'});
+  });
+  test('local confirmation accepts the stock signup link and rejects any different origin, action or redirect',()=>{
+    const api=new URL('http://127.0.0.1:54321');
+    const link=new URL('/auth/v1/verify',api);
+    link.search=new URLSearchParams({type:'signup',token:'a'.repeat(56),redirect_to:LOCAL_SITE_URL});
+    const html=url=>'<h2>Confirm</h2><a href="'+url.href.replaceAll('&','&amp;')+'">Confirm email address</a>';
+    assert.equal(localConfirmationLink(html(link),api).origin,api.origin);
+    for(const change of [url=>url.hostname='outside.invalid',url=>url.searchParams.set('type','recovery'),
+      url=>url.searchParams.append('redirect_to','https://outside.invalid'),url=>url.searchParams.set('redirect_to','https://outside.invalid'),
+      url=>url.searchParams.set('token','invalid'),url=>url.pathname='/auth/v1/login']){
+      const bad=new URL(link);change(bad);
+      assert.throws(()=>localConfirmationLink(html(bad),api),error=>/^LOCAL_CONFIRMATION_LINK/u.test(error.code??''));
+    }
+    assert.throws(()=>localConfirmationLink(html(link)+html(link),api),{code:'LOCAL_CONFIRMATION_LINK_COUNT'});
+  });
+  test('synthetic email confirmation transport pins signup, pre-login refusal, captured message and post-login identity in order',async t=>{
+    const p={side:'B',api:new URL('http://127.0.0.1:54321'),mailpit:new URL('http://127.0.0.1:54324'),inbucket:'owned',anon:'synthetic'};
+    const c={emailConfirmation:true,archive:false,deadline:Date.now()+10_000,authRequests:[]};
+    const id=crypto.randomUUID(),mailId='fixture-1',link=new URL('/auth/v1/verify',p.api);
+    const confirmed='2026-11-20T00:00:00Z',seen=[];
+    link.search=new URLSearchParams({token:'b'.repeat(56),type:'signup',redirect_to:LOCAL_SITE_URL});
+    let email,beforeConfirmation='email_not_confirmed';
+    t.mock.method(globalThis,'fetch',async(url,options)=>{
+      seen.push(url.pathname);
+      if(url.pathname==='/auth/v1/signup'){
+        assert.ok(!options.headers.Authorization);
+        email=JSON.parse(options.body).email;
+        return Response.json({id,email});
+      }
+      if(url.pathname==='/auth/v1/token')return seen.length===2
+        ?Response.json({error_code:beforeConfirmation},{status:400})
+        :Response.json({access_token:'synthetic-session',user:{id}});
+      if(url.pathname==='/api/v1/search'){
+        assert.ok(url.origin===p.mailpit.origin&&url.searchParams.get('query')==='to:'+email);
+        return Response.json({messages:[{ID:mailId,To:[{Address:email}]}]});
+      }
+      if(url.pathname==='/api/v1/message/'+mailId)return Response.json({ID:mailId,To:[{Address:email}],
+        HTML:'<a href="'+link.href.replaceAll('&','&amp;')+'">Confirm email address</a>'});
+      if(url.pathname==='/auth/v1/verify'){
+        assert.ok(url.href===link.href&&options.redirect==='manual');
+        return new Response(null,{status:303,headers:{location:LOCAL_SITE_URL+'/#type=signup'}});
+      }
+      if(url.pathname==='/auth/v1/user')return Response.json({id,email,email_confirmed_at:confirmed});
+      assert.fail('Unexpected synthetic confirmation endpoint');
+    });
+    assert.deepEqual(await verifySyntheticEmailConfirmation(c,p),{confirmationEnabled:true,loginDeniedBeforeConfirmation:true,
+      mailpitConfirmationCaptured:true,localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true});
+    assert.deepEqual(seen,['/auth/v1/signup','/auth/v1/token','/api/v1/search','/api/v1/message/'+mailId,
+      '/auth/v1/verify','/auth/v1/token','/auth/v1/user']);
+    seen.length=0;
+    beforeConfirmation='invalid_credentials';
+    await assert.rejects(verifySyntheticEmailConfirmation(c,p),{code:'LOCAL_CONFIRMATION_UNCONFIRMED_RESULT'});
+    assert.deepEqual(seen,['/auth/v1/signup','/auth/v1/token']);
+  });
   async function ownArchive(run,{large=false,receiptEdit=null,roleSql=null,fileSql={}}={}){
     const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-archive-stream-self-'));await fs.chmod(root,0o700);
     const c={root,deadline:Date.now()+30_000},source=[];let observed=null;
@@ -4568,6 +4758,9 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   if(process.argv[2]==='--self-test')await selfTest();
   else if(process.argv[2]==='--run-local-fixture')await fixture().catch(e=>{
     console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'synthetic-standard-cli-local-restore',firstFailure:safeError(e,'PREFLIGHT')}));process.exitCode=1;
+  });
+  else if(process.argv[2]==='--run-local-email-confirmation')await fixture({emailConfirmation:true}).catch(e=>{
+    console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'synthetic-local-email-confirmation',firstFailure:safeError(e,'PREFLIGHT')}));process.exitCode=1;
   });
   else if(process.argv[2]==='--run-archive-inventory')await fixture({archive:true,inventoryOnly:true}).catch(e=>{
     console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'authenticated-archive-relation-inventory-only',
