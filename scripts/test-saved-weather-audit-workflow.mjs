@@ -8,7 +8,10 @@ import { readHistoricalSavedWeatherAuditWorkflowSource } from './lib/pages-closu
 import * as normal from './lib/water-source-forecast-routing.mjs';
 import { dmiMarineCollectionAllowedForZone as allowed } from './lib/dmi-marine-zone-exclusions.mjs';
 import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
-import { B358_ARTIFACT, createB358ArtifactFetch, projectSourcePairs, qualifyLf7Reconstruction } from './audit-b358-water-level-trend.mjs';
+import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
+import * as directWaterAdapter from './lib/ravscore-production-adapters.mjs';
+import { B358_ARTIFACT, createB358ArtifactFetch, projectSourcePairs, qualifyLf7Reconstruction,
+  projectSibirienDirectWater } from './audit-b358-water-level-trend.mjs';
 
 const b272WorkflowReview = Object.freeze({"after":{"bytes":50595,"sha256":"27199a1f676e48c458ba3540d84172b0d381aa7045b9973a73e7bcf4f3786e8b"},"before":{"bytes":45655,"sha256":"96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8"},"input":"      water_level_basis_272_only:\n        description: \"Fixed B272 WL provenance metadata only; one archived artifact, no providers or production\"\n        required: false\n        default: false\n        type: boolean\n\n","job":{"bytes":4582,"sha256":"924dc719b9cbfefc9916e532c3ec58a4ec9eb74906d1c9a29bac450ef773197c"},"ifPairs":[["    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)","    if: inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))"],["    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)"],["    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)"]]});
 function beforeB272WaterLevelWorkflow(value){
@@ -818,4 +821,43 @@ test('B358 DKSS queue publishes only fixed onboarding hours and bounded reason f
   assert.deepEqual(result.dkss_idw.at(-1), {offset:10, firstQueueRank:33, retainedGapCount:17,
     waterLevelWasRequired:true, selectedRunProcessedTime:true});
   assert.deepEqual(projectDkssOnsetQueue(input,'2026-11-20T12:00:00.000Z'), {});
+});
+
+test('B358 Sibirien requires exact direct and public hours before inferring SOURCE override', () => {
+  const ref = '2026-11-20T08:00:00.000Z', newest = '2026-11-20T00:00:00.000Z', older = '2026-11-19T18:00:00.000Z';
+  const hour = offset => new Date(Date.parse(ref) + offset * 3_600_000).toISOString();
+  const part = { partId: 'dk-b02-06-national-part-02', zoneId: 'DK-B02-06', waterPoint: [10, 57] };
+  const identity = directWaterAdapter.dmiExpectedIdentityForPart(part);
+  const ocean = [6, 7, 9, 10].map(offset => {
+    const { sources, ...row } = dmiWaterSourceFixture({ sourceKey: 'private-source-canary', stationId: 'TEST',
+      point: part.waterPoint }, hour(offset), offset === 7 ? 83 : 76, offset === 10 ? older : newest);
+    return { ...row, step: row.time, provenance: { waterLevel: { ...sources.waterLevel, ...identity } } };
+  });
+  const { hourly } = buildDmiForecastHourly({ ocean, generatedAt: ref, startAt: ref, sourceCadenceMinutes: 60 });
+  const direct = { point: part.waterPoint, hourly };
+  const rows = new Map([6, 7, 9, 10].map(offset => [hour(offset), { time: hour(offset),
+    waterLevelCm: offset === 7 ? 83 : 76, waterLevelTrendCm3h: null }]));
+  const publicPart = { zone: part.zoneId, rows };
+  const input = { part, direct, publicPart, adapter: directWaterAdapter };
+  const result = projectSibirienDirectWater(input);
+  assert.equal(result.status, 'OBSERVED');
+  assert.deepEqual(result.hours.map(row => [row.hour, row.directPair, row.directTrendPresent, row.sourceOverride]), [
+    [6, 'COMPARABLE_DIRECT_SERIES', true, 'PROVED'],
+    [7, 'DIRECT_MODEL_RUN_DIFFERS', false, 'UNKNOWN'],
+  ]);
+  assert.ok(result.hours.every(row => row.publicLevelPresent && row.publicFutureLevelPresent && !row.publicTrendPresent));
+  const missing = structuredClone(direct);
+  missing.hourly[7].waterLevelCm = null;
+  assert.equal(projectSibirienDirectWater({ ...input, direct: missing }).hours[1].sourceOverride, 'PROVED');
+  const rejected = structuredClone(direct);
+  rejected.hourly[7].sources.waterLevel = { provider: 'dmi', entityId: 'PART::wrong' };
+  assert.equal(projectSibirienDirectWater({ ...input, direct: rejected }).hours[1].sourceOverride, 'UNKNOWN');
+  const changed = structuredClone(publicPart);
+  changed.rows.get(hour(6)).waterLevelCm = 77;
+  assert.equal(projectSibirienDirectWater({ ...input, publicPart: changed }).hours[0].sourceOverride, 'UNKNOWN');
+  changed.rows.delete(hour(9));
+  assert.equal(projectSibirienDirectWater({ ...input, publicPart: changed }).hours[0].reason, 'SIBIRIEN_PUBLIC_TIME_UNBOUND');
+  assert.equal(projectSibirienDirectWater({ ...input, direct: { ...direct, point: [9, 57] } }).status, 'UNKNOWN');
+  for (const privateData of ['private-source-canary', newest, older, 'waterPoint', 'waterLevelCm', ':76', ':83'])
+    assert.equal(JSON.stringify(result).includes(privateData), false);
 });

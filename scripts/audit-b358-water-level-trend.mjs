@@ -20,6 +20,8 @@ const TARGET = Object.freeze({
 const ZONE_IDS = Object.freeze(['DK-B02-06', 'DK-B02-11', 'DK-B05-16', 'DK-B05-17']);
 const FUR_ZONE = 'DK-B05-17';
 const FUR_PART = 'dk-b05-17-national-part-04';
+const SIBIRIEN_ZONE = 'DK-B02-06';
+const SIBIRIEN_PART = 'dk-b02-06-national-part-02';
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
@@ -167,7 +169,9 @@ async function readSelectedPublicPartWeather(module, packPath, conditions, scope
       const raw = await unzip(compressed, { maxOutputLength: entry.bytes });
       if (raw.length !== entry.bytes || sha(raw) !== entry.sha256) inputFailure('PUBLIC_HOUR_DIGEST');
       const document = JSON.parse(raw.toString('utf8'));
-      if (document.delivery?.schemaVersion !== 1 || document.delivery.kind !== 'hour'
+      if (document.datasetId !== conditions.datasetId || document.generatedAt !== conditions.generatedAt
+        || document.productionReferenceAt !== conditions.productionReferenceAt
+        || document.delivery?.schemaVersion !== 1 || document.delivery.kind !== 'hour'
         || document.delivery.key !== entry.time || document.delivery.sourceDetailsSha256 !== manifest.sourceDetailsSha256
         || !Object.keys(manifest.modelBinding).every(key => document.delivery.modelBinding?.[key] === manifest.modelBinding[key])) {
         inputFailure('PUBLIC_HOUR_BINDING');
@@ -179,12 +183,82 @@ async function readSelectedPublicPartWeather(module, packPath, conditions, scope
         const { waterLevelCm, waterLevelTrendCm3h } = part.current.weather;
         if ((waterLevelCm != null && !finite(waterLevelCm)) || (waterLevelTrendCm3h != null && !finite(waterLevelTrendCm3h)))
           inputFailure('PUBLIC_PART_WATER_TYPE');
-        entryOutput.rows.set(entry.time, { waterLevelCm, waterLevelTrendCm3h });
+        entryOutput.rows.set(entry.time, { time: entry.time, waterLevelCm, waterLevelTrendCm3h });
       }
     }
   } finally { await handle.close(); }
   if (position !== bytes) inputFailure('PUBLIC_HOUR_EOF');
   return selected;
+}
+
+export function projectSibirienDirectWater({ part, direct, publicPart, adapter }) {
+  const unknown = reason => ({ status: 'UNKNOWN', reason });
+  if (part?.partId !== SIBIRIEN_PART || part.zoneId !== SIBIRIEN_ZONE || publicPart?.zone !== SIBIRIEN_ZONE
+    || !(publicPart.rows instanceof Map)
+    || !Array.isArray(direct?.hourly) || direct.hourly.length !== 121
+    || !same(direct.point, part.waterPoint)
+    || direct.hourly.some((row, hour) => row?.time !== at(TARGET.productionReferenceAt, hour)))
+    return unknown('SIBIRIEN_DIRECT_PART_UNBOUND');
+  const bulkId = 'PART::' + SIBIRIEN_PART;
+  const hours = [6, 7].map(hour => {
+    const before = direct.hourly[hour], after = direct.hourly[hour + 3];
+    const observed = publicPart.rows.get(before.time), observedFuture = publicPart.rows.get(after.time);
+    if (observed?.time !== before.time || observedFuture?.time !== after.time)
+      return { hour, ...unknown('SIBIRIEN_PUBLIC_TIME_UNBOUND') };
+    // Exercise the actual PART water sanitizer and series predicate. Other
+    // fields are unrelated and are not needed for this read-only observation.
+    const sample = [before, after].map(row => ({ time: row.time, waterLevelCm: row.waterLevelCm,
+      sources: { waterLevel: levelProof(row) } }));
+    const [start, future] = adapter.verifiedIntegratedPartHourly({ hourly: sample }, null, bulkId, part);
+    if (start?.time !== before.time || future?.time !== after.time)
+      return { hour, ...unknown('SIBIRIEN_DIRECT_TIME_UNBOUND') };
+    const directLevelVerified = finite(start.waterLevelCm);
+    const directFutureVerified = finite(future.waterLevelCm);
+    const directTrendPresent = finite(start.waterLevelTrendCm3h);
+    const publicLevelPresent = finite(observed.waterLevelCm);
+    const publicTrendPresent = finite(observed.waterLevelTrendCm3h);
+    const sourceOverrideProved = publicLevelPresent && (before.waterLevelCm === null
+      || (directTrendPresent && observed.waterLevelTrendCm3h === null && start.waterLevelCm === observed.waterLevelCm));
+    let directPair = 'DIRECT_ENDPOINT_UNQUALIFIED';
+    if (directLevelVerified && directFutureVerified) {
+      const left = start.waterLevelProvenance, right = future.waterLevelProvenance;
+      directPair = directTrendPresent ? 'COMPARABLE_DIRECT_SERIES'
+        : left.modelRun !== right.modelRun ? 'DIRECT_MODEL_RUN_DIFFERS'
+          : left.collection !== right.collection ? 'DIRECT_COLLECTION_DIFFERS' : 'DIRECT_GRID_OR_OTHER_SERIES_DIFFERS';
+    }
+    return { hour, directLevelVerified, directFutureVerified, directTrendPresent, directPair,
+      publicLevelPresent, publicFutureLevelPresent: finite(observedFuture.waterLevelCm), publicTrendPresent,
+      sourceOverride: sourceOverrideProved ? 'PROVED' : 'UNKNOWN' };
+  });
+  return { status: 'OBSERVED', hours };
+}
+
+async function readSibirienDirectWater({ indexed, forecast, conditions, publicPart, load }) {
+  const original = conditions.coastalParts?.parts?.[SIBIRIEN_PART];
+  const bank = indexed.continuity;
+  const ids = Object.keys(conditions.coastalParts?.parts ?? {}).sort((a, b) => a.localeCompare(b));
+  const unknown = reason => ({ status: 'UNKNOWN', reason });
+  if (original?.zoneId !== SIBIRIEN_ZONE || ids.length !== 673
+    || bank?.metadata?.partCount !== ids.length || bank.entries.length !== ids.length
+    || bank.metadata.productionReferenceAt !== TARGET.productionReferenceAt || publicPart?.zone !== SIBIRIEN_ZONE)
+    return unknown('SIBIRIEN_DIRECT_PART_UNBOUND');
+  try {
+    const entry = await forecast.readDmiForecastRecord(indexed, bank.entries[ids.indexOf(SIBIRIEN_PART)]);
+    if (entry.partId !== SIBIRIEN_PART || !same(entry.point, original.waterPoint))
+      return unknown('SIBIRIEN_DIRECT_PART_UNBOUND');
+    const [continuity, adapter] = await Promise.all([load('scripts/lib/dmi-part-continuity.mjs'),
+      load('scripts/lib/ravscore-production-adapters.mjs')]);
+    const part = { ...original, partId: SIBIRIEN_PART };
+    // The bundle already authenticates the entire original bank. This
+    // one-entry view reuses its normal bounded byte/identity validation
+    // without decompressing the other 672 original PART records.
+    const qualified = await continuity.unpackDmiPartContinuity({
+      ...bank.metadata, partCount: 1, entries: [entry], rawBytes: entry.rawBytes, compressedBytes: entry.compressedBytes,
+    }, [part], TARGET.productionReferenceAt);
+    return projectSibirienDirectWater({ part, direct: qualified.get(SIBIRIEN_PART), publicPart, adapter });
+  } catch {
+    return unknown('SIBIRIEN_VERIFIED_DIRECT_READ_REFUSED');
+  }
 }
 
 export function qualifyLf7Reconstruction({ conditions, diagnostics, routing, features, sourceRegistry,
@@ -316,6 +390,8 @@ async function readAuthenticatedProjection({ payload, root, load }) {
     inputFailure('PRIVATE_PART_SCOPE');
   const partWeather = await readSelectedPublicPartWeather(publicHours, path.join(payload, '.cache/public-hour-delivery.pack'),
     conditions, targetParts);
+  const sibirienDirectWater = await readSibirienDirectWater({ indexed, forecast, conditions,
+    publicPart: partWeather.get(SIBIRIEN_PART), load });
   const hasTrace = fur.validFurWaterRoutingDiagnostic(trace, { datasetId: TARGET.datasetId })
     && trace.productionReferenceAt === TARGET.productionReferenceAt && trace.generatedAt === conditions.generatedAt
     && Object.keys(trace.trace.hours).length === PUBLIC_HOURS;
@@ -356,7 +432,7 @@ async function readAuthenticatedProjection({ payload, root, load }) {
     .then(document => projectDkssOnsetQueue(document, TARGET.productionReferenceAt))
     .catch(() => ({}));
   return { zoneEvidence: 'ARCHIVED_ZONE_ROUTING_SEPARATE_FROM_PUBLIC_WINNING_PART', lf7Evidence: lf7.reason,
-    zones, parts, bulkOnsetQueue };
+    zones, parts, bulkOnsetQueue, sibirienDirectWater };
 }
 
 
