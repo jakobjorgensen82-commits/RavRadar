@@ -1,3 +1,9 @@
+## 20. november — UV i dagslys og ukendt ravudstyr
+
+Den offentlige assistent viste valideret ekstern AI-oprindelse i almindelige spørgsmål på dansk, tysk og engelsk. Et spørgsmål om at skelne rav fra andre fund med UV i dagslys fik lokalt et bredt identifikationssvar, hvor dagslys manglede. Et spørgsmål om et ukendt instrument fik et uvedkommende afslag.
+
+Den lokale rettelse dækker hele spørgsmålet på alle tre sprog. Svaret om UV forklarer, hvordan dagslys kan skjule gløden, og hvordan gløden bruges sammen med andre spor. Svaret om et ukendt redskab beder om en model eller beskrivelse, som kan vurderes. Ved ekstra eller private anmodninger behandles hele spørgsmålet af den almindelige assistent. Kildekontrol, offentlig levering og efterprøve af rettelsen udestår.
+
 ## 19. november — Spørg RavRadar under kortets indlæsning
 
 Den offentlige start kunne miste emnet for et muligt ravfund, når kortet indlæste vejr og satte den gemte jagtform. I en afgrænset browserprøve med forsinket manifest gav den offentlige kode et generelt svar om UV-lampen. Den lokale rettelse fulgte fundet og forklarede både gennemsigtighed og svag fluorescens. Emnet følger samtalens sprog. Vejrafhængige emner bruger fortsat den aktuelle model-, zone- og vejrkontekst. Kvalifikation og offentlig kontrol af den rettede kode udestår.
