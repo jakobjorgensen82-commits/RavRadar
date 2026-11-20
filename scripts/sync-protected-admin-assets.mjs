@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {buildRuntimeDiagnosticsEnvelope} from './lib/runtime-diagnostics-envelope.mjs';
-import {fetchPreviousHandbookSource,mergeProtectedHandbook,stableHandbookDigest,stableJsonDigest} from './lib/merge-protected-handbook.mjs';
+import {syncProtectedHandbook,stableJsonDigest} from './lib/merge-protected-handbook.mjs';
 import {assertIntegratedRavScoreSelection} from './lib/ravscore-profile-transition.mjs';
 import {readProtectedAdminRavScoreSelection} from './lib/protected-admin-ravscore-selection.mjs';
 import {buildProtectedRdksDocumentation} from './lib/protected-rdks-documentation.mjs';
@@ -52,10 +52,8 @@ function mergeStationDocuments(local,central){
  return {...central,...local,schemaVersion:Math.max(Number(local?.schemaVersion||0),Number(central?.schemaVersion||0),3),stations};
 }
 const previousManifest=await existingDocument(manifestKey);
-const previousHandbookBaseline=await existingDocument('handbook-source-baseline');
 const nextManifest={schemaVersion:1,assets:{}};
 for(const [document_key,file] of Object.entries(assets)){
- let handbookSourceForBaseline=null;
  let payload;
  if(document_key==='rdks-documentation-center')payload=await buildProtectedRdksDocumentation();
  else try{payload=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT'){console.warn(`Springer over ${file}`);continue;}throw e;}
@@ -69,21 +67,12 @@ for(const [document_key,file] of Object.entries(assets)){
  }
  if(document_key==='dmi-water-stations')payload=mergeStationDocuments(payload,await existingDocument(document_key));
  if(document_key==='handbook'){
-  const source=payload;
-  const central=await existingDocument(document_key);
-  const previousSourceHash=previousManifest?.assets?.[document_key]?.sha256;
-  let compatibleBaseline=previousHandbookBaseline
-   ??(central&&previousSourceHash&&digest(central)===previousSourceHash?central:null);
-  if(!compatibleBaseline&&central&&previousSourceHash){
-   compatibleBaseline=await fetchPreviousHandbookSource({
-    url:process.env.RAVRADAR_PREVIOUS_HANDBOOK_URL,
-    expectedDigest:previousSourceHash,
-   });
-  }
-  const merged=mergeProtectedHandbook({source,central,baseline:compatibleBaseline});
-  payload=merged.payload;
-  handbookSourceForBaseline=source;
-  console.log(`Beskyttet håndbog: ${merged.strategy}${merged.preservedSectionIds?.length?` (${merged.preservedSectionIds.length} ekspertredigerede afsnit bevaret)`:''}`);
+  const handbook=await syncProtectedHandbook({request,source:payload,previousManifest,
+   previousSourceUrl:process.env.RAVRADAR_PREVIOUS_HANDBOOK_URL});
+  nextManifest.assets[document_key]=handbook.asset;
+  nextManifest.handbookSync=handbook.receipt;
+  console.log(`Beskyttet håndbog: ${handbook.strategy}${handbook.preservedSectionIds?.length?` (${handbook.preservedSectionIds.length} ekspertredigerede afsnit bevaret)`:''}`);
+  continue;
  }
  if(document_key==='runtime-diagnostics'){
   const packed=buildRuntimeDiagnosticsEnvelope(payload);
@@ -98,9 +87,6 @@ for(const [document_key,file] of Object.entries(assets)){
  else{
   await request('?on_conflict=document_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({document_key,payload,updated_by:null})},`beskyttet sync: skriv ${document_key}`);
   console.log(`Beskyttet admin-data synkroniseret: ${document_key}`);
- }
- if(handbookSourceForBaseline&&(!previousHandbookBaseline||stableHandbookDigest(previousHandbookBaseline)!==stableHandbookDigest(handbookSourceForBaseline))){
-  await request('?on_conflict=document_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({document_key:'handbook-source-baseline',payload:handbookSourceForBaseline,updated_by:null})},'beskyttet sync: skriv handbook-source-baseline');
  }
 }
 nextManifest.generatedAt=new Date().toISOString();

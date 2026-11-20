@@ -1,3 +1,9 @@
+## Skrivefri årsagslæsning af kørsel #358
+
+Den eksisterende kontrol af gemte vejrdata får et afgrænset valg for den ene autentificerede #358-pakke. Kildeforløb og normal kø kontrolleres før hentning. Den oprindelige pakkelæser og SOURCE-kontrol afgør, om det valgte slutpunkt mangler, tilhører en anden modelserie eller kan sammenlignes. Rapporten indeholder alene identitet for den undersøgte generation samt optællinger og faste kategorier. Resultater for enkelte kystdele kræver bevis for kildesættet fra den originale Fur-observation eller match med de gemte LF7-digests for konfiguration, kildevalg og de offentliggjorte værdier.
+
+Ingen leverandørhentning, installation, modelberegning eller offentliggørelse indgår. Kildekvalifikation og årsagsfordeling fra den ægte pakke mangler fortsat.
+
 ## LF7-observation, historiske prøveinput og uafhængig levering
 
 Den eksisterende normale producent registrerer nu en afgrænset observation ved det faktisk udførte vandstandskildevalg og T+3-predikat. Observationen omfatter de faktiske underdele i de syv kystzoner og 118 offentlige timer; T+3 bruger de allerede validerede private støttetimer. Der beregnes ingen ekstra score eller trend, og kildevalg, numeriske værdier, strøm-/temperaturudelukkelse og øvrige Limfjordszoner bevares.

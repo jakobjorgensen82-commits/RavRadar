@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRequiredFileReader } from './lib/release-gate-required-files.mjs';
 
 const tempBase = path.resolve(os.tmpdir());
@@ -26,3 +27,36 @@ try {
 }
 
 console.log('Release-gate required-file diagnostics aggregate missing and malformed files.');
+
+// Exercise the gate's actual protected handbook block without running its
+// unrelated data and model checks. The reader still loads the real checkout.
+const sourceRoot=fileURLToPath(new URL('../',import.meta.url));
+const gate=await fs.readFile(path.join(sourceRoot,'scripts/release-gate.mjs'),'utf8');
+const callerPath='scripts/sync-protected-admin-assets.mjs';
+const helperPath='scripts/lib/merge-protected-handbook.mjs';
+const start=gate.indexOf(`const sync=await read('${callerPath}');`);
+const end=gate.indexOf('ok(supabaseAdminRest.includes(',start);
+assert.ok(start>=0&&end>start,'The actual release-gate sync block must be present');
+const AsyncFunction=(async()=>{}).constructor;
+const checkProtectedHandbook=new AsyncFunction('read','ok',gate.slice(start,end));
+
+async function checkHandbook(rewritePath,from,to){
+  const errors=[];
+  const {readText}=createRequiredFileReader(sourceRoot,errors);
+  const read=async relative=>{
+    const code=await readText(relative);
+    if(relative!==rewritePath)return code;
+    const changed=code.replace(from,to);
+    assert.notEqual(changed,code,'The negative fixture must change the real source');
+    return changed;
+  };
+  await checkProtectedHandbook(read,(condition,message)=>{if(!condition)errors.push(message);});
+  return errors;
+}
+
+assert.deepEqual(await checkHandbook(),[]);
+const expectedFailure=['Beskyttet håndbog mangler tabsfri trevejsfletning ved deploy'];
+assert.deepEqual(await checkHandbook(callerPath,'await syncProtectedHandbook(','await disconnectedHandbook('),expectedFailure);
+assert.deepEqual(await checkHandbook(helperPath,'const merged=mergeProtectedHandbook','const merged=uncheckedMerge'),expectedFailure);
+assert.deepEqual(await checkHandbook(helperPath,"const baselineKey='handbook-source-baseline'","const baselineKey='other'"),expectedFailure);
+console.log('Release gate checks the ordinary protected handbook caller, three-way merge and baseline.');
