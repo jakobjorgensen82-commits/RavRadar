@@ -1,4 +1,5 @@
 name: Guard external RavRadar weather cadence
+run-name: ${{ inputs.owner_retry_after_failed_run_id != '' && 'Owner weather request' || 'Guard external RavRadar weather cadence' }}
 
 on:
   workflow_dispatch:
@@ -10,6 +11,11 @@ on:
         type: boolean
       recovery_source_run_id:
         description: Exact bot recovery producer bound to this watchdog run
+        required: false
+        default: ''
+        type: string
+      owner_retry_after_failed_run_id:
+        description: Owner only. Run ID of the latest failed ordinary bot run in this cadence window
         required: false
         default: ''
         type: string
@@ -55,6 +61,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RAVRADAR_WEATHER_RECOVERY_RUN_ID: ${{ inputs.recovery_source_run_id }}
+          RAVRADAR_WEATHER_OWNER_FAILED_RUN_ID: ${{ inputs.owner_retry_after_failed_run_id }}
           RAVRADAR_EXTERNAL_WATCHDOG: ${{ inputs.external_watchdog }}
         shell: bash
         run: |
@@ -69,7 +76,7 @@ jobs:
             --summary "$GITHUB_STEP_SUMMARY" --github-output "$GITHUB_OUTPUT"
 
       - name: Require exact current main before source admission
-        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '') && steps.first-check.outputs.dispatch == 'true'
+        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '' || inputs.owner_retry_after_failed_run_id != '') && steps.first-check.outputs.dispatch == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -80,14 +87,14 @@ jobs:
 
       - name: Qualify existing exact-main source before any weather dispatch
         id: source-proof
-        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '') && steps.first-check.outputs.dispatch == 'true'
+        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '' || inputs.owner_retry_after_failed_run_id != '') && steps.first-check.outputs.dispatch == 'true'
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Choose real validation only after positive proof absence or expiry
         id: source-decision
-        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '') && steps.first-check.outputs.dispatch == 'true'
+        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '' || inputs.owner_retry_after_failed_run_id != '') && steps.first-check.outputs.dispatch == 'true'
         shell: bash
         env:
           REQUIRED: ${{ steps.source-proof.outputs.required }}
@@ -106,7 +113,7 @@ jobs:
   qualify-source:
     name: Qualify exact main source without production
     needs: inspect
-    if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '') && needs.inspect.outputs.dispatch == 'true' && needs.inspect.outputs.renew_source == 'true'
+    if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '' || inputs.owner_retry_after_failed_run_id != '') && needs.inspect.outputs.dispatch == 'true' && needs.inspect.outputs.renew_source == 'true'
     runs-on: ubuntu-24.04
     # Same whole-source ceiling as the existing source-only PR job. The 5min
     # controller does not wait inside a process for this separate job.
@@ -167,7 +174,7 @@ jobs:
 
   dispatch:
     needs: [inspect, qualify-source]
-    if: ${{ !cancelled() && (inputs.external_watchdog == true || inputs.recovery_source_run_id != '') && needs.inspect.result == 'success' && needs.inspect.outputs.dispatch == 'true' && (needs.qualify-source.result == 'success' || (needs.qualify-source.result == 'skipped' && needs.inspect.outputs.renew_source == 'false')) }}
+    if: ${{ !cancelled() && (inputs.external_watchdog == true || inputs.recovery_source_run_id != '' || inputs.owner_retry_after_failed_run_id != '') && needs.inspect.result == 'success' && needs.inspect.outputs.dispatch == 'true' && (needs.qualify-source.result == 'success' || (needs.qualify-source.result == 'skipped' && needs.inspect.outputs.renew_source == 'false')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -208,10 +215,11 @@ jobs:
       # qualifies this v2 proof with its own real, different GITHUB_RUN_ID.
       - name: Recheck immediately before a scheduled rescue
         id: recheck
-        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '') && needs.inspect.outputs.dispatch == 'true'
+        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '' || inputs.owner_retry_after_failed_run_id != '') && needs.inspect.outputs.dispatch == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RAVRADAR_WEATHER_RECOVERY_RUN_ID: ${{ inputs.recovery_source_run_id }}
+          RAVRADAR_WEATHER_OWNER_FAILED_RUN_ID: ${{ inputs.owner_retry_after_failed_run_id }}
           RAVRADAR_EXTERNAL_WATCHDOG: ${{ inputs.external_watchdog }}
         shell: bash
         run: |
@@ -224,7 +232,7 @@ jobs:
             --github-output "$GITHUB_OUTPUT"
 
       - name: Dispatch one ordinary current-weather run
-        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '') && needs.inspect.outputs.dispatch == 'true' && steps.recheck.outputs.dispatch == 'true'
+        if: (inputs.external_watchdog == true || inputs.recovery_source_run_id != '' || inputs.owner_retry_after_failed_run_id != '') && needs.inspect.outputs.dispatch == 'true' && steps.recheck.outputs.dispatch == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
