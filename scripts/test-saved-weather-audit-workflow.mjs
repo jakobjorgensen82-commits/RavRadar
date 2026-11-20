@@ -801,3 +801,21 @@ test('B358 causes follow the exact normal SOURCE reader and the original LF7 sel
   assert.equal(qualifyLf7Reconstruction({...lf7Args,parts:changedValues}).reason,'ARCHIVED_LF7_VALUE_REPLAY_DIFFERS');
 
 });
+
+test('B358 DKSS queue publishes only fixed onboarding hours and bounded reason fields', async () => {
+  const { projectDkssOnsetQueue } = await import('./audit-b358-water-level-trend.mjs');
+  const referenceAt = '2026-11-20T08:00:00.000Z';
+  const modelRun = '2026-11-20T00:00:00.000Z';
+  const validTime = '2026-11-20T18:00:00.000Z';
+  const queue = { available:true, collection:'dkss_idw', productionReferenceAt:referenceAt, modelRun,
+    orderedHours:[{rank:33, validTime, retainedScalarGapPairCount:17, missingComponentKinds:['waterLevel'],
+      privateSamplingPoint:[1,2]}] };
+  const input = { diagnostics:{currentAcquisitionPlan:{firstTurnOrder:{dkss_idw:queue}}},
+    runs:{dkss_idw:{referenceTime:modelRun, processedValidTimes:[validTime]}} };
+  const result = projectDkssOnsetQueue(input,referenceAt);
+  assert.deepEqual(Object.keys(result), ['dkss_idw']);
+  assert.deepEqual(result.dkss_idw.map(row => row.offset), [6,7,9,10]);
+  assert.deepEqual(result.dkss_idw.at(-1), {offset:10, firstQueueRank:33, retainedGapCount:17,
+    waterLevelWasRequired:true, selectedRunProcessedTime:true});
+  assert.deepEqual(projectDkssOnsetQueue(input,'2026-11-20T12:00:00.000Z'), {});
+});

@@ -246,11 +246,42 @@ export function qualifyLf7Reconstruction({ conditions, diagnostics, routing, fea
   return { reason: 'ORIGINAL_LF7_SELECTION_AND_VALUES_MATCH', selections };
 }
 
+// Only fixed times and established diagnostics survive this projection.
+export function projectDkssOnsetQueue(document, referenceAt) {
+  const diagnostics = document?.diagnostics;
+  const queues = diagnostics?.currentAcquisitionPlan?.firstTurnOrder;
+  const count = value => Number.isSafeInteger(value) && value >= 0 && value <= 100_000 ? value : null;
+  const offsets = [6, 7, 9, 10];
+  const results = {};
+  for (const collection of ['dkss_idw', 'dkss_nsbs', 'dkss_lf']) {
+    const entry = queues?.[collection];
+    if (entry?.available !== true || entry.collection !== collection
+      || Date.parse(entry.productionReferenceAt) !== Date.parse(referenceAt)
+      || !Array.isArray(entry.orderedHours) || entry.orderedHours.length > 512) continue;
+    const processed = document?.runs?.[collection];
+    const processedTimes = Date.parse(processed?.referenceTime) === Date.parse(entry.modelRun)
+      && Array.isArray(processed?.processedValidTimes) && processed.processedValidTimes.length <= 512
+      ? new Set(processed.processedValidTimes.map(value => Date.parse(value))) : null;
+    results[collection] = offsets.map(offset => {
+      const time = at(referenceAt, offset);
+      const rows = entry.orderedHours.filter(candidate => Date.parse(candidate?.validTime) === Date.parse(time));
+      const row = rows.length === 1 ? rows[0] : null;
+      return { offset, firstQueueRank: count(row?.rank),
+        retainedGapCount: count(row?.retainedScalarGapPairCount),
+        waterLevelWasRequired: Array.isArray(row?.missingComponentKinds)
+          ? row.missingComponentKinds.includes('waterLevel') : null,
+        selectedRunProcessedTime: processedTimes?.has(Date.parse(time)) ?? null };
+    });
+  }
+  return results;
+}
+
 async function readAuthenticatedProjection({ payload, root, load }) {
-  const [forecast, normal, policy, fur, publicHours, partRecovery] = await Promise.all([
+  const [forecast, normal, policy, fur, publicHours, partRecovery, bulk] = await Promise.all([
     load('scripts/lib/dmi-forecast-file.mjs'), load('scripts/lib/water-source-forecast-routing.mjs'),
     load('scripts/lib/dmi-marine-zone-exclusions.mjs'), load('scripts/lib/fur-water-routing-diagnostic.mjs'),
     load('scripts/lib/public-hour-delivery-pack.mjs'), load('scripts/lib/private-dmi-recovery-record.mjs'),
+    load('scripts/lib/dmi-bulk-storage.mjs'),
   ]);
   const indexed = await forecast.inspectDmiForecastFile(path.join(payload, 'data/live/dmi-forecast-cache.json'));
   if (indexed.zones.size !== 210) inputFailure('FORECAST_ZONE_INVENTORY');
@@ -321,7 +352,11 @@ async function readAuthenticatedProjection({ payload, root, load }) {
             routedValuePresent: lf7Selection.has(time) }) : undefined }),
     };
   }
-  return { zoneEvidence: 'ARCHIVED_ZONE_ROUTING_SEPARATE_FROM_PUBLIC_WINNING_PART', lf7Evidence: lf7.reason, zones, parts };
+  const bulkOnsetQueue = await bulk.readDmiBulkDocument(path.join(payload, 'data/live/dmi-bulk-cache.json'), { expandSources: false })
+    .then(document => projectDkssOnsetQueue(document, TARGET.productionReferenceAt))
+    .catch(() => ({}));
+  return { zoneEvidence: 'ARCHIVED_ZONE_ROUTING_SEPARATE_FROM_PUBLIC_WINNING_PART', lf7Evidence: lf7.reason,
+    zones, parts, bulkOnsetQueue };
 }
 
 
