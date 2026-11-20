@@ -1029,18 +1029,24 @@ function authRequestShape(c,p,route,body,method,status){
   const adminUser=/^\/admin\/users\/([a-f0-9-]{36})$/i.exec(route),refresh=route==='/token?grant_type=refresh_token';
   const original=['/admin/users','/token?grant_type=password','/user'].includes(route);
   const logout=c.archive===false&&p.side==='B'&&route==='/logout?scope=global';
-  need(original||c.archive===false&&p.side==='B'&&(refresh||logout||adminUser&&uuid(adminUser[1])),'AUTH_ROUTE');
+  const signup=c.archive===false&&p.side==='B'&&route==='/signup';
+  need(original||c.archive===false&&p.side==='B'&&(refresh||logout||signup||adminUser&&uuid(adminUser[1])),'AUTH_ROUTE');
   const actualMethod=method??(body?'POST':'GET'),readback=Array.isArray(status);
   need(!logout||actualMethod==='POST'&&body===null&&status===204,'AUTH_LOGOUT_SHAPE');
+  need(!signup||actualMethod==='POST'&&status===200&&!readback&&body&&typeof body==='object'&&!Array.isArray(body)
+    &&JSON.stringify(Object.keys(body).sort())==='["email","password"]'
+    &&/^owned-native-[a-f0-9]{32}@example\.invalid$/.test(body.email)
+    &&/^[A-Za-z0-9_-]{43}$/.test(body.password),'AUTH_SIGNUP_SHAPE');
   need(adminUser?actualMethod==='GET'&&body===null||actualMethod==='DELETE'
       &&body?.should_soft_delete===false&&Object.keys(body).length===1
     :actualMethod===(route==='/user'?'GET':'POST'),'AUTH_METHOD');
   need(!readback||adminUser&&actualMethod==='GET'&&JSON.stringify(status)==='[200,404]','AUTH_READBACK_STATUS');
   return {method:actualMethod,admin:route==='/admin/users'||Boolean(adminUser),readback,
-    kind:adminUser?(actualMethod==='DELETE'?'DELETE':'ADMIN_USER'):logout?'LOGOUT':refresh?'REFRESH':route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD'};
+    kind:adminUser?(actualMethod==='DELETE'?'DELETE':'ADMIN_USER'):signup?'SIGNUP':logout?'LOGOUT':refresh?'REFRESH':route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD'};
 }
 async function auth(c,p,route,{body=null,token=null,status=200,method=null}={}){
   const shape=authRequestShape(c,p,route,body,method,status);
+  need(shape.kind!=='SIGNUP'||token===null,'AUTH_SIGNUP_AUTHORIZATION');
   c.stage=p.side+'_AUTH_'+shape.kind;
   need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.min(10_000,c.deadline-Date.now()));
@@ -1142,6 +1148,9 @@ function syntheticAccountErasureAuthFenceReadbackSql(intent){
       and tgrelid='auth.users'::regclass and tgfoid='public.account_erasure_auth_uuid_guard()'::regprocedure
       and tgtype=7 and tgenabled='O' and not tgisinternal));`;
 }
+// Observed generic app bootstrap. Its CR bytes and two triggers are fixture data;
+// no privilege edits, production hook configuration or catalogue authority.
+function syntheticNativeProfileBootstrapSql(){return "CREATE OR REPLACE FUNCTION public.handle_new_ravradar_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nbegin\r\n  insert into public.profiles(id,email,display_name)\r\n  values(\r\n    new.id,\r\n    new.email,\r\n    coalesce(new.raw_user_meta_data->>'display_name', split_part(coalesce(new.email,''),'@',1))\r\n  )\r\n  on conflict(id) do update\r\n    set email=excluded.email,\r\n        display_name=coalesce(public.profiles.display_name, excluded.display_name),\r\n        updated_at=now();\r\n  return new;\r\nend;\r\n$function$\n;\nCREATE TRIGGER on_auth_user_created_ravradar AFTER INSERT OR UPDATE OF email ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user();\nCREATE TRIGGER on_auth_user_created_ravradar_role AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user();\n";}
 const NATIVE_ACTIVITY_SQL='supabase/migrations/20261117180100_account_native_activity_capture_off.sql';
 const NOTICE_SQL='supabase/migrations/20261117180000_account_inactivity_notice_off.sql';
 async function syntheticNativeActivitySource(){
@@ -1250,7 +1259,7 @@ drop trigger account_erasure_auth_uuid_insert_guard on auth.users;
 drop function public.account_erasure_auth_uuid_guard();
 drop table public.account_erasure_operations;
 drop table public.profiles;
-`],['APP_RELATIONS',accountErasureNativeFixtureSql(source.root,{nativeAuth:true})+'\n'],
+`],['APP_RELATIONS',accountErasureNativeFixtureSql(source.root,{nativeAuth:true})+'\n'+syntheticNativeProfileBootstrapSql()],
     ['MANUAL_SQL',manual.sql+'\n'],['NOTICE_SQL',source.notice+'\n'],['CAPTURE_SQL',source.sql+'\n'],
     ['OWNER_PROFILE',`insert into public.profiles(id,email,role) values('${fixtureActorId}','owned-native-owner@example.invalid','owner');\n`],
     ['INSTRUMENTATION',syntheticNativeActivityInstrumentationSql()]];
@@ -1442,9 +1451,26 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
   const login=(target,status=200)=>auth(c,p,'/token?grant_type=password',{body:{email:target.email,password:target.password},status});
   const fresh=async()=>{
     const email='owned-native-'+crypto.randomBytes(16).toString('hex')+'@example.invalid',password=crypto.randomBytes(32).toString('base64url');
-    const created=await auth(c,p,'/admin/users',{token:p.service,body:{email,password,email_confirm:true}});
-    need(uuid(created.id)&&typeof created.created_at==='string','NATIVE_ACTIVITY_USER');
-    await sql(`insert into public.profiles(id,email,role) values('${created.id}','owned-native-target@example.invalid','user');`);
+    // Same unauthenticated request as the normal account signup caller.
+    const signed=await auth(c,p,'/signup',{body:{email,password}}),created=signed?.user;
+    need(uuid(created?.id)&&typeof created.created_at==='string','NATIVE_ACTIVITY_SIGNUP_USER');
+    syntheticIssuedJwtClaims(signed.access_token,created.id);
+    const profile=await value(`select jsonb_build_object(
+      'rows',(select count(*) from public.profiles where id='${created.id}'),
+      'defaults',(select email=${sqlString(email)} and display_name=split_part(${sqlString(email)},'@',1)
+        and role='expert' and is_active and isfinite(created_at) and isfinite(updated_at) and created_at<=updated_at
+        from public.profiles where id='${created.id}'),
+      'noPermissions',not exists(select 1 from public.user_permissions where user_id='${created.id}'),
+      'notPrivileged',public.account_erasure_policy_hold('${created.id}') is null);`);
+    assert.deepEqual(profile,{rows:1,defaults:true,noPermissions:true,notPrivileged:true});
+    const signup=await snapshot(created.id);
+    need(signup.activity!==null&&signup.journal!==null,'NATIVE_ACTIVITY_SIGNUP_CAPTURE');
+    // End only this fresh user's bootstrap session. Existing B1/B8 password and
+    // refresh-family cases keep their original single-session starting point.
+    await auth(c,p,'/logout?scope=global',{method:'POST',token:signed.access_token,status:204});
+    const closed=await snapshot(created.id);
+    need(closed.sessions===0&&closed.calls===signup.calls&&closed.activity===signup.activity
+      &&closed.journal===signup.journal,'NATIVE_ACTIVITY_SIGNUP_LOGOUT');
     return {id:created.id,email,password,createdAt:created.created_at};
   };
   const qualify=async target=>{
@@ -1595,11 +1621,12 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
       await assert.rejects(()=>nativeActivityB9RoleSql(c,p,roleName,'private-capture',target.id),e=>e.code==='SQLSTATE_42501'&&e.nativeActivityB9RoleConfirmed===true);
     for(const invalid of [{...event,user_id:crypto.randomUUID()},{user_id:target.id,claims:null}])
       await assert.rejects(()=>nativeActivityB9RoleSql(c,p,'supabase_auth_admin','token-hook',invalid),e=>e.code==='SQLSTATE_22023'&&e.nativeActivityB9RoleConfirmed===true);
-    const fenced=await fresh();
+    const fenced=await fresh(),fenceBefore=await snapshot(fenced.id);
     await sql(`insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,prepared_at,updated_at,state,pg_staged_at)
       values('${crypto.randomUUID()}','${fenced.id}','${fixtureActorId}',true,pg_catalog.transaction_timestamp(),pg_catalog.transaction_timestamp(),'PG_STAGED_AUTH_PENDING',pg_catalog.transaction_timestamp());`);
     await login(fenced);const fenceAfter=await snapshot(fenced.id);
-    need(fenceAfter.activity===null&&fenceAfter.journal===null&&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
+    need(fenceAfter.activity===fenceBefore.activity&&fenceAfter.journal===fenceBefore.journal
+      &&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
     pass('B9_CLAIMS_ACL_AND_EXISTING_POST_PG_FENCE');
     return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
       sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
@@ -2771,7 +2798,7 @@ drop function public.account_erasure_auth_uuid_guard();
 drop table public.account_erasure_operations;
 drop table public.profiles;
 ${accountErasureNativeFixtureSql(source.root,{nativeAuth:true})}
-${manual.sql}
+${syntheticNativeProfileBootstrapSql()}${manual.sql}
 ${source.notice}
 ${source.sql}
 insert into public.profiles(id,email,role) values('${actor}','owned-native-owner@example.invalid','owner');
@@ -2887,6 +2914,39 @@ ${syntheticNativeActivityInstrumentationSql()}`);
     }
     const transport=await observe(sample,{throws:true});assert.equal(transport.reads,1);assert.equal(transport.report.nativeActivityTargetPolicy,undefined);
     assert.throws(()=>nativeActivityTargetPolicySql(marker),error=>error.code==='NATIVE_ACTIVITY_TARGET_POLICY_INPUT');
+  });
+  test('native signup uses the authentic seven-column profile defaults and keeps the manual scaffold whole',async()=>{
+    const source=await syntheticNativeActivitySource();
+    const ordinary=accountErasureNativeFixtureSql(source.root),native=accountErasureNativeFixtureSql(source.root,{nativeAuth:true});
+    const marker='-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN';
+    assert.equal(sha(Buffer.from(ordinary.slice(0,ordinary.indexOf(marker)))),'68c09f952644e8e773b4de17f57cc9ce75e871f8cc028d994a0add485a433701');
+    assert.match(native,/display_name text/);assert.match(native,/role text not null default 'expert' check \(role in \('owner','expert'\)\)/);
+    assert.match(native,/created_at timestamptz not null default now\(\)/);assert.match(native,/updated_at timestamptz not null default now\(\)/);
+    assert(native.includes('alter table public.profiles enable row level security;'));
+    assert(!native.includes("role text not null default 'user'"));
+    assert.equal(ordinary.slice(ordinary.indexOf(marker)),native.slice(native.indexOf(marker)));
+  });
+  test('native signup bootstrap preserves the actual CR body and both enabled app triggers without privilege changes',()=>{
+    const bootstrap=syntheticNativeProfileBootstrapSql();
+    const triggerBoundary='\n;\nCREATE TRIGGER ';
+    const transition=bootstrap.indexOf(triggerBoundary);
+    assert(transition>0);
+    const definition=bootstrap.slice(0,transition+1);
+    assert.equal(sha(Buffer.from(definition)),"f89129374eb5fe4d69b67ec60a58693c89c656f3aa0f4882cea43c74995aaa19");
+    assert.equal([...definition.matchAll(/\r/g)].length,14);
+    assert.equal(bootstrap.split('CREATE TRIGGER ').length,3);
+    assert(bootstrap.includes('AFTER INSERT OR UPDATE OF email ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user()'));
+    assert(bootstrap.includes('AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_ravradar_user()'));
+    assert(!/\b(?:grant|revoke|alter role|alter user)\b/i.test(bootstrap));
+  });
+  test('normal native signup is anon-only synthetic B and rejects archive roles and extra signup authority',()=>{
+    const p={side:'B'},body={email:'owned-native-'+ 'a'.repeat(32)+'@example.invalid',password:'p'.repeat(43)};
+    assert.deepEqual(authRequestShape({archive:false},p,'/signup',body,null,200),
+      {method:'POST',admin:false,readback:false,kind:'SIGNUP'});
+    for(const args of [[{archive:true},p,'/signup',body,null,200],[{archive:false},{side:'A'},'/signup',body,null,200],
+      [{archive:false},p,'/signup',{...body,email_confirm:true},null,200],[{archive:false},p,'/signup',body,'GET',200],
+      [{archive:false},p,'/signup',{...body,email:'real@example.com'},null,200]])
+      assert.throws(()=>authRequestShape(...args),e=>/^AUTH_/.test(e.code??''));
   });
   test('owned native capture source reader keeps exact append bodies and real-Auth fixture admission',async()=>{
     const source=await syntheticNativeActivitySource();

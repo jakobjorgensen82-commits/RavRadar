@@ -54,6 +54,10 @@ alter table storage.s3_multipart_uploads enable row level security;
 alter table storage.s3_multipart_uploads_parts enable row level security;
 `;
  if(nativeAuth){
+   // Match the observed application profile only in the genuine Auth fixture.
+   const originalProfiles="create table public.profiles(id uuid primary key references auth.users(id) on delete cascade,email text,role text not null,is_active boolean not null default true);\n";
+   assert(fixture.includes(originalProfiles));
+   fixture=fixture.replace(originalProfiles,"create table public.profiles(id uuid primary key references auth.users(id) on delete cascade,\n email text,display_name text,role text not null default 'expert' check (role in ('owner','expert')),\n is_active boolean not null default true,created_at timestamptz not null default now(),updated_at timestamptz not null default now());\nalter table public.profiles enable row level security;\n");
   // The genuine Supabase host already owns its vendor schemas and privileges.
   // Only the public app scaffolding belongs to this native capture fixture.
   for(const line of [
