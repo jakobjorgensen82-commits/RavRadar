@@ -98,6 +98,7 @@ from lib.weather_acquisition_plan import (
     planning_regional_covered_pairs,
     read_current_acquisition_plan,
     read_qualified_acquisition_plan, scalar_snapshot_paths, scalar_gap_components_at,
+    qualified_scalar_gap_reasons_at,
 )
 from lib.copernicus_current import (
     COLD_BRIDGE_HOURS,
@@ -2364,6 +2365,8 @@ def prioritize_marine_assets_for_current_gaps(
     ] | None = None,
     verified_reusable_valid_times: set[str] | None = None,
     critical_cursor_valid_time: str | None = None,
+    water_trend_gap_times: frozenset[str] = frozenset(),
+    scalar_value_gap_counts: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
     """Serve real holes first, rotating their native-hour order across runs.
 
@@ -2427,7 +2430,37 @@ def prioritize_marine_assets_for_current_gaps(
             str(asset.get("assetIdentitySha256") or ""),
         )
 
-    return sorted(assets, key=priority)
+    ranked = sorted(((priority(asset), asset) for asset in assets), key=lambda item: item[0])
+    if not water_trend_gap_times:
+        return [asset for _, asset in ranked]
+
+    # The collection loop has already chosen a single model run. Pair a trend
+    # hour only with its exact later support in that same queue. Interleave
+    # equal-priority work without displacing larger holes or cursor/near-term
+    # groups. The existing runtime limit and endpoint admission still apply.
+    value_gaps = scalar_value_gap_counts or {}
+    ordered = []
+    scheduled_indices: set[int] = set()
+    for idx, (rank, asset) in enumerate(ranked):
+        if idx in scheduled_indices:
+            continue
+        ordered.append(asset)
+        valid_time = canonical_time(asset.get("valid"))
+        value_gap_count = value_gaps.get(valid_time)
+        if valid_time not in water_trend_gap_times or value_gap_count is None:
+            continue
+        support_epoch = rank[5] + 3 * 3600
+        bucket = rank[:5] + rank[6:8]
+        for future in range(idx + 1, min(idx + 4, len(ranked))):
+            next_rank, support = ranked[future]
+            next_value_gap_count = value_gaps.get(canonical_time(support.get("valid")))
+            if next_rank[:5] + next_rank[6:8] != bucket or next_value_gap_count != value_gap_count:
+                break
+            if next_rank[5] == support_epoch and future not in scheduled_indices:
+                ordered.append(support)
+                scheduled_indices.add(future)
+                break
+    return ordered
 
 
 def prioritize_dkss_primary_assets(
@@ -2440,6 +2473,7 @@ def prioritize_dkss_primary_assets(
     regional_gap_pairs_by_time: dict[str, set[tuple[str, str]]],
     verified_reusable_valid_times: set[str],
     critical_cursor_valid_time: str | None,
+    pair_water_trends: bool = True,
 ) -> list[dict[str, Any]]:
     """Use the same component priorities for initial and dynamic LF plans."""
     return prioritize_marine_assets_for_current_gaps(
@@ -2463,6 +2497,15 @@ def prioritize_dkss_primary_assets(
         regional_gap_pairs_by_time=regional_gap_pairs_by_time,
         verified_reusable_valid_times=verified_reusable_valid_times,
         critical_cursor_valid_time=critical_cursor_valid_time,
+        water_trend_gap_times=frozenset(
+            valid_time for valid_time, row in requirements.items()
+            if pair_water_trends and row.get("retainedWaterTrendGap") is True
+        ),
+        scalar_value_gap_counts={
+            valid_time: row["retainedScalarValueGapPairCount"]
+            for valid_time, row in requirements.items()
+            if "retainedScalarValueGapPairCount" in row
+        },
     )
 
 
@@ -2856,9 +2899,14 @@ def classify_dkss_primary_asset(
         "missingComponentKinds": sorted(missing_components),
     }
     if scalar_domain_qualified:
+        water_trend_gap, value_gap_count = qualified_scalar_gap_reasons_at(
+            scalar_gap_plan, valid_time, scoped_scalar_gap_pairs,
+        )
         result.update({
             "retainedScalarPlanQualified": True,
             "retainedScalarGapPairCount": len(scoped_scalar_gap_pairs),
+            "retainedWaterTrendGap": water_trend_gap,
+            "retainedScalarValueGapPairCount": value_gap_count,
             "criticalGapPairCount": (len(scoped_scalar_gap_pairs)
                                      + current_missing_pair_count + valid_regional_gap_count),
         })
@@ -16429,6 +16477,7 @@ def main() -> int:
                         critical_native_cursor_at_turn_start
                         if not collection_is_maintenance else None
                     ),
+                    pair_water_trends=not collection_is_maintenance,
                 )
                 if collection_is_maintenance:
                     assets = rotate_native_refresh_assets(
@@ -18012,6 +18061,7 @@ def main() -> int:
                                         critical_native_cursor_at_turn_start
                                         if not collection_is_maintenance else None
                                     ),
+                                    pair_water_trends=not collection_is_maintenance,
                                 )
                             )
                             if collection_is_maintenance:

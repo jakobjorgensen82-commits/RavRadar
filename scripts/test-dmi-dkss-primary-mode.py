@@ -1177,7 +1177,7 @@ assert.equal(qualified.length,121,'NORMAL_RETENTION_PRESERVES_PRIVATE_SUPPORT');
 const station={sourceKey:'tidewater:SYNTHETIC',stationId:'SYNTHETIC',name:'Syntetisk kilde',sourceType:'forecast-point',point:[2,1],registryStatus:'active-forecast-point',properties:{status:'Active'}};
 const parentFeature={properties:{id:part.zoneId,name:'Syntetisk zone',dataPoint:part.waterPoint,coastLine:[[1.9,1],[2.1,1]],onshoreDirectionDeg:90}};
 const routing={zones:{[part.zoneId]:{enabled:true,requireAll:true,method:'manual-weights',stations:[{sourceKey:station.sourceKey,weight:1}]}}};
-function route(offsets,hourly=qualified){const sourceRows=Object.fromEntries(offsets.map(i=>[time(i),dmiWaterSourceFixture(station,time(i),20+i,H0)]));const bulk={generatedAt:H0,timeStrideHours:1,zones:{['SOURCE::'+station.sourceKey]:{hourly:sourceRows}}};const index=buildWaterSourceForecastIndex([station],bulk,H0);assert.equal(index.size,1,'NORMAL_SOURCE_NATIVE_QUALIFICATION');return applyVerifiedWaterSourceRoutingToPartHourly({part,parentFeature,hourly,sources:[station],index,routing,haversineKm:()=>1,diagnosticReferenceAt:H0}).hourly;}
+function route(offsets,hourly=qualified,olderFrom=Infinity){const older=new Date(Date.parse(H0)-6*HOUR).toISOString();const sourceRows=Object.fromEntries(offsets.map(i=>[time(i),dmiWaterSourceFixture(station,time(i),20+i,i>=olderFrom?older:H0)]));const bulk={generatedAt:H0,timeStrideHours:1,zones:{['SOURCE::'+station.sourceKey]:{hourly:sourceRows}}};const index=buildWaterSourceForecastIndex([station],bulk,H0);assert.equal(index.size,1,'NORMAL_SOURCE_NATIVE_QUALIFICATION');return applyVerifiedWaterSourceRoutingToPartHourly({part,parentFeature,hourly,sources:[station],index,routing,haversineKm:()=>1,diagnosticReferenceAt:H0}).hourly;}
 const routed=route(Array.from({length:49},(_,i)=>i));
 const needs=buildWeatherComponentNeeds({parts:[part],productionReferenceAt:H0,readVerifiedHourly:()=>routed});
 const gapAt=i=>needs.needs.filter(n=>n.validTime===time(i)&&n.purpose==='GAP').map(n=>[n.component,n.gapReason]);
@@ -1278,7 +1278,15 @@ function collectionDomainFixture(){
     needs:encodeDomain(domainNeeds),sourceNeeds:encodeDomain(sourceNeeds),early:time(20),late:time(97),
     sourceT:time(117),sourceSupport:time(120),currentPairs};
 }
+const interruptedSeries=route([7,8,9,10],qualified,10);
+const interruptedNeeds=buildWeatherComponentNeeds({parts:[part],productionReferenceAt:H0,
+  readVerifiedHourly:()=>interruptedSeries});
+const isWaterTrendGap=i=>interruptedNeeds.needs.some(row=>row.validTime===time(i)
+  &&row.component==='waterLevel'&&row.gapReason==='TREND_GAP');
+assert(isWaterTrendGap(7)&&isWaterTrendGap(10));
+assert(!interruptedNeeds.privateSupportNeeds.some(row=>row.validTime===time(10)));
 console.log(JSON.stringify({domain:collectionDomainFixture(),waterOnly:encode(needs),optional:encode(optionalNeeds),trend:encode(tailPlan),
+  trendSeam:encode(interruptedNeeds),seamHours:[7,8,9,10].map(time),
   early:time(4),late:time(96),optionalLate:time(95),currentQualified:[currentCoveredAt(4),currentCoveredAt(96)]}));
 """
 
@@ -1336,6 +1344,40 @@ def check_qualified_production_gaps_precede_native_only_deficits():
     assert support_requirement["criticalPriority"] == 0
     assert support_requirement["currentMissingPairCount"] == 0
     assert support_requirement["currentNativeDeficitCount"] == 0
+
+    # Reproduce the observed H7 -> H10 interruption after the first three
+    # of four equally ranked DKSS assets. Both hours are real trend gaps in
+    # the normal Node planner, so H10 has no separate support bit.
+    seam_plan = validate_scalar_needs(document["trendSeam"], targets=targets,
+                                      production_reference_at=MODEL_RUN)
+    seam_times = [producer.canonical_time(time) for time in document["seamHours"]]
+    seam_assets = [{"valid": time, "id": f"seam-{i}"} for i, time in enumerate(seam_times)]
+    seam_covered = {(TARGET_ID, time) for time in seam_times}
+
+    def seam_order(covered, *, pair_water_trends=True, cursor=None):
+        requirements = {
+            asset["valid"]: producer.classify_dkss_primary_asset(
+                collection="dkss_lf", model_run=MODEL_RUN, asset=asset,
+                target_ids=[TARGET_ID], covered_pair_keys=set(),
+                cached_zones={}, active_zone_ids=[ZONE_ID], enabled=True,
+                planning_covered_pair_keys=covered, required_valid_times=required_trend_times,
+                require_native_grid_sampling=True, scalar_gap_plan=seam_plan,
+            )
+            for asset in seam_assets
+        }
+        ordered = producer.prioritize_dkss_primary_assets(
+            seam_assets, [TARGET_ID], covered, requirements,
+            direct_valid_times=required_trend_times, regional_gap_pairs_by_time={},
+            verified_reusable_valid_times=set(), critical_cursor_valid_time=cursor,
+            pair_water_trends=pair_water_trends,
+        )
+        assert sorted(asset["valid"] for asset in ordered) == seam_times
+        return [asset["id"] for asset in ordered]
+
+    assert seam_order(seam_covered, pair_water_trends=False) == ["seam-0", "seam-1", "seam-2", "seam-3"]
+    assert seam_order(seam_covered) == ["seam-0", "seam-3", "seam-1", "seam-2"]
+    assert seam_order(seam_covered - {(TARGET_ID, seam_times[2])})[0] == "seam-2"
+    assert seam_order(seam_covered, cursor=seam_times[1]) == ["seam-2", "seam-3", "seam-0", "seam-1"]
     cache = {ZONE_ID: cached_zone(early)}
     for valid in (late, optional_late): cache[ZONE_ID]["hourly"].update(cached_zone(valid)["hourly"])
     for valid in (early, late, optional_late):

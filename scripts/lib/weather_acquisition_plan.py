@@ -381,6 +381,24 @@ def read_qualified_acquisition_plan(path: Path | str, *, current_plan_path: Path
     return compiled
 
 
+def qualified_scalar_gap_reasons_at(
+    plan: dict[str, Any], valid_time: Any, pairs: Iterable[tuple[str, str]],
+) -> tuple[bool, int]:
+    """Separate trend demand from scalar value holes in the scoped pairs."""
+    _, instant = exact_hour(valid_time)
+    offset = int((instant - plan["referenceAt"]).total_seconds() // 3600)
+    if not 0 <= offset < 118:
+        return False, 0
+    water_trend_gap = False
+    value_gap_count = 0
+    for part_id, component in pairs:
+        index = plan["partIndexes"][part_id] * 118 + offset
+        value_gap_count += _scalar_bit(plan["valueGapMasks"][component], index)
+        if component == "waterLevel":
+            water_trend_gap |= _scalar_bit(plan["waterTrendGapMask"], index)
+    return bool(water_trend_gap), value_gap_count
+
+
 def scalar_gap_components_at(plan: dict[str, Any] | None, valid_time: Any, *,
                              part_ids: Iterable[str] | None = None) -> frozenset[str]:
     if plan is None:

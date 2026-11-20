@@ -1,3 +1,9 @@
+## 20. november — prioritér den matchende støttetime til en vandstandstrend
+
+Autentificeret genlæsning af vejrkørsel #358 viste 208 vandstandsændringer med uforenelige valgte endepunkter og 12 med manglende kvalificeret støttetime på fire undersøgte zoner. I Sibirien havde den første fejlende direkte kystdeltime to kvalificerede niveauer fra forskellige DMI-samlinger. Den valgte LF-kø havde medtaget H10 som nødvendig vandstand. H7 blev gennemført, mens H10 på plads 37 ikke blev gennemført i den valgte serie. Se DEC-0292 og audit #25.
+
+Ved et kvalificeret trendhul må den eksisterende DKSS-kø behandle den præcise støttetime tre timer senere sammen med starttimen fra samme valgte katalog. Det lokale forslag flytter kun støttetimen inden for tre pladser i en række med samme eksisterende prioritet, reelle værdibehov og rotationsgruppe. Vedligeholdelsesturen beholder sin orden. Budget, kildevalg, scoreformel og kravet om sammenlignelige endepunkter bevares. Den normale prøve reproducerer et afbrudt H7–H10-par. Faktisk sammenhæng i næste almindelige kørsel og de øvrige huller udestår.
+
 ## 4. november — scalarplanens tidsforbrug før DMI
 
 I den almindelige vejrhentning nåede den lokale scalarplan sin fælles 120-sekundersgrænse. Budgetkontrollen opdagede overskridelsen ved indgangen til PART_RETENTION. Loggen målte hele planlæggerens tid, så tallet viser ikke tidsforbruget for kystdelstrinnet alene. Den særskilte CURRENT-plan bestod, mens DMI fortsatte med den konservative prioritering. En senere CURRENT-plan før Copernicus bad kun om strømgrundlaget. Dens melding om manglende scalarplan hører til den separate indgang.
