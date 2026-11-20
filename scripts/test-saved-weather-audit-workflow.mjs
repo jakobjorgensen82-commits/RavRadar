@@ -5,6 +5,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import test from 'node:test';
 import { readHistoricalSavedWeatherAuditWorkflowSource } from './lib/pages-closure-historical-test-input.mjs';
+import * as normal from './lib/water-source-forecast-routing.mjs';
+import { dmiMarineCollectionAllowedForZone as allowed } from './lib/dmi-marine-zone-exclusions.mjs';
+import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
+import { B358_ARTIFACT, createB358ArtifactFetch, projectSourcePairs, qualifyLf7Reconstruction } from './audit-b358-water-level-trend.mjs';
 
 const b272WorkflowReview = Object.freeze({"after":{"bytes":50595,"sha256":"27199a1f676e48c458ba3540d84172b0d381aa7045b9973a73e7bcf4f3786e8b"},"before":{"bytes":45655,"sha256":"96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8"},"input":"      water_level_basis_272_only:\n        description: \"Fixed B272 WL provenance metadata only; one archived artifact, no providers or production\"\n        required: false\n        default: false\n        type: boolean\n\n","job":{"bytes":4582,"sha256":"924dc719b9cbfefc9916e532c3ec58a4ec9eb74906d1c9a29bac450ef773197c"},"ifPairs":[["    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)","    if: inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))"],["    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)"],["    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)"]]});
 function beforeB272WaterLevelWorkflow(value){
@@ -621,4 +625,179 @@ test('B272 workflow keeps its archived52d reader, original audit jobs and only t
   for(const job of ['audit:','component-summary:','voersaa-water-trace:']){
     const before=y.slice(y.indexOf('  '+job));assert.match(before.split('\n')[1],/water_level_basis_272_only != true/);
   }
+});
+test('B358 admits only the one exclusive, exact source-gated, read-only workflow request', async () => {
+  const workflow = (await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const block = workflow.split('\n  water-level-trend-358:')[1].split('\n  water-level-basis-272:')[0];
+  assert.match(block, /if: inputs\.confirmation == 'READ-B358-WATERLEVEL-TREND-ONLY'/);
+  assert.match(workflow, /group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
+  assert.doesNotMatch(workflow, /(?:contents|actions|pull-requests|pages|id-token): write/);
+  for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272']) {
+    const first = workflow.split('\n  '+job+':\n')[1]?.split('\n')[0];
+    assert.ok(first?.includes("inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY'"), job);
+  }
+  const proof = block.indexOf('test "$SOURCE_REQUIRED" = false');
+  const reader = block.indexOf('node scripts/audit-b358-water-level-trend.mjs');
+  const stageKey = block.indexOf('STAGED_PRIVATE_BUILD_MASTER_SECRET:');
+  assert.ok(proof > 0 && proof < reader && reader < stageKey);
+  assert.match(block, /git -c protocol\.allow=never archive 99eb3b556aa2ab900501491455bfdad41e7cf06f/);
+  assert.equal((block.match(/git\/ref\/heads\/main/g) ?? []).length, 2);
+  assert.match(block, /persist-credentials: false/);
+  assert.match(block, /path: \$\{\{ runner.temp \}\}\/ravradar-b358-water-audit\/water-level-trend-safe\.json/);
+  assert.equal((block.match(/secrets\./g) ?? []).length, 1);
+  assert.doesNotMatch(block, /actions\/cache|secrets: inherit|set -x|gh workflow run|npm run|--publish|\/logs/);
+  const inputScript = block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE\n/)[1];
+  const head = 'a'.repeat(40), exact = {
+    confirmation:'READ-B358-WATERLEVEL-TREND-ONLY', expected_main_head:head,
+    progress_source_run_id:'44701860497', progress_source_attempt:'1',
+  };
+  const validate = input => spawnSync(process.execPath,['--input-type=module'], {
+    input: inputScript, encoding: 'utf8', env: {...process.env, GITHUB_SHA:head, ALL_INPUTS:JSON.stringify(input)},
+  }).status;
+  assert.equal(validate(exact),0);
+  assert.equal(validate({...exact, water_level_basis_272_only:false, raw_manifest_cache_key:''}),0);
+  for (const bad of [{expected_main_head:'b'.repeat(40)}, {progress_source_run_id:'42318718471'},
+    {progress_source_attempt:'2'}, {component_summary_only:true}, {water_level_basis_272_only:true},
+    {include_current586_cached_originals:true}, {raw_manifest_cache_key:'other'}, {unrecognized:false}]) {
+    assert.notEqual(validate({...exact,...bad}),0);
+  }
+});
+
+test('B358 rejects alternate artifacts before ZIP transport and isolates the signed request', async () => {
+  const run = '44701860497';
+  const root = 'https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/actions/';
+  const metadata = root+'runs/'+run+'/artifacts?per_page=100';
+  const zip = root+'artifacts/'+B358_ARTIFACT.id+'/zip';
+  const signed = 'https://fixture.blob.core.windows.net/one-archive';
+  const init = { redirect:'manual' };
+  const row = { name:'ravradar-private-build-stage-'+run+'-1', id:B358_ARTIFACT.id,
+    size_in_bytes:B358_ARTIFACT.bytes, digest:B358_ARTIFACT.digest };
+  for (const changed of [{id:1},{size_in_bytes:2},{digest:'sha256:'+'0'.repeat(64)},{name:'other'}]) {
+    const pinned = createB358ArtifactFetch(async () => Response.json({artifacts:[{...row,...changed}]}));
+    await assert.rejects(pinned(metadata,init),/B358_ARTIFACT_PIN/);
+    await assert.rejects(pinned(zip,init),/B358_TRANSPORT_SCOPE/);
+  }
+  const calls = [];
+  const pinned = createB358ArtifactFetch(async (url, options) => {
+    calls.push(url);
+    if (url === metadata) return Response.json({total_count:1,artifacts:[row]});
+    if (url === zip) return new Response(null,{status:302,headers:{location:signed}});
+    assert.deepEqual(Object.keys(options.headers ?? {}),[]);
+    return new Response(null,{status:200});
+  });
+  await assert.rejects(pinned(zip,init),/B358_TRANSPORT_SCOPE/);
+  assert.deepEqual((await (await pinned(metadata,init)).json()).artifacts,[row]);
+  await assert.rejects(pinned(root+'artifacts/1/zip',init),/B358_TRANSPORT_SCOPE/);
+  assert.equal((await pinned(zip,init)).status,302);
+  await assert.rejects(pinned(signed,{...init,headers:{Authorization:'synthetic'}}),/B358_TRANSPORT_SCOPE/);
+  await assert.rejects(pinned(signed,{...init,headers:new Headers({Authorization:'synthetic'})}),/B358_TRANSPORT_SCOPE/);
+  assert.equal((await pinned(signed,init)).status,200);
+  await assert.rejects(pinned(signed,init),/B358_TRANSPORT_SCOPE/);
+  assert.deepEqual(calls,[metadata,zip,signed]);
+});
+
+test('B358 causes follow the exact normal SOURCE reader and the original LF7 selection', async () => {
+  const referenceAt = '2026-11-20T08:00:00.000Z';
+  const olderRun = '2026-11-20T06:00:00.000Z';
+  const zone = 'DK-B02-11';
+  const now = new Date(Date.parse(referenceAt) + 180_000).toISOString();
+  const at = n => new Date(Date.parse(referenceAt) + n * 3_600_000).toISOString();
+  const source = {sourceKey:'tidewater:private-synthetic-789', stationId:'DEMO', name:'Only synthetic', sourceType:'forecast-point',point:[11,56]};
+  function build(change = null) {
+    const rows = Array.from({length:41}, (_, i) => dmiWaterSourceFixture(source, at(i*3), 9977, olderRun));
+    if (change === 'modelRun') {
+      rows[1].sources.waterLevel.modelRun = referenceAt;
+      rows[1].sources.waterLevel.leadTimeHours = 3;
+    } else if (change === 'collection') rows[1].sources.waterLevel.collection = 'dkss_nsbs';
+    else if (change === 'grid') rows[1].sources.waterLevel.gridDefinitionSha256 = 'c'.repeat(64);
+    else if (change === 'missing') rows[1]['sea-mean-deviation'] = null;
+    const bulk = {generatedAt:now,timeStrideHours:3,zones:{['SOURCE::'+source.sourceKey]:{hourly:rows}}};
+    return normal.buildWaterSourceForecastIndex([source],bulk,now);
+  }
+  const base = build();
+  assert.equal(base.get(source.sourceKey).hourly.length, 121);
+  const packed = await normal.packWaterSourceForecastContinuity(base,referenceAt);
+  const reloaded = await normal.unpackWaterSourceForecastContinuity(packed,referenceAt);
+  const keys = [source.sourceKey];
+  function originals(index,n, trend) {
+    const requested = at(n);
+    const row = normal.applyVerifiedWaterSourceRoutingToPartHourly({
+      part:{partId:'TEST',zoneId:zone,waterPoint:[11,56]},parentFeature:{properties:{}},hourly:[{time:requested}],
+      sources:[source],index,haversineKm:()=>0,routing:{zones:{[zone]:{enabled:true,requireAll:true,stations:[{sourceKey:source.sourceKey}]}}},
+    }).hourly[0];
+    assert.equal(row.waterLevelCm,9977);
+    if (trend !== undefined) row.waterLevelTrendCm3h = trend;
+    return row;
+  }
+  function project(index,n=0,{trend,trace,selection=keys, mutate}={}) {
+    const row = originals(index,n,trend);
+    if (mutate) mutate(row);
+    return projectSourcePairs({referenceAt,zone,normal,allowed,index,storedRows:new Map([[at(n),row]]),
+      selected:()=>selection,basisCheck:trace?()=>trace:undefined});
+  }
+  const good = project(reloaded,117);
+  assert.equal(good.withTrend,1,'zero remains valid and H117 uses H120');
+  assert.equal(good.compatibleEndpoint,1);
+  assert.equal(good.comparableButStoredTrendMissing,0);
+  assert.equal(project(reloaded,117,{trend:null}).missingTrendReasons.compatibleEndpoint,1);
+  for (const reason of ['modelRun','collection','grid']) {
+    const index=build(reason);
+    const result=project(index);
+    assert.equal(result.missingTrendReasons.incompatibleFutureEndpoint,1,reason);
+    assert.equal(result.changesAtIncompatibleEndpoint[reason],1,reason);
+    assert.equal(result.comparableButStoredTrendMissing,0,reason);
+    assert.ok(!JSON.stringify(result).includes('private-synthetic-789'));
+    assert.ok(!JSON.stringify(result).includes('9977'));
+  }
+  assert.equal(project(build('missing')).missingTrendReasons.missingQualifiedFutureEndpoint,1);
+  assert.equal(project(reloaded,0,{selection:null}).unroutedOrUnbound,1);
+  assert.equal(project(reloaded,0,{mutate:row=>{row.sources.waterLevel.modelRuns=[];}}).recordedBasisMismatch,1);
+  assert.equal(project(reloaded,0,{trace:undefined}).compatibleEndpoint,1);
+  assert.throws(()=>project(reloaded,0,{trace:{outputValuePresent:true,routedValuePresent:false}}),/FUR_TRACE_ROUTE_MISMATCH/);
+  const unqualified = structuredClone(packed);
+  unqualified.entries[0].rawSha256 = 'd'.repeat(64);
+  await assert.rejects(normal.unpackWaterSourceForecastContinuity(unqualified,referenceAt),/DMI_WATER_SOURCE_CONTINUITY_RAW_INVALID/);
+  const lf7Zones = ['DK-B01-01','DK-B01-02','DK-B02-08','DK-B02-09','DK-B02-11','DK-B03-01','DK-B03-02'];
+  const lf7Routing = {zones:Object.fromEntries(lf7Zones.map(id => [id,{enabled:true,requireAll:true,stations:[{sourceKey:source.sourceKey}]}]))};
+  const lf7Features = lf7Zones.map(id => ({properties:{id}}));
+  const lf7Parts = Object.fromEntries(lf7Zones.map(zoneId => [zoneId+'-part',{zoneId,waterPoint:[11,56],landPoint:[11.01,56]}]));
+  const lf7Conditions = {datasetId:'rr-synthetic',generatedAt:now,coastalParts:{parts:lf7Parts}};
+  const lf7Times = Array.from({length:118},(_,i)=>at(i));
+  const hash=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  const verifiedPartWater = new Map(), selections = [], values=[];
+  let routedHours=0, comparableT3Hours=0;
+  for (const [partId,part] of Object.entries(lf7Parts)) {
+    const replay=normal.applyVerifiedWaterSourceRoutingToPartHourly({
+      part:{...part,partId},parentFeature:lf7Features.find(f=>f.properties.id===part.zoneId),hourly:lf7Times.map(time=>({time})),
+      sources:[source],index:reloaded,routing:lf7Routing,haversineKm:()=>0,diagnosticReferenceAt:referenceAt,
+    });
+    const storedRows = new Map();
+    for (const row of replay.hourly) {const {time,waterLevelCm,waterLevelTrendCm3h}=row;
+      storedRows.set(time,{waterLevelCm,waterLevelTrendCm3h});
+      values.push([partId,time,waterLevelCm??null,waterLevelTrendCm3h??null]);
+      routedHours += Number(Number.isFinite(waterLevelCm)); comparableT3Hours += Number(Number.isFinite(waterLevelTrendCm3h));
+    }
+    verifiedPartWater.set(partId,{rows:storedRows});
+    selections.push([partId,replay.waterRoutingObservation.selectionSha256]);
+  }
+  const lf7Diagnostics = {datasetId:lf7Conditions.datasetId,generatedAt:now,productionReferenceAt:referenceAt,
+    lf7WaterRouting:{kind:'LF7_WATER_ROUTING_OBSERVATION',schemaVersion:1,referenceAt,
+    expectedPartCount:7,observedPartCount:7,expectedPartHours:826,
+    configurationSha256:normal.waterRoutingConfigurationSha256(lf7Routing),
+    selectionSha256:hash(selections.sort((a,b)=>a[0].localeCompare(b[0]))),
+    computedValuesSha256:hash(values.sort((a,b)=>a[0].localeCompare(b[0])||a[1].localeCompare(b[1]))),
+    counts:{routedHours,comparableT3Hours,unknownT3Hours:routedHours-comparableT3Hours,computedValueMismatchHours:0}}};
+  const lf7Args = {conditions:lf7Conditions, diagnostics:lf7Diagnostics, routing:lf7Routing,
+    features:lf7Features,sourceRegistry:[source],parts:verifiedPartWater,normal,index:reloaded,haversineKm:()=>0,referenceAt};
+  const replay = qualifyLf7Reconstruction(lf7Args);
+  assert.equal(replay.reason,'ORIGINAL_LF7_SELECTION_AND_VALUES_MATCH');
+  assert.deepEqual(replay.selections.get('DK-B02-11-part').get(at(117)),keys);
+  assert.equal(qualifyLf7Reconstruction({...lf7Args,routing:{zones:{}}}).reason,'ORIGINAL_ROUTING_CONFIGURATION_UNPROVED');
+  const changedSelection=structuredClone(lf7Diagnostics);
+  changedSelection.lf7WaterRouting.selectionSha256='a'.repeat(64);
+  assert.equal(qualifyLf7Reconstruction({...lf7Args,diagnostics:changedSelection}).reason,'ORIGINAL_LF7_SELECTION_DIGEST_DIFFERS');
+  const changedValues=structuredClone(verifiedPartWater);
+  changedValues.get('DK-B02-11-part').rows.get(at(15)).waterLevelTrendCm3h=99;
+  assert.equal(qualifyLf7Reconstruction({...lf7Args,parts:changedValues}).reason,'ARCHIVED_LF7_VALUE_REPLAY_DIFFERS');
+
 });

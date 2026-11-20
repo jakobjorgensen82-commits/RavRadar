@@ -201,6 +201,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   actionVersions:[
     'node scripts/test-github-action-versions.mjs',
   ],
+  savedWeatherAudit:[
+    'node --test scripts/test-saved-weather-audit-workflow.mjs',
+  ],
   historicalUpdaterOracles:[
     'node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs',
     'node --test scripts/test-weather-update-entrypoint.mjs',
@@ -438,6 +441,11 @@ const PATH_AREAS=freeze({
     '.github/workflows/audit-saved-weather-inputs.yml',
     '.github/workflows/reusable-operational-reentry.yml',
     'scripts/test-github-action-versions.mjs',
+  ],
+  savedWeatherAudit:[
+    '.github/workflows/audit-saved-weather-inputs.yml',
+    'scripts/audit-b358-water-level-trend.mjs',
+    'scripts/test-saved-weather-audit-workflow.mjs',
   ],
   historicalUpdaterOracles:[
     'scripts/lib/archived-weather-restart-updater-test-input.mjs',
