@@ -227,12 +227,26 @@ export function assertCurrentCompletedRuntimeWorkflow(actualBuild, actualOnce) {
 }
 
 test('current weather publisher preserves protected authority and refuses caller replacement', async () => {
-  const wrapper=await rawWorkflow('./publish-private-weather-runtime.mjs');
-  assert.match(wrapper,/import \{ createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,\s+PROTECTED_PRIVATE_RUNTIME_POLICY \} from '\.\/protected-private-production-runtime\.mjs';/);
-  assert.match(wrapper,/return publishProtectedPrivateProductionRuntime\(\{ \.\.\.options, storage \}\);/);
-  const {publishPrivateWeatherRuntime}=await import('./publish-private-weather-runtime.mjs');
-  for(const key of ['storage','policy'])await assert.rejects(publishPrivateWeatherRuntime({[key]:{}}),
-    {code:'PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID'});
+  const { publishPrivateWeatherRuntime } = await import('./publish-private-weather-runtime.mjs');
+  for (const key of ['storage', 'policy']) {
+    await assert.rejects(publishPrivateWeatherRuntime({ [key]: {} }), {
+      code: 'PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID',
+    });
+  }
+
+  const forbiddenTransport = () => {
+    throw new Error('Transport must not run for an invalid source head');
+  };
+  await assert.rejects(publishPrivateWeatherRuntime({
+    sourceHead: 'invalid-source-head',
+    request: forbiddenTransport,
+  }, {
+    storageBackend: 'r2',
+    accountId: 'a'.repeat(32),
+    accessKeyId: 'synthetic-id',
+    secretAccessKey: 'synthetic-secret',
+    fetchImpl: forbiddenTransport,
+  }), { message: 'Private runtime archive requires an exact source head' });
 });
 
 test('current Pages workflow keeps completed-runtime B S gates and provider exclusion on raw callers', async () => {
