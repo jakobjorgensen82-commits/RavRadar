@@ -25,6 +25,15 @@ const B361_TARGET = Object.freeze({
 const B361_OFFSETS = Object.freeze([5, 25, 26, 27, 29, 35, 36]);
 const B361_PUBLIC_MANIFEST_SHA256 = 'd608a4f5a27db157541a7cb743d170d3605090c534ee5f546a5703b89d483596';
 const B361_SOURCE_DETAILS_SHA256 = 'ab7c57ff3d74c70c9bcf5ceb397700b48f362fda01797bf665de3fc5b4f09a9f';
+const B363_TARGET = Object.freeze({
+  repository: TARGET.repository, runId: '44865684276', runAttempt: '1',
+  sourceHead: '8851651b5908f37a1db3486a98d50ffd1231ff9c', datasetId: 'rr-20261121061419-210',
+  productionReferenceAt: '2026-11-21T04:00:00.000Z',
+});
+const B363_PAIRS = Object.freeze([0, 3]);
+const B363_HOURS = Object.freeze([0, 3, 6]);
+const B363_PUBLIC_MANIFEST_SHA256 = '8f8c9532d9aa2125b92a63af6b16ca99b2e122b77ca824ea739b26c0ef848b2f';
+const B363_SOURCE_DETAILS_SHA256 = 'da024324b0651ce806e06b250056d300ce9a81f187dbe8cbf1f236ef16a87875';
 const ZONE_IDS = Object.freeze(['DK-B02-06', 'DK-B02-11', 'DK-B05-16', 'DK-B05-17']);
 const FUR_ZONE = 'DK-B05-17';
 const FUR_PART = 'dk-b05-17-national-part-04';
@@ -157,17 +166,21 @@ function hourlyIndex(rows) {
   return new Map(rows.map(row => [row.time, row]));
 }
 
-async function readSelectedPublicPartWeather(module, packPath, conditions, scope, { target = TARGET, publicEvidence } = {}) {
+async function readSelectedPublicPartWeather(module, packPath, conditions, scope, { target = TARGET, publicEvidence, offsets, sourceDetailsSha256 } = {}) {
   const { manifest, payloadOffset, bytes } = await module.inspectPrivatePublicHourDeliveryPack({ packPath, conditions });
   if (manifest.datasetId !== target.datasetId || manifest.productionReferenceAt !== target.productionReferenceAt
     || manifest.entries.length !== PUBLIC_HOURS
-    || (publicEvidence && manifest.sourceDetailsSha256 !== B361_SOURCE_DETAILS_SHA256)) inputFailure('PUBLIC_HOUR_BINDING');
+    || (sourceDetailsSha256 && manifest.sourceDetailsSha256 !== sourceDetailsSha256)) inputFailure('PUBLIC_HOUR_BINDING');
   const selected = new Map([...scope].map(([id, zone]) => [id, { zone, rows: new Map() }]));
   let position = payloadOffset;
   const handle = await fs.open(packPath, 'r');
   try {
     for (const [hour, entry] of manifest.entries.entries()) {
       if (entry.time !== at(target.productionReferenceAt, hour)) inputFailure('PUBLIC_HOUR_AXIS');
+      if (offsets && !offsets.includes(hour)) {
+        position += entry.compressedBytes;
+        continue;
+      }
       const compressed = Buffer.alloc(entry.compressedBytes);
       let read = 0;
       while (read < compressed.length) {
@@ -334,7 +347,7 @@ export function qualifyLf7Reconstruction({ conditions, diagnostics, routing, fea
 }
 
 // Only fixed times and established diagnostics survive this projection.
-export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9, 10]) {
+export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9, 10], includeObservedDemand = false) {
   const diagnostics = document?.diagnostics;
   const queues = diagnostics?.currentAcquisitionPlan?.firstTurnOrder;
   const count = value => Number.isSafeInteger(value) && value >= 0 && value <= 100_000 ? value : null;
@@ -356,35 +369,56 @@ export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9,
         retainedGapCount: count(row?.retainedScalarGapPairCount),
         waterLevelWasRequired: Array.isArray(row?.missingComponentKinds)
           ? row.missingComponentKinds.includes('waterLevel') : null,
-        selectedRunProcessedTime: processedTimes?.has(Date.parse(time)) ?? null };
+        selectedRunProcessedTime: processedTimes?.has(Date.parse(time)) ?? null,
+        ...(includeObservedDemand ? {
+          offeredModelRun: Number.isFinite(Date.parse(entry.modelRun))
+            ? new Date(Date.parse(entry.modelRun)).toISOString() : null,
+          classifierPriority: count(row?.classifierPriority),
+          currentMissingPairCount: count(row?.currentMissingPairCount),
+          currentUpgradePairCount: count(row?.currentUpgradePairCount),
+          regionalCurrentPotentialPairCount: count(row?.regionalCurrentPotentialPairCount),
+          missingComponentKinds: Array.isArray(row?.missingComponentKinds)
+            ? ['configuration', 'current', 'currentUpgrade', 'regionalCurrent', 'waterLevel', 'waterTemperature', 'windTail']
+              .filter(kind => row.missingComponentKinds.includes(kind)) : null,
+        } : {}) };
     });
   }
   return results;
 }
 
 export function createB361PublicEndpointEvidence() {
-  const requests = new Set(B361_OFFSETS.flatMap(hour => [hour, hour + 3]));
+  return createPublicEndpointEvidence(B361_TARGET, B361_OFFSETS, 'B361', 586);
+}
+
+export function createB363PublicEndpointEvidence(expectedParts) {
+  if (!(expectedParts instanceof Map) || expectedParts.size !== 673) inputFailure('B363_PUBLIC_PART_INVENTORY');
+  return createPublicEndpointEvidence(B363_TARGET, B363_PAIRS, 'B363', 0, expectedParts);
+}
+
+function createPublicEndpointEvidence(target, offsets, label, expectedFirstTrend, expectedParts) {
+  const requests = new Set(offsets.flatMap(hour => [hour, hour + 3]));
   const rows = new Map();
   return {
     collect(hour, parts) {
       if (!requests.has(hour)) return;
       const entries = Object.entries(parts ?? {});
-      if (entries.length !== 673 || rows.has(hour)) inputFailure('B361_PUBLIC_PART_INVENTORY');
-      const time = at(B361_TARGET.productionReferenceAt, hour);
+      if (entries.length !== 673 || rows.has(hour)) inputFailure(label + '_PUBLIC_PART_INVENTORY');
+      const time = at(target.productionReferenceAt, hour);
       rows.set(hour, new Map(entries.map(([id, part]) => {
-        if (part?.id !== id || part.current?.time !== time || !part.current.weather)
-          inputFailure('B361_PUBLIC_PART_BINDING');
+        if (part?.id !== id || part.current?.time !== time || !part.current.weather
+            || (expectedParts && (!expectedParts.has(id) || part.zoneId !== expectedParts.get(id))))
+          inputFailure(label + '_PUBLIC_PART_BINDING');
         const { waterLevelCm, waterLevelTrendCm3h } = part.current.weather;
         if ((waterLevelCm != null && !finite(waterLevelCm)) || (waterLevelTrendCm3h != null && !finite(waterLevelTrendCm3h)))
-          inputFailure('B361_PUBLIC_PART_WATER_TYPE');
+          inputFailure(label + '_PUBLIC_PART_WATER_TYPE');
         return [id, [finite(waterLevelCm), finite(waterLevelTrendCm3h)]];
       })));
     },
     finish() {
-      const counts = B361_OFFSETS.map(offset => {
+      const counts = offsets.map(offset => {
         const start = rows.get(offset), support = rows.get(offset + 3);
         if (!start || !support || [...start.keys()].some(id => !support.has(id)))
-          inputFailure('B361_PUBLIC_HOUR_UNBOUND');
+          inputFailure(label + '_PUBLIC_HOUR_UNBOUND');
         let withBothLevels = 0, trendPresent = 0, missingDespiteBoth = 0;
         for (const [id, [level, trend]] of start) {
           const both = level && support.get(id)[0];
@@ -392,12 +426,14 @@ export function createB361PublicEndpointEvidence() {
           trendPresent += Number(trend);
           missingDespiteBoth += Number(both && !trend);
         }
-        return { offset, time: at(B361_TARGET.productionReferenceAt, offset),
+        return { offset, time: at(target.productionReferenceAt, offset),
           withBothLevels, trendPresent, missingDespiteBoth };
       });
       const first = counts[0];
-      if (first.withBothLevels !== 673 || first.trendPresent !== 586 || first.missingDespiteBoth !== 87)
-        inputFailure('B361_KNOWN_PUBLIC_OBSERVATION_MISMATCH');
+      const firstStart = rows.get(offsets[0]);
+      if ([...firstStart.values()].some(([level]) => !level) || first.trendPresent !== expectedFirstTrend
+          || (label === 'B361' && (first.withBothLevels !== 673 || first.missingDespiteBoth !== 87)))
+        inputFailure(label + '_KNOWN_PUBLIC_OBSERVATION_MISMATCH');
       return counts;
     },
   };
@@ -405,6 +441,9 @@ export function createB361PublicEndpointEvidence() {
 
 async function readAuthenticatedProjection({ payload, root, load, target = TARGET }) {
   const isB361 = target === B361_TARGET;
+  const isB363 = target === B363_TARGET;
+  const pairOffsets = isB363 ? B363_PAIRS : isB361 ? B361_OFFSETS : undefined;
+  const sourceDetailsSha256 = isB363 ? B363_SOURCE_DETAILS_SHA256 : isB361 ? B361_SOURCE_DETAILS_SHA256 : undefined;
   const publicEvidence = isB361 ? createB361PublicEndpointEvidence() : null;
   const [forecast, normal, policy, fur, publicHours, partRecovery, bulk] = await Promise.all([
     load('scripts/lib/dmi-forecast-file.mjs'), load('scripts/lib/water-source-forecast-routing.mjs'),
@@ -431,8 +470,8 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
       return source?.provider === 'dmi' && source.routing === 'dmi-water-source-interpolation' ? source.sourceKeys : null;
     };
     const scope = { ...options, zone, storedRows: hourlyIndex(original.hourly), selected };
-    zones[zone] = projectSourcePairs(scope);
-    if (isB361) routedZoneOffsets[zone] = B361_OFFSETS.map(offset => {
+    zones[zone] = projectSourcePairs({ ...scope, offsets: isB363 ? B363_PAIRS : undefined });
+    if (pairOffsets) routedZoneOffsets[zone] = pairOffsets.map(offset => {
       const { withLevel, withTrend, missingTrendReasons, changesAtIncompatibleEndpoint } =
         projectSourcePairs({ ...scope, offsets: [offset] });
       return { offset, withLevel, withTrend, missingTrendReasons, changesAtIncompatibleEndpoint };
@@ -443,15 +482,28 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
   const trace = conditions.furWaterRoutingDiagnostic;
   if (conditions.datasetId !== target.datasetId || conditions.productionReferenceAt !== target.productionReferenceAt)
     inputFailure('CONDITIONS_GENERATION');
-  const targetParts = new Map(Object.entries(conditions.coastalParts?.parts ?? {})
-    .filter(([, part]) => ZONE_IDS.includes(part?.zoneId) || normal.lf7WaterOnlyZone(part?.zoneId))
+  const knownParts = Object.entries(conditions.coastalParts?.parts ?? {});
+  const targetParts = new Map(knownParts
+    .filter(([id, part]) => isB363 ? [FUR_PART, SIBIRIEN_PART].includes(id)
+      : ZONE_IDS.includes(part?.zoneId) || normal.lf7WaterOnlyZone(part?.zoneId))
     .map(([id, part]) => [id, part.zoneId]));
-  if (targetParts.size < 4 || targetParts.size > 64 || targetParts.get(FUR_PART) !== FUR_ZONE)
-    inputFailure('PRIVATE_PART_SCOPE');
+  if (targetParts.size < (isB363 ? 2 : 4) || targetParts.size > 64 || targetParts.get(FUR_PART) !== FUR_ZONE
+      || (isB363 && targetParts.get(SIBIRIEN_PART) !== SIBIRIEN_ZONE)) inputFailure('PRIVATE_PART_SCOPE');
+  const exactEvidence = isB363 ? createB363PublicEndpointEvidence(new Map(knownParts.map(([id, part]) => [id, part.zoneId])))
+    : publicEvidence;
   const partWeather = await readSelectedPublicPartWeather(publicHours, path.join(payload, '.cache/public-hour-delivery.pack'),
-    conditions, targetParts, { target, publicEvidence });
-  const sibirienDirectWater = await readSibirienDirectWater({ indexed, forecast, conditions,
-    publicPart: partWeather.get(SIBIRIEN_PART), load, target, offsets: isB361 ? B361_OFFSETS : undefined });
+    conditions, targetParts, { target, publicEvidence: exactEvidence,
+      offsets: isB363 ? B363_HOURS : undefined, sourceDetailsSha256 });
+  const directArchive = await readSibirienDirectWater({ indexed, forecast, conditions,
+    publicPart: partWeather.get(SIBIRIEN_PART), load, target, offsets: pairOffsets });
+  // Exact archived direct bindings do not identify the final selected PART
+  // series when Sibirien lacks an original routed selection observation.
+  const sibirienDirectWater = isB363 && directArchive.status === 'OBSERVED' ? {
+    ...directArchive, evidence: 'ARCHIVED_DIRECT_PART_AND_PUBLIC_VALUES_FINAL_SOURCE_UNKNOWN',
+    hours: directArchive.hours.map(({ sourceOverride, ...hour }) => ({
+      ...hour, archivedDirectResultDiffersFromPublic: sourceOverride === 'PROVED',
+    })),
+  } : directArchive;
   const hasTrace = fur.validFurWaterRoutingDiagnostic(trace, { datasetId: target.datasetId })
     && trace.productionReferenceAt === target.productionReferenceAt && trace.generatedAt === conditions.generatedAt
     && Object.keys(trace.trace.hours).length === PUBLIC_HOURS;
@@ -463,16 +515,19 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 64 * 1024 * 1024) return null;
     return JSON.parse(await fs.readFile(name, 'utf8'));
   };
-  const [routing, geography, registry, diagnostics] = await Promise.all([
-    json(root, 'data/water-level-station-routing.json').catch(() => null),
-    json(root, 'data/zones.geojson').catch(() => null),
-    json(payload, 'data/live/dmi-water-stations.json'), json(payload, 'data/live/ravradar-runtime-diagnostics.json'),
-  ]);
-  // A tracked routing file is only a candidate. Reject whenever the active
-  // hydrated configuration, selected sets or saved results do not match.
-  const lf7 = qualifyLf7Reconstruction({ conditions, diagnostics, routing, features: geography?.features,
-    sourceRegistry: registry?.stations, parts: partWeather, normal, index, haversineKm: partRecovery.haversineKm,
-    referenceAt: target.productionReferenceAt });
+  let lf7 = { reason: 'FULL_LF7_RECONSTRUCTION_OUTSIDE_FIXED_THREE_HOUR_SCOPE', selections: new Map() };
+  if (!isB363) {
+    const [routing, geography, registry, diagnostics] = await Promise.all([
+      json(root, 'data/water-level-station-routing.json').catch(() => null),
+      json(root, 'data/zones.geojson').catch(() => null),
+      json(payload, 'data/live/dmi-water-stations.json'), json(payload, 'data/live/ravradar-runtime-diagnostics.json'),
+    ]);
+    // A tracked routing file is only a candidate. Reject whenever the active
+    // hydrated configuration, selected sets or saved results do not match.
+    lf7 = qualifyLf7Reconstruction({ conditions, diagnostics, routing, features: geography?.features,
+      sourceRegistry: registry?.stations, parts: partWeather, normal, index, haversineKm: partRecovery.haversineKm,
+      referenceAt: target.productionReferenceAt });
+  }
   const parts = {};
   for (const [id, { zone, rows }] of partWeather) {
     if (!ZONE_IDS.includes(zone)) continue;
@@ -481,21 +536,27 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
     parts[id] = {
       zone, evidence: provenFurSelection ? 'ORIGINAL_PART_SOURCE_IDENTITIES'
         : lf7Selection ? 'ORIGINAL_LF7_SELECTION_AND_VALUES_MATCH' : 'PUBLIC_VALUES_WITHOUT_PROVEN_PART_SELECTION',
-      ...projectSourcePairs({ ...options, zone, storedRows: rows,
+      ...projectSourcePairs({ ...options, zone, storedRows: rows, offsets: isB363 ? B363_PAIRS : undefined,
         selected: time => provenFurSelection ? furKeys : lf7Selection?.get(time),
         basisCheck: provenFurSelection ? time => trace.trace.hours[time]
           : lf7Selection ? time => ({ outputValuePresent: finite(rows.get(time)?.waterLevelCm),
             routedValuePresent: lf7Selection.has(time) }) : undefined }),
     };
   }
+  const queueOffsets = isB363 ? [0, 1, 2, 3, 6] : isB361
+    ? [...new Set(B361_OFFSETS.flatMap(hour => [hour, hour + 3]))].sort((a, b) => a - b) : undefined;
   const bulkOnsetQueue = await bulk.readDmiBulkDocument(path.join(payload, 'data/live/dmi-bulk-cache.json'), { expandSources: false })
-    .then(document => projectDkssOnsetQueue(document, target.productionReferenceAt, isB361
-      ? [...new Set(B361_OFFSETS.flatMap(hour => [hour, hour + 3]))].sort((a, b) => a - b) : undefined))
+    .then(document => projectDkssOnsetQueue(document, target.productionReferenceAt, queueOffsets, isB363))
     .catch(() => ({}));
   return { zoneEvidence: 'ARCHIVED_ZONE_ROUTING_SEPARATE_FROM_PUBLIC_WINNING_PART', lf7Evidence: lf7.reason,
     zones, parts, bulkOnsetQueue, sibirienDirectWater,
-    ...(isB361 ? { nationalPublicEndpointPresence: publicEvidence.finish(), routedZoneOffsets,
-      publicManifestReceiptSha256: B361_PUBLIC_MANIFEST_SHA256, sourceDetailsSha256: B361_SOURCE_DETAILS_SHA256 } : {}) };
+    ...(exactEvidence ? { nationalPublicEndpointPresence: exactEvidence.finish(), routedZoneOffsets,
+      publicManifestReceiptSha256: isB363 ? B363_PUBLIC_MANIFEST_SHA256 : B361_PUBLIC_MANIFEST_SHA256,
+      sourceDetailsSha256 } : {}),
+    ...(isB363 ? {
+      queueEvidence: Object.keys(bulkOnsetQueue).length ? 'FIRST_COLLECTION_TURN_AND_RUN_ASSET_LEVEL_ONLY'
+        : 'UNKNOWN_FIRST_TURN_OR_PROCESSED_LEDGER_UNAVAILABLE',
+    } : {}) };
 }
 
 
@@ -513,6 +574,24 @@ export const B361_ARTIFACT = Object.freeze({
   id: 14676798657, bytes: 258872168,
   digest: 'sha256:49a2a8eb748f05a9b419ed648bff9ff6698014401fb34a4a3ff68fbb79a46255',
 });
+
+export const B363_ARTIFACT = Object.freeze({
+  id: 14696629646, bytes: 260332852,
+  digest: 'sha256:e3fecb39d3140aa3bc3d0b5611fef3c0ae75eef48756434b780ee07b33fa6626',
+});
+
+export function createB363ArtifactFetch(fetchImpl) {
+  return createFixedArtifactFetch(fetchImpl, B363_TARGET, B363_ARTIFACT, 'B363');
+}
+
+const FIXED_EPISODES = new Map([
+  [TARGET, { label: 'B358', exactArtifact: B358_ARTIFACT, fixedTransport: createB358ArtifactFetch,
+    readers: 'ravradar-b358-reader99eb', output: 'ravradar-b358-water-audit' }],
+  [B361_TARGET, { label: 'B361', exactArtifact: B361_ARTIFACT, fixedTransport: createB361ArtifactFetch,
+    readers: 'ravradar-b361-reader257d', output: 'ravradar-b361-water-audit' }],
+  [B363_TARGET, { label: 'B363', exactArtifact: B363_ARTIFACT, fixedTransport: createB363ArtifactFetch,
+    readers: 'ravradar-b363-reader8851', output: 'ravradar-b363-water-audit' }],
+]);
 
 function isExactArtifact(artifact, expected) {
   return artifact?.id === expected.id
@@ -590,15 +669,14 @@ async function ownScratch(parent, directory, prefix, tasks) {
 }
 
 async function auditFixedWaterTrend({ runnerTemp, githubToken, masterSecret, target }) {
-  const isB361 = target === B361_TARGET;
-  const label = isB361 ? 'B361' : 'B358';
-  const exactArtifact = isB361 ? B361_ARTIFACT : B358_ARTIFACT;
-  const fixedTransport = isB361 ? createB361ArtifactFetch : createB358ArtifactFetch;
+  const episode = FIXED_EPISODES.get(target);
+  if (!episode) inputFailure('FIXED_WATER_AUDIT_EPISODE');
+  const { label, exactArtifact, fixedTransport } = episode;
   if (typeof runnerTemp !== 'string' || !runnerTemp || typeof githubToken !== 'string' || !githubToken
     || typeof masterSecret !== 'string' || masterSecret.length < 32) inputFailure(label + '_CREDENTIALS_REQUIRED');
   const temp = await fs.realpath(runnerTemp);
-  const archived = path.join(temp, isB361 ? 'ravradar-b361-reader257d' : 'ravradar-b358-reader99eb');
-  const output = path.join(temp, isB361 ? 'ravradar-b361-water-audit' : 'ravradar-b358-water-audit');
+  const archived = path.join(temp, episode.readers);
+  const output = path.join(temp, episode.output);
   for (const directory of [archived, output]) {
     const stat = await fs.lstat(directory);
     if (!stat.isDirectory() || stat.isSymbolicLink() || await fs.realpath(directory) !== directory)
@@ -674,14 +752,15 @@ async function auditFixedWaterTrend({ runnerTemp, githubToken, masterSecret, tar
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const isB361 = process.argv.length === 3 && process.argv[2] === '--b361';
+  const target = process.argv.length === 2 ? TARGET : process.argv.length === 3
+    ? { '--b361': B361_TARGET, '--b363': B363_TARGET }[process.argv[2]] : null;
   try {
-    if (process.argv.length !== 2 && !isB361) inputFailure('B358_FIXED_INPUT_ONLY');
+    if (!FIXED_EPISODES.has(target)) inputFailure('B358_FIXED_INPUT_ONLY');
     if (!await auditFixedWaterTrend({ runnerTemp: process.env.RUNNER_TEMP, githubToken: process.env.GH_TOKEN,
-      masterSecret: process.env.STAGED_PRIVATE_BUILD_MASTER_SECRET, target: isB361 ? B361_TARGET : TARGET }))
+      masterSecret: process.env.STAGED_PRIVATE_BUILD_MASTER_SECRET, target }))
       process.exitCode = 1;
   } catch {
-    process.stderr.write(isB361 ? 'B361_PRIVATE_AUDIT_REFUSED\n' : 'B358_PRIVATE_AUDIT_REFUSED\n');
+    process.stderr.write((FIXED_EPISODES.get(target)?.label ?? 'B358') + '_PRIVATE_AUDIT_REFUSED\n');
     process.exitCode = 1;
   }
 }
