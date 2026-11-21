@@ -1,3 +1,11 @@
+## 21. november — lokal kandidat til afgrænset fejlgemning
+
+Kun en terminalt fejlet almindelig `integrated`-vejrhentning kan bruge den nye forseglingsvej. Den kræver den normale autentificerede gendannelse og allerede bekræftet fysisk lukning af de forsøgte leverandørkald. En kørsel, der fortsætter gennem normal fallback, bruger den hidtidige gemning.
+
+Controlleren armerer én 240-sekunders frist på Linux-uret `CLOCK_BOOTTIME` før pakning. Opsætning og aflæsning af boot-id har en tidlig frist. Pakningen kører i den eksisterende ejede systemd-kontrolgruppe med den normale skrivelås. Først efter bekræftet fysisk lukning og frigivet lås kan den eksisterende ejede SDK-proces åbne den forseglede fil under kørselsforsøgets faste midlertidige mappe. SDK’et bruger samme relative arkivmedlem og cachenøgle som før. Den hidtil gyldige pakke bevares på sin plads.
+
+Kun en rettidig, bekræftet Finalize og fysisk proceslukning kan give succes. Ved en sen eller uafklaret kvittering bruges den eksisterende autentificerede cachelæsning ved næste kvalificerede kørsel. Den må kun genbruge en faktisk tilgængelig pakke med gyldig krypterings- og baselinebinding. Ubuntu-kvalifikation af stop og SDK-transport samt faktisk almindelig genlæsning efter et uafklaret udfald afventer. Denne note registrerer en lokal kandidat.
+
 ## 20. november — fysisk stop i de normale leverandørkald
 
 Den lokale kandidat sætter den normale DMI-supervisor og de to normale Copernicus-kald i hver sin Linux-kontrolgruppe på GitHub-runneren. De eksisterende leverandører og deres arbejdsbudgetter bevares. Ved stop eller tab af kaldets ejer afgrænses underprocesserne samlet. Det normale trin videresender de eksisterende outputs, når både supervisorens stopkvittering og tom kontrolgruppe er bekræftet. Ubekræftede udfald spærrer læsning af berørte filer, RAW-skrivning og krypteret gemning. Den eksisterende koldstart og særkørsler bruger fortsat deres egne adgangsveje.

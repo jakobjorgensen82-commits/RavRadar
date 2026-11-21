@@ -2,6 +2,7 @@
 
 from contextlib import redirect_stdout
 import io
+import json
 import os
 from pathlib import Path
 import runpy
@@ -11,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -22,6 +24,36 @@ LAUNCH = runpy.run_path(
 
 
 class ProviderLaunchTests(unittest.TestCase):
+    def test_terminal_seal_uses_only_the_fixed_child_and_its_own_secret(self):
+        terminal = LAUNCH["TERMINAL_SEAL"]
+        node = str(Path("node").resolve())
+        original = {"GITHUB_RUN_ID": "17", "GITHUB_RUN_ATTEMPT": "2", "RUNNER_TEMP": "fixed-runner-temp",
+                    "GITHUB_OUTPUT": "fixed-output", "WEATHER_PROGRESS_MASTER_SECRET": "synthetic-seal-key",
+                    "ACTIONS_RUNTIME_TOKEN": "omit", "SUPABASE_SERVICE_ROLE_KEY": "omit", "DMI_API_KEY": "omit"}
+        self.assertEqual(LAUNCH["provider_environment"](terminal, original, node),
+                         {**{name: original[name] for name in list(original)[:5]}, "RAVRADAR_PROVIDER_PYTHON": node})
+        self.assertEqual(LAUNCH["provider_command"](terminal, [], node),
+                         [node, str(LAUNCH["ROOT"] / "scripts/weather-component-progress-cache.mjs"),
+                          "--seal-terminal-stage"])
+        for arguments in ([terminal, "239", "--"], [terminal, "240", "--", "--foreign"]):
+            with self.assertRaisesRegex(LAUNCH["ProviderRefused"], "TERMINAL_SEAL_ARGUMENTS_REFUSED"):
+                LAUNCH["main"](arguments)
+
+    def test_terminal_setup_cannot_start_a_unit_after_the_boot_marker_deadline(self):
+        controller = LAUNCH["hosted_controller"]
+        clock = Mock(side_effect=[5_000, 15_000])
+        fake_sys = SimpleNamespace(platform="linux", executable="/setup/python")
+        environment = {"RUNNER_ENVIRONMENT": "github-hosted", "ImageOS": "ubuntu24",
+                       "GITHUB_RUN_ID": "17", "GITHUB_RUN_ATTEMPT": "1"}
+        with patch.dict(controller.__globals__, {"terminal_boot_ms": clock, "sys": fake_sys}), \
+                patch.dict(os.environ, environment), patch.object(os, "geteuid", return_value=1000, create=True), \
+                patch.object(Path, "read_text", return_value="01234567-89ab-cdef-0123-456789abcdef\n"), \
+                patch.object(shutil, "which", return_value="/setup/node"), \
+                patch.object(subprocess, "Popen") as launch:
+            with self.assertRaisesRegex(LAUNCH["ProviderRefused"], "TERMINAL_SEAL_SETUP_DEADLINE"):
+                controller(LAUNCH["TERMINAL_SEAL"], 240, [])
+            launch.assert_not_called()
+
     def test_providers_keep_their_own_required_environment(self):
         original = {
             "PATH": "/usr/bin", "LD_LIBRARY_PATH": "/setup-python/lib",
@@ -174,6 +206,66 @@ class ProviderLaunchTests(unittest.TestCase):
 @unittest.skipUnless(sys.platform == "linux" and os.getenv("RUNNER_ENVIRONMENT") == "github-hosted"
                      and os.getenv("ImageOS") == "ubuntu24", "Hosted Ubuntu cgroup required")
 class HostedProviderLaunchTests(unittest.TestCase):
+    def test_actual_terminal_seal_owner_only_relays_after_cgroup_and_lease_close(self):
+        runner_temp = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+        run = str(time.time_ns())
+        stage = runner_temp / f"ravradar-terminal-weather-progress-{run}-1"
+        with tempfile.TemporaryDirectory(prefix="rr-terminal-owner-test-", dir=runner_temp) as folder, \
+                tempfile.NamedTemporaryFile(dir=runner_temp / "_runner_file_commands",
+                                            prefix="set_output_rr_terminal_") as sink:
+            root = Path(folder)
+            scripts = root / "scripts"
+            (scripts / "lib").mkdir(parents=True)
+            originals = Path(__file__).resolve().parent
+            for name in ("run-ordinary-provider-cgroup.py", "lib/weather_acquisition_writer.py"):
+                shutil.copyfile(originals / name, scripts / name)
+            (root / ".cache").mkdir()
+            prior = root / ".cache/weather-private-progress.encrypted"
+            prior.write_bytes(b"synthetic prior cipher")
+            old = prior.stat()
+            (scripts / "weather-component-progress-cache.mjs").write_text(r'''
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+assert.deepEqual(process.argv.slice(2), ['--seal-terminal-stage']);
+assert.equal(process.env.WEATHER_PROGRESS_MASTER_SECRET, 'own-synthetic-seal-secret');
+assert.ok(!process.env.ACTIONS_RUNTIME_TOKEN && !process.env.SUPABASE_SERVICE_ROLE_KEY);
+assert.equal(fs.statSync('.cache/weather-acquisition-writer.claim').size, 0);
+const root = path.join(process.env.RUNNER_TEMP,
+  `ravradar-terminal-weather-progress-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`);
+fs.mkdirSync(root, { mode: 0o700 });
+fs.mkdirSync(path.join(root, '.cache'), { mode: 0o700 });
+const bytes = Buffer.from('own opaque controller fixture');
+fs.writeFileSync(path.join(root, '.cache/weather-private-progress.encrypted'), bytes, { flag: 'wx', mode: 0o600 });
+const hash = crypto.createHash('sha256').update(bytes).digest('hex');
+fs.appendFileSync(process.env.GITHUB_OUTPUT, `terminal_stage_sha256=${hash}\nterminal_stage_bytes=${bytes.length}\n`);
+''', encoding="utf-8")
+            environment = {name: os.environ[name] for name in ("PATH", "HOME", "LANG", "LD_LIBRARY_PATH",
+                "RUNNER_ENVIRONMENT", "ImageOS", "RUNNER_TEMP") if name in os.environ}
+            environment.update(GITHUB_OUTPUT=sink.name, GITHUB_REPOSITORY="owner/fixture", GITHUB_RUN_ID=run,
+                               GITHUB_RUN_ATTEMPT="1", WEATHER_PROGRESS_MASTER_SECRET="own-synthetic-seal-secret",
+                               ACTIONS_RUNTIME_TOKEN="exclude", SUPABASE_SERVICE_ROLE_KEY="exclude")
+            result = subprocess.run([sys.executable, "-B", str(scripts / "run-ordinary-provider-cgroup.py"),
+                "terminal-progress-seal", "240", "--"], env=environment, cwd=root, stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertIn("WEATHER_PROVIDER_CGROUP_CLOSED", result.stdout)
+            self.assertFalse((root / ".cache/weather-acquisition-writer.claim").exists())
+            line, = Path(sink.name).read_text("ascii").splitlines()
+            self.assertTrue(line.startswith("terminal_cipher_handoff="))
+            handoff = json.loads(line.split("=", 1)[1])
+            self.assertEqual((handoff["runId"], handoff["runAttempt"], handoff["deadline"] - handoff["startedAt"]),
+                             (run, "1", 240_000))
+            member = stage / ".cache/weather-private-progress.encrypted"
+            self.assertEqual(handoff["inode"], str(member.stat().st_ino))
+            self.assertEqual(handoff["bytes"], member.stat().st_size)
+            self.assertTrue(os.path.samestat(prior.stat(), old))
+            self.assertEqual(prior.read_bytes(), b"synthetic prior cipher")
+            member.unlink()
+            member.parent.rmdir()
+            stage.rmdir()
+
     def test_actual_controller_and_supervisors_return_staged_outputs_without_providers(self):
         runner_temp = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
         runner_commands = runner_temp / "_runner_file_commands"

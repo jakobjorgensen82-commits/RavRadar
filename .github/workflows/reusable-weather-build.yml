@@ -3232,8 +3232,13 @@ jobs:
         shell: bash
         env:
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Nonterminal DMI fallback continues with a successful job status.
+          TERMINAL_PROGRESS_SAVE: ${{ job.status == 'failure' && env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated' }}
         run: |
           set -euo pipefail
+          if test "$TERMINAL_PROGRESS_SAVE" = true; then
+            exec python -B scripts/run-ordinary-provider-cgroup.py terminal-progress-seal 240 --
+          fi
           node scripts/weather-component-progress-cache.mjs save \
             --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
             --report "$RUNNER_TEMP/weather-progress-save-report.json"
@@ -3243,6 +3248,16 @@ jobs:
         if: inputs.completed_private_runtime != true && (always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.saved == 'true')
         continue-on-error: true
         uses: ./.github/actions/save-owned-dmi-grib
+        with:
+          operation: upload-encrypted-progress
+          key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload the physically closed terminal encrypted weather stage
+        if: inputs.completed_private_runtime != true && (always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.terminal_cipher_handoff != '')
+        continue-on-error: true
+        uses: ./.github/actions/save-owned-dmi-grib
+        env:
+          RAVRADAR_TERMINAL_CIPHER_HANDOFF: ${{ steps.component-progress-seal.outputs.terminal_cipher_handoff }}
         with:
           operation: upload-encrypted-progress
           key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ github.run_id }}-${{ github.run_attempt }}

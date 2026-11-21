@@ -938,7 +938,30 @@ async function runWeatherComponentProgressCache({
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const DIRECT_CALL = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (DIRECT_CALL && process.argv[2] === '--seal-terminal-stage') {
+  try {
+    const { GITHUB_OUTPUT: output, RUNNER_TEMP: runnerTemp } = process.env;
+    if (process.platform !== 'linux' || process.versions.node.split('.')[0] !== '24' || process.argv.length !== 3
+      || !runnerTemp || !path.isAbsolute(runnerTemp) || !output || path.basename(output) !== 'GITHUB_OUTPUT'
+      || path.dirname(path.dirname(output)) !== runnerTemp
+      || !/^rr-weather-provider-[a-zA-Z0-9_]+$/.test(path.basename(path.dirname(output)))) fail('ARGUMENT_INVALID');
+    const result = await sealTerminalWeatherProgressStage({
+      repositoryRoot: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
+      basePath: path.join(runnerTemp, 'weather-progress-base.json'),
+    });
+    if (!result.staged) fail('TERMINAL_STAGE_UNAVAILABLE');
+    const destination = await fs.open(output, fsConstants.O_WRONLY | fsConstants.O_APPEND | fsConstants.O_NOFOLLOW);
+    try {
+      await destination.writeFile(`terminal_stage_sha256=${result.sha256}\nterminal_stage_bytes=${result.encryptedBytes}\n`);
+    } finally {
+      await destination.close();
+    }
+  } catch {
+    console.error('WEATHER_PROGRESS_TERMINAL_STAGE_REFUSED');
+    process.exitCode = 1;
+  }
+} else if (DIRECT_CALL) {
   try {
     const args = process.argv.slice(2);
     const mode = args.shift();
