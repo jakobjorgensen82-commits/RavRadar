@@ -749,6 +749,68 @@ class BootstrapAcquisitionTests(unittest.TestCase):
 
 
 class OperationalWaveClosureTests(unittest.TestCase):
+    def test_ordinary_wave_report_exposes_only_bounded_acquisition_metadata(self):
+        private = "synthetic-private-data-must-not-leave-the-runner"
+        dw = "wam_dw"
+        result = {
+            "runs": {dw: {"referenceTime": OLD_RUN, "source": private}},
+            "diagnostics": {
+                "collectionsAttempted": [dw],
+                "stacByCollection": {dw: {
+                    "selectedRun": TARGET, "selectedTargetWindowAxisResolvable": True,
+                    "sampleItems": [{"id": private}],
+                }},
+                "errors": [
+                    {"collection": dw, "failureCode": "RUNTIME_BUDGET_REACHED", "message": private},
+                    {"collection": dw, "failureCode": private},
+                ],
+                "operationalWaveRunPhasesByCollection": {dw: [{
+                    "modelRun": TARGET, "selectedAssetCount": 118, "assetsReached": 31,
+                    "assetsProven": 30, "fullyTraversed": False, "promotionCount": 0,
+                    "lastPromotionDecision": {"reasonCode": "INCOMPLETE_QUALITY_REFRESH", "private": private},
+                }]},
+                "operationalWaveAssetCoverageByCollection": {dw: {
+                    "rejectedTupleCount": 20, "admittedTupleCount": 200, "admittedParts": [private],
+                }},
+                "operationalWaveProgressByCollection": {dw: {
+                    "firstUnresolvedHour": utc_offset(TARGET, 31), "remainingClosurePairCount": 5500,
+                }},
+            },
+        }
+        with tempfile.TemporaryDirectory() as folder, patch.object(producer, "ROOT", Path(folder)):
+            output = Path(folder) / "data/diagnostics/dmi-wave-acquisition-safe.json"
+            output.parent.mkdir(parents=True)
+            with patch.dict(producer.os.environ, {"DMI_BULK_REQUIRE_ORDINARY_CLOSURE": "false"}):
+                self.assertFalse(producer.write_ordinary_wave_acquisition_report(result, parse_utc_hour(TARGET)))
+            self.assertFalse(output.exists())
+            outputs = Path(folder) / "outputs"
+            with patch.dict(producer.os.environ, {
+                "DMI_BULK_REQUIRE_ORDINARY_CLOSURE": "true", "GITHUB_OUTPUT": str(outputs),
+            }):
+                ready = producer.write_ordinary_wave_acquisition_report(result, parse_utc_hour(TARGET))
+                self.assertTrue(ready)
+                producer.write_github_outputs("ok", wave_acquisition_report_ready=ready)
+                with patch.object(producer, "FINALIZE_ONLY", True):
+                    self.assertFalse(producer.write_ordinary_wave_acquisition_report(result, parse_utc_hour(TARGET)))
+                    producer.write_github_outputs("ok")
+            readiness = [line for line in outputs.read_text().splitlines()
+                         if line.startswith("wave_acquisition_report_ready=")]
+            self.assertEqual(readiness, ["wave_acquisition_report_ready=true", "wave_acquisition_report_ready=false"])
+            payload = output.read_text(encoding="utf-8")
+        report = json.loads(payload)
+        self.assertNotIn(private, payload)
+        self.assertFalse(report["publicWeatherCoverageProved"])
+        self.assertEqual(report["productionReferenceAt"], TARGET)
+        wave = report["collections"][dw]
+        self.assertEqual(wave["activeModelRun"], OLD_RUN)
+        self.assertEqual(wave["selectedModelRun"], TARGET)
+        self.assertEqual(wave["firstUnresolvedHour"], utc_offset(TARGET, 31))
+        self.assertEqual(wave["remainingPairCount"], 5500)
+        self.assertEqual(wave["stopCodes"], ["RUNTIME_BUDGET_REACHED"])
+        self.assertEqual(wave["phases"][0]["lastPromotionDecision"], "INCOMPLETE_QUALITY_REFRESH")
+        self.assertIsNone(report["collections"]["wam_nsb"]["catalogueResolvesAxis"])
+        self.assertFalse(report["collections"]["wam_nsb"]["attempted"])
+
     @staticmethod
     def _one_part_wave_fixture() -> tuple[object, object, dict]:
         registry = load_coastal_part_registry(
