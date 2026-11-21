@@ -79,3 +79,13 @@ tidsplanen ændres ikke.
 Dette er en eksplicit ejerbeslutning om en ny ordinær kørsel. Bestillingen
 gør ingen antagelse om, at den foregående kørsel var uden HTTP-kald, og
 leverer ingen genoptagelses- eller udsagnsret om tidligere writes.
+
+## Beskyttet start af frisk vejr
+
+Når den normale RAW-beskyttelse er håndhævet, går ny almindelig
+vejrhentning gennem den eksisterende vejrvagt. Ved en afsluttet fejl
+kan ejeren bruge den afgrænsede bestilling i samme vagtvindue.
+En direkte standard- eller force-start i de to vejrarbejdsgange
+stoppes før leverandørhentning. De godkendte særkørsler og eksplicit
+genoptagelse af gemt vejr har fortsat deres egne input- og
+skrivekontroller.

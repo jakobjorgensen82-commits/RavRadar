@@ -30,6 +30,91 @@ function step(source, name) {
   return found[0];
 }
 
+test('legacy weather dispatch stops before fresh work when the protected RAW caller is required', () => {
+  const readiness = orchestrator.split('\n  current-hour-readiness:\n')[1].split('\n  trip-storage-readiness:\n')[0];
+  const guard = step(readiness, 'Require the protected RAW caller for fresh ordinary weather');
+  const condition = /^        if: >-\n((?:          .*\n)+)/m.exec(guard)?.[1]?.trim();
+  assert.ok(condition);
+  assert.match(readiness, /needs: operational-recovery-gate[\s\S]*?outputs\.closure_deferred == 'false'/);
+  assert.ok(readiness.indexOf(guard) < readiness.indexOf('uses: actions/checkout'));
+  assert.match(guard, /DIRECT_FRESH_WEATHER_REQUIRES_RAW_ROTATION[\s\S]*?^          exit 1$/m);
+  assert.doesNotMatch(guard, /continue-on-error|always\(/);
+
+  const rejects = (mode, inputs = {}) => runInNewContext(condition, {vars:{RAVRADAR_RAW_BOOTSTRAP_PROOF:mode},inputs});
+  assert.equal(rejects('enforce'), true);
+  assert.equal(rejects('enforce', {force:true,extended_provider_bootstrap:true}), true);
+  assert.equal(rejects('observe'), false);
+  assert.equal(rejects(''), false);
+  for (const operation of ['geometry_v2_pilot','geometry_v2_national','produce_weather_handoff',
+    'ravscore_integrated_first_cutover','ravscore_integrated_return']) {
+    assert.equal(rejects('enforce', {[operation]:true}), false, operation);
+  }
+});
+
+test('current weather dispatch requires RAW for fresh work and preserves the exact protected and recovery routes', () => {
+  const current = read('.github/workflows/run-current-weather-once.yml');
+  const readiness = current.split('\n  current-main-target:\n')[1].split('\n  native-identity-prewrite:\n')[0];
+  const botScope = step(readiness, 'Identify the default scheduled weather caller');
+  const guard = step(readiness, 'Require the protected RAW caller for fresh ordinary weather');
+  const checkoutAndSelection = [
+    botScope,
+    step(readiness, 'Pin the actual newest completed private generation before target selection'),
+    step(readiness, 'Require the explicit provider-free epoch checkpoint request'),
+    step(readiness, 'Lock the requested original checkpoint hour without provider work'),
+    step(readiness, 'Require the fixed native-identity recovery scope before continuation'),
+    guard,
+    step(readiness, 'Lock the canonical UTC production hour'),
+  ].map(block => readiness.indexOf(block));
+  assert.ok(checkoutAndSelection.every((position, index) => position > (checkoutAndSelection[index - 1] ?? -1)));
+  assert.match(guard, /DIRECT_FRESH_WEATHER_REQUIRES_RAW_ROTATION[\s\S]*?^          exit 1$/m);
+  assert.doesNotMatch(guard, /continue-on-error|always\(/);
+
+  const condition = block => /^        if: >-\n((?:          .*\n)+)/m.exec(block)?.[1]?.trim();
+  const evaluate = (expression, context) => {
+    assert.ok(expression);
+    return runInNewContext(expression.replace(/\b(steps|needs)\.([a-z]+(?:-[a-z]+)+)\./g, '$1["$2"].'), context);
+  };
+  const build = current.split('\n  build-and-prepare:\n')[1].split('\n  deploy-pages:\n')[0];
+  const enforce = /^      enforce_raw_cache_rotation: \$\{\{ (.+) \}\}$/m.exec(build)?.[1];
+  const dispatch = step(read('.github/workflows/watch-missed-weather-schedule.yml'), 'Dispatch one ordinary current-weather run');
+  assert.match(dispatch, /inputs\.owner_retry_after_failed_run_id != ''/);
+  assert.match(dispatch, /GH_TOKEN: \$\{\{ github.token \}\}/);
+  assert.match(dispatch, /run-current-weather-once\.yml\/dispatches"\s+\\\n\s+-f ref=main -F "inputs\[quick_confirmation\]=false"/);
+  const defaults = {completed_private_runtime:false,current_family_cold_start:false,quick_confirmation:false,
+    weather_state_epoch_bootstrap:false,weather_state_epoch_checkpoint_reentry:false,
+    native_sampling_identity_original_recovery:false,completed_stage_source:'',quick_progress_source:'',
+    checkpoint_target_hour:'',weather_state_epoch_archive_key:'',weather_state_epoch_archive_catalog_sha256:'',
+    weather_state_epoch_raw_cache_key:''};
+  const bot = 'github-actions[bot]';
+  const evaluateDispatch = ({actor='owner',triggeringActor=actor,attempt=1,mode='enforce',
+    input={},completed='skipped',checkpoint='skipped'}={}) => {
+    const vars = {RAVRADAR_RAW_BOOTSTRAP_PROOF:mode};
+    const inputs = {...defaults,...input};
+    const github = {actor,triggering_actor:triggeringActor,run_attempt:attempt};
+    const eligible = evaluate(condition(botScope),{github,inputs}) ? 'true' : '';
+    const steps = {'automatic-completed-scope':{outputs:{eligible}},'completed-target':{outcome:completed},
+      'checkpoint-target':{outcome:checkpoint}};
+    return {
+      stopped:evaluate(condition(guard),{vars,inputs,steps}),
+      protectedRaw:evaluate(enforce,{vars,needs:{'current-main-target':{outputs:{ordinary_scheduled:eligible,
+        completed_private_runtime:inputs.completed_private_runtime ? 'true' : 'false'}}}}),
+    };
+  };
+  assert.deepEqual(evaluateDispatch({actor:bot}),{stopped:false,protectedRaw:true});
+  for (const request of [{},{actor:bot,triggeringActor:'owner'},{actor:bot,attempt:2},
+    {input:{quick_confirmation:true}},{input:{quick_progress_source:'123-1'}},
+    {input:{completed_private_runtime:true}},{input:{checkpoint_target_hour:'2026-11-21T08:00:00Z'}}]) {
+    assert.deepEqual(evaluateDispatch(request),{stopped:true,protectedRaw:false});
+  }
+  for (const request of [{mode:'observe'},{mode:''},{input:{current_family_cold_start:true}},
+    {input:{weather_state_epoch_bootstrap:true}},{input:{completed_private_runtime:true},completed:'success'},
+    {input:{checkpoint_target_hour:'2026-11-21T08:00:00Z',quick_progress_source:'123-1'},checkpoint:'success'},
+    {input:{weather_state_epoch_checkpoint_reentry:true},checkpoint:'success'},
+    {input:{native_sampling_identity_original_recovery:true},checkpoint:'success'}]) {
+    assert.deepEqual(evaluateDispatch(request),{stopped:false,protectedRaw:false});
+  }
+});
+
 test('ordinary producer cessation precedes RAW, consumers and encrypted progress', () => {
   const source = actualNormalWorkflow;
   const dmi = step(source, 'Update DMI bulk model cache');
