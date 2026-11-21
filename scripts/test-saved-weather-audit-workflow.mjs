@@ -879,6 +879,89 @@ test('B361 counts national public endpoint presence without publishing PART iden
   assert.throws(()=>createB361PublicEndpointEvidence().finish(), /B361_PUBLIC_HOUR_UNBOUND/);
 });
 
+test('B363 only admits its exact archived producer and fixed read-only job', async () => {
+  const { B363_ARTIFACT, createB363ArtifactFetch } = await import('./audit-b358-water-level-trend.mjs');
+  const workflow = (await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const block = workflow.split('\n  water-level-trend-363:')[1];
+  const confirmation = 'READ-B363-WATERLEVEL-TREND-ONLY';
+  assert(block?.includes('inputs.confirmation == ' + "'" + confirmation + "'"));
+  for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272'])
+    assert.ok(workflow.split('\n  '+job+':\n')[1]?.split('\n')[0].includes("inputs.confirmation != '"+confirmation+"'"), job);
+  assert.match(block, /git -c protocol\.allow=never archive 8851651b5908f37a1db3486a98d50ffd1231ff9c/);
+  assert.doesNotMatch(block, /actions\/cache|secrets: inherit|set -x|gh workflow run|npm run|--publish|\/logs|(?:contents|actions|pages|id-token): write/);
+  const sourceProof = block.indexOf('test "$SOURCE_REQUIRED" = false');
+  const read = block.indexOf('node scripts/audit-b358-water-level-trend.mjs --b363');
+  assert.ok(sourceProof > 0 && sourceProof < read && read < block.indexOf('STAGED_PRIVATE_BUILD_MASTER_SECRET:'));
+  assert.equal((block.match(/secrets\./g) ?? []).length, 1);
+  assert.match(block, /path: \$\{\{ runner.temp \}\}\/ravradar-b363-water-audit\/water-level-trend-safe\.json/);
+  const gate = block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE\n/)[1];
+  const head = 'a'.repeat(40);
+  const exact = { confirmation, expected_main_head: head, progress_source_run_id: '44865684276', progress_source_attempt: '1' };
+  for (const [input, accepted] of [[exact, true], [{ ...exact, expected_main_head: 'b'.repeat(40) }, false],
+    [{ ...exact, progress_source_run_id: '44810601191' }, false], [{ ...exact, progress_source_attempt: '2' }, false],
+    [{ ...exact, include_raw_manifest: true }, false], [{ ...exact, unexpected: false }, false]]) {
+    assert.equal(spawnSync(process.execPath, ['--input-type=module'], {
+      input: gate, encoding: 'utf8', env: { ...process.env, ALL_INPUTS: JSON.stringify(input), GITHUB_SHA: head },
+    }).status === 0, accepted);
+  }
+  const api = 'https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/actions/';
+  const metadata = api + 'runs/' + exact.progress_source_run_id + '/artifacts?per_page=100';
+  const zip = api + 'artifacts/' + B363_ARTIFACT.id + '/zip';
+  const signed = 'https://fixture.blob.core.windows.net/stage-363';
+  const correctArtifact = { name: 'ravradar-private-build-stage-44865684276-1', id: B363_ARTIFACT.id,
+    size_in_bytes: B363_ARTIFACT.bytes, digest: B363_ARTIFACT.digest };
+  const pin = artifacts => createB363ArtifactFetch(async (url, options) => {
+    if (url === metadata) return Response.json({ artifacts });
+    if (url === zip) return new Response(null, { status:302, headers:{ Location:signed } });
+    assert.equal(url, signed);
+    assert.equal([...new Headers(options.headers)].length, 0);
+    return new Response('synthetic');
+  });
+  const get = { redirect: 'manual' };
+  for (const bad of [[{ ...correctArtifact, digest: 'sha256:'+'0'.repeat(64) }], [correctArtifact, correctArtifact], []]) {
+    const transport = pin(bad);
+    await assert.rejects(transport(metadata, get), /B363_ARTIFACT_PIN/);
+    await assert.rejects(transport(zip, get), /B363_TRANSPORT_SCOPE/);
+  }
+  const transport = pin([correctArtifact]);
+  await assert.rejects(transport(api+'runs/44810601191/attempts/1', get), /B363_TRANSPORT_SCOPE/);
+  assert.equal((await transport(metadata, get)).status, 200);
+  assert.equal((await transport(zip, get)).status, 302);
+  await assert.rejects(transport(signed, { ...get, headers:{ Authorization:'test' } }), /B363_TRANSPORT_SCOPE/);
+  assert.equal(await (await transport(signed, get)).text(), 'synthetic');
+  await assert.rejects(transport(signed, get), /B363_TRANSPORT_SCOPE/);
+});
+
+test('B363 exact H0 H3 H6 national aggregate separates missing level and trend', async () => {
+  const { createB363PublicEndpointEvidence } = await import('./audit-b358-water-level-trend.mjs');
+  const time = offset => new Date(Date.parse('2026-11-21T04:00:00Z') + offset*3_600_000).toISOString();
+  const expectedParts = new Map(Array.from({ length:673 }, (_, i) => ['artificial-b363-'+i, 'zone-'+(i%210)]));
+  const fixture = (offset, modify = () => {}) => Object.fromEntries([...expectedParts].map(([id, zoneId], i) => {
+    const part = { id, zoneId, current:{ time:time(offset), weather:{ waterLevelCm:0, waterLevelTrendCm3h:offset===3 ? 0 : null } } };
+    modify(part, i);
+    return [id, part];
+  }));
+  const exact = createB363PublicEndpointEvidence(expectedParts);
+  exact.collect(1, null); // A different compressed hour is outside this projection.
+  exact.collect(0, fixture(0));
+  exact.collect(3, fixture(3, (part, i) => { if (i === 0) part.current.weather.waterLevelCm = null; }));
+  exact.collect(6, fixture(6));
+  const counts = exact.finish();
+  assert.deepEqual(counts, [
+    { offset:0, time:time(0), withBothLevels:672, trendPresent:0, missingDespiteBoth:672 },
+    { offset:3, time:time(3), withBothLevels:672, trendPresent:673, missingDespiteBoth:0 },
+  ]);
+  assert.doesNotMatch(JSON.stringify(counts), /artificial-b363/);
+  const wrongZone = createB363PublicEndpointEvidence(expectedParts);
+  assert.throws(() => wrongZone.collect(0, fixture(0, part => { part.zoneId = 'wrong'; })), /B363_PUBLIC_PART_BINDING/);
+  const falseFirstTrend = createB363PublicEndpointEvidence(expectedParts);
+  falseFirstTrend.collect(0, fixture(0, part => { part.current.weather.waterLevelTrendCm3h = 0; }));
+  falseFirstTrend.collect(3, fixture(3));
+  falseFirstTrend.collect(6, fixture(6));
+  assert.throws(() => falseFirstTrend.finish(), /B363_KNOWN_PUBLIC_OBSERVATION_MISMATCH/);
+  assert.throws(() => createB363PublicEndpointEvidence(expectedParts).finish(), /B363_PUBLIC_HOUR_UNBOUND/);
+});
+
 test('B358 DKSS queue publishes only fixed onboarding hours and bounded reason fields', async () => {
   const { projectDkssOnsetQueue } = await import('./audit-b358-water-level-trend.mjs');
   const referenceAt = '2026-11-20T08:00:00.000Z';

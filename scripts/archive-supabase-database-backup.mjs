@@ -563,9 +563,43 @@ export async function inspectSupabaseDatabaseBackupLifecycle(dependencies={}){
       usedBytes:inventory.total};
   }catch(error){throw archiveFailure(error,c);}
 }
-// Independently inspect fresh stock without opening any SQL carriers or unknown
-// objects. In the initial single-archive case the exact listing also proves
-// that no durable receipt or historical archive can already exist.
+function requireListedBackupObjects(inventory,objects,code){
+  for(const object of objects){
+    const listed=inventory.objects.get(object.path)??inventory.partObjects.get(object.path);
+    need(listed?.sha256===object.sha256&&listed.bytes===object.bytes,code);
+  }
+}
+
+async function qualifyListedBackupPair(c,inventory,pointer){
+  const {groups,legacyIndexSeen,unreferencedManagedObjectsSeen}=await rotationGroups(c,inventory);
+  const current=groups.find(item=>item.pointer.index.sha256===pointer.index.sha256);
+  const reserve=groups.length===2&&current?groups.find(item=>item!==current):null;
+  const currentRestoreVerified=Boolean(current?.receipts.length);
+  const reserveRestoreVerified=Boolean(reserve?.receipts.length);
+  let reserveFormerCurrent=false;
+  let completeDistinctPair=false;
+  if(reserve){
+    need(same(checkPointer(current.pointer),pointer),'BACKUP_STOCK_CURRENT_POINTER_CHANGED');
+    requireListedBackupObjects(inventory,reserve.objects,'BACKUP_STOCK_RESERVE_OBJECT_MISSING_OR_CHANGED');
+    await qualifyHistoricalBackupGroups(c,[reserve],pointer.index.sha256);
+    reserveFormerCurrent=reserve.formerCurrent&&reserve.group.completedAt<current.group.completedAt;
+    const paths=[...current.objects,...reserve.objects].map(object=>object.path);
+    completeDistinctPair=!legacyIndexSeen&&!unreferencedManagedObjectsSeen&&inventory.unsupported===0
+      &&paths.length===inventory.count&&new Set(paths).size===inventory.count;
+  }
+  return {
+    pairQualification:{
+      status:currentRestoreVerified&&reserveRestoreVerified&&reserveFormerCurrent&&completeDistinctPair
+        ?'VERIFIED_CURRENT_AND_RESERVE':'NOT_QUALIFIED',
+      authenticatedArchiveCount:groups.length,currentRestoreVerified,reserveRestoreVerified,
+      reserveFormerCurrent,completeDistinctPair,
+    },
+    restoreRunIds:current?.receipts.map(receipt=>receipt.body.runId)??[],
+  };
+}
+
+// The original stock read authenticates only the current index. Pair
+// qualification opts into the existing bounded reader for indexes and receipts.
 export async function inspectSupabaseDatabaseBackupStock(expectedIndexCommitment,dependencies={}){
   let c;
   try{
@@ -578,14 +612,13 @@ export async function inspectSupabaseDatabaseBackupStock(expectedIndexCommitment
     const inventory=await rotationInventory(c,{requireKnownNamespace:false});
     const expected=[pointer.index,...group.index.objects.flatMap(entry=>group.chunked
       ?entry.parts.map(part=>part.object):[entry.object])];
-    for(const object of expected){
-      const listed=inventory.objects.get(object.path)??inventory.partObjects.get(object.path);
-      need(listed?.sha256===object.sha256&&listed.bytes===object.bytes,'BACKUP_STOCK_CURRENT_OBJECT_MISSING_OR_CHANGED');
-    }
+    requireListedBackupObjects(inventory,expected,'BACKUP_STOCK_CURRENT_OBJECT_MISSING_OR_CHANGED');
+    const pair=dependencies.qualifyPair===true?await qualifyListedBackupPair(c,inventory,pointer):{};
     const databaseStorage=await readDatabaseStorage(c);
     need(same(await readLocator(c),locator),'LOCATOR_CHANGED');
     return {locatorVersion:locator.version,completedAt:group.completedAt,context:pointer.context,usedBytes:inventory.total,
-      objectCount:inventory.count,databaseStorage,selfContainedCurrentOnly:selfDescribing&&inventory.count===expected.length};
+      objectCount:inventory.count,databaseStorage,selfContainedCurrentOnly:selfDescribing&&inventory.count===expected.length,
+      ...pair};
   }catch(error){throw archiveFailure(error,c);}
 }
 async function rotationInventory(c,{requireKnownNamespace=true}={}){
