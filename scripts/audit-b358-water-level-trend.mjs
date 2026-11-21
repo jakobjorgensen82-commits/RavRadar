@@ -17,6 +17,14 @@ const TARGET = Object.freeze({
   sourceHead: '99eb3b556aa2ab900501491455bfdad41e7cf06f', datasetId: 'rr-20261120100201-210',
   productionReferenceAt: '2026-11-20T08:00:00.000Z',
 });
+const B361_TARGET = Object.freeze({
+  repository: TARGET.repository, runId: '44810601191', runAttempt: '1',
+  sourceHead: '257d1cb527ab734d935d71a75608982f12fdc61e', datasetId: 'rr-20261120221503-210',
+  productionReferenceAt: '2026-11-20T20:00:00.000Z',
+});
+const B361_OFFSETS = Object.freeze([5, 25, 26, 27, 29, 35, 36]);
+const B361_PUBLIC_MANIFEST_SHA256 = 'd608a4f5a27db157541a7cb743d170d3605090c534ee5f546a5703b89d483596';
+const B361_SOURCE_DETAILS_SHA256 = 'ab7c57ff3d74c70c9bcf5ceb397700b48f362fda01797bf665de3fc5b4f09a9f';
 const ZONE_IDS = Object.freeze(['DK-B02-06', 'DK-B02-11', 'DK-B05-16', 'DK-B05-17']);
 const FUR_ZONE = 'DK-B05-17';
 const FUR_PART = 'dk-b05-17-national-part-04';
@@ -73,12 +81,14 @@ function differenceFlags(source, future, allowed, zone) {
 
 // Routes supplied here are only the source sets archived by the original
 // normal zone caller, or the exact Fur part set bound by its original trace.
-export function projectSourcePairs({ referenceAt, zone, storedRows, selected, index, normal, allowed, basisCheck }) {
+export function projectSourcePairs({ referenceAt, zone, storedRows, selected, index, normal, allowed, basisCheck, offsets }) {
   const output = counters();
   const sourceRows = new Map();
   const decisionsByKeys = new Map();
-  const times = Array.from({ length: PUBLIC_HOURS }, (_, hour) => at(referenceAt, hour));
-  for (const [hour, time] of times.entries()) {
+  const hours = offsets ?? Array.from({ length: PUBLIC_HOURS }, (_, hour) => hour);
+  const times = hours.map(hour => at(referenceAt, hour));
+  for (const [position, time] of times.entries()) {
+    const hour = hours[position];
     const stored = storedRows.get(time);
     const keys = selected(time, stored);
     const trace = basisCheck?.(time);
@@ -147,16 +157,17 @@ function hourlyIndex(rows) {
   return new Map(rows.map(row => [row.time, row]));
 }
 
-async function readSelectedPublicPartWeather(module, packPath, conditions, scope) {
+async function readSelectedPublicPartWeather(module, packPath, conditions, scope, { target = TARGET, publicEvidence } = {}) {
   const { manifest, payloadOffset, bytes } = await module.inspectPrivatePublicHourDeliveryPack({ packPath, conditions });
-  if (manifest.datasetId !== TARGET.datasetId || manifest.productionReferenceAt !== TARGET.productionReferenceAt
-    || manifest.entries.length !== PUBLIC_HOURS) inputFailure('PUBLIC_HOUR_BINDING');
+  if (manifest.datasetId !== target.datasetId || manifest.productionReferenceAt !== target.productionReferenceAt
+    || manifest.entries.length !== PUBLIC_HOURS
+    || (publicEvidence && manifest.sourceDetailsSha256 !== B361_SOURCE_DETAILS_SHA256)) inputFailure('PUBLIC_HOUR_BINDING');
   const selected = new Map([...scope].map(([id, zone]) => [id, { zone, rows: new Map() }]));
   let position = payloadOffset;
   const handle = await fs.open(packPath, 'r');
   try {
     for (const [hour, entry] of manifest.entries.entries()) {
-      if (entry.time !== at(TARGET.productionReferenceAt, hour)) inputFailure('PUBLIC_HOUR_AXIS');
+      if (entry.time !== at(target.productionReferenceAt, hour)) inputFailure('PUBLIC_HOUR_AXIS');
       const compressed = Buffer.alloc(entry.compressedBytes);
       let read = 0;
       while (read < compressed.length) {
@@ -176,6 +187,7 @@ async function readSelectedPublicPartWeather(module, packPath, conditions, scope
         || !Object.keys(manifest.modelBinding).every(key => document.delivery.modelBinding?.[key] === manifest.modelBinding[key])) {
         inputFailure('PUBLIC_HOUR_BINDING');
       }
+      publicEvidence?.collect(hour, document.coastalParts?.parts);
       for (const [id, entryOutput] of selected) {
         const part = document.coastalParts?.parts?.[id];
         if (part?.id !== id || part.zoneId !== entryOutput.zone || part.current?.time !== entry.time || !part.current.weather)
@@ -191,16 +203,17 @@ async function readSelectedPublicPartWeather(module, packPath, conditions, scope
   return selected;
 }
 
-export function projectSibirienDirectWater({ part, direct, publicPart, adapter }) {
+export function projectSibirienDirectWater({ part, direct, publicPart, adapter,
+  referenceAt = TARGET.productionReferenceAt, offsets = [6, 7] }) {
   const unknown = reason => ({ status: 'UNKNOWN', reason });
   if (part?.partId !== SIBIRIEN_PART || part.zoneId !== SIBIRIEN_ZONE || publicPart?.zone !== SIBIRIEN_ZONE
     || !(publicPart.rows instanceof Map)
     || !Array.isArray(direct?.hourly) || direct.hourly.length !== 121
     || !same(direct.point, part.waterPoint)
-    || direct.hourly.some((row, hour) => row?.time !== at(TARGET.productionReferenceAt, hour)))
+    || direct.hourly.some((row, hour) => row?.time !== at(referenceAt, hour)))
     return unknown('SIBIRIEN_DIRECT_PART_UNBOUND');
   const bulkId = 'PART::' + SIBIRIEN_PART;
-  const hours = [6, 7].map(hour => {
+  const hours = offsets.map(hour => {
     const before = direct.hourly[hour], after = direct.hourly[hour + 3];
     const observed = publicPart.rows.get(before.time), observedFuture = publicPart.rows.get(after.time);
     if (observed?.time !== before.time || observedFuture?.time !== after.time)
@@ -233,14 +246,14 @@ export function projectSibirienDirectWater({ part, direct, publicPart, adapter }
   return { status: 'OBSERVED', hours };
 }
 
-async function readSibirienDirectWater({ indexed, forecast, conditions, publicPart, load }) {
+async function readSibirienDirectWater({ indexed, forecast, conditions, publicPart, load, target = TARGET, offsets }) {
   const original = conditions.coastalParts?.parts?.[SIBIRIEN_PART];
   const bank = indexed.continuity;
   const ids = Object.keys(conditions.coastalParts?.parts ?? {}).sort((a, b) => a.localeCompare(b));
   const unknown = reason => ({ status: 'UNKNOWN', reason });
   if (original?.zoneId !== SIBIRIEN_ZONE || ids.length !== 673
     || bank?.metadata?.partCount !== ids.length || bank.entries.length !== ids.length
-    || bank.metadata.productionReferenceAt !== TARGET.productionReferenceAt || publicPart?.zone !== SIBIRIEN_ZONE)
+    || bank.metadata.productionReferenceAt !== target.productionReferenceAt || publicPart?.zone !== SIBIRIEN_ZONE)
     return unknown('SIBIRIEN_DIRECT_PART_UNBOUND');
   try {
     const entry = await forecast.readDmiForecastRecord(indexed, bank.entries[ids.indexOf(SIBIRIEN_PART)]);
@@ -254,8 +267,8 @@ async function readSibirienDirectWater({ indexed, forecast, conditions, publicPa
     // without decompressing the other 672 original PART records.
     const qualified = await continuity.unpackDmiPartContinuity({
       ...bank.metadata, partCount: 1, entries: [entry], rawBytes: entry.rawBytes, compressedBytes: entry.compressedBytes,
-    }, [part], TARGET.productionReferenceAt);
-    return projectSibirienDirectWater({ part, direct: qualified.get(SIBIRIEN_PART), publicPart, adapter });
+    }, [part], target.productionReferenceAt);
+    return projectSibirienDirectWater({ part, direct: qualified.get(SIBIRIEN_PART), publicPart, adapter, referenceAt: target.productionReferenceAt, offsets });
   } catch {
     return unknown('SIBIRIEN_VERIFIED_DIRECT_READ_REFUSED');
   }
@@ -321,11 +334,10 @@ export function qualifyLf7Reconstruction({ conditions, diagnostics, routing, fea
 }
 
 // Only fixed times and established diagnostics survive this projection.
-export function projectDkssOnsetQueue(document, referenceAt) {
+export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9, 10]) {
   const diagnostics = document?.diagnostics;
   const queues = diagnostics?.currentAcquisitionPlan?.firstTurnOrder;
   const count = value => Number.isSafeInteger(value) && value >= 0 && value <= 100_000 ? value : null;
-  const offsets = [6, 7, 9, 10];
   const results = {};
   for (const collection of ['dkss_idw', 'dkss_nsbs', 'dkss_lf']) {
     const entry = queues?.[collection];
@@ -350,7 +362,50 @@ export function projectDkssOnsetQueue(document, referenceAt) {
   return results;
 }
 
-async function readAuthenticatedProjection({ payload, root, load }) {
+export function createB361PublicEndpointEvidence() {
+  const requests = new Set(B361_OFFSETS.flatMap(hour => [hour, hour + 3]));
+  const rows = new Map();
+  return {
+    collect(hour, parts) {
+      if (!requests.has(hour)) return;
+      const entries = Object.entries(parts ?? {});
+      if (entries.length !== 673 || rows.has(hour)) inputFailure('B361_PUBLIC_PART_INVENTORY');
+      const time = at(B361_TARGET.productionReferenceAt, hour);
+      rows.set(hour, new Map(entries.map(([id, part]) => {
+        if (part?.id !== id || part.current?.time !== time || !part.current.weather)
+          inputFailure('B361_PUBLIC_PART_BINDING');
+        const { waterLevelCm, waterLevelTrendCm3h } = part.current.weather;
+        if ((waterLevelCm != null && !finite(waterLevelCm)) || (waterLevelTrendCm3h != null && !finite(waterLevelTrendCm3h)))
+          inputFailure('B361_PUBLIC_PART_WATER_TYPE');
+        return [id, [finite(waterLevelCm), finite(waterLevelTrendCm3h)]];
+      })));
+    },
+    finish() {
+      const counts = B361_OFFSETS.map(offset => {
+        const start = rows.get(offset), support = rows.get(offset + 3);
+        if (!start || !support || [...start.keys()].some(id => !support.has(id)))
+          inputFailure('B361_PUBLIC_HOUR_UNBOUND');
+        let withBothLevels = 0, trendPresent = 0, missingDespiteBoth = 0;
+        for (const [id, [level, trend]] of start) {
+          const both = level && support.get(id)[0];
+          withBothLevels += Number(both);
+          trendPresent += Number(trend);
+          missingDespiteBoth += Number(both && !trend);
+        }
+        return { offset, time: at(B361_TARGET.productionReferenceAt, offset),
+          withBothLevels, trendPresent, missingDespiteBoth };
+      });
+      const first = counts[0];
+      if (first.withBothLevels !== 673 || first.trendPresent !== 586 || first.missingDespiteBoth !== 87)
+        inputFailure('B361_KNOWN_PUBLIC_OBSERVATION_MISMATCH');
+      return counts;
+    },
+  };
+}
+
+async function readAuthenticatedProjection({ payload, root, load, target = TARGET }) {
+  const isB361 = target === B361_TARGET;
+  const publicEvidence = isB361 ? createB361PublicEndpointEvidence() : null;
   const [forecast, normal, policy, fur, publicHours, partRecovery, bulk] = await Promise.all([
     load('scripts/lib/dmi-forecast-file.mjs'), load('scripts/lib/water-source-forecast-routing.mjs'),
     load('scripts/lib/dmi-marine-zone-exclusions.mjs'), load('scripts/lib/fur-water-routing-diagnostic.mjs'),
@@ -360,28 +415,33 @@ async function readAuthenticatedProjection({ payload, root, load }) {
   const indexed = await forecast.inspectDmiForecastFile(path.join(payload, 'data/live/dmi-forecast-cache.json'));
   if (indexed.zones.size !== 210) inputFailure('FORECAST_ZONE_INVENTORY');
   const packed = await forecast.readDmiWaterSourceContinuity(indexed);
-  if (packed?.productionReferenceAt !== TARGET.productionReferenceAt) inputFailure('SOURCE_CONTINUITY_GENERATION');
+  if (packed?.productionReferenceAt !== target.productionReferenceAt) inputFailure('SOURCE_CONTINUITY_GENERATION');
   // The production reader qualifies every SOURCE hourly proof. Its internal
   // verifiedDmiSourceRows is also called by the normal router below.
-  const index = await normal.unpackWaterSourceForecastContinuity(packed, TARGET.productionReferenceAt);
+  const index = await normal.unpackWaterSourceForecastContinuity(packed, target.productionReferenceAt);
   const allowed = policy.dmiMarineCollectionAllowedForZone;
-  const options = { normal, index, allowed, referenceAt: TARGET.productionReferenceAt };
-  const zones = {};
+  const options = { normal, index, allowed, referenceAt: target.productionReferenceAt };
+  const zones = {}, routedZoneOffsets = {};
   for (const zone of ZONE_IDS) {
     const descriptor = indexed.zones.get(zone);
     if (!descriptor) inputFailure('FORECAST_ZONE_MISSING');
     const original = await forecast.readDmiForecastRecord(indexed, descriptor);
-    zones[zone] = projectSourcePairs({ ...options, zone, storedRows: hourlyIndex(original.hourly),
-      selected: (_time, row) => {
-        const source = levelProof(row);
-        return source?.provider === 'dmi' && source.routing === 'dmi-water-source-interpolation' ? source.sourceKeys : null;
-      },
+    const selected = (_time, row) => {
+      const source = levelProof(row);
+      return source?.provider === 'dmi' && source.routing === 'dmi-water-source-interpolation' ? source.sourceKeys : null;
+    };
+    const scope = { ...options, zone, storedRows: hourlyIndex(original.hourly), selected };
+    zones[zone] = projectSourcePairs(scope);
+    if (isB361) routedZoneOffsets[zone] = B361_OFFSETS.map(offset => {
+      const { withLevel, withTrend, missingTrendReasons, changesAtIncompatibleEndpoint } =
+        projectSourcePairs({ ...scope, offsets: [offset] });
+      return { offset, withLevel, withTrend, missingTrendReasons, changesAtIncompatibleEndpoint };
     });
   }
 
   const conditions = JSON.parse(await fs.readFile(path.join(payload, 'data/live/conditions.json'), 'utf8'));
   const trace = conditions.furWaterRoutingDiagnostic;
-  if (conditions.datasetId !== TARGET.datasetId || conditions.productionReferenceAt !== TARGET.productionReferenceAt)
+  if (conditions.datasetId !== target.datasetId || conditions.productionReferenceAt !== target.productionReferenceAt)
     inputFailure('CONDITIONS_GENERATION');
   const targetParts = new Map(Object.entries(conditions.coastalParts?.parts ?? {})
     .filter(([, part]) => ZONE_IDS.includes(part?.zoneId) || normal.lf7WaterOnlyZone(part?.zoneId))
@@ -389,11 +449,11 @@ async function readAuthenticatedProjection({ payload, root, load }) {
   if (targetParts.size < 4 || targetParts.size > 64 || targetParts.get(FUR_PART) !== FUR_ZONE)
     inputFailure('PRIVATE_PART_SCOPE');
   const partWeather = await readSelectedPublicPartWeather(publicHours, path.join(payload, '.cache/public-hour-delivery.pack'),
-    conditions, targetParts);
+    conditions, targetParts, { target, publicEvidence });
   const sibirienDirectWater = await readSibirienDirectWater({ indexed, forecast, conditions,
-    publicPart: partWeather.get(SIBIRIEN_PART), load });
-  const hasTrace = fur.validFurWaterRoutingDiagnostic(trace, { datasetId: TARGET.datasetId })
-    && trace.productionReferenceAt === TARGET.productionReferenceAt && trace.generatedAt === conditions.generatedAt
+    publicPart: partWeather.get(SIBIRIEN_PART), load, target, offsets: isB361 ? B361_OFFSETS : undefined });
+  const hasTrace = fur.validFurWaterRoutingDiagnostic(trace, { datasetId: target.datasetId })
+    && trace.productionReferenceAt === target.productionReferenceAt && trace.generatedAt === conditions.generatedAt
     && Object.keys(trace.trace.hours).length === PUBLIC_HOURS;
   const keysByHash = new Map([...index].map(([key, record]) => [sha(JSON.stringify([key, record.point])), key]));
   const furKeys = hasTrace ? trace.trace.selectedSourceIdentitiesSha256.map(identity => keysByHash.get(identity)) : null;
@@ -412,7 +472,7 @@ async function readAuthenticatedProjection({ payload, root, load }) {
   // hydrated configuration, selected sets or saved results do not match.
   const lf7 = qualifyLf7Reconstruction({ conditions, diagnostics, routing, features: geography?.features,
     sourceRegistry: registry?.stations, parts: partWeather, normal, index, haversineKm: partRecovery.haversineKm,
-    referenceAt: TARGET.productionReferenceAt });
+    referenceAt: target.productionReferenceAt });
   const parts = {};
   for (const [id, { zone, rows }] of partWeather) {
     if (!ZONE_IDS.includes(zone)) continue;
@@ -429,10 +489,13 @@ async function readAuthenticatedProjection({ payload, root, load }) {
     };
   }
   const bulkOnsetQueue = await bulk.readDmiBulkDocument(path.join(payload, 'data/live/dmi-bulk-cache.json'), { expandSources: false })
-    .then(document => projectDkssOnsetQueue(document, TARGET.productionReferenceAt))
+    .then(document => projectDkssOnsetQueue(document, target.productionReferenceAt, isB361
+      ? [...new Set(B361_OFFSETS.flatMap(hour => [hour, hour + 3]))].sort((a, b) => a - b) : undefined))
     .catch(() => ({}));
   return { zoneEvidence: 'ARCHIVED_ZONE_ROUTING_SEPARATE_FROM_PUBLIC_WINNING_PART', lf7Evidence: lf7.reason,
-    zones, parts, bulkOnsetQueue, sibirienDirectWater };
+    zones, parts, bulkOnsetQueue, sibirienDirectWater,
+    ...(isB361 ? { nationalPublicEndpointPresence: publicEvidence.finish(), routedZoneOffsets,
+      publicManifestReceiptSha256: B361_PUBLIC_MANIFEST_SHA256, sourceDetailsSha256: B361_SOURCE_DETAILS_SHA256 } : {}) };
 }
 
 
@@ -446,19 +509,31 @@ export const B358_ARTIFACT = Object.freeze({
   id: 14622782203, bytes: 258070752,
   digest: 'sha256:9b43be2665c623f5034938b6f6a9924f3bd45c38aafde8b20ed2175784f6731e',
 });
-const metadataUrl = 'https://api.github.com/repos/' + TARGET.repository + '/actions/';
-const artifactsUrl = metadataUrl + 'runs/' + TARGET.runId + '/artifacts?per_page=100';
-const archiveUrl = metadataUrl + 'artifacts/' + B358_ARTIFACT.id + '/zip';
+export const B361_ARTIFACT = Object.freeze({
+  id: 14676798657, bytes: 258872168,
+  digest: 'sha256:49a2a8eb748f05a9b419ed648bff9ff6698014401fb34a4a3ff68fbb79a46255',
+});
 
-function isExactArtifact(artifact) {
-  return artifact?.id === B358_ARTIFACT.id
-    && artifact.digest === B358_ARTIFACT.digest && artifact.bytes === B358_ARTIFACT.bytes;
+function isExactArtifact(artifact, expected) {
+  return artifact?.id === expected.id
+    && artifact.digest === expected.digest && artifact.bytes === expected.bytes;
 }
 
 // Retain the normal downloader's run/attempt/job/expiry and ZIP digest checks.
 // This adapter pins the one artifact before that downloader can request ZIP bytes.
 export function createB358ArtifactFetch(fetchImpl) {
-  const attemptsUrl = metadataUrl + 'runs/' + TARGET.runId + '/attempts/' + TARGET.runAttempt;
+  return createFixedArtifactFetch(fetchImpl, TARGET, B358_ARTIFACT, 'B358');
+}
+
+export function createB361ArtifactFetch(fetchImpl) {
+  return createFixedArtifactFetch(fetchImpl, B361_TARGET, B361_ARTIFACT, 'B361');
+}
+
+function createFixedArtifactFetch(fetchImpl, target, artifact, label) {
+  const metadataUrl = 'https://api.github.com/repos/' + target.repository + '/actions/';
+  const artifactsUrl = metadataUrl + 'runs/' + target.runId + '/artifacts?per_page=100';
+  const archiveUrl = metadataUrl + 'artifacts/' + artifact.id + '/zip';
+  const attemptsUrl = metadataUrl + 'runs/' + target.runId + '/attempts/' + target.runAttempt;
   const readOnly = new Set([attemptsUrl, attemptsUrl + '/jobs?per_page=100', artifactsUrl]);
   const seen = new Set();
   let artifactPinned = false, signed = null;
@@ -467,7 +542,7 @@ export function createB358ArtifactFetch(fetchImpl) {
     if (seen.has(href) || init?.redirect !== 'manual' || (init.method ?? 'GET') !== 'GET'
       || !(readOnly.has(href) || (href === archiveUrl && artifactPinned)
         || (signed !== null && href === signed && [...new Headers(init.headers)].length === 0))) {
-      inputFailure('B358_TRANSPORT_SCOPE');
+      inputFailure(label + '_TRANSPORT_SCOPE');
     }
     seen.add(href);
     const response = await fetchImpl(url, init);
@@ -480,7 +555,7 @@ export function createB358ArtifactFetch(fetchImpl) {
         const chunk = await reader.read();
         if (chunk.done) break;
         length += chunk.value.byteLength;
-        if (length > 4 * 1024 * 1024) inputFailure('B358_ARTIFACT_METADATA_BOUND');
+        if (length > 4 * 1024 * 1024) inputFailure(label + '_ARTIFACT_METADATA_BOUND');
         chunks.push(Buffer.from(chunk.value));
       }
     } finally {
@@ -489,10 +564,10 @@ export function createB358ArtifactFetch(fetchImpl) {
     }
     const bytes = Buffer.concat(chunks);
     const metadata = JSON.parse(bytes);
-    const name = 'ravradar-private-build-stage-' + TARGET.runId + '-' + TARGET.runAttempt;
+    const name = 'ravradar-private-build-stage-' + target.runId + '-' + target.runAttempt;
     const matches = metadata.artifacts?.filter(artifact => artifact?.name === name);
-    if (matches?.length !== 1 || !isExactArtifact({ ...matches[0], bytes: matches[0].size_in_bytes }))
-      inputFailure('B358_ARTIFACT_PIN');
+    if (matches?.length !== 1 || !isExactArtifact({ ...matches[0], bytes: matches[0].size_in_bytes }, artifact))
+      inputFailure(label + '_ARTIFACT_PIN');
     artifactPinned = true;
     return new Response(bytes, { status: 200 });
   };
@@ -514,66 +589,70 @@ async function ownScratch(parent, directory, prefix, tasks) {
   return real;
 }
 
-async function auditB358({ runnerTemp, githubToken, masterSecret }) {
+async function auditFixedWaterTrend({ runnerTemp, githubToken, masterSecret, target }) {
+  const isB361 = target === B361_TARGET;
+  const label = isB361 ? 'B361' : 'B358';
+  const exactArtifact = isB361 ? B361_ARTIFACT : B358_ARTIFACT;
+  const fixedTransport = isB361 ? createB361ArtifactFetch : createB358ArtifactFetch;
   if (typeof runnerTemp !== 'string' || !runnerTemp || typeof githubToken !== 'string' || !githubToken
-    || typeof masterSecret !== 'string' || masterSecret.length < 32) inputFailure('B358_CREDENTIALS_REQUIRED');
+    || typeof masterSecret !== 'string' || masterSecret.length < 32) inputFailure(label + '_CREDENTIALS_REQUIRED');
   const temp = await fs.realpath(runnerTemp);
-  const archived = path.join(temp, 'ravradar-b358-reader99eb');
-  const output = path.join(temp, 'ravradar-b358-water-audit');
+  const archived = path.join(temp, isB361 ? 'ravradar-b361-reader257d' : 'ravradar-b358-reader99eb');
+  const output = path.join(temp, isB361 ? 'ravradar-b361-water-audit' : 'ravradar-b358-water-audit');
   for (const directory of [archived, output]) {
     const stat = await fs.lstat(directory);
     if (!stat.isDirectory() || stat.isSymbolicLink() || await fs.realpath(directory) !== directory)
-      inputFailure('B358_READER_ROOT');
+      inputFailure(label + '_READER_ROOT');
   }
   const load = async relative => {
     const requested = path.join(archived, relative);
     const resolved = await fs.realpath(requested);
-    if (resolved !== requested || !(await fs.lstat(requested)).isFile()) inputFailure('B358_READER_PATH');
+    if (resolved !== requested || !(await fs.lstat(requested)).isFile()) inputFailure(label + '_READER_PATH');
     return import(pathToFileURL(resolved));
   };
   const mainReaders = Object.keys(ARCHIVED_READERS);
   for (const relative of mainReaders) {
     const file = path.join(archived, relative);
     if (await fs.realpath(file) !== file || sha(await fs.readFile(file)) !== ARCHIVED_READERS[relative])
-      inputFailure('B358_READER_IDENTITY');
+      inputFailure(label + '_READER_IDENTITY');
   }
   const reportPath = path.join(output, 'water-level-trend-safe.json');
   // Create the one bounded report exclusively before touching the artifact.
   const handle = await fs.open(reportPath, 'wx', 0o600);
   const cleanups = [];
-  let report, phase = 'B358_ARCHIVED_READER', failed = null;
+  let report, phase = label + '_ARCHIVED_READER', failed = null;
   try {
     report = await withoutSavedAuditSecrets(async () => {
       const [workflow, stage, bundle] = await Promise.all(mainReaders.map(load));
       const expected = {
         ...await workflow.buildPrivateRuntimeExpectation({
-          repositoryRoot: archived, targetReferenceAt: TARGET.productionReferenceAt,
+          repositoryRoot: archived, targetReferenceAt: target.productionReferenceAt,
         }),
-        datasetId: TARGET.datasetId, productionReferenceAt: TARGET.productionReferenceAt,
-        minimumReferenceAt: TARGET.productionReferenceAt,
+        datasetId: target.datasetId, productionReferenceAt: target.productionReferenceAt,
+        minimumReferenceAt: target.productionReferenceAt,
       };
-      phase = 'B358_ARTIFACT_READ';
-      const artifact = await downloadOrdinaryCompletedStageArtifact({ ...TARGET, token: githubToken,
-        fetchImpl: createB358ArtifactFetch(globalThis.fetch) });
+      phase = label + '_ARTIFACT_READ';
+      const artifact = await downloadOrdinaryCompletedStageArtifact({ ...target, token: githubToken,
+        fetchImpl: fixedTransport(globalThis.fetch) });
       await ownScratch(await fs.realpath(os.tmpdir()), artifact.privateDirectory, 'rr-ordinary-completed-stage-', cleanups);
-      if (!isExactArtifact(artifact.artifact) || artifact.producer.conclusion !== 'success') inputFailure('B358_ARTIFACT_PIN');
+      if (!isExactArtifact(artifact.artifact, exactArtifact) || artifact.producer.conclusion !== 'success') inputFailure(label + '_ARTIFACT_PIN');
       const privateRoot = await ownScratch(output, await fs.mkdtemp(path.join(output, 'decrypted-')), 'decrypted-', cleanups);
       const bundlePath = path.join(privateRoot, 'bundle');
-      const args = { ...TARGET, privateRoot, bundlePath, repositoryRoot: archived, expected };
-      phase = 'B358_STAGE_AUTHENTICATION';
+      const args = { ...target, privateRoot, bundlePath, repositoryRoot: archived, expected };
+      phase = label + '_STAGE_AUTHENTICATION';
       const restored = await stage.openStagedPrivateProductionRuntime({ ...args, inputPath: artifact.sealedPath, masterSecret });
       if (restored.restored !== true || restored.productionPointerUnchanged !== true)
-        inputFailure('B358_AUTHENTICATED_STAGE_REQUIRED');
+        inputFailure(label + '_AUTHENTICATED_STAGE_REQUIRED');
       const verified = await bundle.verifyPrivateProductionRuntimeBundle(args);
       if (!verified.verified || verified.zoneCount !== 210 || verified.partCount !== 673
-        || verified.bundleContentSha256 !== restored.bundleContentSha256) inputFailure('B358_BUNDLE_IDENTITY');
-      phase = 'B358_WATER_PROJECTION';
-      const projection = await readAuthenticatedProjection({ payload: path.join(bundlePath, 'payload'), root: archived, load });
-      phase = 'B358_FINAL_BUNDLE_READ';
+        || verified.bundleContentSha256 !== restored.bundleContentSha256) inputFailure(label + '_BUNDLE_IDENTITY');
+      phase = label + '_WATER_PROJECTION';
+      const projection = await readAuthenticatedProjection({ payload: path.join(bundlePath, 'payload'), root: archived, load, target });
+      phase = label + '_FINAL_BUNDLE_READ';
       const readback = await bundle.verifyPrivateProductionRuntimeBundle(args);
       if (readback.bundleContentSha256 !== verified.bundleContentSha256 || !same(readback.files, verified.files))
-        inputFailure('B358_BUNDLE_CHANGED');
-      return { ...TARGET, artifactId: B358_ARTIFACT.id, publicHours: PUBLIC_HOURS, privateSupportHours: 3,
+        inputFailure(label + '_BUNDLE_CHANGED');
+      return { ...target, artifactId: exactArtifact.id, publicHours: PUBLIC_HOURS, privateSupportHours: 3,
         bundleContentSha256: verified.bundleContentSha256, reportComplete: true, privatePayloadIncluded: false, ...projection };
     });
   } catch (error) {
@@ -584,7 +663,7 @@ async function auditB358({ runnerTemp, githubToken, masterSecret }) {
   try {
     while (cleanups.length) await cleanups.pop()();
   } catch {
-    failed = 'B358_SCRATCH_CLEANUP_REFUSED';
+    failed = label + '_SCRATCH_CLEANUP_REFUSED';
   }
   try {
     if (failed !== null || Buffer.byteLength(JSON.stringify(report)) > 48 * 1024)
@@ -595,12 +674,14 @@ async function auditB358({ runnerTemp, githubToken, masterSecret }) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const isB361 = process.argv.length === 3 && process.argv[2] === '--b361';
   try {
-    if (process.argv.length !== 2) inputFailure('B358_FIXED_INPUT_ONLY');
-    if (!await auditB358({ runnerTemp: process.env.RUNNER_TEMP, githubToken: process.env.GH_TOKEN,
-      masterSecret: process.env.STAGED_PRIVATE_BUILD_MASTER_SECRET })) process.exitCode = 1;
+    if (process.argv.length !== 2 && !isB361) inputFailure('B358_FIXED_INPUT_ONLY');
+    if (!await auditFixedWaterTrend({ runnerTemp: process.env.RUNNER_TEMP, githubToken: process.env.GH_TOKEN,
+      masterSecret: process.env.STAGED_PRIVATE_BUILD_MASTER_SECRET, target: isB361 ? B361_TARGET : TARGET }))
+      process.exitCode = 1;
   } catch {
-    process.stderr.write('B358_PRIVATE_AUDIT_REFUSED\n');
+    process.stderr.write(isB361 ? 'B361_PRIVATE_AUDIT_REFUSED\n' : 'B358_PRIVATE_AUDIT_REFUSED\n');
     process.exitCode = 1;
   }
 }

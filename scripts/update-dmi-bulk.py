@@ -2443,7 +2443,14 @@ def prioritize_marine_assets_for_current_gaps(
 
     def work_group(item):
         rank, asset = item
-        return rank[:5] + rank[6:8] + (value_gaps.get(canonical_time(asset.get("valid"))),)
+        independent_gaps = value_gaps.get(canonical_time(asset.get("valid")))
+        group_gap_count = rank[3]
+        if independent_gaps == (0, 0) and rank[6:8] == (0, 0):
+            # Another water trend can add demand for either hour without
+            # making its scalar value or current missing. Such demand still
+            # ranks the initial queue, but cannot split an otherwise equal pair.
+            group_gap_count = 0
+        return rank[:3] + (group_gap_count, rank[4]) + rank[6:8] + (independent_gaps,)
 
     ordered = []
     scheduled_indices: set[int] = set()

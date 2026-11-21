@@ -1,3 +1,11 @@
+## 21. november – bevar parret når kun andre trendbehov tæller forskelligt
+
+Den normale DKSS-prøve genskaber, at H7 og H10 skilles ad. H7 er samtidig støttetime for en anden kystdels H4, så den samlede behovstæller bliver 2 mod 1, selv om begge timer og den mellemliggende H8 har nul uafhængige værdi- og strømhuller.
+
+Den afgrænsede kandidat lader denne tæller styre den første køsortering. I selve sammenligningen af et par ser den bort fra forskellen, når både endepunkterne og de passerede timer har bekræftet nul uafhængige værdi-, strøm- og regionale huller. H10 kan dermed følge efter H7 inden for den eksisterende grænse på tre pladser. Et reelt strømhul ved H8 bevarer sin plads. Ingen ændring af modelvalg, datakvalifikation, kalender, kørselsbudget eller vedligeholdelsestur.
+
+Prøven dokumenterer mekanismen på normale syntetiske input. Den autentificerede kø for #361 skal fortsat afgøre, hvilke konkrete manglende par der ramte den.
+
 ## 20. november — prioritér den matchende støttetime til en vandstandstrend
 
 Autentificeret genlæsning af vejrkørsel #358 viste 208 vandstandsændringer med uforenelige valgte endepunkter og 12 med manglende kvalificeret støttetime på fire undersøgte zoner. I Sibirien havde den første fejlende direkte kystdeltime to kvalificerede niveauer fra forskellige DMI-samlinger. Den valgte LF-kø havde medtaget H10 som nødvendig vandstand. H7 blev gennemført, mens H10 på plads 37 ikke blev gennemført i den valgte serie. Se DEC-0292 og audit #25.

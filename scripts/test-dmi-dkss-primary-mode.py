@@ -1395,6 +1395,31 @@ def check_qualified_production_gaps_precede_native_only_deficits():
         scoped_value_gap_counts=independent_value_counts,
     )
     assert [asset["valid"] for asset in ordered] == seam_times
+
+    def order_with_earlier_trend_support(covered, scalar_gap=None):
+        # H7 also supports a different part's earlier trend, so its total
+        # demand is larger without an independently missing value.
+        return producer.prioritize_marine_assets_for_current_gaps(
+            seam_assets, [TARGET_ID], covered,
+            direct_valid_times=required_trend_times,
+            critical_priority_by_time=dict.fromkeys(seam_times, 0),
+            qualified_gap_pair_counts_by_time=dict(zip(seam_times, (2, 1, 1, 1))),
+            water_trend_gap_times=frozenset({seam_times[0]}),
+            scoped_value_gap_counts={
+                time: (int(time == scalar_gap), int((TARGET_ID, time) not in covered))
+                for time in seam_times
+            },
+        )
+
+    assert [asset["valid"] for asset in order_with_earlier_trend_support(seam_covered)] == [
+        seam_times[index] for index in (0, 3, 1, 2)
+    ]
+    for ordered in (
+        order_with_earlier_trend_support(seam_covered - {(TARGET_ID, seam_times[1])}),
+        order_with_earlier_trend_support(seam_covered, scalar_gap=seam_times[1]),
+    ):
+        assert [asset["valid"] for asset in ordered] == seam_times
+
     cache = {ZONE_ID: cached_zone(early)}
     for valid in (late, optional_late): cache[ZONE_ID]["hourly"].update(cached_zone(valid)["hourly"])
     for valid in (early, late, optional_late):
