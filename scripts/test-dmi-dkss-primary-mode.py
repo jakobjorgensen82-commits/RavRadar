@@ -1731,3 +1731,156 @@ def check_b363_leading_water_support_preserves_stronger_work_and_budget():
 
 
 check_b363_leading_water_support_preserves_stronger_work_and_budget()
+
+
+
+def check_b365_earlier_new_cycle_protects_both_leading_pairs():
+    """B365's IDW first-turn order with no proved pre-acquisition water trend gap."""
+    reference = datetime(2026, 11, 21, 12, tzinfo=timezone.utc)
+    at = lambda offset: producer.canonical_time(reference + timedelta(hours=offset))
+    selected = at(-6)
+    retained = at(-12)
+    hours = range(118)
+    assets = [{"valid": at(hour), "id": hour, "modelRun": selected, "collection": "dkss_idw"}
+              for hour in hours]
+    valid_times = {row["valid"] for row in assets}
+    covered = {("fixture", time) for time in valid_times}
+    requirements = {
+        at(hour): {
+            "critical": True,
+            "criticalPriority": 0,
+            "retainedScalarPlanQualified": True,
+            "criticalGapPairCount": 20 if hour == 2 else 19 if hour < 2
+                else 2 if hour in (3, 4) else 3 if hour <= 113 else 1,
+            "retainedScalarValueGapPairCount": 0,
+            "retainedWaterTrendGap": False,
+            "retainedWaterLevelDemand": hour in (0, 1, 3, 4),
+            "currentMissingPairCount": 0,
+        }
+        for hour in hours
+    }
+
+    def order(rows=None, work=None, current=None, *, offered=selected,
+              regional=None, pair=True):
+        planned = producer.prioritize_dkss_primary_assets(
+            assets if work is None else work, ["fixture"], covered if current is None else current,
+            requirements if rows is None else rows,
+            direct_valid_times=valid_times, regional_gap_pairs_by_time=regional or {},
+            verified_reusable_valid_times=set(), critical_cursor_valid_time=None, pair_water_trends=pair,
+            leading_water_model_run=offered,
+        )
+        return [row["id"] for row in planned]
+
+    original = order(offered=None)
+    assert original[:3] == [2, 0, 1]
+    assert (original.index(3) + 1, original.index(4) + 1) == (113, 114)
+    admitted = order()
+    assert admitted[:5] == [2, 0, 1, 3, 4]
+    assert [hour for hour in admitted if hour not in (3, 4)] == [
+        hour for hour in original if hour not in (3, 4)
+    ]
+
+    # Never broaden the underlying work. A supported following trend is
+    # moved only if its later endpoint already qualifies for this turn.
+    companions = {**requirements, **{
+        at(hour): {**requirements[at(hour)], "retainedWaterLevelDemand": True,
+                   "criticalGapPairCount": 2}
+        for hour in (6, 7)
+    }}
+    assert order(rows=companions)[:7] == [2, 0, 1, 3, 4, 6, 7]
+
+    # B365 already had H6 at rank 14. A stronger independent job behind H6
+    # must retain precedence over H3/H4 without disabling their safe move.
+    early_companion = {**requirements, **{
+        at(hour): {**requirements[at(hour)], "criticalGapPairCount": 678}
+        for hour in range(8, 18)
+    }}
+    early_companion[at(6)] = {**requirements[at(6)], "retainedWaterLevelDemand": True,
+                             "retainedScalarGapPairCount": 677, "criticalGapPairCount": 677}
+    early_companion[at(18)] = {**requirements[at(18)], "criticalGapPairCount": 676,
+                              "retainedScalarValueGapPairCount": 1}
+    before = order(rows=early_companion, offered=None)
+    assert (before.index(6)+1, before.index(3)+1, before.index(4)+1) == (14, 113, 114)
+    after = order(rows=early_companion)
+    assert after.index(6) == before.index(6)
+    assert after.index(18) + 1 == after.index(3) == after.index(4) - 1
+    assert [hour for hour in after if hour not in (3, 4)] == [hour for hour in before if hour not in (3, 4)]
+
+    # The older single onset exception keeps its exact original time order.
+    old = {**early_companion, at(0): {**early_companion[at(0)],
+           "retainedWaterTrendGap": True, "retainedWaterLevelDemand": False}}
+    assert order(rows=old) == order(rows=old, offered=None)
+    assert order(pair=False) == original
+    for wrong in [{"modelRun": retained}, {"modelRun": None}, {"collection": "dkss_nsbs"}]:
+        assert order(work=[{**row, **wrong} if row["id"] == 4 else row
+                           for row in assets]) == original
+    for hour in (0, 1):
+        nonwater = {**requirements, at(hour): {**requirements[at(hour)], "retainedWaterLevelDemand": False}}
+        assert order(rows=nonwater) == original
+
+    # Conservative, unqualified and genuinely missing work retains its
+    # existing ordering; a large value gap stays before the promoted group.
+    for hour in (1, 4):
+        unqualified = {**requirements, at(hour): {key: value for key, value in
+            requirements[at(hour)].items() if not key.startswith("retained")}}
+        assert order(rows=unqualified) == order(rows=unqualified, offered=None)
+    weaker = {**requirements, at(4): {**requirements[at(4)], "criticalPriority": 1}}
+    assert order(rows=weaker) == order(rows=weaker, offered=None)
+    strong = {**requirements, at(5): {**requirements[at(5)], "retainedScalarValueGapPairCount": 1}}
+    for protected in [
+        order(rows=strong),
+        order(current=covered - {("fixture", at(5))}),
+        order(regional={at(5): {("fixture", at(5))}}),
+    ]:
+        assert protected[:3] == [2, 0, 1]
+        assert protected.index(5) < protected.index(3) < protected.index(4)
+
+    # Keep normal native admission and final physical provenance in charge.
+    # The queue never grants a future asset when the per-asset reserve refuses.
+    trace = []
+    with patch.object(producer, "runtime_remaining", side_effect=lambda: 216 if len(trace) < 4 else 215):
+        controller = producer.ProgressCheckpointController({}, set(), {"bytes": 0})
+        for hour in admitted:
+            if not controller.can_start_asset(reserve_seconds=120, cost_family="dkss_idw"):
+                break
+            trace.append(hour)
+    assert trace == [2, 0, 1, 3] and 4 not in trace
+    main = ast.parse(inspect.getsource(producer.main))
+    call, = [node for node in ast.walk(main) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == "prioritize_dkss_primary_assets"
+             and any(arg.arg == "leading_water_model_run" for arg in node.keywords)]
+    actual_call = compile(ast.Expression(call), __file__, "eval")
+    # The resumed cache already records this model at the collection level.
+    # Its independently qualified water points can still belong to the
+    # preceding model cycle at the two support valid times.
+    old_zone = {**producer.sampling_identity(ZONE), "hourly": {}}
+    for hour in (3, 4):
+        proof = producer.native_component_source(
+            "dkss_idw", retained, at(hour), component="waterLevel", zone=ZONE,
+            grid_candidate=CANDIDATE, capture={**CAPTURE, "itemCreatedAt": at(-11), "acquiredAt": at(-9)},
+            spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["waterLevel"],
+        )
+        old_zone["hourly"][at(hour)] = {"time": at(hour), "sea-mean-deviation": 0.15,
+                                        "sources": {"waterLevel": proof}}
+        assert producer._exact_validated_dmi_component_present(ZONE_ID, old_zone, at(hour),
+                                                        "waterLevel", ("sea-mean-deviation",))
+        assert proof["modelRun"] == retained
+    prior = {"runs": {"dkss_idw": {"referenceTime": selected}}, "zones": {ZONE_ID: old_zone}}
+    context = dict(
+        prioritize_dkss_primary_assets=producer.prioritize_dkss_primary_assets,
+        assets=assets, current_target_ids=["fixture"], planning_current_pairs=covered,
+        acquisition_requirements=requirements, required_current_valid_times=valid_times,
+        regional_gap_pairs_by_time={}, verified_reusable_regional_times=set(),
+        critical_native_cursor_at_turn_start=None, collection_is_maintenance=False,
+        run=selected, collection_turn="native", collection="dkss_idw",
+        acquisition_plan_diagnostics={"firstTurnOrder": {}}, previous=prior,
+        previous_run=prior["runs"]["dkss_idw"],
+    )
+    assert [asset["id"] for asset in eval(actual_call, context)] == admitted
+    for change in ({"collection": "dkss_lf"}, {"collection_is_maintenance": True},
+                   {"acquisition_plan_diagnostics": {"firstTurnOrder": {"dkss_idw": {}}}}):
+        assert [asset["id"] for asset in eval(actual_call, {**context, **change})] == original
+    print("B365 leading ranks and resumed cycle seam, exact selected assets, normal scope and reserve OK")
+
+
+check_b365_earlier_new_cycle_protects_both_leading_pairs()

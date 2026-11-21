@@ -2351,41 +2351,13 @@ def regional_lf_asset_gap_pairs_by_time(
     }
 
 
-def prioritize_leading_water_support(
-    ordered, ranked, start_epoch, selected_run, water_trend_gap_times,
-    qualified_water_times, scoped_value_gap_counts,
-):
-    """Advance H3 and H6 together in the first ordinary direct DKSS queue.
-
-    This only moves already-required assets of the selected run. The ordinary
-    producer still owns each asset's budget, qualification and commit.
-    """
-    if start_epoch is None or not selected_run or epoch(selected_run) > start_epoch or len(ordered) < 5:
-        return ordered
-    times = [canonical_time(asset.get("valid")) for asset in ordered]
-    if len(set(times)) != len(times) or not all(times):
-        return ordered
-    if [epoch(value) for value in times[:3]] != [start_epoch + i * 3600 for i in range(3)]:
-        return ordered
-    if times[0] not in water_trend_gap_times:
-        return ordered
-
-    by_epoch = {epoch(valid): valid for valid in times}
-    support = [by_epoch.get(start_epoch + offset * 3600) for offset in (3, 6)]
-    if any(valid not in qualified_water_times for valid in support):
-        return ordered
+def advance_leading_water_assets(ordered, times, ranks, support, scoped_value_gap_counts):
+    """Move already-qualified support without overtaking independent work."""
     indices = [times.index(valid) for valid in support]
-    if any(
-        canonical_time(ordered[i].get("modelRun", selected_run)) != selected_run
-        for i in [0, *indices]
-    ):
-        return ordered
-
-    ranks = {canonical_time(asset.get("valid")): rank for rank, asset in ranked}
-    first, second = (ranks[valid] for valid in support)
-    # This first-turn exception can cross the cursor, but only the two
-    # support hours move. Regional and stronger independent work stay first.
-    if first[:2] != second[:2]:
+    first = ranks[support[0]]
+    # This first-turn exception can cross the cursor. Regional and stronger
+    # independent work keep their order and take precedence over support.
+    if any(ranks[valid][:2] != first[:2] for valid in support):
         return ordered
     if any(
         valid not in scoped_value_gap_counts
@@ -2406,11 +2378,71 @@ def prioritize_leading_water_support(
             or gaps[0] > value_limit or gaps[1] != 0 or rank[6:8] != (0, 0)
         ):
             insert_at = index + 1
-    # If a protected gap would move H3 (or H6) later, keep the original queue.
-    if insert_at > indices[0] or insert_at + 1 > indices[1]:
+    # Do not delay any support that is already ordered before this group.
+    if any(insert_at + offset > original for offset, original in enumerate(indices)):
         return ordered
     return (ordered[:insert_at] + [ordered[i] for i in indices]
             + [ordered[i] for i in range(insert_at, len(ordered)) if i not in indices])
+
+
+def prioritize_leading_water_support(
+    ordered, ranked, start_epoch, selected_run, water_trend_gap_times,
+    qualified_water_times, scoped_value_gap_counts,
+):
+    """Keep the qualified leading water pairs together in a direct DKSS turn.
+
+    A restored cycle header can already match the selected model while some
+    points still have older endpoints. The queue uses the qualified water
+    demand at each end and the exact offered assets. Native admission still
+    evaluates each final coastal point, grid and source after decoding.
+    """
+    if start_epoch is None or not selected_run or epoch(selected_run) > start_epoch or len(ordered) < 5:
+        return ordered
+    times = [canonical_time(asset.get("valid")) for asset in ordered]
+    if len(set(times)) != len(times) or not all(times):
+        return ordered
+    front = [epoch(value) for value in times[:3]]
+    expected_front = [start_epoch + i * 3600 for i in range(3)]
+    if sorted(front) != expected_front:
+        return ordered
+
+    by_epoch = {epoch(valid): valid for valid in times}
+    by_time = dict(zip(times, ordered))
+    ranks = {canonical_time(asset.get("valid")): rank for rank, asset in ranked}
+
+    def schedule_support(origins, offsets, direct_collection=None):
+        support = [by_epoch.get(start_epoch + offset * 3600) for offset in offsets]
+        if any(valid not in qualified_water_times for valid in support):
+            return ordered
+        assets = [by_time[valid] for valid in (*origins, *support)]
+        if direct_collection is not None and any(
+            asset.get("collection") != direct_collection or not asset.get("modelRun")
+            for asset in assets
+        ):
+            return ordered
+        if any(canonical_time(asset.get("modelRun", selected_run)) != selected_run for asset in assets):
+            return ordered
+        return advance_leading_water_assets(ordered, times, ranks, support, scoped_value_gap_counts)
+
+    onset = by_epoch[start_epoch]
+    starts = (onset, by_epoch[start_epoch + 3600])
+    collection = by_time[onset].get("collection")
+    if collection in {"dkss_idw", "dkss_nsbs"} and all(valid in qualified_water_times for valid in starts):
+        pair = schedule_support(starts, (3, 4), collection)
+        if pair is not ordered:
+            companions = tuple(offset for offset in (6, 7)
+                               if by_epoch.get(start_epoch + offset * 3600) in qualified_water_times)
+            if companions:
+                extended = schedule_support(starts, (3, 4, *companions), collection)
+                first_support = by_time[by_epoch[start_epoch + 3 * 3600]]
+                # Optional continuation may share the same placement. It
+                # cannot delay the pair or let it displace independent work.
+                if extended is not ordered and extended.index(first_support) == pair.index(first_support):
+                    return extended
+            return pair
+    if front == expected_front and onset in water_trend_gap_times:
+        return schedule_support((onset,), (3, 6))
+    return ordered
 
 
 def prioritize_marine_assets_for_current_gaps(
@@ -2497,7 +2529,11 @@ def prioritize_marine_assets_for_current_gaps(
 
     ranked = sorted(((priority(asset), asset) for asset in assets), key=lambda item: item[0])
     if not (water_trend_gap_times or pending_water_support):
-        return [asset for _, asset in ranked]
+        return prioritize_leading_water_support(
+            [asset for _, asset in ranked], ranked, target_start_epoch,
+            canonical_time(leading_water_model_run), water_trend_gap_times,
+            qualified_water_times, scoped_value_gap_counts or {},
+        )
 
     # The collection loop has already chosen a single model run. Pair a trend
     # hour only with its exact later support in that same queue. Interleave
@@ -2603,7 +2639,8 @@ def prioritize_dkss_primary_assets(
         leading_water_model_run=leading_water_model_run if pair_water_trends else None,
         qualified_water_times=frozenset(
             valid_time for valid_time, row in requirements.items()
-            if row.get("retainedWaterLevelDemand") is True
+            if row.get("retainedScalarPlanQualified") is True
+            and row.get("retainedWaterLevelDemand") is True
         ) if pair_water_trends and leading_water_model_run else frozenset(),
     )
 

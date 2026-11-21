@@ -213,6 +213,15 @@ assert.equal(ordinaryProjection[0].currentUMps, null,
   'ordinary current admission correctly refuses an absent original PART context');
 assert.equal(ordinaryProjection[0].waterLevelTrendCm3h, 6,
   'the real adapter derives the complete T/T+3 scalar trend');
+const differentGrid = structuredClone(contextRows[1]);
+differentGrid.sources.waterLevel.gridDefinitionSha256 = 'c'.repeat(64);
+for (const endpoint of [row(3, -6, -5), differentGrid]) {
+  const pair = adapt([contextRows[0], endpoint]);
+  assert(pair.every(hour => hour.waterLevelProvenance.status === 'verified'
+    && Number.isFinite(hour.waterLevelCm)));
+  assert.equal(pair[0].waterLevelTrendCm3h, null,
+    'two valid levels from different model runs or grids are not a comparable pair');
+}
 const contextProjection = verifiedProtectedDmiPartHourly(
   contextRecord, [noPartContext, oldContext], identity.entityId, part);
 assert.equal(contextProjection.length, 2);
