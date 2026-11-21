@@ -1,5 +1,5 @@
-// App-owned public help, not a numerical RavScore/model input. Unknown or mixed
-// questions keep the existing whole-question/AI path; no provider claim is made.
+// App-owned public help for complete questions. Mixed questions keep the
+// existing whole-question path.
 import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.602';
 import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.602';
 
@@ -31,6 +31,16 @@ const ANSWERS={
     de:'Lerne zunächst, Bernstein von Steinen und Kunststoff zu unterscheiden. Suche systematisch in Spülsäumen und Taschen mit leichtem Material und vergleiche frische und ältere Ablagerungen. Beachte Wetterverlauf und Küste statt nur einer Windrichtung oder eines Wasserstands. Prüfe Funde anhand mehrerer schonender Merkmale; UV allein ist kein Beweis. Passe die Ausrüstung an Strand oder Wasser an und beurteile die Lage vor Ort. Eine Prognose oder ein Score garantiert weder Funde noch Sicherheit.',
     en:'Start by learning to distinguish amber from stone and plastic. Search wash lines and pockets of light material systematically, comparing fresh and older wash. Look at the preceding weather and the coast rather than one wind direction or water level. Check finds using several gentle clues; UV alone is not proof. Choose equipment for the beach or water and assess conditions on site. A forecast or RavScore guarantees neither finds nor safety.'
   },
+  daylight:{
+    da:'En UV-lygte kan stadig få rav til at lyse i dagslys. Det omgivende lys kan overdøve gløden, så prøv at skærme fundet af eller undersøge det i skygge. Andet materiale kan også lyse. Brug gløden som ét spor sammen med fundets vægt og overflade.',
+    de:'Eine UV-Lampe kann Bernstein auch bei Tageslicht zum Leuchten bringen. Helles Umgebungslicht kann das Leuchten überstrahlen. Schirme den Fund ab oder prüfe ihn im Schatten. Auch andere Materialien können leuchten. Beurteile deshalb auch das Gewicht und die Oberfläche des Fundstücks.',
+    en:'A UV lamp can make amber glow in daylight. Bright surroundings can hide the glow, so shield the find from ambient light or check it in the shade. Other materials can glow too. Use the glow as one clue along with the weight and surface of the piece.'
+  },
+  'named-equipment':{
+    da:'Jeg mangler pålidelige oplysninger om det apparat. Hvis du skriver modelnavnet eller beskriver, hvordan det skulle virke, kan jeg hjælpe med at vurdere metoden.',
+    de:'Mir fehlen verlässliche Informationen zu diesem Gerät. Wenn du den Modellnamen nennst oder erklärst, wie es funktionieren soll, kann ich die Methode einordnen.',
+    en:'I don’t have reliable information about that device. If you share the model name or describe how it’s meant to work, I can help assess the method.'
+  },
   compound:{
     da:'Mener du selve materialet rav, et fund af rav eller et bestemt navn på en app, hjemmeside eller gruppe? Skriv gerne lidt mere, så jeg ikke gætter på betydningen.',
     de:'Meinst du das Material Bernstein, einen Bernsteinfund oder den Namen einer App, Website oder Gruppe? Beschreibe bitte kurz, was du meinst, damit ich nicht rate.',
@@ -47,6 +57,18 @@ const WATER={
   da:/^(?:(?:er det bedst(?: til ravjagt)? (?:med|ved)|hvad er bedst(?: til ravjagt)?,?) (?:(?:højvande|højt vand)(?: eller (?:lavvande|lavt vand|lav))?|(?:lavvande|lavt vand)(?: eller (?:højvande|højt vand|høj))?)|er (?:højvande eller lavvande|lavvande eller højvande) bedst(?: til ravjagt)?)$/iu,
   de:/^(?:ist (?:hochwasser oder niedrigwasser|niedrigwasser oder hochwasser) (?:für die bernsteinsuche )?besser|ist es (?:bei hochwasser oder niedrigwasser|bei niedrigwasser oder hochwasser) besser)$/iu,
   en:/^(?:is (?:high tide or low tide|low tide or high tide) better(?: for amber hunting)?|is it better (?:at|with) (?:high tide or low tide|low tide or high tide)|which is (?:better|best)(?: for amber hunting)?,? (?:high tide or low tide|low tide or high tide))$/iu
+};
+// The whole request asks about UV identification in daylight. Both daylight
+// contrast and identification are covered by the public answer.
+const UV_DAYLIGHT={
+  da:/^kan (?:jeg|man) (?:bruge en uv[- ](?:lygte|lampe) (?:i dagslys til at (?:(?:genkende|identificere) rav|kende rav fra andre fund)|til at (?:genkende|identificere) rav i dagslys)|i dagslys skelne rav fra andre fund med en uv[- ](?:lygte|lampe))$/iu,
+  de:/^kann (?:ich|man) (?:bernstein (?:im|bei) tageslicht mit einer uv[- ]lampe (?:erkennen|identifizieren|von anderen fundstücken unterscheiden)|mit einer uv[- ]lampe (?:im|bei) tageslicht bernstein (?:erkennen|identifizieren))$/iu,
+  en:/^can (?:i|we|you) (?:use a uv[- ](?:torch|lamp|light) (?:in daylight to (?:identify amber|tell amber from other finds)|to identify amber in daylight)|tell amber from other finds with a uv[- ](?:torch|lamp|light) in daylight)$/iu
+};
+const NAMED_EQUIPMENT={
+  da:/^er (?:en|et) rav[- ]?[\p{L}\p{N}-]{0,35}(?:scanner|skanner|sensor|måler|apparat|instrument) et (?:rigtigt|reelt) (?:værktøj|redskab|instrument) til (?:at finde rav|ravjagt)$/iu,
+  de:/^ist (?:ein|eine) bernstein[- ]?[\p{L}\p{N}-]{0,35}(?:scanner|sensor|messgerät|messer|instrument) ein (?:echtes|reales) (?:werkzeug|gerät|instrument) (?:zur bernsteinsuche|um bernstein zu finden)$/iu,
+  en:/^is (?:an?|the) amber (?:(?!(?:and|or|but|with)\b)[\p{L}\p{N}-]{1,30} ){0,3}(?:scanner|sensor|gauge|meter|detector|instrument) a (?:real|actual) (?:tool|device|instrument) (?:for finding amber|for amber hunting|to find amber)$/iu
 };
 const COMPOUND={da:/^hvad er (?:(?:en|et|den|det) )?(rav[\p{L}-]+)$/iu,de:/^was ist (?:(?:ein|eine|der|die|das) )?(bernstein[\p{L}-]+)$/iu,en:/^what is (?:(?:a|an|the) )?(amber[\p{L}-]+)$/iu};
 // Existing explicitly known equipment/product nouns keep their existing route.
@@ -120,6 +142,8 @@ export function publicRavAssistantHelp(question,language){
   if(practical)return practical;
   let id=Object.keys(FORMS).find(key=>FORMS[key][language].test(text));
   if(!id&&WATER[language].test(text))id='water';
+  if(!id&&UV_DAYLIGHT[language].test(text))id='daylight';
+  if(!id&&NAMED_EQUIPMENT[language].test(text))id='named-equipment';
   const term=COMPOUND[language].exec(text)?.[1];
   if(!id&&term&&!KNOWN_COMPOUNDS.test(term)&&classifyRavQuestion(raw)==='origin')id='compound';
   if(!id)return null;
