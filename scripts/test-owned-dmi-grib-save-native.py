@@ -1271,14 +1271,19 @@ class OwnedRawDistributionNative(unittest.TestCase):
             self.assertEqual(small(f'/proc/{worker_pid}/cmdline').split(b'\0')[:-1],
                              [os.fsencode(NODE24), os.fsencode(root / ENTRY), b'--fixed-distribution-worker'])
             self.assertEqual(Path(os.readlink(f'/proc/{npm_pid}/exe')).resolve(), NODE24)
-            worker = observed['worker']
-            self.assertEqual((worker['pgid'], worker['sid']), (worker_pid, worker_pid))
-            self.assertEqual((observed['npm']['pgid'], observed['npm']['sid']),
-                             (worker_pid, worker_pid))
-            self.assertNotEqual(observed['cohort']['pgid'], worker_pid)
             # Pause only our already kernel-identified npm object to observe
             # the real pending interval; this does not replace npm or SDK code.
             stop_fixed_npm_observation(npm_pid, fds['npm'], NODE24, npm_cli, observed['npm'])
+            # The fork observation can precede setsid. The actual npm child
+            # proves the worker has exec'd; keep its original pidfd and start.
+            started_worker = identity(worker_pid)
+            self.assertFalse(exited(fds['worker']), 'Worker exited before its session was proved')
+            self.assertEqual(started_worker, {**observed['worker'],
+                                            'pgid': worker_pid, 'sid': worker_pid})
+            observed['worker'] = started_worker
+            self.assertEqual((observed['npm']['pgid'], observed['npm']['sid']),
+                             (worker_pid, worker_pid))
+            self.assertNotEqual(observed['cohort']['pgid'], worker_pid)
             claim_fd = os.open(root / CLAIM, os.O_RDONLY | os.O_NOFOLLOW)
             claim_stat = os.fstat(claim_fd)
             claim_identity = (claim_stat.st_dev, claim_stat.st_ino)
