@@ -71,7 +71,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
   ],
-  assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST],
+  // Samme eksisterende 594-oraclemodel: den brede historiske test er input, ikke et nyt mål.
+  assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST,
+    'node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -255,7 +257,10 @@ const PATH_AREAS=freeze({
     'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
   ],
-  assistantDiagnostic:[FIXED_ASSISTANT_LOG_TEST,'scripts/read-fixed-assistant-failure-log-20261101.mjs'],
+  assistantDiagnostic:[FIXED_ASSISTANT_LOG_TEST,'scripts/read-fixed-assistant-failure-log-20261101.mjs',
+    'scripts/read-fixed-assistant-failure-log-20261121-1712.mjs',
+    'scripts/test-fixed-assistant-failure-log-20261121-1712.mjs',
+    '.github/workflows/deploy-trip-storage.yml'],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'js/services/rav-assistant-public-help.js','scripts/test-assistant-ui-error-boundary.mjs',
@@ -484,6 +489,39 @@ const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.own
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
+// Kun denne kendte additive operation. Ingen nyt helfil-/headhashlag.
+export function isFixedAssistant1712WorkflowAddition(before,after){
+  assert.equal(arguments.length,2);
+  if(typeof before!=='string'||typeof after!=='string'
+    ||[before,after].some(value=>value.includes('\r')||value.includes('\0')||value.includes('\uFFFD')))return false;
+  const route="fixed-assistant-failure-log-read-20261121-1712";
+  if(before.includes(route))return false;
+  const edits=[
+  [
+    "          - fixed-assistant-failure-log-read-20261101\n",
+    "          - fixed-assistant-failure-log-read-20261101\n          - fixed-assistant-failure-log-read-20261121-1712\n"
+  ],
+  [
+    " || inputs.operation == 'fixed-assistant-failure-log-read-20261101'",
+    " || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712'"
+  ],
+  [
+    " && inputs.operation != 'fixed-assistant-failure-log-read-20261101'",
+    " && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712'"
+  ],
+  [
+    "      - name: Read only the fixed 1 November assistant failure categories\n        if: inputs.operation == 'fixed-assistant-failure-log-read-20261101'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-assistant-failure-log-20261101.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n",
+    "      - name: Read only the fixed 1 November assistant failure categories\n        if: inputs.operation == 'fixed-assistant-failure-log-read-20261101'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-assistant-failure-log-20261101.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n      - name: Read only the fixed 21 November 17:12 assistant failure categories\n        if: inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-assistant-failure-log-20261121-1712.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n"
+  ]
+];
+  let expected=before;
+  for(const [oldValue,newValue]of edits){
+    if(expected.split(oldValue).length!==2)return false;
+    expected=expected.replace(oldValue,()=>newValue);
+  }
+  return after===expected;
+}
+
 export function currentWorkflowTargets(relative){
   assert.equal(arguments.length,1);
   if(typeof relative!=='string'||!/^\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml$/.test(relative))return null;
@@ -1224,6 +1262,11 @@ export function planSourceCurrentContractsFromGit(input){
         &&!isAdditiveOwnedCacheNativeWorkflowChange(
           readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)))
         return refuse('CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL');
+      if(file==='.github/workflows/deploy-trip-storage.yml'
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'
+          ||!isFixedAssistant1712WorkflowAddition(
+            readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file))))
+        return refuse('CURRENT_FIXED_ASSISTANT_DIAGNOSTIC_WORKFLOW_REQUIRES_FULL');
       if(pathAreas.get(file)?.includes('ownedCacheNative')
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_OWNED_CACHE_NATIVE_REQUIRES_EXISTING_REGULAR_SOURCE');
@@ -1286,7 +1329,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('assistantDiagnostic')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

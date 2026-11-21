@@ -1,3 +1,7 @@
+## 21. november — fast læsning efter assistentafslag
+
+Den normale offentlige assistentklient fik ét afslag kl. 17.12 UTC med HTTP 502 og ASSISTANT_RESPONSE_REJECTED. Der kom ingen valideret AI-proveniens. Årsagen er ukendt; hændelsen er ikke gentaget. Den lokale kandidat tilføjer alene kategorilæsning for 17.12.11–17.12.22 UTC i det eksisterende skrivefri job. Kun trin, to statuskoder og fast afvisningskode kan udskrives. Rettigheder, eksakt main, første forsøg, kildebevis, frisk idle og én læsning bevares. Historiske assertions læser autentiske arkivbytes; aktuelle guards og afslag prøves direkte. Kildekvalifikation og faktisk hosted læsning udestår. Edge, AI-kald og faglige svar er uændrede.
+
 ## 20. november — UV i dagslys og ukendt ravudstyr
 
 Den offentlige assistent viste valideret ekstern AI-oprindelse i almindelige spørgsmål på dansk, tysk og engelsk. Et spørgsmål om at skelne rav fra andre fund med UV i dagslys fik lokalt et bredt identifikationssvar, hvor dagslys manglede. Et spørgsmål om et ukendt instrument fik et uvedkommende afslag.

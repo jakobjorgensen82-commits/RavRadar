@@ -1,3 +1,7 @@
+## Drift — fast kategorilæsning efter assistentafslag
+
+- Lokal kandidat til en fast, skrivefri læsning af fejlkategorier omkring 21. november kl. 17.12 UTC. Den ændrer hverken assistentens Edge-kode, AI-kald eller svar. Kildekvalifikation og faktisk driftslæsning udestår.
+
 ## 4.0.602 — opfølgning i Spørg RavRadar ved opstart
 
 - Et spørgsmål om et muligt ravfund kan følges op, selv hvis kortet først bliver færdigt med at indlæse mellem de to svar. Opfølgningen om gennemsigtighed og svag UV-reaktion besvarer begge dele.

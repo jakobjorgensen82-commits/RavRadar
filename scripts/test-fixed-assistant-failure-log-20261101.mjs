@@ -38,8 +38,14 @@ const historicalText=file=>execFileSync('git',['-c','protocol.allow=never','cat-
   env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
 }).replaceAll('\r\n','\n');
 // The real source-proof callers inherit exactly these three read grants.
+// SHA/inverse/oracle nedenfor er historiske. Aktuelle guards ovenfor og emitteren nedenfor læser rå aktuelle filer.
+const historicalWorkflow = execFileSync('git',['-c','protocol.allow=never','cat-file','blob',
+  '9ac7c1f6ed5b8959053efa8685e2b92270f13ca2:.github/workflows/deploy-trip-storage.yml'],{
+  cwd:new URL('../',import.meta.url),encoding:'utf8',timeout:10000,maxBuffer:128*1024,windowsHide:true,
+  env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},
+}).replaceAll('\r\n','\n');
 const readPermission = review.sourceProofReadPermission;
-assert.equal(digest(workflow), readPermission.afterSha256);
+assert.equal(digest(historicalWorkflow), readPermission.afterSha256);
 function assertSourceProofReadPermission(source) {
   assert.deepEqual(source.match(/^permissions:\n(?:  [^\n]+\n)+/gm) ?? [],
     ['permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n']);
@@ -52,13 +58,13 @@ for (const altered of [workflow.replace('  pull-requests: read\n', ''),
   workflow.replace('  deploy-trip-storage:\n', '  deploy-trip-storage:\n    permissions: {}\n')]) {
   assert.notEqual(altered, workflow);assert.throws(() => assertSourceProofReadPermission(altered));
 }
-const beforeReadPermission = workflow.replace(readPermission.after, () => readPermission.before);
+const beforeReadPermission = historicalWorkflow.replace(readPermission.after, () => readPermission.before);
 assert.equal(digest(beforeReadPermission), review.workflowAfterSha256);
-const legacyWorkflow = reviewedFixedAssistantFailureLegacyWorkflow(workflow);
+const legacyWorkflow = reviewedFixedAssistantFailureLegacyWorkflow(historicalWorkflow);
 assert.equal(digest(legacyWorkflow), review.workflowBeforeSha256);
 assert.equal(reviewedFixedAssistantFailureLegacyWorkflow(beforeReadPermission), legacyWorkflow);
 assert.equal(reviewedFixedAssistantFailureLegacyWorkflow(legacyWorkflow), legacyWorkflow);
-assert.equal(reviewedFixedAssistantFailureLegacyWorkflow(workflow.replaceAll('\n','\r\n')), legacyWorkflow);
+assert.equal(reviewedFixedAssistantFailureLegacyWorkflow(historicalWorkflow.replaceAll('\n','\r\n')), legacyWorkflow);
 const legacyReadJob = legacyWorkflow.slice(legacyWorkflow.indexOf('  read-fixed-supabase-metadata:'), legacyWorkflow.indexOf('  reject-unknown-operation:'));
 assert.doesNotMatch(legacyReadJob, /fixed-assistant-failure-log-read-20261101/);
 let workflowInverseCases = 4;
@@ -69,10 +75,13 @@ for (const [before,after] of [
   [route,route+'-unknown'],
   ['  pull-requests: read','  pull-requests: write'],
 ]) {
-  assert.notEqual(workflow.replace(before,after),workflow);
-  assert.throws(()=>reviewedFixedAssistantFailureLegacyWorkflow(workflow.replace(before,after)), /FIXED_ASSISTANT_WORKFLOW_UNREVIEWED_BYTES/);
+  assert.notEqual(historicalWorkflow.replace(before,after),historicalWorkflow);
+  assert.throws(()=>reviewedFixedAssistantFailureLegacyWorkflow(historicalWorkflow.replace(before,after)), /FIXED_ASSISTANT_WORKFLOW_UNREVIEWED_BYTES/);
   workflowInverseCases++;
 }
+
+const historicalReadJob=historicalWorkflow.slice(historicalWorkflow.indexOf('  read-fixed-supabase-metadata:'),
+  historicalWorkflow.indexOf('  reject-unknown-operation:'));
 
 // Execute only the two actual historical oracle bodies, not their broad test
 // programs. Both fail on the raw additive workflow and pass after exact inverse.
@@ -82,7 +91,7 @@ const integratedEnd = integrated.indexOf('// Actual fixed reader idle guard',int
 assert(integratedStart >= 0 && integratedEnd > integratedStart);
 const integratedOracle = integrated.slice(integratedStart,integratedEnd);
 assert.equal(digest(integratedOracle),review.historicalOracleSha256.integrated);
-assert.throws(()=>runInNewContext(integratedOracle,{assert,typedActualReadJob:readJob}), /two unchanged historical readers/);
+assert.throws(()=>runInNewContext(integratedOracle,{assert,typedActualReadJob:historicalReadJob}), /two unchanged historical readers/);
 runInNewContext(integratedOracle,{assert,typedActualReadJob:legacyReadJob});
 const sourceValidation = historicalText('scripts/test-source-validation-once.mjs');
 const sourceStart = sourceValidation.indexOf('const consoleOperation =');
@@ -103,7 +112,7 @@ const runSourceOracle = current => runInNewContext(grammar+'\n'+jobsParser+'\n'+
   actualFixedReadJob:current.slice(current.indexOf('  read-fixed-supabase-metadata:'),current.indexOf('  reject-unknown-operation:')),
   fs:{readFileSync(file,encoding){assert.equal(file,'.github/workflows/validate-pull-request.yml');assert.equal(encoding,'utf8');return ci;}},
 });
-assert.throws(()=>runSourceOracle(workflow),error=>error.code==='ERR_ASSERTION'&&error.actual===5&&error.expected===4);
+assert.throws(()=>runSourceOracle(historicalWorkflow),error=>error.code==='ERR_ASSERTION'&&error.actual===5&&error.expected===4);
 runSourceOracle(legacyWorkflow);
 
 // The new registry has its own exact additive proof. The completed admin

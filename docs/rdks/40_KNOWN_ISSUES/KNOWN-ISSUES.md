@@ -1,3 +1,7 @@
+## 21. november — eksternt AI-afslag ved UV-spørgsmål
+
+Den normale offentlige klient fik ét HTTP 502-afslag kl. 17.12 UTC med ASSISTANT_RESPONSE_REJECTED og uden valideret AI-proveniens. Begrænset providerbody, manglende struktureret udtræk og validatorafslag kan give denne kode. Ingen gren er faktisk identificeret endnu. En lokal fast kategorilæsning er forberedt; kvalifikation og hosted resultat udestår. Generel UV-viden, lokale faste svar og tidligere ekstern AI-succes lukker ikke dette aktuelle driftsbevis. Ingen rå leverandørsvar, spørgsmålstekster fra andre brugere eller private data må udskrives.
+
 ## 20. november — vandstandsændringen falder bort ved skift mellem DMI-serier
 
 Den gemte #358 viste, at kildevalget gav to vandstandstal uden en fælles modelkørsel, samling eller gitter i 208 af 220 undersøgte manglende trends. De øvrige 12 manglede en kvalificeret støttetime. I Sibirien viste de autentiske direkte rækker et skift mellem DMI-samlinger ved det første hul. #359 viste endnu et samtidigt bortfald på 329 kystdele på trods af tilgængelige vandstande ved begge tider. Årsagen er verificeret for #358. Den lokale køændring og virkningen i en ny almindelig kørsel følger DEC-0261.
