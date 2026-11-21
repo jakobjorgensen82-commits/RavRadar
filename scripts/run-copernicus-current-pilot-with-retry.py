@@ -409,9 +409,22 @@ def main() -> int:
     return 1
 
 
+def run_cli() -> int:
+    returncode = main()
+    output_path = os.getenv("GITHUB_OUTPUT")
+    if (os.getenv("RAVRADAR_COPERNICUS_REQUIRE_CLOSURE") == "true"
+            and sys.platform == "linux" and not _unclosed_pilot_processes and output_path):
+        try:
+            with Path(output_path).open("a", encoding="utf-8", newline="\n") as handle:
+                handle.write("copernicus_producer_closed=true\n")
+        except OSError:
+            print("COPERNICUS_PRODUCER_STOP_RECEIPT_UNAVAILABLE", file=sys.stderr)
+    return returncode
+
+
 if __name__ == "__main__":
     try:
-        raise SystemExit(main())
+        raise SystemExit(run_cli())
     except Exception as error:
         print(f"Copernicus retry wrapper failed safely: {error}", file=sys.stderr)
         raise SystemExit(1)

@@ -394,19 +394,25 @@ class SupervisorTests(unittest.TestCase):
             environment = {
                 "DMI_BULK_MAX_RUNTIME_SECONDS": "360",
                 "DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS": "420",
+                "DMI_BULK_REQUIRE_ORDINARY_CLOSURE": "true",
                 "GITHUB_OUTPUT": str(output_path),
             }
             with (
                 patch.dict(supervisor.os.environ, environment, clear=True),
+                patch.object(supervisor.sys, "platform", "linux"),
+                patch.object(supervisor.sys, "argv", [str(MODULE_PATH)]),
+                patch.multiple(supervisor, _unclosed_supervised_processes=[],
+                               _unclosed_supervised_outputs=[], _unclosed_finalizer_processes=[]),
                 patch.object(supervisor, "run_supervised") as run,
                 patch.object(supervisor, "finalize_checkpoint") as finalize,
             ):
-                self.assertEqual(supervisor.main(), 2)
+                self.assertEqual(supervisor.run_cli(), 2)
             run.assert_not_called()
             finalize.assert_not_called()
             written = output_path.read_text(encoding="utf-8")
             self.assertIn("terminal_code=DMI_SUPERVISOR_BUDGET_CONFLICT\n", written)
             self.assertIn("strict_current_anchor_ready=false\n", written)
+            self.assertIn("ordinary_dmi_producer_closed=true\n", written)
 
     def test_producer_has_fail_closed_finalize_only_contract(self):
         source = supervisor.PRODUCER.read_text(encoding="utf-8")
@@ -960,6 +966,33 @@ identity = supervised_asset_identity(capture["collection"], capture["modelRun"],
             [ASSET_A],
         )
         finalize.assert_not_called()
+
+    def test_cli_receipts_only_normal_linux_completion_without_retained_resources(self):
+        resources = ("_unclosed_supervised_processes", "_unclosed_supervised_outputs",
+                     "_unclosed_finalizer_processes")
+        cases = [("linux", [], 0, None, True), ("linux", [], 2, None, True),
+                 ("linux", [], -9, None, False), ("win32", [], 0, None, False),
+                 ("linux", ["--restore-exact-originals"], 0, None, False)]
+        cases.extend(("linux", [], 2, resource, False) for resource in resources)
+        for platform, args, returncode, retained, expected in cases:
+            with self.subTest(platform=platform, args=args, returncode=returncode, retained=retained):
+                with tempfile.TemporaryDirectory() as directory:
+                    output = Path(directory) / "output"
+                    with (
+                        patch.dict(supervisor.os.environ, {
+                            "DMI_BULK_REQUIRE_ORDINARY_CLOSURE": "true", "GITHUB_OUTPUT": str(output),
+                        }, clear=True),
+                        patch.object(supervisor.sys, "platform", platform),
+                        patch.object(supervisor.sys, "argv", [str(MODULE_PATH), *args]),
+                        patch.multiple(supervisor, **{name: [object()] if name == retained else []
+                                                    for name in resources}),
+                        patch.object(supervisor, "main", return_value=returncode),
+                    ):
+                        self.assertEqual(supervisor.run_cli(), returncode)
+                    if expected:
+                        self.assertEqual(output.read_text(), "ordinary_dmi_producer_closed=true\n")
+                    else:
+                        self.assertFalse(output.exists())
 
     def test_finalized_incomplete_code_requires_opt_in_and_no_watchdog_history(self):
         partial = supervisor.SupervisedResult(

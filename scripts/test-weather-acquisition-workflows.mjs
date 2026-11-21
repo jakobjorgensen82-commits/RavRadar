@@ -30,6 +30,41 @@ function step(source, name) {
   return found[0];
 }
 
+test('ordinary producer cessation precedes RAW, consumers and encrypted progress', () => {
+  const source = actualNormalWorkflow;
+  const dmi = step(source, 'Update DMI bulk model cache');
+  const dmiStop = step(source, 'Require physically stopped ordinary DMI before reading or saving its result');
+  const rawWrite = step(source, 'Reconfirm exact main before shared DMI GRIB cache');
+  const fill = step(source, 'Fill only exact-hour DMI gaps from Copernicus');
+  const fillStop = step(source, 'Require physically stopped ordinary Copernicus before reading its source stage');
+  const fillRead = step(source, 'Require reusable Copernicus source stage before combined current closure');
+  const refresh = step(source, 'Reclaim a bounded Copernicus quality slice for the next normal run');
+  const refreshStop = step(source, 'Require physically stopped ordinary Copernicus after optional quality work');
+  const seal = step(source, 'Encrypt newly saved private weather progress before later production steps');
+  const sequence = [dmi, dmiStop, rawWrite, fill, fillStop, fillRead, refresh, refreshStop, seal]
+    .map(block => source.indexOf(block));
+  assert.ok(sequence.every((position, index) => position > (sequence[index - 1] ?? -1)));
+  assert.match(dmi, /node scripts\/run-current-family-cold-start.mjs run-dmi/);
+  assert.match(dmi, /run-ordinary-provider-cgroup.py dmi .+4140.+3240/);
+  assert.match(dmi, /python -u scripts\/run-dmi-bulk-supervised.py/);
+  assert.match(fill, /provider=\(python scripts\/run-copernicus-current-pilot-with-retry.py\)/);
+  assert.match(fill, /run-ordinary-provider-cgroup.py copernicus 1560 --/);
+  assert.match(refresh, /timeout-minutes: 7/);
+  assert.match(refresh, /run-ordinary-provider-cgroup.py copernicus 380 --/);
+  for (const stop of [dmiStop, fillStop, refreshStop]) {
+    assert.match(stop, /if: always\(\) && env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE == 'true'/);
+    assert.match(stop, /test "\$PRODUCER_CLOSED" != true/);
+    assert.doesNotMatch(stop, /continue-on-error/);
+  }
+  assert.match(dmiStop, /steps.dmi-bulk.outputs.ordinary_dmi_producer_closed/);
+  assert.match(fillStop, /steps.copernicus-fill.outputs.copernicus_producer_closed/);
+  assert.match(refreshStop, /steps.copernicus-next-run-refresh.outputs.copernicus_producer_closed/);
+  assert.match(rawWrite, /steps.dmi-producer-closure.outcome == 'success'/);
+  assert.match(seal, /steps.dmi-producer-closure.outcome == 'success'/);
+  assert.match(seal, /steps.copernicus-fill-closure.outcome == 'success'/);
+  assert.match(seal, /steps.copernicus-next-run-refresh-closure.outcome == 'success'/);
+});
+
 test('normal DMI save uses its measured allowance and must actually finalize before fresh weather', () => {
   const admission = step(actualNormalWorkflow, 'Measure room for the next DMI RAW cache');
   const save = step(actualNormalWorkflow, 'Save progressed DMI GRIB download cache');

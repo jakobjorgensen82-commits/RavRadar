@@ -5,6 +5,13 @@
 - [ ] Bestå den fulde kildekontrol på den præcise ændring. Den tidligere korte parregel dækker ikke det nye første-kø-tilfælde.
 - [ ] Verificér næste almindelige vejrhentning og den offentlige vandstandsændring ved den første prognosetime og tre timer senere. Kontrollér de tilsvarende kystdele og gyldige værdier. Se [DEC-0261](../10_DECISIONS/DEC-0261-DMI-LF-SUFFIX-PRIORITY-AND-STABLE-CURSOR.md).
 
+## 20. november — fysisk ophør i almindelig vejrhentning
+
+- [x] Tilpas den eksisterende procesindkapsling til den aktuelle DMI-kalder og begge normale Copernicus-kald. Bevar leverandørbudgetter og særkørsler.
+- [x] Verificér fysisk stop på GitHubs Linux-vært med syntetiske input. Den første særskilte kildekandidat bestod.
+- [ ] Kvalificér den samordnede kode og gennemfør en almindelig vejrhentning med offentlig levering.
+- [ ] Bevis afbrydelse, holdbar gemning og genlæsning gennem normalvejen. Fireminuttersgrænsen for egentlig fejlafslutning følges særskilt.
+
 ## 19. november — opfølgning under indlæsning af kortet
 
 - [x] Genskab det generiske svar i browseren med den offentlige app og fremprovokér samme rækkefølge i den eksisterende brugerfladeprøve for dansk, tysk og engelsk.

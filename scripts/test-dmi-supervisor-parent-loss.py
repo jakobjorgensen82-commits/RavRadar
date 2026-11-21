@@ -104,7 +104,11 @@ else:
         supervisor.run_supervised = lambda *a, **k: supervisor.SupervisedResult(-9, True, None)
 failure = None
 try:
-    code = supervisor.main()
+    if caller == "cp":
+        code = supervisor.main()
+    else:
+        sys.argv = [str(supervisor.__file__)]
+        code = supervisor.run_cli()
 except BaseException as error:
     failure = error
 finally:
@@ -557,6 +561,10 @@ raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
             environment.update({"PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1",
                 "PYTHONUTF8": "1", "OWN_SUPERVISOR_LOSS_ROOT": str(root),
                 "OWN_PROCESS_CALLER": caller, "OWN_PROCESS_DESCENDANT": "1" if descendant else "0"})
+            closure_output = root / "closure-output"
+            if caller != "cp":
+                environment.update({"DMI_BULK_REQUIRE_ORDINARY_CLOSURE": "true",
+                                    "GITHUB_OUTPUT": str(closure_output)})
             parent = subprocess.Popen([sys.executable, "-u", "-c", SUPERVISOR,
                 str(TEST_SEAM), str(producer)], cwd=ROOT, env=environment,
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -649,6 +657,8 @@ raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
                 self.assertIsNone(parent.poll(), "group zombie must not be called absent")
                 self.assertFalse((root / "supervisor-completed").exists(),
                                  "no normal completion before actual group absence")
+                self.assertFalse(closure_output.exists(),
+                                 "no closure receipt before actual group absence")
                 dead_size = (root / "descendant-heartbeat").stat().st_size
                 time.sleep(0.03)
                 self.assertEqual((root / "descendant-heartbeat").stat().st_size, dead_size)
@@ -673,6 +683,10 @@ raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
             else:
                 self.assertEqual(code, 0, "normal supervisor completion failed")
             self.assertTrue(exited(parent_fd), "actual supervisor exit unproved")
+            if caller != "cp" and interruption is None:
+                self.assertEqual(read_small(closure_output), b"ordinary_dmi_producer_closed=true\n")
+            else:
+                self.assertFalse(closure_output.exists())
 
             # CRITICAL: interruption cases have no child signal/stop file
             # before this measurement; only the healthy control has a finish file.

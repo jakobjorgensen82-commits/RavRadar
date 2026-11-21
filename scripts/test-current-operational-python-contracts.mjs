@@ -78,19 +78,41 @@ for (const file of [
   'test-current-operational-live-builder.py',
   'test-current-operational-producer-chain.py',
   'test-dmi-bulk-supervised.py',
+  'test-ordinary-provider-cgroup.py',
   ...(process.platform === 'linux' ? [
     'test-dmi-supervisor-parent-loss.py',
     'test-dmi-native-provenance.py',
   ] : []),
 ]) {
   test(file, { timeout: 160_000 }, () => {
-    const result = spawnSync(python, ['-B', path.join(root, 'scripts', file)], {
-      cwd: root, env: environment, encoding: 'utf8', shell: false,
+    // The hosted cgroup case needs the runner's real local user bus and temp
+    // path. It creates its own output files and uses only artificial provider inputs.
+    const hostedProviderFixture = file === 'test-ordinary-provider-cgroup.py'
+      && process.platform === 'linux' && process.env.RUNNER_ENVIRONMENT === 'github-hosted';
+    const hostedProviderTest = hostedProviderFixture && process.env.ImageOS === 'ubuntu24';
+    if (hostedProviderFixture && process.env.GITHUB_EVENT_NAME === 'pull_request') {
+      assert.ok(hostedProviderTest, 'The hosted PR source runner must supply its Ubuntu 24.04 image identity.');
+    }
+    const testEnvironment = hostedProviderTest ? { ...environment,
+      ...Object.fromEntries(['RUNNER_ENVIRONMENT', 'ImageOS', 'RUNNER_TEMP', 'HOME', 'LD_LIBRARY_PATH']
+        .filter(name => typeof process.env[name] === 'string').map(name => [name, process.env[name]])),
+    } : environment;
+    const args = ['-B', path.join(root, 'scripts', file)];
+    if (hostedProviderTest) args.push('-v');
+    const result = spawnSync(python, args, {
+      cwd: root, env: testEnvironment, encoding: 'utf8', shell: false,
       timeout: 150_000, maxBuffer: 4 * 1024 * 1024, windowsHide: true,
     });
     assert.equal(result.error, undefined, `Synthetic Python runner failed: ${file}`);
     assert.equal(result.signal, null, `Synthetic Python runner interrupted: ${file}`);
     assert.equal(result.status, 0,
       `${file}\n${result.stdout || ''}\n${result.stderr || ''}`);
+    if (hostedProviderTest) {
+      assert.match(result.stderr,
+        /^test_actual_controller_and_supervisors_return_staged_outputs_without_providers \([^\r\n]+\) \.\.\. ok\r?$/m,
+        'The actual hosted cgroup ownership and process termination test must execute.');
+      assert.match(result.stderr, /^OK\r?$/m, 'The hosted provider fixture must finish without skipped tests.');
+      console.log('Hosted Ubuntu 24.04 ordinary provider cgroup fixture executed without skips.');
+    }
   });
 }
