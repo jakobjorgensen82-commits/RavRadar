@@ -134,9 +134,12 @@ const SOURCE_TEST_ENVIRONMENT = new Set([
 ]);
 function sourceChildEnvironment(command) {
   const testCommand = /(?:^| )scripts\/test-[^ ]+\.mjs(?: |$)/.test(command);
-  return Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+  const providerFixture = command.startsWith('node --test ')
+    && command.split(' ').includes('scripts/test-current-operational-python-contracts.mjs');
+  return Object.fromEntries(Object.entries(process.env).filter(([key, value]) =>
     SOURCE_HOST_ENVIRONMENT.has(key) || /^(?:GITHUB_|RUNNER_|SOURCE_GATE_)/.test(key)
-      || (testCommand && SOURCE_TEST_ENVIRONMENT.has(key))));
+      || (testCommand && SOURCE_TEST_ENVIRONMENT.has(key))
+      || (providerFixture && key === 'ImageOS' && value === 'ubuntu24')));
 }
 
 function executeCommand(command) {

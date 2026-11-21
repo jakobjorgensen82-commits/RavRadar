@@ -11,7 +11,8 @@ assert.equal(actual.split(environmentLine).length, 2, 'One actual source-child e
 const inherited = actual.replace(environmentLine, '');
 const owned = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-source-child-env-'));
 const commands = ['scripts/build-ravscore-model-bundle.mjs', 'scripts/sync-ravscore-model-binding.mjs',
-  'scripts/test-source-child.mjs', 'scripts/source-critical-gate.mjs'];
+  'scripts/test-source-child.mjs', 'scripts/test-current-operational-python-contracts.mjs',
+  'scripts/source-critical-gate.mjs'];
 const hostKeys = ['PATH', 'Path', 'PATHEXT', 'SystemRoot', 'SYSTEMROOT', 'WINDIR', 'windir',
   'COMSPEC', 'ComSpec', 'SystemDrive', 'SYSTEMDRIVE', 'HOME', 'USERPROFILE', 'TEMP', 'TMP', 'TMPDIR'];
 const host = Object.fromEntries(hostKeys.filter(key => typeof process.env[key] === 'string')
@@ -40,7 +41,7 @@ const production = {
 const flags = {RAVRADAR_PYTHON:'synthetic-python', RAVRADAR_TEST_BASH:'synthetic-bash',
   RAVRADAR_TEST_LARGE_FORECAST:'1', RAVRADAR_TEST_DENSE_COHERENT_WORK_INPUT:'synthetic-dense-fixture',
   RAVRADAR_NATIVE_PROOF_BENCHMARK:'1', RAVRADAR_RECOVERY_PRIORITY_BENCHMARK:'1'};
-const dirty = {...host, ...ci, ...production, ...flags};
+const dirty = {...host, ...ci, ...production, ...flags, ImageOS:'ubuntu24'};
 const parentBefore = {...dirty};
 const child = ["import assert from 'node:assert/strict';", "import path from 'node:path';",
   'const ci = ' + JSON.stringify(ci) + ';',
@@ -49,6 +50,8 @@ const child = ["import assert from 'node:assert/strict';", "import path from 'no
   "for (const key of removed) assert(!Object.hasOwn(process.env, key), 'Production setting reached synthetic source child: ' + key);",
   "for (const [key, value] of Object.entries(ci)) assert(process.env[key] === value, 'Required source/CI setting missing: ' + key);",
   "const test = path.basename(process.argv[1]).startsWith('test-');",
+  "const nativeProviderTest = path.basename(process.argv[1]) === 'test-current-operational-python-contracts.mjs';",
+  "assert.equal(process.env.ImageOS, nativeProviderTest ? 'ubuntu24' : undefined, 'Runner image crossed the wrong source-child boundary');",
   "for (const [key, value] of Object.entries(flags)) assert(test ? process.env[key] === value : !Object.hasOwn(process.env, key), 'Test option crossed wrong command boundary: ' + key);",
   "console.log('SYNTHETIC_SOURCE_CHILD_CLEAN:' + path.basename(process.argv[1]));", '',
 ].join('\n');
@@ -72,7 +75,7 @@ try {
   await fs.writeFile(path.join(owned,'package.json'), JSON.stringify({scripts:{
     'validate:source':'node scripts/validate-source-once.mjs',
     'source:critical-gate':'node scripts/source-critical-gate.mjs',
-    'validate:source:checks':'node scripts/build-ravscore-model-bundle.mjs --check && node scripts/sync-ravscore-model-binding.mjs --check && node scripts/test-source-child.mjs && node scripts/source-critical-gate.mjs',
+    'validate:source:checks':'node scripts/build-ravscore-model-bundle.mjs --check && node scripts/sync-ravscore-model-binding.mjs --check && node scripts/test-source-child.mjs && node --test scripts/test-current-operational-python-contracts.mjs && node scripts/source-critical-gate.mjs',
   }}));
   for (const command of commands) await fs.writeFile(path.join(owned,command), child);
   await fs.writeFile(path.join(owned,'scripts/validate-source-once.mjs'), inherited);
@@ -88,8 +91,8 @@ try {
   assert.equal(after.signal, null);
   assert.equal(after.status, 0, 'The same polluted parent must produce clean successful synthetic children');
   assert.equal(after.stderr, '');
-  assert.equal((after.stdout.match(/SYNTHETIC_SOURCE_CHILD_CLEAN:/g) ?? []).length,4,
-    'Both binding preflights, the selected test and the terminal source gate must all execute');
+  assert.equal((after.stdout.match(/SYNTHETIC_SOURCE_CHILD_CLEAN:/g) ?? []).length,5,
+    'Both binding preflights, the selected tests and the terminal source gate must all execute');
   assert.match(after.stdout,/Critical source validation passed/);
   assert.deepEqual(dirty,parentBefore,'The source-child boundary must not change its parent environment');
   await fs.writeFile(path.join(owned,'scripts/test-source-child.mjs'),child+"process.exitCode = 19;\n");
@@ -97,7 +100,7 @@ try {
   assert.equal(rejected.error, undefined);
   assert.equal(rejected.signal, null);
   assert.equal(rejected.status,1,'A real selected source failure must stay red');
-  assert.equal((rejected.stdout.match(/SYNTHETIC_SOURCE_CHILD_CLEAN:/g) ?? []).length,4,
+  assert.equal((rejected.stdout.match(/SYNTHETIC_SOURCE_CHILD_CLEAN:/g) ?? []).length,5,
     'A selected test failure must retain normal aggregate reporting and terminal gate execution');
   assert.match(rejected.stdout,/Critical source validation found 1 failing check\(s\): node scripts\/test-source-child\.mjs/);
   console.log('Source-child environment: actual normal CLI inherited-red -> isolated-green; host/CI/test options preserved, production settings absent, parent unchanged, real source failure remains red.');

@@ -4,6 +4,8 @@ Den lokale kandidat sætter den normale DMI-supervisor og de to normale Copernic
 
 Kandidaten genbruger den eksisterende kildeprøve. En afgrænset Linux-prøve med kunstige leverandørfiler skal bekræfte den virkelige kalders output, kontrolleret leverandørfejl og fysisk ophør. Produktionslevering og offentligt efterfølgende forløb udestår. Tab af hele runneren kan kun genbruge allerede kvalificeret gemt fremdrift. Den særskilte, samlede grænse for fejlworkerens lokale SAVE og upload er stadig åben.
 
+Den normale kildekontrol på GitHubs Ubuntu 24.04-runner skal føre runnerens faktiske image-id til den eksisterende leverandørprøve. Kaldet skal bevise, at den native prøvesag er udført, før prøven tæller som bestået. Den lokale miljøprøve genskaber, at image-id’et forsvandt i den almindelige kildekalder, og kontrollerer, at kun den relevante prøve modtager det efter rettelsen. Faktisk Linux-kørsel kræves fortsat.
+
 ## Tillæg 14. november 2026 — konkret scope for fejlworker og upload
 
 Den konkret identificerede 240-sekunders failure-worker tilhører den pensionerede private Source-tail. Den er ikke en ny global frist for almindelig R2-/cacheupload. Den normale lokale SAVE og efterfølgende upload er adskilte operationer. DMI-finalisering og CP-timeout-recovery bevarer deres egne vedtagne budgetter samt fysisk stop, afventning og første fejl. Kravet om sikker, tidsafgrænset fejlafslutning består som en afgrænset acceptrest. Den additive normale SDK-prøve for tab af actionparent er separat kildeforberedt og indgår ikke i denne pakke; syntakskontrol er ikke faktisk Linux-/SDK-accept eller bevis for en produktfejl.
