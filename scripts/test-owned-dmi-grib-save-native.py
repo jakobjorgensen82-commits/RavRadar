@@ -10,6 +10,7 @@ interceptor is used. CI must supply an actual Node24 executable with
 The distribution cases run the actual runtime npm against only the fixed own
 offline cache; a missing warm cache is a prerequisite failure, never a skip.
 The owner-SIGKILL case covers action-process loss only, not runner destruction.
+The staged cipher case proves local sealing, SDK transport and normal restore.
 None proves hosted durability, full runner loss or all-writer exclusion.
 """
 from __future__ import annotations
@@ -681,8 +682,11 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         self.assertEqual(self._cipher_sdk_parent_loss,
                          ['ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP'])
 
+    def test_official_sdk_staged_cipher_restores_in_normal_workspace(self):
+        self.official_chain(finalize_ok=True, ciphertext=True, staged_roundtrip=True)
+
     def official_chain(self, *, finalize_ok, ciphertext=False, archive_limit=None,
-                       archive_refusal=None, archive_capacity_skipped=False):
+                       archive_refusal=None, archive_capacity_skipped=False, staged_roundtrip=False):
         import hashlib
         import random
         import resource
@@ -690,6 +694,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
 
         self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
         self.assertFalse(ciphertext and archive_limit is not None)
+        if staged_roundtrip:
+            self.assertTrue(ciphertext and finalize_ok and getattr(self, '_cipher_sdk_parent_loss', None) is None)
         for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
             self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_REQUIRED:{name}')
         self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
@@ -724,8 +730,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         # Opaque own bytes test the transport only. This is NOT a fabricated
         # authenticated SAVE, GCM result or proof of the upstream seal caller.
         own_cipher = b'own opaque synthetic encrypted-progress transport bytes\\n'
+        staged_cipher = None
+        stage_root = root / 'sdk-temp' / 'ravradar-terminal-weather-progress-17-1'
+        restore_root = root / 'normal-restore-workspace'
         cipher_identity = None
         service = '/twirp/github.actions.results.api.v1.CacheService/'
+        blob_path = '/ownaccount/cache/archive'
         case = self
 
         def deadline(_number, _frame):
@@ -836,8 +846,9 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     case.assertEqual(set(value), {'key', 'version'})
                     case.assertRegex(value['version'], r'^[0-9a-f]{64}$')
                     archive_version = value['version']
-                    observe_chain()
-                    assert_pending()
+                    if not staged_roundtrip:
+                        observe_chain()
+                        assert_pending()
                     calls.append('create')
                     self.reply(200, {'ok': True, 'signed_upload_url':
                         f'http://127.0.0.1:{server.server_port}/ownaccount/cache/archive'})
@@ -846,7 +857,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     case.assertEqual(set(value), {'key', 'version', 'size_bytes'})
                     case.assertEqual(value['version'], archive_version)
                     case.assertEqual(value['size_bytes'], str(len(archive_bytes)))
-                    assert_pending()  # Real SDK blocked on this exact response.
+                    if not staged_roundtrip:
+                        assert_pending()  # Real SDK blocked on this exact response.
                     if getattr(case, '_cipher_sdk_parent_loss', None) is not None:
                         # Only the NEW case interrupts the real official SDK
                         # after its genuine archive PUT, before any finalize ACK.
@@ -907,9 +919,46 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                         return  # Deliberately no successful Finalize response.
                     calls.append('finalize')
                     self.reply(200, {'ok': finalize_ok, 'entry_id': '17' if finalize_ok else '0'})
-                    finished = True
+                    finished = not staged_roundtrip
+                elif staged_roundtrip and self.path == service + 'GetCacheEntryDownloadURL':
+                    case.assertEqual(calls, ['create', 'put', 'finalize'])
+                    case.assertEqual(set(value) - {'restore_keys'}, {'key', 'version'})
+                    case.assertEqual(value.get('restore_keys', []), [])
+                    case.assertEqual(value['version'], archive_version, 'Only the normal exact cache version is readable')
+                    calls.append('lookup')
+                    self.reply(200, {'ok': True, 'matched_key': key, 'signed_download_url':
+                        f'http://127.0.0.1:{server.server_port}{blob_path}'})
                 else:
                     raise AssertionError('Unexpected official SDK endpoint')
+
+            def do_HEAD(self):
+                case.assertTrue(staged_roundtrip)
+                case.assertEqual(self.path, blob_path)
+                case.assertEqual(calls, ['create', 'put', 'finalize', 'lookup'])
+                case.assertIsNone(self.headers.get('Authorization'))
+                calls.append('head')
+                self.send_response(200)
+                self.send_header('Content-Length', str(len(archive_bytes)))
+                self.send_header('Connection', 'close')
+                self.end_headers()
+
+            def do_GET(self):
+                nonlocal finished
+                case.assertTrue(staged_roundtrip)
+                case.assertEqual(self.path, blob_path)
+                case.assertEqual(calls, ['create', 'put', 'finalize', 'lookup', 'head'])
+                case.assertIsNone(self.headers.get('Authorization'))
+                last = len(archive_bytes) - 1
+                case.assertEqual(self.headers.get('Range'), f'bytes=0-{last}')
+                self.send_response(206)
+                self.send_header('Content-Range', f'bytes 0-{last}/{len(archive_bytes)}')
+                self.send_header('Content-Length', str(len(archive_bytes)))
+                self.send_header('Connection', 'close')
+                self.end_headers()
+                self.wfile.write(archive_bytes)
+                self.wfile.flush()
+                calls.append('download')
+                finished = True
 
             def do_PUT(self):
                 nonlocal archive_bytes
@@ -941,7 +990,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     cwd=root, env=runtime_environment(), stdin=subprocess.DEVNULL,
                     capture_output=True, timeout=1, check=True)
                 if ciphertext:
-                    case.assertEqual(extracted.stdout, own_cipher)
+                    case.assertEqual(extracted.stdout, staged_cipher if staged_roundtrip else own_cipher)
                 else:
                     case.assertEqual(extracted.stdout, own_raw)
                 case.assertEqual(listing.stderr + extracted.stderr, b'')
@@ -970,6 +1019,9 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 ('lib/internal/tar.js', '7fdb340eb93cedfb97e27c1a9599969cbbE3512ba63baf940da0a6ed5c92e029'),
                 ('lib/internal/uploadUtils.js', 'ea761d1c70ce503be0eb5c4cd7accda773d74c6fa8bd63af03b19d75d6646b03')):
                 self.assertEqual(hashlib.sha256((package / relative).read_bytes()).hexdigest(), digest.lower())
+            if staged_roundtrip:
+                self.assertEqual(hashlib.sha256((package / 'lib/internal/cacheUtils.js').read_bytes()).hexdigest(),
+                    'ba1b2de90f5abc0475065f0eb3017db727dd548b53cd6e4053fd70bf223ab75a')
             # Read-only dependency reference; no npm, SDK rewrite or package shim.
             (root / ENTRY.parent / 'node_modules').symlink_to(dependency, target_is_directory=True)
             raw = root / '.cache/dmi-grib/own.grib'
@@ -998,7 +1050,65 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 logs.append((root / name).open('wb'))
             if archive_limit is not None:
                 environment['RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES'] = str(archive_limit)
-            parent = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root, env=environment,
+            command, workspace = [str(NODE24), str(root / ENTRY)], root
+            if staged_roundtrip:
+                source_root = root / 'authenticated-stage-source'
+                progress_script = ROOT / 'scripts/weather-component-progress-cache.mjs'
+                seal_environment = runtime_environment()
+                seal_environment.update({
+                    'RUNNER_TEMP': environment['RUNNER_TEMP'], 'GITHUB_RUN_ID': '17', 'GITHUB_RUN_ATTEMPT': '1',
+                    'GITHUB_REPOSITORY': 'owner/stage-fixture',
+                    'WEATHER_PROGRESS_ENCRYPTION_KEY': 'Q0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0M=',
+                })
+                seal_base = root / 'stage-source-base.json'
+                restore_base = root / 'stage-restore-base.json'
+                stage_program = r'''
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const [sourceRoot, script, restoreRoot, sourceBase, restoreBase] = process.argv.slice(1);
+const { weatherComponentProgressCache, sealTerminalWeatherProgressStage } = await import(pathToFileURL(script));
+for (const [repositoryRoot, basePath] of [[sourceRoot, sourceBase], [restoreRoot, restoreBase]]) {
+  await fs.mkdir(path.join(repositoryRoot, 'data/live'), { recursive: true });
+  await fs.writeFile(path.join(repositoryRoot, 'data/live/conditions.json'), '{"fixture":true}\n');
+  assert.equal((await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot,
+    basePath, protectedBundleSha256: 'a'.repeat(64) })).captured, true);
+}
+await fs.mkdir(path.join(sourceRoot, '.cache'));
+await fs.writeFile(path.join(sourceRoot, '.cache/weather-component-fallback-cursor.json'), '{"staged":true}');
+const result = await sealTerminalWeatherProgressStage({ repositoryRoot: sourceRoot, basePath: sourceBase });
+assert.equal(result.staged, true, JSON.stringify(result));
+assert.equal(result.saved, false);
+assert.equal(result.productionAuthority, false);
+console.log(result.sha256);
+'''
+                sealed = subprocess.run([str(NODE24), '--input-type=module', '-e', stage_program,
+                    str(source_root), str(progress_script), str(restore_root), str(seal_base), str(restore_base)],
+                    cwd=root, env=seal_environment, stdin=subprocess.DEVNULL, capture_output=True,
+                    timeout=2.0, check=True)
+                staged_cipher = (stage_root / cipher_path).read_bytes()
+                self.assertEqual(sealed.stdout.decode('ascii').strip(), hashlib.sha256(staged_cipher).hexdigest())
+                self.assertEqual(sealed.stderr, b'')
+                workspace = stage_root
+                # The transport has the SDK token but no progress encryption key.
+                program = r'''
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+const [sdk, normalRoot] = process.argv.slice(1);
+const { saveCache, restoreCache } = await import(pathToFileURL(sdk));
+const paths = ['.cache/weather-private-progress.encrypted'];
+const key = process.env.INPUT_KEY;
+assert.equal(process.cwd(), process.env.GITHUB_WORKSPACE);
+assert.equal(await saveCache(paths, key, undefined, false), 17);
+process.chdir(normalRoot);
+process.env.GITHUB_WORKSPACE = normalRoot;
+assert.equal(await restoreCache(paths, key, [], undefined, false), key);
+'''
+                command = [str(NODE24), '--input-type=module', '-e', program,
+                           str(package / 'lib/cache.js'), str(restore_root)]
+                environment['GITHUB_WORKSPACE'] = str(stage_root)
+            parent = subprocess.Popen(command, cwd=workspace, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
             while not finished:
@@ -1031,6 +1141,26 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 self.assertFalse(any((root / 'sdk-temp').glob('rr-dmi-raw-archive-*')))
                 self.assertEqual(raw.read_bytes(), own_raw)
                 no_children()
+                return
+            if staged_roundtrip:
+                self.assertEqual(parent.wait(timeout=2.0), 0, small(root / 'stderr').decode('utf-8'))
+                self.assertTrue(exited(fds['action']))
+                self.assertEqual(calls, ['create', 'put', 'finalize', 'lookup', 'head', 'download'])
+                self.assertEqual((restore_root / cipher_path).read_bytes(), staged_cipher)
+                self.assertEqual((stage_root / cipher_path).read_bytes(), staged_cipher)
+                report = root / 'stage-restore-report.json'
+                restored = subprocess.run([str(NODE24), str(progress_script), 'restore', '--root', str(restore_root),
+                    '--base', str(restore_base), '--report', str(report)], cwd=root, env=seal_environment,
+                    stdin=subprocess.DEVNULL, capture_output=True, timeout=2.0, check=True)
+                self.assertEqual(restored.stderr, b'')
+                self.assertTrue(json.loads(report.read_bytes())['restored'])
+                self.assertEqual((restore_root / '.cache/weather-component-fallback-cursor.json').read_bytes(),
+                                 b'{"staged":true}')
+                self.assertEqual((root / cipher_path).read_bytes(), own_cipher)
+                old = (root / cipher_path).lstat()
+                self.assertEqual((old.st_dev, old.st_ino), cipher_identity)
+                self.assertEqual(raw.read_bytes(), own_raw)
+                self.assertEqual(small(output), b'', 'Transport proof must not report a product upload')
                 return
             if getattr(self, '_cipher_sdk_parent_loss', None) is not None:
                 self.assertEqual(self._cipher_sdk_parent_loss,
