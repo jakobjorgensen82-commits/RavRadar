@@ -1,3 +1,9 @@
+## 21. november — bevar de første tretimerspar ved et DMI-modelskift
+
+- [x] Verificér #365 i det autentificerede arkiv. De to første vandstandspar havde begge niveauer, men manglede en sammenlignelig serie. IDW-køen nåede starttimerne og nåede ikke de to tilsvarende kvalificerede støttetimer.
+- [x] Genskab de dokumenterede køpladser i den normale lokale prøve. Afgræns fremrykningen til samme valgte samling og modelkørsel, kvalificeret vandstandsarbejde ved alle fire endepunkter og den eksisterende første direkte tur. Afprøv samtidig budgetafbrydelse, stærkere værdibehov, manglende kvalifikation og forskellige serier.
+- [ ] Kvalificér den præcise rettelse i GitHub. Bekræft derefter både første og anden prognosetimes tretimersændring, de følgende støttepar og beskyttede vejrdata på en almindelig kørsel. Se [DEC-0261](../10_DECISIONS/DEC-0261-DMI-LF-SUFFIX-PRIORITY-AND-STABLE-CURSOR.md).
+
 ## 21. november — vandstandsændring i den første prognosetime
 
 - [x] Fastslå årsagen i den autentificerede vejrkørsel #363. DMI-køen nåede den første time, mens de to planlagte støtteaktiver fra samme modelkørsel stod ubehandlede.
