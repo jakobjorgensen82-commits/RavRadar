@@ -143,24 +143,65 @@ function cloudflareCredential() {
   return { accountId, token };
 }
 
+const PROVIDER_OUTPUT_STATES = [
+  "CHAT_LENGTH", "CHAT_STOP_TEXT", "CHAT_STOP_EMPTY",
+  "RESPONSES_TOKEN_LIMIT", "RESPONSES_COMPLETED_TEXT", "RESPONSES_COMPLETED_NO_TEXT",
+  "UNKNOWN",
+] as const;
+type ProviderOutputState = typeof PROVIDER_OUTPUT_STATES[number];
+
+function describeProviderOutput(payload: Awaited<ReturnType<typeof assistantProviderJson>>): ProviderOutputState {
+  const result = payload?.result ?? payload;
+  if (Array.isArray(result?.choices) && result.choices.length === 1) {
+    const [choice] = result.choices;
+    if (choice?.finish_reason === "length") return "CHAT_LENGTH";
+    if (choice?.finish_reason === "stop" && choice.message?.role === "assistant") {
+      const content = choice.message.content;
+      if (typeof content === "string") return content.trim() ? "CHAT_STOP_TEXT" : "CHAT_STOP_EMPTY";
+      if (content == null) return "CHAT_STOP_EMPTY";
+    }
+    return "UNKNOWN";
+  }
+  if (result?.object === "response") {
+    if (result.status === "incomplete" && result.incomplete_details?.reason === "max_output_tokens") {
+      return "RESPONSES_TOKEN_LIMIT";
+    }
+    if (result.status === "completed" && Array.isArray(result.output)) {
+      const hasFinalText = result.output.some((message: {
+        type?: string;
+        role?: string;
+        content?: { type?: string; text?: unknown }[];
+      } | null) => message?.type === "message" && message.role === "assistant"
+        && Array.isArray(message.content) && message.content.some(part =>
+          part?.type === "output_text" && typeof part.text === "string" && part.text.trim().length > 0));
+      return hasFinalText ? "RESPONSES_COMPLETED_TEXT" : "RESPONSES_COMPLETED_NO_TEXT";
+    }
+  }
+  return "UNKNOWN";
+}
+
 // Failure observation contains only fixed categories and numeric HTTP status.
 // A missing/failing logger must preserve the original public error unchanged.
 type AssistantFailureObservation = {
   quotaCompleted: ReturnType<AssistantDeadline["observation"]> | null;
   providerStarted: ReturnType<AssistantDeadline["observation"]> | null;
   providerFetchCalled: boolean;
+  providerOutputState: ProviderOutputState | null;
   deadlineCause: ReturnType<AssistantDeadline["cause"]> | null;
 };
 function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number, observation: AssistantFailureObservation | null = null) {
   try {
     const stages = ["UPSTREAM_REQUEST", "UPSTREAM_HTTP_REJECTED", "UPSTREAM_JSON_PARSE", "UPSTREAM_ENVELOPE_REJECTED", "RESULT_EXTRACTION", "RESULT_VALIDATION"];
     const milliseconds = (value: unknown, maximum = Number.MAX_SAFE_INTEGER) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= maximum ? value : null;
+    const providerOutputState = observation?.providerOutputState;
     console.warn("RAVRADAR_ASSISTANT_FAILURE", {
       schemaVersion: 1,
       stage: stages.includes(stage) ? stage : "UNKNOWN",
       responseStatus: Number.isInteger(responseStatus) && responseStatus >= 400 && responseStatus <= 599 ? responseStatus : null,
       upstreamStatus: upstreamStatus !== null && Number.isInteger(upstreamStatus) && upstreamStatus >= 100 && upstreamStatus <= 599 ? upstreamStatus : null,
       rejectionCode: typeof rejectionCode === "string" && RAV_ASSISTANT_REJECTION_CODES.includes(rejectionCode) ? rejectionCode : null,
+      ...(stage === "RESULT_EXTRACTION" && providerOutputState && PROVIDER_OUTPUT_STATES.includes(providerOutputState)
+        ? { providerOutputState } : {}),
       quotaCompletedElapsedMs: milliseconds(observation?.quotaCompleted?.elapsedMs),
       quotaCompletedRemainingMs: milliseconds(observation?.quotaCompleted?.remainingMs, 7_000),
       providerStartElapsedMs: milliseconds(observation?.providerStarted?.elapsedMs),
@@ -182,6 +223,7 @@ Deno.serve(async (request) => {
   let quotaCompleted: ReturnType<AssistantDeadline["observation"]> | null = null;
   let providerStarted: ReturnType<AssistantDeadline["observation"]> | null = null;
   let providerFetchCalled = false;
+  let providerOutputState: ProviderOutputState | null = null;
   try {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: assistantHeaders(request) });
@@ -252,6 +294,9 @@ Deno.serve(async (request) => {
     }
     observedStage = "RESULT_EXTRACTION";
     const parsed = extractCloudflareAssistantResult(payload);
+    if (parsed === null) {
+      try { providerOutputState = describeProviderOutput(payload); } catch { /* Keep the existing rejection path. */ }
+    }
     observedStage = parsed === null ? "RESULT_EXTRACTION" : "RESULT_VALIDATION";
     const validated = validateAssistantResult(parsed, locale, body.context, rawQuestion,
       (code: string) => { observedRejectionCode = code; });
@@ -263,7 +308,7 @@ Deno.serve(async (request) => {
   } catch (error) {
     const response = assistantErrorResponse(request, error);
     if (observedStage !== null) reportAssistantFailure(observedStage, observedUpstreamStatus, observedRejectionCode, response.status,
-      { quotaCompleted, providerStarted, providerFetchCalled, deadlineCause:deadline?.cause() ?? null });
+      { quotaCompleted, providerStarted, providerFetchCalled, providerOutputState, deadlineCause:deadline?.cause() ?? null });
     return response;
   } finally {
     deadline?.close(); requestBody?.cancel();

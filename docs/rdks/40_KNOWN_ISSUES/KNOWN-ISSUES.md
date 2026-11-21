@@ -1,6 +1,6 @@
 ## 21. november — eksternt AI-afslag ved UV-spørgsmål
 
-Den normale offentlige klient fik ét HTTP 502-afslag kl. 17.12 UTC med ASSISTANT_RESPONSE_REJECTED og uden valideret AI-proveniens. Begrænset providerbody, manglende struktureret udtræk og validatorafslag kan give denne kode. Ingen gren er faktisk identificeret endnu. En lokal fast kategorilæsning er forberedt; kvalifikation og hosted resultat udestår. Generel UV-viden, lokale faste svar og tidligere ekstern AI-succes lukker ikke dette aktuelle driftsbevis. Ingen rå leverandørsvar, spørgsmålstekster fra andre brugere eller private data må udskrives.
+Den normale brugerklient fik HTTP 502 kl. 17.12 UTC. Én afgrænset kategorilæsning fandt HTTP 200 fra udbyderen efterfulgt af RESULT_EXTRACTION og RESULT_NOT_OBJECT. Det konkrete svar kunne ikke læses som den forventede femfeltsprotokol. Hvorfor udtrækket mislykkedes, står stadig åbent. Den lokale Edge-kandidat kan give én fast kategori ved en ny hændelse. Læsevejen skal fortsat kun give tilladte kategorier. [Kørsel #57](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/44940083465)
 
 ## 20. november — vandstandsændringen falder bort ved skift mellem DMI-serier
 
