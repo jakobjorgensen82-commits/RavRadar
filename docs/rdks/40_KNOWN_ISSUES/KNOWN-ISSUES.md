@@ -1,3 +1,9 @@
+## 21. november — bølger mangler i prognosens sidste døgn
+
+Dækningen faldt fra #357 til #358 på samme kode. De 40 zoner med den vedvarende bølgemangel var allerede ramt i #359 før ændringen af køen for tre timers vandstand. Officielle bølgekataloger og gemte offentlige prognoser viser udbud og slutresultat. De forklarer endnu ikke, hvor de manglende timer falder ud i RavRadars behandling.
+
+Den lokale ændring føjer en afgrænset DMI-oversigt til den eksisterende diagnostik med syv døgns opbevaring. Den viser valgt modelkørsel, hvor mange filer behandlingen nåede og kunne godkende, første uløste time og faste stop- og godkendelsesårsager. Oversigten følger kun et almindeligt DMI-trin, når kørslen selv har skrevet en ny rapport og afsluttet trinnet. En ren gendannelse fra checkpoint leverer ingen ny oversigt. Kildekontrol og første faktisk rapport i GitHub afventer.
+
 ## 21. november — eksternt AI-afslag ved UV-spørgsmål
 
 Den normale offentlige klient fik ét HTTP 502-afslag kl. 17.12 UTC med ASSISTANT_RESPONSE_REJECTED og uden valideret AI-proveniens. Begrænset providerbody, manglende struktureret udtræk og validatorafslag kan give denne kode. Ingen gren er faktisk identificeret endnu. En lokal fast kategorilæsning er forberedt; kvalifikation og hosted resultat udestår. Generel UV-viden, lokale faste svar og tidligere ekstern AI-succes lukker ikke dette aktuelle driftsbevis. Ingen rå leverandørsvar, spørgsmålstekster fra andre brugere eller private data må udskrives.

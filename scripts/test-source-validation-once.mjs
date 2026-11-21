@@ -51,6 +51,11 @@ assert(!sourceCommandsForChangedPaths(['supabase/functions/ravradar-assistant/in
   .some(command=>command.includes('test-fixed-assistant-failure-log-20261101.mjs')));
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-assistant-failure-log-20261101.mjs']),
   ['node scripts/test-fixed-assistant-failure-log-20261101.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-assistant-failure-log-20261121-1712.mjs']),
+  ['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths(['.github/workflows/deploy-trip-storage.yml']),
+  ['node scripts/test-fixed-assistant-failure-log-20261101.mjs',
+    'node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs']);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/lib/pages-closure-historical-test-input.mjs']),[]);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/audit-pages-artifact-privacy.mjs',
   'scripts/build-forecast-share-projection.mjs','scripts/verify-ravscore-operational-pages-deployment.mjs']),
