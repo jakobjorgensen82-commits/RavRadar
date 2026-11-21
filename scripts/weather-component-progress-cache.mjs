@@ -764,8 +764,7 @@ async function runWeatherComponentProgressCache({
       } }));
       streams.push(createWriteStream(cipherTemporary, { flags: 'a', mode: 0o600 }));
       await pipeline(...streams);
-      const tag = cipher.getAuthTag();
-      await fs.appendFile(cipherTemporary, tag);
+      await fs.appendFile(cipherTemporary, cipher.getAuthTag());
       const encryptedBytes = (await fs.stat(cipherTemporary)).size;
       if (encryptedBytes > maximumEncryptedBytes) fail('SIZE_LIMIT');
       // Flush the complete owned ciphertext (including the authentication tag)
@@ -785,7 +784,7 @@ async function runWeatherComponentProgressCache({
         await fs.unlink(cipherTemporary);
         cipherTemporary = null;
         return status('STAGED', 'ENCRYPTED_PROGRESS_STAGED', { staged: true, encryptedBytes,
-          sha256: digest.update(tag).digest('hex') });
+          sha256: digest.update(cipher.getAuthTag()).digest('hex') });
       }
       await fs.rename(cipherTemporary, cipherPath);
       cipherTemporary = null;

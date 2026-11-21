@@ -13,6 +13,8 @@ const ROOT = path.resolve(__dirname, '../../..');
 const CACHE_PATH = '.cache/dmi-grib';
 const CIPHER_PATH = '.cache/weather-private-progress.encrypted';
 const MAX_CIPHER_BYTES = 384 * 1024 * 1024; // Same existing local SAVE/RESTORE cap.
+const TERMINAL_CIPHER_BUDGET_MS = 240_000;
+const TERMINAL_CIPHER_STOP_RESERVE_MS = 2_000;
 const API_VERSION = '6.1.0';
 const MAX_RECEIPT_BYTES = 4096;
 const LOCK_SHA256 = '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5';
@@ -32,6 +34,7 @@ const REFUSAL_REASONS = new Set([
   'DMI_RAW_SAVE_RECEIPT_BOUND', 'DMI_RAW_SAVE_PIPE_FAILED', 'DMI_RAW_SAVE_PIPE_NOT_CLOSED',
   'DMI_RAW_SAVE_RECEIPT_INVALID', 'DMI_RAW_SAVE_API_FAILED', 'DMI_RAW_SAVE_NOT_FINALIZED',
   'WEATHER_CIPHER_UPLOAD_NOT_FINALIZED', 'DMI_RAW_DISTRIBUTION_NOT_READY',
+  'WEATHER_CIPHER_TERMINAL_HANDOFF_REFUSED', 'WEATHER_CIPHER_TERMINAL_WINDOW_EXPIRED',
   'EEXIST', 'EACCES', 'ENOENT',
 ]);
 function refusalDiagnostic(error) {
@@ -88,6 +91,69 @@ function fixedDistributionInputs() {
   return null;
 }
 
+function terminalCipherClock() {
+  // Linux /proc/uptime is CLOCK_BOOTTIME, including machine suspend. Treat
+  // its two decimal places conservatively at the upper end of the tick.
+  const match = /^([0-9]{1,12})\.([0-9]{2}) /.exec(fs.readFileSync('/proc/uptime', 'ascii'));
+  if (!match) throw refused('WEATHER_CIPHER_TERMINAL_HANDOFF_REFUSED');
+  return Number(match[1]) * 1000 + Number(match[2]) * 10 + 9;
+}
+
+function fixedTerminalCipherStage(env) {
+  const input = env.RAVRADAR_TERMINAL_CIPHER_HANDOFF;
+  if (input === undefined) return null;
+  const invalid = () => refused('WEATHER_CIPHER_TERMINAL_HANDOFF_REFUSED');
+  if (input.length > 2048 || !env.RUNNER_TEMP || !path.isAbsolute(env.RUNNER_TEMP)
+      || !/^[1-9]\d{0,18}$/.test(env.GITHUB_RUN_ID ?? '') || !/^[1-9]\d{0,9}$/.test(env.GITHUB_RUN_ATTEMPT ?? '')
+      || env.GITHUB_WORKSPACE !== ROOT) throw invalid();
+  let handoff;
+  try { handoff = JSON.parse(input); } catch { throw invalid(); }
+  const unsigned = /^(?:0|[1-9][0-9]{0,23})$/;
+  const fields = ['device', 'inode', 'mtimeNs', 'ctimeNs', 'stageDevice',
+    'stageInode', 'cacheDevice', 'cacheInode'];
+  if (!handoff || typeof handoff !== 'object' || Array.isArray(handoff)
+      || Object.keys(handoff).length !== fields.length + 8
+      || handoff.schemaVersion !== 1 || handoff.runId !== env.GITHUB_RUN_ID
+      || handoff.runAttempt !== env.GITHUB_RUN_ATTEMPT
+      || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(handoff.bootId ?? '')
+      || handoff.bootId !== fs.readFileSync('/proc/sys/kernel/random/boot_id', 'ascii').trim()
+      || !Number.isSafeInteger(handoff.startedAt) || handoff.startedAt < 0
+      || !Number.isSafeInteger(handoff.deadline)
+      || handoff.deadline - handoff.startedAt !== TERMINAL_CIPHER_BUDGET_MS
+      || !Number.isSafeInteger(handoff.bytes) || handoff.bytes < 1 || handoff.bytes > MAX_CIPHER_BYTES
+      || typeof handoff.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(handoff.sha256)
+      || fields.some(key => typeof handoff[key] !== 'string' || !unsigned.test(handoff[key]))) throw invalid();
+  if (terminalCipherClock() < handoff.startedAt) throw invalid();
+  const temp = env.RUNNER_TEMP;
+  if (fs.realpathSync(temp) !== temp) throw invalid();
+  const root = path.join(temp, `ravradar-terminal-weather-progress-${handoff.runId}-${handoff.runAttempt}`);
+  const cache = path.join(root, '.cache');
+  const absolute = path.join(root, CIPHER_PATH);
+  const euid = BigInt(process.geteuid());
+  const same = (stat, device, inode) => stat.dev.toString() === device && stat.ino > 0n
+    && stat.ino.toString() === inode && stat.uid === euid;
+  function assertIdentity() {
+    for (const [directory, device, inode] of [[root, handoff.stageDevice, handoff.stageInode],
+      [cache, handoff.cacheDevice, handoff.cacheInode]]) {
+      const stat = fs.lstatSync(directory, { bigint: true });
+      if (!stat.isDirectory() || (stat.mode & 0o777n) !== 0o700n
+          || !same(stat, device, inode) || fs.realpathSync(directory) !== directory) throw invalid();
+    }
+    const stat = fs.lstatSync(absolute, { bigint: true });
+    if (!stat.isFile() || stat.nlink !== 1n || (stat.mode & 0o777n) !== 0o600n
+        || !same(stat, handoff.device, handoff.inode) || stat.size !== BigInt(handoff.bytes)
+        || stat.mtimeNs.toString() !== handoff.mtimeNs || stat.ctimeNs.toString() !== handoff.ctimeNs) throw invalid();
+  }
+  function requireTime(reserve = 0) {
+    if (terminalCipherClock() >= handoff.deadline - reserve) {
+      throw refused('WEATHER_CIPHER_TERMINAL_WINDOW_EXPIRED');
+    }
+  }
+  requireTime(TERMINAL_CIPHER_STOP_RESERVE_MS);
+  assertIdentity();
+  return { root, bytes: handoff.bytes, sha256: handoff.sha256, requireTime, assertIdentity };
+}
+
 function fixedCipherInputs() {
   fixedDistributionInputs();
   const env = process.env;
@@ -98,7 +164,7 @@ function fixedCipherInputs() {
       || !env.ACTIONS_CACHE_SERVICE_V2) {
     throw refused('WEATHER_CIPHER_UPLOAD_INPUT_REFUSED');
   }
-  return { key: env.INPUT_KEY, path: CIPHER_PATH };
+  return { key: env.INPUT_KEY, path: CIPHER_PATH, stage: fixedTerminalCipherStage(env) };
 }
 
 function assertFixedWorkerParent() {
@@ -335,7 +401,11 @@ async function runCipherApiWorker() {
   const input = fixedCipherInputs();
   assertFixedWorkerParent();
   assertDistributionLock();
-  process.chdir(ROOT);
+  const cipherRoot = input.stage?.root ?? ROOT;
+  process.chdir(cipherRoot);
+  // Only the already owned SDK child changes its workspace. Cache path, key
+  // and SDK version remain the same as the ordinary authenticated restore.
+  if (input.stage) process.env.GITHUB_WORKSPACE = cipherRoot;
   const packageFile = findPackageJSON('@actions/cache', pathToFileURL(__filename));
   if (!packageFile || JSON.parse(fs.readFileSync(packageFile, 'utf8')).version !== API_VERSION) {
     throw refused('DMI_RAW_SAVE_API_UNAVAILABLE');
@@ -345,10 +415,10 @@ async function runCipherApiWorker() {
       || typeof cache.saveCache !== 'function' || !cache.isFeatureAvailable()) {
     throw refused('DMI_RAW_SAVE_API_UNAVAILABLE');
   }
-  // This is byte selection for the existing successful seal caller, not GCM
-  // authentication, a seal-report binding, or proof that other writers stopped.
-  const absolute = path.join(ROOT, CIPHER_PATH);
-  const parents = [ROOT, path.join(ROOT, '.cache')].map(directory => {
+  // Validate the selected bytes on the owned descriptor. The existing seal
+  // and terminal caller retain authority for plaintext and source closure.
+  const absolute = path.join(cipherRoot, CIPHER_PATH);
+  const parents = [cipherRoot, path.join(cipherRoot, '.cache')].map(directory => {
     const stat = fs.lstatSync(directory, { bigint: true });
     if (!stat.isDirectory() || stat.isSymbolicLink() || fs.realpathSync(directory) !== directory) {
       throw refused('WEATHER_CIPHER_UPLOAD_PATH_REFUSED');
@@ -368,6 +438,7 @@ async function runCipherApiWorker() {
   let receipt;
   try {
     const assertIdentity = () => {
+      input.stage?.assertIdentity();
       for (const expected of parents) {
         const actual = fs.lstatSync(expected.directory, { bigint: true });
         if (!actual.isDirectory() || actual.isSymbolicLink()
@@ -399,6 +470,10 @@ async function runCipherApiWorker() {
       return hash.digest('hex');
     };
     const sha256 = digest();
+    if (input.stage) {
+      input.stage.requireTime(TERMINAL_CIPHER_STOP_RESERVE_MS);
+      if (sha256 !== input.stage.sha256) throw refused('WEATHER_CIPHER_TERMINAL_HANDOFF_REFUSED');
+    }
     const cacheId = await cache.saveCache([CIPHER_PATH], input.key, undefined, false);
     if (!Number.isSafeInteger(cacheId) || cacheId <= 0) throw refused('WEATHER_CIPHER_UPLOAD_NOT_FINALIZED');
     if (digest() !== sha256) throw refused('WEATHER_CIPHER_UPLOAD_FILE_CHANGED');
@@ -421,6 +496,7 @@ async function runCipherApiWorker() {
   }
   if (!closed) first ??= { error: refused('WEATHER_CIPHER_UPLOAD_CLOSE_UNPROVED') };
   if (first !== null) throw first.error;
+  input.stage?.requireTime();
   fs.writeSync(3, JSON.stringify(receipt));
 }
 
@@ -493,6 +569,7 @@ async function runOwnedOperation(operation) {
   let interrupted = false;
   let archiveCapacitySkipped = false;
   let finalizedInventory;
+  let terminalStop;
   const interrupt = () => {
     interrupted = true;
     // Request only. The Python owner must still prove its entire group absent.
@@ -501,10 +578,20 @@ async function runOwnedOperation(operation) {
   process.on('SIGTERM', interrupt);
   process.on('SIGINT', interrupt);
   try {
+    if (input?.stage) {
+      terminalStop = setInterval(() => {
+        try { input.stage.requireTime(TERMINAL_CIPHER_STOP_RESERVE_MS); }
+        catch { if (!interrupted) interrupt(); }
+      }, 100);
+    }
     if (require.main === module) cliPhase = 'LEASE';
     lease = await owner.acquireWeatherAcquisitionWriter();
     await owner.assertWeatherAcquisitionWriter(lease);
     if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
+    if (input?.stage) {
+      input.stage.requireTime(TERMINAL_CIPHER_STOP_RESERVE_MS);
+      input.stage.assertIdentity();
+    }
     const inventoryBefore = operation === 'save'
       && (input.archiveLimit !== undefined || process.env.RAVRADAR_MEASURE_RAW_SAVE_INVENTORY === 'true')
       ? rawInventorySha256() : null;
@@ -551,6 +638,13 @@ async function runOwnedOperation(operation) {
           || typeof receipt.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(receipt.sha256)) {
         throw refused('WEATHER_CIPHER_UPLOAD_NOT_FINALIZED');
       }
+      if (input.stage) {
+        input.stage.requireTime();
+        input.stage.assertIdentity();
+        if (receipt.sha256 !== input.stage.sha256 || receipt.bytes !== input.stage.bytes) {
+          throw refused('WEATHER_CIPHER_UPLOAD_NOT_FINALIZED');
+        }
+      }
     } else {
       if (receipt.schemaVersion !== 1 || receipt.apiVersion !== API_VERSION
           || receipt.path !== input.path || receipt.key !== input.key) {
@@ -582,6 +676,7 @@ async function runOwnedOperation(operation) {
         catch (error) { firstFailure ??= { value: error }; }
       }
     }
+    if (terminalStop !== undefined) clearInterval(terminalStop);
     process.removeListener('SIGTERM', interrupt);
     process.removeListener('SIGINT', interrupt);
   }
@@ -593,7 +688,9 @@ async function runOwnedOperation(operation) {
     return { distributionReady: true };
   }
   if (operation === 'cipher') {
+    input.stage?.requireTime();
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'uploaded=true\n');
+    input.stage?.requireTime();
     return { uploaded: true };
   }
   if (archiveCapacitySkipped) {
