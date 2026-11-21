@@ -14890,6 +14890,7 @@ def write_github_outputs(
     terminal_code: str = "DMI_UNCLASSIFIED",
     strict_current_anchor_ready: bool = False,
     collection_failure_codes: list[str] | None = None,
+    wave_acquisition_report_ready: bool = False,
 ) -> None:
     output_path = os.getenv("GITHUB_OUTPUT")
     if output_path:
@@ -14916,6 +14917,11 @@ def write_github_outputs(
                 "strict_current_anchor_ready="
                 f"{'true' if strict_current_anchor_ready else 'false'}\n"
             )
+            if os.getenv("DMI_BULK_REQUIRE_ORDINARY_CLOSURE") == "true":
+                handle.write(
+                    "wave_acquisition_report_ready="
+                    f"{'true' if wave_acquisition_report_ready else 'false'}\n"
+                )
             if error:
                 safe_error = safe_error_message(error)
                 handle.write(f"error={safe_error}\n")
@@ -14949,6 +14955,81 @@ def write_failure_summary(error: Exception) -> None:
             handle.write("## DMI bulk refresh\n\n")
             handle.write("- Status: **failed**\n")
             handle.write(f"- Opstartsfejl: `{safe_error_message(error)}`\n")
+
+
+def write_ordinary_wave_acquisition_report(
+    result: dict[str, Any], reference: datetime,
+) -> bool:
+    """Report what happened to WAM data without exporting raw or per-point input."""
+    if os.getenv("DMI_BULK_REQUIRE_ORDINARY_CLOSURE") != "true" or FINALIZE_ONLY:
+        return False
+    stop_codes = {
+        "CRITICAL_COLLECTION_RUNTIME_RESERVED", "DOWNLOAD_BUDGET_EXCEEDED",
+        "GRIB_PARAMETERS_UNRECOGNIZED", "RUNTIME_BUDGET_REACHED",
+        "STAC_NO_FORECAST_ASSETS", "ASSET_DOWNLOAD_INCOMPLETE", "ASSET_REQUEST_FAILED",
+    }
+    decision_codes = {
+        "NO_CANDIDATE_CHANGE", "TARGET_DENOMINATOR_CHANGED", "RESOLVED_PAIR_REGRESSION",
+        "NEW_LINEAGE_CONFLICT", "FALLBACK_NO_PAIR_IMPROVEMENT", "INCOMPLETE_QUALITY_REFRESH",
+        "PROMOTED",
+    }
+    phase_counts = ("selectedAssetCount", "assetsReached", "assetsProven", "promotionCount")
+    coverage_counts = (
+        "observedAssetCount", "requiredTupleCount", "acceptedTupleCount",
+        "rejectedTupleCount", "admittedTupleCount", "withheldValidTupleCount",
+    )
+
+    def count(source, name):
+        value = source.get(name)
+        return value if type(value) is int and 0 <= value <= 1_000_000 else None
+
+    try:
+        diagnostics = result["diagnostics"]
+        collections = {}
+        for collection in sorted(WAVE_BOOTSTRAP_COLLECTIONS):
+            stac = diagnostics["stacByCollection"].get(collection, {})
+            phases = diagnostics.get("operationalWaveRunPhasesByCollection", {}).get(collection, [])
+            coverage = diagnostics.get("operationalWaveAssetCoverageByCollection", {}).get(collection, {})
+            progress = diagnostics.get("operationalWaveProgressByCollection", {}).get(collection, {})
+            catalogue_resolves_axis = stac.get("selectedTargetWindowAxisResolvable")
+            phase_reports = []
+            for phase in phases[:MAX_OPERATIONAL_WAM_FALLBACK_RUNS + 1]:
+                decision = (phase.get("lastPromotionDecision") or {}).get("reasonCode")
+                phase_reports.append({
+                    "modelRun": canonical_time(phase.get("modelRun")),
+                    "fullyTraversed": phase.get("fullyTraversed") is True,
+                    "lastPromotionDecision": decision if decision in decision_codes else None,
+                    **{name: count(phase, name) for name in phase_counts},
+                })
+            collections[collection] = {
+                "attempted": collection in diagnostics["collectionsAttempted"],
+                "selectedModelRun": canonical_time(stac.get("selectedRun")),
+                "catalogueResolvesAxis": catalogue_resolves_axis if type(catalogue_resolves_axis) is bool else None,
+                "activeModelRun": canonical_time(result["runs"].get(collection, {}).get("referenceTime")),
+                "firstUnresolvedHour": canonical_time(progress.get("firstUnresolvedHour")),
+                "remainingPairCount": count(progress, "remainingClosurePairCount"),
+                "assetCoverage": {name: count(coverage, name) for name in coverage_counts},
+                "phases": phase_reports,
+                "stopCodes": sorted({
+                    code
+                    for event in diagnostics.get("errors", []) + diagnostics.get("schedulerYields", [])
+                    if event.get("collection") == collection
+                    for code in (event.get("failureCode"), event.get("reasonCode"))
+                    if code in stop_codes
+                }),
+            }
+        report = {
+            "schemaVersion": 1, "productionReferenceAt": canonical_time(reference),
+            "publicWeatherCoverageProved": False, "collections": collections,
+        }
+        path = ROOT / "data/diagnostics/dmi-wave-acquisition-safe.json"
+        payload = json.dumps(report, ensure_ascii=True, separators=(",", ":")) + "\n"
+        with path.open("x", encoding="utf-8") as handle:
+            handle.write(payload)
+        return True
+    except (AttributeError, KeyError, OSError, TypeError, ValueError):
+        print("DMI_ORDINARY_WAVE_ACQUISITION_REPORT_UNAVAILABLE", file=sys.stderr, flush=True)
+        return False
 
 
 DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS = 120.0
@@ -18495,6 +18576,7 @@ def main() -> int:
                     "remainingClosureHourCount": run_info[
                         "remainingClosureHourCount"
                     ],
+                    "firstUnresolvedHour": next(iter(final_wave_missing_valid_times), None),
                     "remainingClosurePairCount": run_info[
                         "remainingClosurePairCount"
                     ],
@@ -18965,12 +19047,14 @@ def main() -> int:
         productive=producer_productive,
         diagnostics=diag,
     )
+    wave_report_ready = write_ordinary_wave_acquisition_report(result, locked_production_reference)
     write_github_outputs(
         result["refreshStatus"], fresh_successes, fresh_partials,
         len(result["zones"]), budget["bytes"],
         terminal_code=terminal_code,
         strict_current_anchor_ready=strict_current_anchor_available,
         collection_failure_codes=diagnostic_collection_failure_codes(diag),
+        wave_acquisition_report_ready=wave_report_ready,
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))

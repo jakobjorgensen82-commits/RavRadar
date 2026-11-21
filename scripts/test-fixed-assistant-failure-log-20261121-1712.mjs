@@ -116,18 +116,22 @@ for(const [before,after]of [
   [archivedWorkflow,knownAddition.replace("inputs.operation == '"+route+"'","inputs.operation != '"+route+"'")],
   [archivedWorkflow,knownAddition.replaceAll('\n','\r\n')],
 ]){assert.equal(isFixedAssistant1712WorkflowAddition(before,after),false);workflowChecks++;}
-const commands=CURRENT_CONTRACT_COMMANDS.assistantDiagnostic;
-for(const file of [workflowPath,'scripts/read-fixed-assistant-failure-log-20261121-1712.mjs',
+const diagnosticCommands=CURRENT_CONTRACT_COMMANDS.assistantDiagnostic1712;
+const sharedWorkflowOwners=[
+  {area:'assistantDiagnostic',commands:CURRENT_CONTRACT_COMMANDS.assistantDiagnostic},
+  {area:'assistantDiagnostic1712',commands:diagnosticCommands},
+];
+for(const file of ['scripts/read-fixed-assistant-failure-log-20261121-1712.mjs',
   'scripts/test-fixed-assistant-failure-log-20261121-1712.mjs']){
-  assert.deepEqual(currentSourceTargets(file).owners,[{area:'assistantDiagnostic',commands}]);
+  assert.deepEqual(currentSourceTargets(file).owners,[sharedWorkflowOwners[1]]);
 }
-assert.deepEqual(currentWorkflowTargets(workflowPath).owners,[{area:'assistantDiagnostic',commands}]);
-assert.ok(commands.includes('node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'));
-assert.ok(commands.includes('node scripts/test-fixed-assistant-failure-log-20261101.mjs'));
-assert.equal(commands.includes('node scripts/test-integrated-cutover-readiness.mjs'),false);
-assert.deepEqual(sourceCommandsForChangedPaths([workflowPath,'scripts/read-fixed-assistant-failure-log-20261121-1712.mjs']),commands);
+assert.deepEqual(currentSourceTargets(workflowPath).owners,sharedWorkflowOwners);
+assert.deepEqual(currentWorkflowTargets(workflowPath).owners,sharedWorkflowOwners);
+assert.deepEqual(diagnosticCommands,['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths([workflowPath,'scripts/read-fixed-assistant-failure-log-20261121-1712.mjs']),[
+  'node scripts/test-fixed-assistant-failure-log-20261101.mjs',...diagnosticCommands]);
 assert.equal(currentSourceTargets('scripts/test-integrated-cutover-readiness.mjs').owners
-  .some(owner=>owner.area==='assistantDiagnostic'),false);
+  .some(owner=>sharedWorkflowOwners.some(testOwner=>owner.area===testOwner.area)),false);
 assert.throws(()=>sourceCommandsForChangedPaths(['.github/workflows/unclassified-assistant-diagnostic.yml']),
   /SOURCE_CHANGED_OWNER_REQUIRED/);
 const packageScripts=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).scripts;

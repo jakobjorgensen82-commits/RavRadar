@@ -1,3 +1,9 @@
+## 21. november — bølger mangler i prognosens sidste døgn
+
+Dækningen faldt fra #357 til #358 på samme kode. De 40 zoner med den vedvarende bølgemangel var allerede ramt i #359 før ændringen af køen for tre timers vandstand. Officielle bølgekataloger og gemte offentlige prognoser viser udbud og slutresultat. De forklarer endnu ikke, hvor de manglende timer falder ud i RavRadars behandling.
+
+Den lokale ændring føjer en afgrænset DMI-oversigt til den eksisterende diagnostik med syv døgns opbevaring. Den viser valgt modelkørsel, hvor mange filer behandlingen nåede og kunne godkende, første uløste time og faste stop- og godkendelsesårsager. Oversigten følger kun et almindeligt DMI-trin, når kørslen selv har skrevet en ny rapport og afsluttet trinnet. En ren gendannelse fra checkpoint leverer ingen ny oversigt. Kildekontrol og første faktisk rapport i GitHub afventer.
+
 ## 21. november — eksternt AI-afslag ved UV-spørgsmål
 
 Den normale brugerklient fik HTTP 502 kl. 17.12 UTC. Én afgrænset kategorilæsning fandt HTTP 200 fra udbyderen efterfulgt af RESULT_EXTRACTION og RESULT_NOT_OBJECT. Det konkrete svar kunne ikke læses som den forventede femfeltsprotokol. Hvorfor udtrækket mislykkedes, står stadig åbent. Den lokale Edge-kandidat kan give én fast kategori ved en ny hændelse. Læsevejen skal fortsat kun give tilladte kategorier. [Kørsel #57](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/44940083465)
