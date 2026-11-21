@@ -7,7 +7,7 @@
 ## 21. november — afgrænset assistentdiagnose kl. 17.12
 
 - [x] Kvalificér den faste 11-sekunders kategorilæsning med dens normale værn.
-- [x] Udfør den faste læsning. Job #57 fandt én hændelse med HTTP 200 fra udbyderen og RESULT_EXTRACTION samt RESULT_NOT_OBJECT i Edge.
+- [x] Udfør den faste læsning. Job #57 fandt én fejlkategori med HTTP 200 fra udbyderen og RESULT_EXTRACTION samt RESULT_NOT_OBJECT i Edge.
 - [x] Afprøv én fast ekstra kategori lokalt gennem normal klient og Edge. De syntetiske former dækker modelgrænse, afslutning med eller uden tekst og ukendt status. Prøven bekræfter også den eksisterende fejlbesked og ét modelkald med den normale kvotekontrol.
 - [ ] Kvalificér og lever Edge-kandidaten gennem den eksisterende leveringsvej.
 - [ ] Læs en ny konkret hændelse gennem den faste skrivefri vej og verificér derefter reelle eksterne svar gennem den offentlige assistent. [Kørsel #57](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/44940083465)
