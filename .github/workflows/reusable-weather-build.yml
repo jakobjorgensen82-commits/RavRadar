@@ -259,6 +259,13 @@ jobs:
       NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
       EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
       PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
+      RAVRADAR_ORDINARY_PROVIDER_CLOSURE: ${{
+        (!inputs.current_family_cold_start && !inputs.completed_private_runtime &&
+        !inputs.checkpoint_only && !inputs.quick_confirmation && inputs.quick_progress_source == '' &&
+        !inputs.extended_provider_bootstrap && !inputs.weather_state_epoch_bootstrap &&
+        !inputs.weather_state_epoch_checkpoint_reentry && !inputs.native_sampling_identity_original_recovery &&
+        !inputs.produce_weather_handoff && !inputs.ravscore_integrated_first_cutover &&
+        !inputs.ravscore_integrated_return && inputs.ravscore_integrated_weather_handoff_run_id == '') && 'true' || 'false' }}
       CHECKPOINT_TARGET_HOUR: ${{ (inputs.checkpoint_only || (inputs.current_family_cold_start && inputs.quick_progress_source != '')) && inputs.production_target_hour || '' }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
@@ -2598,6 +2605,8 @@ jobs:
         run: |
           if test "${{ inputs.current_family_cold_start }}" = true; then
             node scripts/run-current-family-cold-start.mjs run-dmi
+          elif test "$RAVRADAR_ORDINARY_PROVIDER_CLOSURE" = true && test "${{ steps.operational-action.outputs.action }}" = integrated; then
+            exec python -B scripts/run-ordinary-provider-cgroup.py dmi ${{ (steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && '4140' || '3240' }} --
           else
             python -u scripts/run-dmi-bulk-supervised.py
           fi
@@ -2651,6 +2660,18 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar/4.0.602 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
+      - name: Require physically stopped ordinary DMI before reading or saving its result
+        id: dmi-producer-closure
+        if: always() && env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.dmi-bulk.outcome != '' && steps.dmi-bulk.outcome != 'skipped'
+        shell: bash
+        env:
+          PRODUCER_CLOSED: ${{ steps.dmi-bulk.outputs.ordinary_dmi_producer_closed }}
+        run: |
+          if test "$PRODUCER_CLOSED" != true; then
+            echo '::error::DMI_ORDINARY_PRODUCER_STOP_UNPROVED'
+            exit 1
+          fi
+
       - name: Require actual cold-start producer cessation before other consumers
         if: inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''
         shell: bash
@@ -2670,7 +2691,7 @@ jobs:
 
       - name: Reconfirm exact main before shared DMI GRIB cache
         id: dmi-progress-write-authority
-        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-producer-closure.outcome == 'success') && (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -2707,7 +2728,7 @@ jobs:
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Require finalized RAW storage before using newly acquired DMI data
-        if: ${{ !cancelled() && inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure') && steps.dmi-raw-save.outputs.saved != 'true' }}
+        if: ${{ (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-bulk.outcome == '' || steps.dmi-bulk.outcome == 'skipped' || steps.dmi-producer-closure.outcome == 'success') && !cancelled() && inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure') && steps.dmi-raw-save.outputs.saved != 'true' }}
         shell: bash
         run: |
           echo '::error::New DMI inputs cannot become a protected baseline without a finalized RAW cache.'
@@ -2772,7 +2793,7 @@ jobs:
 
       - name: Inspect operational WAM handoff before state initialization
         id: wam-bootstrap-readiness
-        if: inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true'))
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-bulk.outcome == '' || steps.dmi-bulk.outcome == 'skipped' || steps.dmi-producer-closure.outcome == 'success') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true'))
         continue-on-error: true
         shell: bash
         env:
@@ -2899,21 +2920,38 @@ jobs:
         id: copernicus-fill
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true)
         continue-on-error: true
+        shell: bash
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-        run: >-
-          python scripts/run-copernicus-current-pilot-with-retry.py
-          --attempts 1
-          --timeout-seconds ${{ inputs.quick_confirmation && '120' || inputs.extended_provider_bootstrap == true && '3300' || '1500' }}
-          --backoff-seconds 20
-          --
-          --donor-bank .cache/copernicus-current-donor-bank.json
-          --segment-journal .cache/copernicus-current-segment-journal.json
-          --acquisition-plan .cache/weather-current-acquisition-plan.json
-          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --targets .cache/copernicus-current-targets.json
-          --authoritative-targets data/live/coastal-parts-v2.json
+        run: |
+          provider=(python scripts/run-copernicus-current-pilot-with-retry.py)
+          if test "$RAVRADAR_ORDINARY_PROVIDER_CLOSURE" = true && test "${{ steps.operational-action.outputs.action }}" = integrated; then
+            provider=(python -B scripts/run-ordinary-provider-cgroup.py copernicus 1560 --)
+          fi
+          exec "${provider[@]}" \
+            --attempts 1 \
+            --timeout-seconds ${{ inputs.quick_confirmation && '120' || inputs.extended_provider_bootstrap == true && '3300' || '1500' }} \
+            --backoff-seconds 20 \
+            -- \
+            --donor-bank .cache/copernicus-current-donor-bank.json \
+            --segment-journal .cache/copernicus-current-segment-journal.json \
+            --acquisition-plan .cache/weather-current-acquisition-plan.json \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --targets .cache/copernicus-current-targets.json \
+            --authoritative-targets data/live/coastal-parts-v2.json
+
+      - name: Require physically stopped ordinary Copernicus before reading its source stage
+        id: copernicus-fill-closure
+        if: always() && env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.copernicus-fill.outcome != '' && steps.copernicus-fill.outcome != 'skipped'
+        shell: bash
+        env:
+          PRODUCER_CLOSED: ${{ steps.copernicus-fill.outputs.copernicus_producer_closed }}
+        run: |
+          if test "$PRODUCER_CLOSED" != true; then
+            echo '::error::COPERNICUS_ORDINARY_PRODUCER_STOP_UNPROVED'
+            exit 1
+          fi
 
       - name: Require reusable Copernicus source stage before combined current closure
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')
@@ -2949,7 +2987,7 @@ jobs:
           ${{ inputs.checkpoint_only && '--reuse-only' || '' }}
 
       - name: Preserve safe weather acquisition diagnostics before terminal gates
-        if: inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-bulk.outcome == '' || steps.dmi-bulk.outcome == 'skipped' || steps.dmi-producer-closure.outcome == 'success') && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || (steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success')) && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
@@ -3138,22 +3176,38 @@ jobs:
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && inputs.quick_confirmation != true && inputs.checkpoint_only != true)
         id: copernicus-next-run-refresh
         continue-on-error: true
+        shell: bash
         timeout-minutes: 7
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-        run: >-
-          python scripts/run-copernicus-current-pilot-with-retry.py
-          --attempts 1
-          --timeout-seconds 360
-          --backoff-seconds 0
-          --
-          --refresh-only
-          --donor-bank .cache/copernicus-current-donor-bank.json
-          --segment-journal .cache/copernicus-current-segment-journal.json
-          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --targets .cache/copernicus-current-targets.json
-          --authoritative-targets data/live/coastal-parts-v2.json
+        run: |
+          provider=(python scripts/run-copernicus-current-pilot-with-retry.py)
+          if test "$RAVRADAR_ORDINARY_PROVIDER_CLOSURE" = true && test "${{ steps.operational-action.outputs.action }}" = integrated; then
+            provider=(python -B scripts/run-ordinary-provider-cgroup.py copernicus 380 --)
+          fi
+          exec "${provider[@]}" \
+            --attempts 1 \
+            --timeout-seconds 360 \
+            --backoff-seconds 0 \
+            -- \
+            --refresh-only \
+            --donor-bank .cache/copernicus-current-donor-bank.json \
+            --segment-journal .cache/copernicus-current-segment-journal.json \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --targets .cache/copernicus-current-targets.json \
+            --authoritative-targets data/live/coastal-parts-v2.json
+      - name: Require physically stopped ordinary Copernicus after optional quality work
+        id: copernicus-next-run-refresh-closure
+        if: always() && env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.copernicus-next-run-refresh.outcome != '' && steps.copernicus-next-run-refresh.outcome != 'skipped'
+        shell: bash
+        env:
+          PRODUCER_CLOSED: ${{ steps.copernicus-next-run-refresh.outputs.copernicus_producer_closed }}
+        run: |
+          if test "$PRODUCER_CLOSED" != true; then
+            echo '::error::COPERNICUS_ORDINARY_PRODUCER_STOP_UNPROVED'
+            exit 1
+          fi
 
       - name: Recheck reusable Copernicus evidence after optional quality work
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
@@ -3172,7 +3226,7 @@ jobs:
         # An early restore/short-confirmation failure must never publish a new
         # run-id checkpoint that is only a copy of older progress. At least the
         # first real supplier step must have been attempted.
-        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || ((steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success') && (steps.copernicus-next-run-refresh.outcome == '' || steps.copernicus-next-run-refresh.outcome == 'skipped' || steps.copernicus-next-run-refresh-closure.outcome == 'success'))) && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-producer-closure.outcome == 'success') && (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
         continue-on-error: true
         timeout-minutes: 4
         shell: bash
@@ -3522,7 +3576,7 @@ jobs:
       - name: Run release governance gate after refreshed data validation
         continue-on-error: true
         id: release-gate
-        if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-bulk.outcome == '' || steps.dmi-bulk.outcome == 'skipped' || steps.dmi-producer-closure.outcome == 'success') && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || ((steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success') && (steps.copernicus-next-run-refresh.outcome == '' || steps.copernicus-next-run-refresh.outcome == 'skipped' || steps.copernicus-next-run-refresh-closure.outcome == 'success'))) && always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
         run: npm run release:gate:production
 
       - name: Upload payload-free production validation reports

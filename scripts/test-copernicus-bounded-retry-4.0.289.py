@@ -279,11 +279,12 @@ class OwnedPilotTests(unittest.TestCase):
                     patch.object(sys, "argv", [str(SCRIPT), "--attempts", "2",
                                  "--timeout-seconds", "3", "--backoff-seconds", "0",
                                  "--", "--synthetic-own-marker"]),
-                    patch.dict(os.environ, {"GITHUB_OUTPUT": str(output)}),
+                    patch.dict(os.environ, {"GITHUB_OUTPUT": str(output),
+                                            "RAVRADAR_COPERNICUS_REQUIRE_CLOSURE": "true"}),
                     patch.object(module.subprocess, "Popen", side_effect=observe_launch),
                 ):
                     try:
-                        module.main()
+                        module.run_cli()
                     except BaseException as error:
                         observed_error = error
                 self.assertEqual(len(owned), 2 if recovery else 1,
@@ -300,6 +301,25 @@ class OwnedPilotTests(unittest.TestCase):
                     if child.poll() is None:
                         child.kill()
                     child.wait(timeout=5)
+
+    def test_cli_receipts_only_controlled_completion_from_its_own_pilot(self):
+        with tempfile.TemporaryDirectory(prefix="rr-cp-closure-") as raw:
+            root = Path(raw)
+            pilot = root / "pilot.py"
+            pilot.write_text("raise SystemExit(7)\n", encoding="utf-8")
+            output = root / "github-output"
+            with (
+                patch.object(module, "PILOT", pilot),
+                patch.object(sys, "platform", "linux"),
+                patch.object(sys, "argv", [str(SCRIPT), "--attempts", "1",
+                             "--timeout-seconds", "3", "--", "--synthetic-source"]),
+                patch.dict(os.environ, {"GITHUB_OUTPUT": str(output),
+                                        "RAVRADAR_COPERNICUS_REQUIRE_CLOSURE": "true"}),
+                patch.object(module, "_unclosed_pilot_processes", []),
+            ):
+                self.assertEqual(module.run_cli(), 1)
+            self.assertEqual(output.read_text() if output.exists() else "",
+                             "copernicus_producer_closed=true\n")
 
     def test_main_provider_latches_interrupt_until_own_child_is_retained(self):
         self.assert_interrupted_launch(False)

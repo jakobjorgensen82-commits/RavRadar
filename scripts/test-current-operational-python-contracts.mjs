@@ -78,14 +78,24 @@ for (const file of [
   'test-current-operational-live-builder.py',
   'test-current-operational-producer-chain.py',
   'test-dmi-bulk-supervised.py',
+  'test-ordinary-provider-cgroup.py',
   ...(process.platform === 'linux' ? [
     'test-dmi-supervisor-parent-loss.py',
     'test-dmi-native-provenance.py',
   ] : []),
 ]) {
   test(file, { timeout: 160_000 }, () => {
+    // The hosted cgroup case needs the runner's real local user bus and temp
+    // path. It creates its own output files and uses only artificial provider inputs.
+    const hostedProviderTest = file === 'test-ordinary-provider-cgroup.py'
+      && process.platform === 'linux' && process.env.RUNNER_ENVIRONMENT === 'github-hosted'
+      && process.env.ImageOS === 'ubuntu24';
+    const testEnvironment = hostedProviderTest ? { ...environment,
+      ...Object.fromEntries(['RUNNER_ENVIRONMENT', 'ImageOS', 'RUNNER_TEMP', 'HOME', 'LD_LIBRARY_PATH']
+        .filter(name => typeof process.env[name] === 'string').map(name => [name, process.env[name]])),
+    } : environment;
     const result = spawnSync(python, ['-B', path.join(root, 'scripts', file)], {
-      cwd: root, env: environment, encoding: 'utf8', shell: false,
+      cwd: root, env: testEnvironment, encoding: 'utf8', shell: false,
       timeout: 150_000, maxBuffer: 4 * 1024 * 1024, windowsHide: true,
     });
     assert.equal(result.error, undefined, `Synthetic Python runner failed: ${file}`);

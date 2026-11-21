@@ -1,3 +1,9 @@
+## 20. november — fysisk ophør i almindelig vejrhentning
+
+- [x] Tilpas den eksisterende procesindkapsling til den aktuelle DMI-kalder og begge normale Copernicus-kald. Bevar leverandørbudgetter og særkørsler.
+- [ ] Verificér den faktiske normale Linux-kalder i GitHub og gennemfør en almindelig vejrhentning med offentlig levering.
+- [ ] Bevis afbrydelse, holdbar gemning og genlæsning gennem normalvejen. Fireminuttersgrænsen for egentlig fejlafslutning følges særskilt.
+
 ## 19. november — opfølgning under indlæsning af kortet
 
 - [x] Genskab det generiske svar i browseren med den offentlige app og fremprovokér samme rækkefølge i den eksisterende brugerfladeprøve for dansk, tysk og engelsk.
