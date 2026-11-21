@@ -879,58 +879,65 @@ test('B361 counts national public endpoint presence without publishing PART iden
   assert.throws(()=>createB361PublicEndpointEvidence().finish(), /B361_PUBLIC_HOUR_UNBOUND/);
 });
 
-test('B363 only admits its exact archived producer and fixed read-only job', async () => {
-  const { B363_ARTIFACT, createB363ArtifactFetch } = await import('./audit-b358-water-level-trend.mjs');
-  const workflow = (await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  const block = workflow.split('\n  water-level-trend-363:')[1];
-  const confirmation = 'READ-B363-WATERLEVEL-TREND-ONLY';
-  assert(block?.includes('inputs.confirmation == ' + "'" + confirmation + "'"));
-  for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272'])
-    assert.ok(workflow.split('\n  '+job+':\n')[1]?.split('\n')[0].includes("inputs.confirmation != '"+confirmation+"'"), job);
-  assert.match(block, /git -c protocol\.allow=never archive 8851651b5908f37a1db3486a98d50ffd1231ff9c/);
-  assert.doesNotMatch(block, /actions\/cache|secrets: inherit|set -x|gh workflow run|npm run|--publish|\/logs|(?:contents|actions|pages|id-token): write/);
-  const sourceProof = block.indexOf('test "$SOURCE_REQUIRED" = false');
-  const read = block.indexOf('node scripts/audit-b358-water-level-trend.mjs --b363');
-  assert.ok(sourceProof > 0 && sourceProof < read && read < block.indexOf('STAGED_PRIVATE_BUILD_MASTER_SECRET:'));
-  assert.equal((block.match(/secrets\./g) ?? []).length, 1);
-  assert.match(block, /path: \$\{\{ runner.temp \}\}\/ravradar-b363-water-audit\/water-level-trend-safe\.json/);
-  const gate = block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE\n/)[1];
-  const head = 'a'.repeat(40);
-  const exact = { confirmation, expected_main_head: head, progress_source_run_id: '44865684276', progress_source_attempt: '1' };
-  for (const [input, accepted] of [[exact, true], [{ ...exact, expected_main_head: 'b'.repeat(40) }, false],
-    [{ ...exact, progress_source_run_id: '44810601191' }, false], [{ ...exact, progress_source_attempt: '2' }, false],
-    [{ ...exact, include_raw_manifest: true }, false], [{ ...exact, unexpected: false }, false]]) {
-    assert.equal(spawnSync(process.execPath, ['--input-type=module'], {
-      input: gate, encoding: 'utf8', env: { ...process.env, ALL_INPUTS: JSON.stringify(input), GITHUB_SHA: head },
-    }).status === 0, accepted);
-  }
-  const api = 'https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/actions/';
-  const metadata = api + 'runs/' + exact.progress_source_run_id + '/artifacts?per_page=100';
-  const zip = api + 'artifacts/' + B363_ARTIFACT.id + '/zip';
-  const signed = 'https://fixture.blob.core.windows.net/stage-363';
-  const correctArtifact = { name: 'ravradar-private-build-stage-44865684276-1', id: B363_ARTIFACT.id,
-    size_in_bytes: B363_ARTIFACT.bytes, digest: B363_ARTIFACT.digest };
-  const pin = artifacts => createB363ArtifactFetch(async (url, options) => {
-    if (url === metadata) return Response.json({ artifacts });
-    if (url === zip) return new Response(null, { status:302, headers:{ Location:signed } });
-    assert.equal(url, signed);
-    assert.equal([...new Headers(options.headers)].length, 0);
-    return new Response('synthetic');
+for (const [episode, runId, headSha] of [[363, '44865684276', '8851651b5908f37a1db3486a98d50ffd1231ff9c'],
+  [365, '44903468590', '995c2359cada1708f0e67ca5b14fecc5dd9c573d']]) {
+  test('B'+episode+' only admits its exact archived producer and fixed read-only job', async () => {
+    const audit = await import('./audit-b358-water-level-trend.mjs');
+    const label = 'B'+episode;
+    const artifact = audit[label+'_ARTIFACT'];
+    const createArtifactFetch = audit['create'+label+'ArtifactFetch'];
+    const workflow = (await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const block = workflow.split('\n  water-level-trend-'+episode+':')[1]?.split(/\n  [\w-]+:\n/)[0];
+    const confirmation = 'READ-'+label+'-WATERLEVEL-TREND-ONLY';
+    assert(block?.includes('inputs.confirmation == ' + "'" + confirmation + "'"));
+    for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272'])
+      assert.ok(workflow.split('\n  '+job+':\n')[1]?.split('\n')[0].includes("inputs.confirmation != '"+confirmation+"'"), job);
+    assert.ok(block.includes('git -c protocol.allow=never archive '+headSha));
+    assert.ok(block.includes('git merge-base --is-ancestor '+headSha));
+    assert.doesNotMatch(block, /actions\/cache|secrets: inherit|set -x|gh workflow run|npm run|--publish|\/logs|(?:contents|actions|pages|id-token): write/);
+    const sourceProof = block.indexOf('test "$SOURCE_REQUIRED" = false');
+    const read = block.indexOf('node scripts/audit-b358-water-level-trend.mjs --b'+episode);
+    assert.ok(sourceProof > 0 && sourceProof < read && read < block.indexOf('STAGED_PRIVATE_BUILD_MASTER_SECRET:'));
+    assert.equal((block.match(/secrets\./g) ?? []).length, 1);
+    assert.ok(block.includes('path: ${{ runner.temp }}/ravradar-b'+episode+'-water-audit/water-level-trend-safe.json'));
+    const gate = block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE\n/)[1];
+    const head = 'a'.repeat(40);
+    const exact = { confirmation, expected_main_head: head, progress_source_run_id: runId, progress_source_attempt: '1' };
+    for (const [input, accepted] of [[exact, true], [{ ...exact, expected_main_head: 'b'.repeat(40) }, false],
+      [{ ...exact, progress_source_run_id: '44810601191' }, false], [{ ...exact, progress_source_attempt: '2' }, false],
+      [{ ...exact, include_raw_manifest: true }, false], [{ ...exact, unexpected: false }, false]]) {
+      assert.equal(spawnSync(process.execPath, ['--input-type=module'], {
+        input: gate, encoding: 'utf8', env: { ...process.env, ALL_INPUTS: JSON.stringify(input), GITHUB_SHA: head },
+      }).status === 0, accepted);
+    }
+    const api = 'https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/actions/';
+    const metadata = api + 'runs/' + exact.progress_source_run_id + '/artifacts?per_page=100';
+    const zip = api + 'artifacts/' + artifact.id + '/zip';
+    const signed = 'https://fixture.blob.core.windows.net/stage-'+episode;
+    const correctArtifact = { name: 'ravradar-private-build-stage-'+runId+'-1', id: artifact.id,
+      size_in_bytes: artifact.bytes, digest: artifact.digest };
+    const pin = artifacts => createArtifactFetch(async (url, options) => {
+      if (url === metadata) return Response.json({ artifacts });
+      if (url === zip) return new Response(null, { status:302, headers:{ Location:signed } });
+      assert.equal(url, signed);
+      assert.equal([...new Headers(options.headers)].length, 0);
+      return new Response('synthetic');
+    });
+    const get = { redirect: 'manual' };
+    for (const bad of [[{ ...correctArtifact, digest: 'sha256:'+'0'.repeat(64) }], [correctArtifact, correctArtifact], []]) {
+      const transport = pin(bad);
+      await assert.rejects(transport(metadata, get), new RegExp(label+'_ARTIFACT_PIN'));
+      await assert.rejects(transport(zip, get), new RegExp(label+'_TRANSPORT_SCOPE'));
+    }
+    const transport = pin([correctArtifact]);
+    await assert.rejects(transport(api+'runs/44810601191/attempts/1', get), new RegExp(label+'_TRANSPORT_SCOPE'));
+    assert.equal((await transport(metadata, get)).status, 200);
+    assert.equal((await transport(zip, get)).status, 302);
+    await assert.rejects(transport(signed, { ...get, headers:{ Authorization:'test' } }), new RegExp(label+'_TRANSPORT_SCOPE'));
+    assert.equal(await (await transport(signed, get)).text(), 'synthetic');
+    await assert.rejects(transport(signed, get), new RegExp(label+'_TRANSPORT_SCOPE'));
   });
-  const get = { redirect: 'manual' };
-  for (const bad of [[{ ...correctArtifact, digest: 'sha256:'+'0'.repeat(64) }], [correctArtifact, correctArtifact], []]) {
-    const transport = pin(bad);
-    await assert.rejects(transport(metadata, get), /B363_ARTIFACT_PIN/);
-    await assert.rejects(transport(zip, get), /B363_TRANSPORT_SCOPE/);
-  }
-  const transport = pin([correctArtifact]);
-  await assert.rejects(transport(api+'runs/44810601191/attempts/1', get), /B363_TRANSPORT_SCOPE/);
-  assert.equal((await transport(metadata, get)).status, 200);
-  assert.equal((await transport(zip, get)).status, 302);
-  await assert.rejects(transport(signed, { ...get, headers:{ Authorization:'test' } }), /B363_TRANSPORT_SCOPE/);
-  assert.equal(await (await transport(signed, get)).text(), 'synthetic');
-  await assert.rejects(transport(signed, get), /B363_TRANSPORT_SCOPE/);
-});
+}
 
 test('B363 exact H0 H3 H6 national aggregate separates missing level and trend', async () => {
   const { createB363PublicEndpointEvidence } = await import('./audit-b358-water-level-trend.mjs');
@@ -960,6 +967,44 @@ test('B363 exact H0 H3 H6 national aggregate separates missing level and trend',
   falseFirstTrend.collect(6, fixture(6));
   assert.throws(() => falseFirstTrend.finish(), /B363_KNOWN_PUBLIC_OBSERVATION_MISMATCH/);
   assert.throws(() => createB363PublicEndpointEvidence(expectedParts).finish(), /B363_PUBLIC_HOUR_UNBOUND/);
+});
+
+test('B365 projects only the fixed overlapping pairs and keeps the pre-acquisition trend mask unknown', async () => {
+  const { createB365PublicEndpointEvidence, projectB365DmiEvidence } = await import('./audit-b358-water-level-trend.mjs');
+  const referenceAt = '2026-11-21T12:00:00.000Z';
+  const time = offset => new Date(Date.parse(referenceAt)+offset*3_600_000).toISOString();
+  const inventory = new Map(Array.from({ length:673 }, (_, i) => ['test-private-part-'+i, 'zone-'+(i%210)]));
+  const offsets = [0, 1, 3, 4, 6, 7];
+  const evidence = createB365PublicEndpointEvidence(inventory);
+  for (const offset of offsets) {
+    evidence.collect(offset, Object.fromEntries([...inventory].map(([id, zoneId]) =>
+      [id, { id, zoneId, current: { time:time(offset), weather: { waterLevelCm:0,
+        waterLevelTrendCm3h:offset === 4 ? 0 : null } } }])));
+  }
+  const observations = evidence.finish();
+  assert.deepEqual(observations.map(row => [row.offset, row.withBothLevels, row.trendPresent]),
+    [[0,673,0],[1,673,0],[3,673,0],[4,673,673]]);
+  assert.doesNotMatch(JSON.stringify(observations), /test-private-part/);
+  const collection = 'dkss_nsbs', modelRun = '2026-11-21T06:00:00.000Z';
+  const queue = { available:true, collection, modelRun, productionReferenceAt:referenceAt, maintenance:false,
+    orderedHours: [{ rank:1, validTime:time(0), missingComponentKinds:['currentUpgrade'],
+      retainedScalarPlanQualified:true, retainedWaterTrendGap:false },
+    { rank:41, validTime:time(3), missingComponentKinds:['waterLevel'], retainedScalarPlanQualified:true },
+    { rank:43, validTime:time(2), missingComponentKinds:['waterLevel'] }] };
+  const plan = { present:true, valid:true, sourceAdmission:false, scope:'qualified-retained-value-gaps-before-native-takeover' };
+  const archived = { diagnostics: { qualifiedScalarAcquisitionPlan:plan,
+    currentAcquisitionPlan: { firstTurnOrder: { [collection]:queue } } },
+    runs: { [collection]:{ referenceTime:modelRun, processedValidTimes:[time(0)] } } };
+  const result = projectB365DmiEvidence(archived);
+  assert.equal(result.retainedScalarPlanQualification, 'QUALIFIED_ADVISORY');
+  assert.equal(result.preAcquisitionWaterTrendGap, 'UNKNOWN_MASK_NOT_ARCHIVED');
+  assert.deepEqual(result.bulkOnsetQueue[collection].map(row => row.offset), offsets);
+  assert.deepEqual(result.bulkOnsetQueue[collection].slice(0,3).map(row => [row.firstQueueRank,
+    row.retainedScalarPlanQualified, row.selectedRunProcessedTime]), [[1,true,true],[null,null,false],[41,true,false]]);
+  assert.doesNotMatch(JSON.stringify(result), /retainedWaterTrendGap/);
+  assert.equal(projectB365DmiEvidence(null).retainedScalarPlanQualification, 'UNKNOWN');
+  assert.equal(projectB365DmiEvidence({ diagnostics: { qualifiedScalarAcquisitionPlan: { ...plan, sourceAdmission:true } } })
+    .retainedScalarPlanQualification, 'UNKNOWN');
 });
 
 test('B358 DKSS queue publishes only fixed onboarding hours and bounded reason fields', async () => {

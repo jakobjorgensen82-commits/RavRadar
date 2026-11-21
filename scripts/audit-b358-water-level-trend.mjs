@@ -34,6 +34,15 @@ const B363_PAIRS = Object.freeze([0, 3]);
 const B363_HOURS = Object.freeze([0, 3, 6]);
 const B363_PUBLIC_MANIFEST_SHA256 = '8f8c9532d9aa2125b92a63af6b16ca99b2e122b77ca824ea739b26c0ef848b2f';
 const B363_SOURCE_DETAILS_SHA256 = 'da024324b0651ce806e06b250056d300ce9a81f187dbe8cbf1f236ef16a87875';
+const B365_TARGET = Object.freeze({
+  repository: TARGET.repository, runId: '44903468590', runAttempt: '1',
+  sourceHead: '995c2359cada1708f0e67ca5b14fecc5dd9c573d', datasetId: 'rr-20261121140639-210',
+  productionReferenceAt: '2026-11-21T12:00:00.000Z',
+});
+const B365_PAIRS = Object.freeze([0, 1, 3, 4]);
+const B365_HOURS = Object.freeze([0, 1, 3, 4, 6, 7]);
+const B365_PUBLIC_MANIFEST_SHA256 = 'ef4f40c9e3e26ca51985b2930685de66c1d8e72ff9073c349bb2837465411a98';
+const B365_SOURCE_DETAILS_SHA256 = '8894575776901c36313703fe7b5cacd9e47a23865f586c195bb0f3191b773759';
 const ZONE_IDS = Object.freeze(['DK-B02-06', 'DK-B02-11', 'DK-B05-16', 'DK-B05-17']);
 const FUR_ZONE = 'DK-B05-17';
 const FUR_PART = 'dk-b05-17-national-part-04';
@@ -347,7 +356,8 @@ export function qualifyLf7Reconstruction({ conditions, diagnostics, routing, fea
 }
 
 // Only fixed times and established diagnostics survive this projection.
-export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9, 10], includeObservedDemand = false) {
+export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9, 10],
+  includeObservedDemand = false, includeQualification = false) {
   const diagnostics = document?.diagnostics;
   const queues = diagnostics?.currentAcquisitionPlan?.firstTurnOrder;
   const count = value => Number.isSafeInteger(value) && value >= 0 && value <= 100_000 ? value : null;
@@ -370,6 +380,11 @@ export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9,
         waterLevelWasRequired: Array.isArray(row?.missingComponentKinds)
           ? row.missingComponentKinds.includes('waterLevel') : null,
         selectedRunProcessedTime: processedTimes?.has(Date.parse(time)) ?? null,
+        ...(includeQualification ? {
+          maintenance: typeof entry.maintenance === 'boolean' ? entry.maintenance : null,
+          retainedScalarPlanQualified: typeof row?.retainedScalarPlanQualified === 'boolean'
+            ? row.retainedScalarPlanQualified : null,
+        } : {}),
         ...(includeObservedDemand ? {
           offeredModelRun: Number.isFinite(Date.parse(entry.modelRun))
             ? new Date(Date.parse(entry.modelRun)).toISOString() : null,
@@ -386,6 +401,24 @@ export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9,
   return results;
 }
 
+export function projectB365DmiEvidence(document) {
+  const plan = document?.diagnostics?.qualifiedScalarAcquisitionPlan;
+  let qualification = 'UNKNOWN';
+  if (plan?.present === true && plan.valid === true && plan.sourceAdmission === false
+    && plan.scope === 'qualified-retained-value-gaps-before-native-takeover') {
+    qualification = 'QUALIFIED_ADVISORY';
+  } else if (plan?.present === true && plan.valid === false
+    && plan.failureCode === 'QUALIFIED_SCALAR_PLAN_UNUSABLE'
+    && plan.scope === 'conservative-native-priority') {
+    qualification = 'UNUSABLE_CONSERVATIVE';
+  }
+  return {
+    retainedScalarPlanQualification: qualification,
+    preAcquisitionWaterTrendGap: 'UNKNOWN_MASK_NOT_ARCHIVED',
+    bulkOnsetQueue: projectDkssOnsetQueue(document, B365_TARGET.productionReferenceAt, B365_HOURS, true, true),
+  };
+}
+
 export function createB361PublicEndpointEvidence() {
   return createPublicEndpointEvidence(B361_TARGET, B361_OFFSETS, 'B361', 586);
 }
@@ -393,6 +426,11 @@ export function createB361PublicEndpointEvidence() {
 export function createB363PublicEndpointEvidence(expectedParts) {
   if (!(expectedParts instanceof Map) || expectedParts.size !== 673) inputFailure('B363_PUBLIC_PART_INVENTORY');
   return createPublicEndpointEvidence(B363_TARGET, B363_PAIRS, 'B363', 0, expectedParts);
+}
+
+export function createB365PublicEndpointEvidence(expectedParts) {
+  if (!(expectedParts instanceof Map) || expectedParts.size !== 673) inputFailure('B365_PUBLIC_PART_INVENTORY');
+  return createPublicEndpointEvidence(B365_TARGET, B365_PAIRS, 'B365', 0, expectedParts);
 }
 
 function createPublicEndpointEvidence(target, offsets, label, expectedFirstTrend, expectedParts) {
@@ -442,8 +480,11 @@ function createPublicEndpointEvidence(target, offsets, label, expectedFirstTrend
 async function readAuthenticatedProjection({ payload, root, load, target = TARGET }) {
   const isB361 = target === B361_TARGET;
   const isB363 = target === B363_TARGET;
-  const pairOffsets = isB363 ? B363_PAIRS : isB361 ? B361_OFFSETS : undefined;
-  const sourceDetailsSha256 = isB363 ? B363_SOURCE_DETAILS_SHA256 : isB361 ? B361_SOURCE_DETAILS_SHA256 : undefined;
+  const isB365 = target === B365_TARGET;
+  const fixedStart = isB363 || isB365;
+  const pairOffsets = isB365 ? B365_PAIRS : isB363 ? B363_PAIRS : isB361 ? B361_OFFSETS : undefined;
+  const sourceDetailsSha256 = isB365 ? B365_SOURCE_DETAILS_SHA256
+    : isB363 ? B363_SOURCE_DETAILS_SHA256 : isB361 ? B361_SOURCE_DETAILS_SHA256 : undefined;
   const publicEvidence = isB361 ? createB361PublicEndpointEvidence() : null;
   const [forecast, normal, policy, fur, publicHours, partRecovery, bulk] = await Promise.all([
     load('scripts/lib/dmi-forecast-file.mjs'), load('scripts/lib/water-source-forecast-routing.mjs'),
@@ -470,7 +511,7 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
       return source?.provider === 'dmi' && source.routing === 'dmi-water-source-interpolation' ? source.sourceKeys : null;
     };
     const scope = { ...options, zone, storedRows: hourlyIndex(original.hourly), selected };
-    zones[zone] = projectSourcePairs({ ...scope, offsets: isB363 ? B363_PAIRS : undefined });
+    zones[zone] = projectSourcePairs({ ...scope, offsets: fixedStart ? pairOffsets : undefined });
     if (pairOffsets) routedZoneOffsets[zone] = pairOffsets.map(offset => {
       const { withLevel, withTrend, missingTrendReasons, changesAtIncompatibleEndpoint } =
         projectSourcePairs({ ...scope, offsets: [offset] });
@@ -484,21 +525,22 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
     inputFailure('CONDITIONS_GENERATION');
   const knownParts = Object.entries(conditions.coastalParts?.parts ?? {});
   const targetParts = new Map(knownParts
-    .filter(([id, part]) => isB363 ? [FUR_PART, SIBIRIEN_PART].includes(id)
+    .filter(([id, part]) => fixedStart ? [FUR_PART, SIBIRIEN_PART].includes(id)
       : ZONE_IDS.includes(part?.zoneId) || normal.lf7WaterOnlyZone(part?.zoneId))
     .map(([id, part]) => [id, part.zoneId]));
-  if (targetParts.size < (isB363 ? 2 : 4) || targetParts.size > 64 || targetParts.get(FUR_PART) !== FUR_ZONE
-      || (isB363 && targetParts.get(SIBIRIEN_PART) !== SIBIRIEN_ZONE)) inputFailure('PRIVATE_PART_SCOPE');
-  const exactEvidence = isB363 ? createB363PublicEndpointEvidence(new Map(knownParts.map(([id, part]) => [id, part.zoneId])))
-    : publicEvidence;
+  if (targetParts.size < (fixedStart ? 2 : 4) || targetParts.size > 64 || targetParts.get(FUR_PART) !== FUR_ZONE
+      || (fixedStart && targetParts.get(SIBIRIEN_PART) !== SIBIRIEN_ZONE)) inputFailure('PRIVATE_PART_SCOPE');
+  const expectedParts = fixedStart ? new Map(knownParts.map(([id, part]) => [id, part.zoneId])) : null;
+  const exactEvidence = isB365 ? createB365PublicEndpointEvidence(expectedParts)
+    : isB363 ? createB363PublicEndpointEvidence(expectedParts) : publicEvidence;
   const partWeather = await readSelectedPublicPartWeather(publicHours, path.join(payload, '.cache/public-hour-delivery.pack'),
     conditions, targetParts, { target, publicEvidence: exactEvidence,
-      offsets: isB363 ? B363_HOURS : undefined, sourceDetailsSha256 });
+      offsets: isB365 ? B365_HOURS : isB363 ? B363_HOURS : undefined, sourceDetailsSha256 });
   const directArchive = await readSibirienDirectWater({ indexed, forecast, conditions,
     publicPart: partWeather.get(SIBIRIEN_PART), load, target, offsets: pairOffsets });
   // Exact archived direct bindings do not identify the final selected PART
   // series when Sibirien lacks an original routed selection observation.
-  const sibirienDirectWater = isB363 && directArchive.status === 'OBSERVED' ? {
+  const sibirienDirectWater = fixedStart && directArchive.status === 'OBSERVED' ? {
     ...directArchive, evidence: 'ARCHIVED_DIRECT_PART_AND_PUBLIC_VALUES_FINAL_SOURCE_UNKNOWN',
     hours: directArchive.hours.map(({ sourceOverride, ...hour }) => ({
       ...hour, archivedDirectResultDiffersFromPublic: sourceOverride === 'PROVED',
@@ -516,7 +558,7 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
     return JSON.parse(await fs.readFile(name, 'utf8'));
   };
   let lf7 = { reason: 'FULL_LF7_RECONSTRUCTION_OUTSIDE_FIXED_THREE_HOUR_SCOPE', selections: new Map() };
-  if (!isB363) {
+  if (!fixedStart) {
     const [routing, geography, registry, diagnostics] = await Promise.all([
       json(root, 'data/water-level-station-routing.json').catch(() => null),
       json(root, 'data/zones.geojson').catch(() => null),
@@ -536,7 +578,7 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
     parts[id] = {
       zone, evidence: provenFurSelection ? 'ORIGINAL_PART_SOURCE_IDENTITIES'
         : lf7Selection ? 'ORIGINAL_LF7_SELECTION_AND_VALUES_MATCH' : 'PUBLIC_VALUES_WITHOUT_PROVEN_PART_SELECTION',
-      ...projectSourcePairs({ ...options, zone, storedRows: rows, offsets: isB363 ? B363_PAIRS : undefined,
+      ...projectSourcePairs({ ...options, zone, storedRows: rows, offsets: fixedStart ? pairOffsets : undefined,
         selected: time => provenFurSelection ? furKeys : lf7Selection?.get(time),
         basisCheck: provenFurSelection ? time => trace.trace.hours[time]
           : lf7Selection ? time => ({ outputValuePresent: finite(rows.get(time)?.waterLevelCm),
@@ -545,15 +587,22 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
   }
   const queueOffsets = isB363 ? [0, 1, 2, 3, 6] : isB361
     ? [...new Set(B361_OFFSETS.flatMap(hour => [hour, hour + 3]))].sort((a, b) => a - b) : undefined;
-  const bulkOnsetQueue = await bulk.readDmiBulkDocument(path.join(payload, 'data/live/dmi-bulk-cache.json'), { expandSources: false })
-    .then(document => projectDkssOnsetQueue(document, target.productionReferenceAt, queueOffsets, isB363))
-    .catch(() => ({}));
+  const bulkProjection = await bulk.readDmiBulkDocument(path.join(payload, 'data/live/dmi-bulk-cache.json'), { expandSources: false })
+    .then(document => isB365 ? projectB365DmiEvidence(document)
+      : { bulkOnsetQueue: projectDkssOnsetQueue(document, target.productionReferenceAt, queueOffsets, isB363) })
+    .catch(() => isB365 ? projectB365DmiEvidence(null) : { bulkOnsetQueue: {} });
+  const { bulkOnsetQueue } = bulkProjection;
   return { zoneEvidence: 'ARCHIVED_ZONE_ROUTING_SEPARATE_FROM_PUBLIC_WINNING_PART', lf7Evidence: lf7.reason,
     zones, parts, bulkOnsetQueue, sibirienDirectWater,
     ...(exactEvidence ? { nationalPublicEndpointPresence: exactEvidence.finish(), routedZoneOffsets,
-      publicManifestReceiptSha256: isB363 ? B363_PUBLIC_MANIFEST_SHA256 : B361_PUBLIC_MANIFEST_SHA256,
+      publicManifestReceiptSha256: isB365 ? B365_PUBLIC_MANIFEST_SHA256
+        : isB363 ? B363_PUBLIC_MANIFEST_SHA256 : B361_PUBLIC_MANIFEST_SHA256,
       sourceDetailsSha256 } : {}),
-    ...(isB363 ? {
+    ...(isB365 ? {
+      retainedScalarPlanQualification: bulkProjection.retainedScalarPlanQualification,
+      preAcquisitionWaterTrendGap: bulkProjection.preAcquisitionWaterTrendGap,
+    } : {}),
+    ...(fixedStart ? {
       queueEvidence: Object.keys(bulkOnsetQueue).length ? 'FIRST_COLLECTION_TURN_AND_RUN_ASSET_LEVEL_ONLY'
         : 'UNKNOWN_FIRST_TURN_OR_PROCESSED_LEDGER_UNAVAILABLE',
     } : {}) };
@@ -584,6 +633,15 @@ export function createB363ArtifactFetch(fetchImpl) {
   return createFixedArtifactFetch(fetchImpl, B363_TARGET, B363_ARTIFACT, 'B363');
 }
 
+export const B365_ARTIFACT = Object.freeze({
+  id: 14712116358, bytes: 259601038,
+  digest: 'sha256:5bab261f17debf1b9d5cb53cb0957572148413ca72a306f07a4063c1bdbeb454',
+});
+
+export function createB365ArtifactFetch(fetchImpl) {
+  return createFixedArtifactFetch(fetchImpl, B365_TARGET, B365_ARTIFACT, 'B365');
+}
+
 const FIXED_EPISODES = new Map([
   [TARGET, { label: 'B358', exactArtifact: B358_ARTIFACT, fixedTransport: createB358ArtifactFetch,
     readers: 'ravradar-b358-reader99eb', output: 'ravradar-b358-water-audit' }],
@@ -591,6 +649,8 @@ const FIXED_EPISODES = new Map([
     readers: 'ravradar-b361-reader257d', output: 'ravradar-b361-water-audit' }],
   [B363_TARGET, { label: 'B363', exactArtifact: B363_ARTIFACT, fixedTransport: createB363ArtifactFetch,
     readers: 'ravradar-b363-reader8851', output: 'ravradar-b363-water-audit' }],
+  [B365_TARGET, { label: 'B365', exactArtifact: B365_ARTIFACT, fixedTransport: createB365ArtifactFetch,
+    readers: 'ravradar-b365-reader995c', output: 'ravradar-b365-water-audit' }],
 ]);
 
 function isExactArtifact(artifact, expected) {
@@ -753,7 +813,7 @@ async function auditFixedWaterTrend({ runnerTemp, githubToken, masterSecret, tar
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const target = process.argv.length === 2 ? TARGET : process.argv.length === 3
-    ? { '--b361': B361_TARGET, '--b363': B363_TARGET }[process.argv[2]] : null;
+    ? { '--b361': B361_TARGET, '--b363': B363_TARGET, '--b365': B365_TARGET }[process.argv[2]] : null;
   try {
     if (!FIXED_EPISODES.has(target)) inputFailure('B358_FIXED_INPUT_ONLY');
     if (!await auditFixedWaterTrend({ runnerTemp: process.env.RUNNER_TEMP, githubToken: process.env.GH_TOKEN,
