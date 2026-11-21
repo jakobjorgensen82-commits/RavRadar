@@ -1,3 +1,11 @@
+## 21. november — afgrænset assistentdiagnose kl. 17.12
+
+- [x] Bevar det ene normale offentlige afslag og afgræns tre mulige kodegrene uden årsagsgæt.
+- [x] Klargør lokal fast 11-sekunders kategorilæsning i det eksisterende job med uændrede adgangs-, kilde- og idle-værn. Den aktuelle registrering accepterer kun den kendte tilføjelse; andre workflowændringer kræver fortsat fuld behandling.
+- [x] Verificér den aktuelle readerfixture lokalt: 31 reader-scenarier, 12 afviste workflowændringer og tre credentialfri CLI-afslag. Den eksisterende normale readerfixture består med 58 scenarier og den aktuelle emitter.
+- [ ] Kvalificér den præcise hosted kilde. Hele den gamle integrated-prøves historiske 50/66-afslag er bevaret; den er ikke gjort til nyt standardmål. Den gældende ejer bruger de aktuelle readerfixtures og de gamle udtrukne orakler.
+- [ ] Udfør den særskilt autoriserede faste læsning og vurder kategoriernes faktiske bevisgrænse. Tomt resultat eller flere kategorier er ikke entydig årsagsattribution. Ingen ny brugerprøve eller providerrettelse følger automatisk.
+
 ## 21. november — bevar de første tretimerspar ved et DMI-modelskift
 
 - [x] Verificér #365 i det autentificerede arkiv. De to første vandstandspar havde begge niveauer, men manglede en sammenlignelig serie. IDW-køen nåede starttimerne og nåede ikke de to tilsvarende kvalificerede støttetimer.
