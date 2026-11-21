@@ -3247,7 +3247,14 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
     const cases = [
       { http: 429, payload: { errors: [{ message: secret }] }, stage: 'UPSTREAM_HTTP_REJECTED', code: null, publicCode: 'ASSISTANT_UPSTREAM_FAILED' },
       { payload: { success: false, errors: [{ message: secret }] }, stage: 'UPSTREAM_ENVELOPE_REJECTED', code: null, publicCode: 'ASSISTANT_UPSTREAM_FAILED' },
-      { payload: { result: { text: secret } }, stage: 'RESULT_EXTRACTION', code: 'RESULT_NOT_OBJECT' },
+      { payload: { result: { text: secret } }, outputState: 'UNKNOWN' },
+      { payload: { result: { choices: [{ finish_reason: 'length', message: { role: 'assistant', content: secret } }] } }, outputState: 'CHAT_LENGTH' },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: secret } }] } }, outputState: 'CHAT_STOP_TEXT' },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, reasoning_content: secret } }] } }, outputState: 'CHAT_STOP_EMPTY' },
+      { payload: { result: { choices: [{ finish_reason: secret, message: { role: 'assistant', content: null } }] } }, outputState: 'UNKNOWN' },
+      { payload: { result: { object: 'response', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' } } }, outputState: 'RESPONSES_TOKEN_LIMIT' },
+      { payload: { result: { object: 'response', status: 'completed', output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: secret }] }] } }, outputState: 'RESPONSES_COMPLETED_TEXT' },
+      { payload: { result: { object: 'response', status: 'completed', output: [{ type: 'reasoning', content: [{ type: 'reasoning_text', text: secret }] }] } }, outputState: 'RESPONSES_COMPLETED_NO_TEXT' },
       { value: { ...valid, [secret]: secret }, code: 'RESULT_KEYS_INVALID' },
       { value: { ...valid, schemaVersion: secret }, code: 'RESULT_SCHEMA_INVALID' },
       { value: { ...valid, locale: 'fr' }, code: 'RESULT_LOCALE_MISMATCH' },
@@ -3274,7 +3281,10 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
         assert.equal(logs.length, 1);
         const {quotaCompletedElapsedMs,quotaCompletedRemainingMs,providerStartElapsedMs,providerStartRemainingMs,providerFetchCalled,deadlineCause,...categories}=logs[0][1];
         assert.deepEqual([logs[0][0],categories], ['RAVRADAR_ASSISTANT_FAILURE', { schemaVersion: 1,
-          stage: row.stage ?? 'RESULT_VALIDATION', responseStatus: 502, upstreamStatus: row.http ?? 200, rejectionCode: row.code }]);
+          stage: row.stage ?? (row.outputState ? 'RESULT_EXTRACTION' : 'RESULT_VALIDATION'),
+          responseStatus: 502, upstreamStatus: row.http ?? 200,
+          rejectionCode: row.outputState ? 'RESULT_NOT_OBJECT' : row.code,
+          ...(row.outputState ? { providerOutputState: row.outputState } : {}) }]);
         for(const value of [quotaCompletedElapsedMs,quotaCompletedRemainingMs,providerStartElapsedMs,providerStartRemainingMs])assert(Number.isSafeInteger(value)&&value>=0&&value<=7000);
         for(const total of [quotaCompletedElapsedMs+quotaCompletedRemainingMs,providerStartElapsedMs+providerStartRemainingMs])assert(total===6999||total===7000);
         assert(providerStartElapsedMs>=quotaCompletedElapsedMs);assert.equal(providerFetchCalled,true);assert.equal(deadlineCause,null);

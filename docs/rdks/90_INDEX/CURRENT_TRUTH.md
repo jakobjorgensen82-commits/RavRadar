@@ -4,7 +4,9 @@ Et tydeligt, todelt spørgsmål om hvorfor rav lyser under UV, og hvordan dagsly
 
 ## 21. november — fast læsning efter assistentafslag
 
-Den normale offentlige assistentklient fik ét afslag kl. 17.12 UTC med HTTP 502 og ASSISTANT_RESPONSE_REJECTED. Der kom ingen valideret AI-proveniens. Årsagen er ukendt; hændelsen er ikke gentaget. Den lokale kandidat tilføjer alene kategorilæsning for 17.12.11–17.12.22 UTC i det eksisterende skrivefri job. Kun trin, to statuskoder og fast afvisningskode kan udskrives. Rettigheder, eksakt main, første forsøg, kildebevis, frisk idle og én læsning bevares. Historiske assertions læser autentiske arkivbytes; aktuelle guards og afslag prøves direkte. Kildekvalifikation og faktisk hosted læsning udestår. Edge, AI-kald og faglige svar er uændrede.
+Den normale klient fik HTTP 502 kl. 17.12 UTC. Den afgrænsede skrivefri læsning i job #57 fandt én fejlkategori. Den viste HTTP 200 fra udbyderen og et afslag på at udtrække det forventede objekt med fem felter. Det står som RESULT_EXTRACTION og RESULT_NOT_OBJECT. Fejlkoden afgør ikke, om svaret blev afkortet, manglede en afsluttende tekst eller kom i en anden form. [Kørsel #57](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/44940083465)
+
+Den lokale Edge-kandidat registrerer én fast kategori, når udtrækket afvises. Kategorierne skelner mellem en kendt outputgrænse, kendt afslutning med eller uden afsluttende tekst og ukendt status. Prøven sender syntetiske svar gennem den normale klient og Edge-funktion og kontrollerer fejlkode, ét modelkald og loggens faste felter. Faktisk Edge-levering, den afgrænsede læsning af en ny hændelse og et fungerende eksternt svar følges særskilt.
 
 ## 20. november — UV i dagslys og ukendt ravudstyr
 
