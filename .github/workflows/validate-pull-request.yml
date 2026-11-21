@@ -188,6 +188,10 @@ jobs:
         if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
         run: python -B scripts/test_dmi_wave_bootstrap_update_integration.py
 
+      - name: Validate the terminal deadline with a held SDK Finalize on loopback
+        if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
+        run: python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$RAVRADAR_SOURCE_NODE24" --terminal-deadline-only
+
       - name: Require validated source tree to remain unchanged
         shell: bash
         run: |

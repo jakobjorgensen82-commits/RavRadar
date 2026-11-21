@@ -42,6 +42,7 @@ CLAIM = Path('.cache/weather-acquisition-writer.claim')
 NODE24 = None
 BODY_SECONDS = 8.0  # Own fixture observer, not a new product deadline.
 CLEANUP_SECONDS = 3.0
+TERMINAL_NEAR_EXPIRY_MS = 6_500
 
 SYNTHETIC_CACHE = r'''
 import fs from 'node:fs';
@@ -685,11 +686,19 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_staged_cipher_restores_in_normal_workspace(self):
         self.official_chain(finalize_ok=True, ciphertext=True, staged_roundtrip=True)
 
-    def test_official_sdk_staged_cipher_unanswered_finalize_closes_without_success(self):
-        self.official_chain(finalize_ok=False, ciphertext=True, staged_roundtrip=True)
+    def terminal_deadline_evidence(self):
+        self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
+        self.assertGreaterEqual(time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000,
+            240_000 - TERMINAL_NEAR_EXPIRY_MS,
+            'Run the selected deadline case after the other hosted source checks; no near-expiry proof on a young boot')
+        for blocked_cohort in (False, True):
+            with self.subTest(blocked_cohort=blocked_cohort):
+                self.official_chain(finalize_ok=False, ciphertext=True, staged_roundtrip=True,
+                                    staged_hold_cohort=blocked_cohort)
 
     def official_chain(self, *, finalize_ok, ciphertext=False, archive_limit=None,
-                       archive_refusal=None, archive_capacity_skipped=False, staged_roundtrip=False):
+                       archive_refusal=None, archive_capacity_skipped=False, staged_roundtrip=False,
+                       staged_hold_cohort=False):
         import hashlib
         import random
         import resource
@@ -699,6 +708,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         self.assertFalse(ciphertext and archive_limit is not None)
         if staged_roundtrip:
             self.assertTrue(ciphertext and getattr(self, '_cipher_sdk_parent_loss', None) is None)
+        self.assertFalse(staged_hold_cohort and (not staged_roundtrip or finalize_ok))
         for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
             self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_REQUIRED:{name}')
         self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
@@ -738,6 +748,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         restore_root = root / 'normal-restore-workspace'
         cipher_identity = None
         stage_identity = None
+        terminal_deadline = None
         service = '/twirp/github.actions.results.api.v1.CacheService/'
         blob_path = '/ownaccount/cache/archive'
         case = self
@@ -921,7 +932,35 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                         return  # Deliberately no successful Finalize response.
                     if staged_roundtrip and not finalize_ok:
                         calls.append('finalize-unanswered')
-                        signal.pidfd_send_signal(fds['action'], signal.SIGTERM)
+                        # In the second case hold only the owned cohort to
+                        # force an unprovable closure across the deadline.
+                        if staged_hold_cohort:
+                            signal.pidfd_send_signal(fds['cohort'], signal.SIGSTOP)
+                            proc_stat = f"/proc/{observed['cohort']['pid']}/stat"
+                            stop_observation = time.monotonic() + 1.0
+                            while small(proc_stat).rsplit(b')', 1)[1].split()[0] != b'T':
+                                case.assertLess(time.monotonic(), stop_observation, 'Own cohort did not stop')
+                                time.sleep(0.001)
+                        # No Finalize response and no test signal to the owner.
+                        # Its actual BOOTTIME timer must make it stop waiting.
+                        remaining = (terminal_deadline - time.clock_gettime_ns(time.CLOCK_BOOTTIME)
+                                     // 1_000_000) / 1_000
+                        case.assertGreater(remaining, 0)
+                        case.assertTrue(exited(fds['action'], remaining),
+                                        'The terminal SDK observer did not exit in the real terminal window')
+                        if staged_hold_cohort:
+                            case.assertFalse(exited(fds['cohort']))
+                            case.assertFalse(exited(fds['worker']))
+                            claim = (root / CLAIM).lstat()
+                            case.assertEqual((claim.st_dev, claim.st_ino), claim_identity)
+                            case.assertEqual(small(root / 'action-output'), b'')
+                            # Release the test hold only. The product must see
+                            # its dead pidfd owner and close its own SDK group.
+                            signal.pidfd_send_signal(fds['cohort'], signal.SIGCONT)
+                            case.assertTrue(exited(fds['cohort'], 1.0), 'Released cohort did not end on owner loss')
+                            case.assertTrue(exited(fds['worker']))
+                            stopped = os.waitid(os.P_PIDFD, fds['cohort'], os.WEXITED | os.WNOHANG)
+                            case.assertEqual(stopped.si_pid, observed['cohort']['pid'])
                         finished = True
                         return
                     calls.append('finalize')
@@ -1102,9 +1141,14 @@ console.log(result.sha256);
                 member_stat, root_stat, cache_stat = [(stage_root / leaf).lstat()
                     for leaf in (cipher_path, '.', '.cache')]
                 stage_identity = (member_stat.st_dev, member_stat.st_ino)
+                if not finalize_ok:
+                    # This fixture represents a seal following earlier elapsed
+                    # work. No clock or production deadline is substituted.
+                    started -= 240_000 - TERMINAL_NEAR_EXPIRY_MS
+                terminal_deadline = started + 240_000
                 environment['RAVRADAR_TERMINAL_CIPHER_HANDOFF'] = json.dumps({
                     'schemaVersion': 1, 'runId': '17', 'runAttempt': '1', 'bootId': boot,
-                    'startedAt': started, 'deadline': started + 240_000,
+                    'startedAt': started, 'deadline': terminal_deadline,
                     'bytes': len(staged_cipher), 'sha256': digest,
                     'device': str(member_stat.st_dev), 'inode': str(member_stat.st_ino),
                     'mtimeNs': str(member_stat.st_mtime_ns), 'ctimeNs': str(member_stat.st_ctime_ns),
@@ -1152,8 +1196,10 @@ console.log(result.sha256);
                     self.assertTrue(exited(fds[role]), f'{role} actual exit required')
                 with self.assertRaises(ProcessLookupError):
                     os.killpg(observed['worker']['pid'], 0)
-                self.assertFalse((root / CLAIM).exists())
-                self.assertEqual(small(output), b'uploaded=true\n' if finalize_ok else b'')
+                self.assertEqual((root / CLAIM).exists(), staged_hold_cohort)
+                if staged_hold_cohort:
+                    self.assertEqual(small(root / CLAIM), b'')
+                self.assertEqual(small(output), b'', 'Terminal success is the action exit status only')
                 self.assertEqual((root / cipher_path).read_bytes(), own_cipher)
                 old = (root / cipher_path).lstat()
                 self.assertEqual((old.st_dev, old.st_ino), cipher_identity)
@@ -1161,6 +1207,10 @@ console.log(result.sha256);
                 self.assertEqual(raw.read_bytes(), own_raw)
                 if not finalize_ok:
                     self.assertEqual(calls, ['create', 'put', 'finalize-unanswered'])
+                    diagnostic = (b'WEATHER_CIPHER_TERMINAL_WINDOW_EXPIRED' if staged_hold_cohort
+                                  else b'DMI_RAW_SAVE_INTERRUPTED')
+                    self.assertEqual(small(root / 'stderr'), b'DMI_RAW_SAVE_REFUSED\n'
+                                     b'DMI_RAW_SAVE_DIAGNOSTIC stage=CLOSURE reason=' + diagnostic + b'\n')
                     return
                 download_env = {name: environment[name] for name in ('RUNNER_TEMP', 'INPUT_KEY',
                     'ACTIONS_CACHE_SERVICE_V2', 'ACTIONS_RESULTS_URL', 'ACTIONS_RUNTIME_TOKEN')}
@@ -1580,8 +1630,10 @@ if __name__ == '__main__':
                         help='Only real-SDK raw/cipher loopback cases; default runs all native cases')
     parser.add_argument('--distribution-only', action='store_true',
                         help='Only real npm prepare cases; requires the fixed warm offline cache')
+    parser.add_argument('--terminal-deadline-only', action='store_true',
+                        help='Only the held-Finalize deadline case on a genuinely aged Linux boot')
     args = parser.parse_args()
-    if args.official_sdk_only and args.distribution_only:
+    if sum((args.official_sdk_only, args.distribution_only, args.terminal_deadline_only)) > 1:
         parser.error('Select at most one native class')
     if sys.platform != 'linux':
         raise SystemExit('NATIVE_LINUX_REQUIRED; syntax-only on other platforms, never PASS')
@@ -1593,5 +1645,6 @@ if __name__ == '__main__':
     if not version.stdout.startswith(b'v24.') or version.stderr:
         raise SystemExit('ACTUAL_NODE24_REQUIRED; PATH Node22 is not evidence')
     selected = ['OwnedRawDistributionNative'] if args.distribution_only else (
-        ['OwnedRawSaveOfficialSdkNative'] if args.official_sdk_only else [])
+        ['OwnedRawSaveOfficialSdkNative'] if args.official_sdk_only else (
+            ['OwnedRawSaveOfficialSdkNative.terminal_deadline_evidence'] if args.terminal_deadline_only else []))
     unittest.main(argv=[sys.argv[0], *selected])

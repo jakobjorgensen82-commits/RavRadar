@@ -15,6 +15,7 @@ const CIPHER_PATH = '.cache/weather-private-progress.encrypted';
 const MAX_CIPHER_BYTES = 384 * 1024 * 1024; // Same existing local SAVE/RESTORE cap.
 const TERMINAL_CIPHER_BUDGET_MS = 240_000;
 const TERMINAL_CIPHER_STOP_RESERVE_MS = 2_000;
+const TERMINAL_CIPHER_OBSERVER_RESERVE_MS = 100;
 const API_VERSION = '6.1.0';
 const MAX_RECEIPT_BYTES = 4096;
 const LOCK_SHA256 = '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5';
@@ -570,6 +571,8 @@ async function runOwnedOperation(operation) {
   let archiveCapacitySkipped = false;
   let finalizedInventory;
   let terminalStop;
+  let expireTerminalWait;
+  let terminalWaitExpired = false;
   const interrupt = () => {
     interrupted = true;
     // Request only. The Python owner must still prove its entire group absent.
@@ -581,8 +584,14 @@ async function runOwnedOperation(operation) {
     if (input?.stage) {
       terminalStop = setInterval(() => {
         try { input.stage.requireTime(TERMINAL_CIPHER_STOP_RESERVE_MS); }
-        catch { if (!interrupted) interrupt(); }
-      }, 100);
+        catch {
+          if (!interrupted) interrupt();
+          if (expireTerminalWait) {
+            try { input.stage.requireTime(TERMINAL_CIPHER_OBSERVER_RESERVE_MS); }
+            catch (error) { expireTerminalWait(error); }
+          }
+        }
+      }, 50);
     }
     if (require.main === module) cliPhase = 'LEASE';
     lease = await owner.acquireWeatherAcquisitionWriter();
@@ -609,9 +618,15 @@ async function runOwnedOperation(operation) {
     const errorText = collectReceipt(child.stderr);
     const apiText = collectReceipt(child.stdio[3]);
     const exit = await new Promise((resolve, reject) => {
+      if (input?.stage) expireTerminalWait = error => {
+        expireTerminalWait = undefined;
+        terminalWaitExpired = true;
+        reject(error);
+      };
       child.once('error', () => reject(refused('DMI_RAW_SAVE_CHILD_FAILED')));
       child.once('close', (code, signal) => resolve({ code, signal }));
     });
+    expireTerminalWait = undefined;
     // Drain all own pipes; never relay raw provider/library output or credentials.
     const closure = parseReceipt(closureText());
     errorText();
@@ -676,6 +691,13 @@ async function runOwnedOperation(operation) {
         catch (error) { firstFailure ??= { value: error }; }
       }
     }
+    if (terminalWaitExpired && !physicalClosed) {
+      // The writer claim was retained. End only this observer's wait; loss of
+      // its pidfd owner drives the existing cohort cleanup. This supplies no
+      // physical closure or CACHE API acknowledgement.
+      child.unref();
+      for (const stream of [child.stdout, child.stderr, child.stdio[3]]) stream.destroy();
+    }
     if (terminalStop !== undefined) clearInterval(terminalStop);
     process.removeListener('SIGTERM', interrupt);
     process.removeListener('SIGINT', interrupt);
@@ -688,9 +710,10 @@ async function runOwnedOperation(operation) {
     return { distributionReady: true };
   }
   if (operation === 'cipher') {
-    input.stage?.requireTime();
-    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'uploaded=true\n');
-    input.stage?.requireTime();
+    // Terminal success is this step's exit status, decided after its final
+    // deadline check. No success output file survives a late/unknown exit.
+    if (input.stage) input.stage.requireTime();
+    else if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'uploaded=true\n');
     return { uploaded: true };
   }
   if (archiveCapacitySkipped) {
