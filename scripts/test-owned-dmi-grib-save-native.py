@@ -978,26 +978,17 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     raise AssertionError('Unexpected official SDK endpoint')
 
             def do_HEAD(self):
-                case.assertTrue(staged_roundtrip)
-                case.assertEqual(self.path, blob_path)
-                case.assertEqual(calls, ['create', 'put', 'finalize', 'lookup'])
-                case.assertIsNone(self.headers.get('Authorization'))
-                calls.append('head')
-                self.send_response(200)
-                self.send_header('Content-Length', str(len(archive_bytes)))
-                self.send_header('Connection', 'close')
-                self.end_headers()
+                raise AssertionError('Cache SDK 6.1.0 uses direct GET for non-Azure archive hosts')
 
             def do_GET(self):
                 nonlocal finished
                 case.assertTrue(staged_roundtrip)
                 case.assertEqual(self.path, blob_path)
-                case.assertEqual(calls, ['create', 'put', 'finalize', 'lookup', 'head'])
+                case.assertEqual(calls, ['create', 'put', 'finalize', 'lookup'])
                 case.assertIsNone(self.headers.get('Authorization'))
-                last = len(archive_bytes) - 1
-                case.assertEqual(self.headers.get('Range'), f'bytes=0-{last}')
-                self.send_response(206)
-                self.send_header('Content-Range', f'bytes 0-{last}/{len(archive_bytes)}')
+                case.assertIsNone(self.headers.get('Range'))
+                case.assertIsNone(self.headers.get('x-ms-range'))
+                self.send_response(200)
                 self.send_header('Content-Length', str(len(archive_bytes)))
                 self.send_header('Connection', 'close')
                 self.end_headers()
@@ -1234,7 +1225,7 @@ assert.equal(await restoreCache(['.cache/weather-private-progress.encrypted'], k
                     if server_failure:
                         raise server_failure[0]
                 self.assertEqual(downloader.wait(timeout=2.0), 0, small(root / 'stderr').decode('utf-8'))
-                self.assertEqual(calls, ['create', 'put', 'finalize', 'lookup', 'head', 'download'])
+                self.assertEqual(calls, ['create', 'put', 'finalize', 'lookup', 'download'])
                 self.assertEqual((restore_root / cipher_path).read_bytes(), staged_cipher)
                 self.assertEqual((stage_root / cipher_path).read_bytes(), staged_cipher)
                 report = root / 'stage-restore-report.json'
