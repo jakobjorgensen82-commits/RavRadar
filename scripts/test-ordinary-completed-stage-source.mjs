@@ -172,6 +172,29 @@ test('committed source reuse compares all calculation objects and only exact sto
   assert.equal(assertOrdinaryCompletedStageSource({ root, producerHead, consumerHead }).consumerHead, consumerHead);
   const codeOnly = Buffer.from((await fs.readFile(new URL('../.github/workflows/deploy-code-only-repair.yml', import.meta.url), 'utf8'))
     .replaceAll('\r\n', '\n'));
+  const codeOnlySource = codeOnly.toString();
+  const codeOnlyPath = '.github/workflows/deploy-code-only-repair.yml';
+  const queuedWorkflows = ['.github/workflows/run-current-weather-once.yml', '.github/workflows/update-and-deploy.yml'];
+  const readWorkflows = new Set();
+  for (const file of queuedWorkflows) {
+    if (readWorkflows.has(file)) continue;
+    readWorkflows.add(file);
+    const body = await fs.readFile(new URL('../' + file, import.meta.url), 'utf8');
+    assert(!body.includes('deploy-code-only-repair.yml'), 'Ordinary calculation must not read the code-only entry point.');
+    for (const match of body.matchAll(/^\s*uses:\s*\.\/([^\r\n# ]+\.ya?ml)\s*$/gm)) {
+      queuedWorkflows.push(match[1]);
+    }
+  }
+  assert(readWorkflows.has('.github/workflows/reusable-weather-build.yml'));
+  assert(!readWorkflows.has(codeOnlyPath));
+  assert.match(codeOnlySource, /^on:\s*\n\s*workflow_dispatch:/m);
+  assert.doesNotMatch(codeOnlySource, /^\s*workflow_call:/m);
+  assert.match(codeOnlySource, /test "\$\{\{ steps\.source-proof\.outputs\.required \}\}" = "false"/);
+  const guard = codeOnlySource.indexOf('Check capacity and rollback before changing a saved reference');
+  const firstBindingWrite = codeOnlySource.indexOf('Apply exact dry-run-verified post-cutover binding');
+  assert(guard > codeOnlySource.indexOf('Require one exact saved private runtime') && guard < firstBindingWrite);
+  assert(codeOnlySource.slice(guard, firstBindingWrite)
+    .includes("steps.current-private-install.outcome != 'success' && steps.migrated-private-install.outcome == 'success'"));
   await write('.github/workflows/reusable-weather-build.yml', inversePrivateWeatherPublicationWorkflow(currentBuild));
   await write('.github/workflows/deploy-code-only-repair.yml', inversePrivateWeatherPublicationWorkflow(codeOnly));
   const normalProducer = commit('synthetic normal weather producer before explicit transport');
@@ -183,32 +206,35 @@ test('committed source reuse compares all calculation objects and only exact sto
   assert.equal(delivery.publicationAuthorized, false);
   assert.equal(delivery.payloadAuthenticated, false);
   assert.equal(delivery.consumerHead, normalConsumer);
-  for (const [file, source] of [['.github/workflows/reusable-weather-build.yml', currentBuild],
-    ['.github/workflows/deploy-code-only-repair.yml', codeOnly]]) {
-    await write(file, inversePrivateWeatherPublicationWorkflow(source));
-    const reverseHead = commit('synthetic reverse publication entry is refused');
+  await write(codeOnlyPath, Buffer.concat([codeOnly, Buffer.from('\n# Independent code-only change\n')]));
+  const laterCodeOnly = commit('synthetic changed independent code-only dispatcher');
+  const compatible = assertOrdinaryCompletedStageSource({ root,
+    producerHead: normalConsumer, consumerHead: laterCodeOnly });
+  assert.equal(compatible.deliveryPaths, 1);
+  assert.equal(compatible.payloadAuthenticated, false);
+  assert.equal(compatible.publicationAuthorized, false);
+  git('switch', '--detach', normalConsumer);
+  await write('.github/workflows/reusable-weather-build.yml', inversePrivateWeatherPublicationWorkflow(currentBuild));
+  const reverseHead = commit('synthetic reverse ordinary publication entry is refused');
+  assert.throws(() => assertOrdinaryCompletedStageSource({ root,
+    producerHead: normalConsumer, consumerHead: reverseHead }), { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
+  refused++;
+  git('switch', '--detach', normalConsumer);
+  const buildSource = currentBuild.toString();
+  for (const [label, changed] of [
+    ['source-head', buildSource.replace('--source-head "$GITHUB_SHA"', '--source-head "wrong"')],
+    ['expected', buildSource.replace('--expected .cache/private-production-runtime-expected.json', '--expected wrong.json')],
+    ['unknown-flag', buildSource.replace('--publish \\\n', '--publish --bucket-ceiling-bytes 9999999999 \\\n')],
+    ['extra-call', buildSource + '\n# scripts/publish-private-weather-runtime.mjs\n'],
+  ]) {
+    assert.notEqual(changed, buildSource, label);
+    await write('.github/workflows/reusable-weather-build.yml', changed);
+    const changedHead = commit('synthetic changed publication ' + label);
     assert.throws(() => assertOrdinaryCompletedStageSource({ root,
-      producerHead: normalConsumer, consumerHead: reverseHead }), { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
-    refused++;
+      producerHead: normalProducer, consumerHead: changedHead }), error =>
+      ['ORDINARY_STAGE_SOURCE_WORKFLOW_INVERSE', 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT'].includes(error.code));
     git('switch', '--detach', normalConsumer);
-  }
-  for (const [file, source] of [['.github/workflows/reusable-weather-build.yml', currentBuild],
-    ['.github/workflows/deploy-code-only-repair.yml', codeOnly]]) {
-    for (const [label, changed] of [
-      ['source-head', source.toString().replace('--source-head "$GITHUB_SHA"', '--source-head "wrong"')],
-      ['expected', source.toString().replace('--expected .cache/private-production-runtime-expected.json', '--expected wrong.json')],
-      ['unknown-flag', source.toString().replace('--publish \\\n', '--publish --bucket-ceiling-bytes 9999999999 \\\n')],
-      ['extra-call', source.toString() + '\n# scripts/publish-private-weather-runtime.mjs\n'],
-    ]) {
-      assert.notEqual(changed, source.toString(), label);
-      await write(file, changed);
-      const changedHead = commit('synthetic changed publication ' + label);
-      assert.throws(() => assertOrdinaryCompletedStageSource({ root,
-        producerHead: normalProducer, consumerHead: changedHead }), error =>
-        ['ORDINARY_STAGE_SOURCE_WORKFLOW_INVERSE', 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT'].includes(error.code));
-      git('switch', '--detach', normalConsumer);
-      refused++;
-    }
+    refused++;
   }
   await write('scripts/protected-private-production-runtime.mjs', '// frozen publisher drift\n');
   const publisherDrift = commit('synthetic frozen publisher remains a protected input');

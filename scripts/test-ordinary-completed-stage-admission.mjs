@@ -17,7 +17,7 @@ import { createPrivateProductionRuntimeBundle, restorePrivateProductionRuntimeBu
 import { sealStagedPrivateProductionRuntime, openStagedPrivateProductionRuntime }
   from './staged-private-production-runtime.mjs';
 import { publishProtectedPrivateProductionRuntime } from './protected-private-production-runtime.mjs';
-import { publishPrivateWeatherRuntime } from './publish-private-weather-runtime.mjs';
+import { checkCodeOnlyPrivateWeatherRebind, publishPrivateWeatherRuntime } from './publish-private-weather-runtime.mjs';
 import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
@@ -88,9 +88,9 @@ export async function assertNormalStagePublication(t) {
   const identity = { repository: 'owner/RavRadar', runId: '123', runAttempt: '1', sourceHead: 'a'.repeat(40) };
   const now = '2026-10-19T12:00:00.000Z', target = '2026-10-19T11:00:00.000Z';
   const expected = await buildPrivateRuntimeExpectation({ repositoryRoot: root, targetReferenceAt: target, now });
-  const create = async (reference, suffix) => {
+  const create = async (reference, suffix, generatedAt = '2026-10-19T11:05:00.000Z') => {
     const value = { datasetId: 'rr-synthetic-stage-seam-' + suffix, productionReferenceAt: reference,
-      generatedAt: '2026-10-19T11:05:00.000Z',
+      generatedAt,
       zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => ['z' + i, {}])),
       coastalParts: { modelBinding: binding, parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) => ['p' + i, {}])) } };
     for (const file of PRIVATE_RUNTIME_FILES) await write(root, file.relativePath,
@@ -154,7 +154,11 @@ export async function assertNormalStagePublication(t) {
         const result = await remote.storage.uploadImmutable(key, request.body);
         return new Response(null, { status: result.created ? 200 : 412 });
       }
-      if (request.method === 'GET') return new Response(await remote.storage.download(key));
+      if (request.method === 'GET') {
+        if (!remote.objects.has(key)) return new Response(null, { status: 404 });
+        const bytes = await remote.storage.download(key);
+        return new Response(bytes, { headers: { 'content-length': String(bytes.length) } });
+      }
       if (request.method === 'DELETE') { await remote.storage.removeExact(key); return new Response(null, { status: 204 }); }
       throw new Error('unexpected normal publisher storage method');
     } });
@@ -219,12 +223,127 @@ export async function assertNormalStagePublication(t) {
   assert.equal(r2Calls.slice(beforeCodeOnlyCalls).includes('PUT'), false);
   assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').version, 2);
   assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').payload.current.sourceHead, identity.sourceHead);
+  const nextHour = '2026-10-19T12:00:00.000Z', nextNow = '2026-10-19T13:00:00.000Z';
+  const third = await create(nextHour, 'third', '2026-10-19T12:05:00.000Z');
+  const nextExpected = await buildPrivateRuntimeExpectation({
+    repositoryRoot: root, targetReferenceAt: nextHour, now: nextNow,
+  });
+  const { storage: _thirdStorage, ...thirdPublication } = {
+    ...publish(third), expected: nextExpected, now: nextNow,
+  };
+  virtualUsed = 1_734_856_529;
+  let thirdCasWritten = false;
+  const thirdRequest = async (query, options, phase) => {
+    const result = await transport.documentRequest(query, options, phase);
+    if (phase === 'compare-and-swap') thirdCasWritten = true;
+    return result;
+  };
+  const interrupted = r2OptionsFor(transport, []);
+  const interruptedFetch = interrupted.fetchImpl;
+  interrupted.fetchImpl = async (url, request) => {
+    if (thirdCasWritten) throw new Error('synthetic runner loss after central B CAS');
+    return interruptedFetch(url, request);
+  };
+  const mustRetire = heldParent.payload.current.objects.map(part => part.objectPath);
+  const beforeThird = structuredClone(transport.documents.get(pointerKey));
+  const sameReference = structuredClone(beforeThird);
+  sameReference.payload.previous.productionReferenceAt = sameReference.payload.current.productionReferenceAt;
+  await assert.rejects(checkCodeOnlyPrivateWeatherRebind(async () => [sameReference], {
+    ...r2OptionsFor(transport, []),
+    fetchImpl: async () => assert.fail('Block a second same-hour write before any bucket access'),
+  }), { code: 'PRIVATE_WEATHER_PUBLICATION_WAIT_FOR_LATER_REFERENCE' });
+
+  const prepared = new Set(transport.objects.keys());
+  const beforeCasCalls = [];
+  await assert.rejects(publishPrivateWeatherRuntime({
+    ...thirdPublication,
+    request: async (query, options, phase) => {
+      if (phase === 'compare-and-swap') {
+        assert(transport.objects.size >= prepared.size + 2, 'Both candidate and marker have been read back.');
+        throw new Error('synthetic runner loss before the CAS request is delivered');
+      }
+      return transport.documentRequest(query, options, phase);
+    },
+  }, r2OptionsFor(transport, beforeCasCalls)), /Private runtime pointer compare-and-swap failed closed/);
+  assert.deepEqual(transport.documents.get(pointerKey), beforeThird);
+  assert.equal(beforeCasCalls.includes('DELETE'), false);
+  const afterPrepared = new Set(transport.objects.keys());
+  await assert.rejects(checkCodeOnlyPrivateWeatherRebind(transport.documentRequest, r2OptionsFor(transport, [])),
+    { code: 'PRIVATE_WEATHER_PUBLICATION_PENDING_POINTER_ADVANCE' });
+  const thirdResult = await publishPrivateWeatherRuntime({ ...thirdPublication, request: thirdRequest }, interrupted);
+  assert.equal(thirdResult.published, true);
+  assert.equal(thirdResult.retentionCleanupComplete, false);
+  assert.deepEqual(new Set(transport.objects.keys()), afterPrepared, 'The same immutable intent was reused.');
+  const thirdRow = transport.documents.get(pointerKey);
+  assert.equal(thirdRow.version, 3);
+  const codeOnlyReadCalls = [];
+  await assert.rejects(checkCodeOnlyPrivateWeatherRebind(
+    transport.documentRequest, r2OptionsFor(transport, codeOnlyReadCalls), target),
+  { code: 'PRIVATE_WEATHER_PUBLICATION_REBIND_TARGET_CHANGED' });
+  assert.equal(codeOnlyReadCalls.length, 0);
+  await assert.rejects(checkCodeOnlyPrivateWeatherRebind(
+    transport.documentRequest, r2OptionsFor(transport, codeOnlyReadCalls)),
+  { code: 'PRIVATE_WEATHER_PUBLICATION_RETIREMENT_PENDING' });
+  assert.deepEqual(codeOnlyReadCalls, ['GET'], 'The early admission never deletes a verified pending retirement.');
+  const protectedPaths = [...thirdRow.payload.current.objects, ...thirdRow.payload.previous.objects]
+    .map(part => part.objectPath);
+  for (const key of [...mustRetire, ...protectedPaths]) assert.equal(transport.objects.has(key), true);
+  const stillOwned = new Set(transport.objects.keys());
+  const beforeRecoveryEvents = transport.events.length;
+  let reads = 0;
+  const changedOwnerCalls = [];
+  const changedOwner = await publishPrivateWeatherRuntime({
+    ...thirdPublication,
+    request: async (query, options, phase) => {
+      if (phase === 'read' && ++reads === 2) return [{ ...thirdRow, version: 4 }];
+      return transport.documentRequest(query, options, phase);
+    },
+  }, r2OptionsFor(transport, changedOwnerCalls));
+  assert.equal(changedOwner.published, false);
+  assert.equal(changedOwner.retentionCleanupComplete, false);
+  assert.equal(changedOwnerCalls.includes('DELETE'), false);
+  assert.deepEqual(new Set(transport.objects.keys()), stillOwned);
+
+  // The old object is removed but the marker deletion is interrupted. The
+  // existing exact recovery must recognize actual absence on the next replay.
+  const partial = r2OptionsFor(transport, []);
+  const partialFetch = partial.fetchImpl;
+  partial.fetchImpl = async (url, request) => {
+    const key = decodeURIComponent(new URL(url).pathname.slice('/ravradar-private-production-runtime/'.length));
+    if (request.method === 'DELETE' && !mustRetire.includes(key)) {
+      assert.equal(protectedPaths.includes(key), false, 'Never target either authoritative generation.');
+      throw new Error('synthetic lost marker deletion');
+    }
+    return partialFetch(url, request);
+  };
+  const partialResult = await publishPrivateWeatherRuntime(thirdPublication, partial);
+  assert.equal(partialResult.published, false);
+  assert.equal(partialResult.retentionCleanupComplete, false);
+  for (const key of mustRetire) assert.equal(transport.objects.has(key), false);
+  for (const key of protectedPaths) assert.equal(transport.objects.has(key), true);
+  assert.equal(transport.objects.size, stillOwned.size - mustRetire.length);
+
+  const resume = await publishPrivateWeatherRuntime(thirdPublication, r2OptionsFor(transport, []));
+  assert.equal(resume.published, false);
+  assert.equal(transport.documents.get(pointerKey).version, 3);
+  assert.equal(transport.objects.size, protectedPaths.length);
+  for (const key of protectedPaths) assert.equal(transport.objects.has(key), true);
+  assert.equal(transport.events.slice(beforeRecoveryEvents).includes('OBJECT_SAVE'), false);
+  const settledCodeOnlyCalls = [];
+  await checkCodeOnlyPrivateWeatherRebind(
+    transport.documentRequest, r2OptionsFor(transport, settledCodeOnlyCalls), nextHour,
+  );
+  assert.ok(settledCodeOnlyCalls.length > 0);
+  assert.ok(settledCodeOnlyCalls.every(method => method === 'GET'),
+    'A clear admission with a verified rollback and capacity stays read-only.');
+  assert.deepEqual(transport.documents.get(pointerKey), thirdRow);
   const fresh = bindOrdinaryStagePublicationRequest(async () => { throw new Error('No request should occur'); }, parentReceipt);
   await assert.rejects(fresh('?ignored', {}, 'insert'), /PARENT_INSERT_FORBIDDEN/);
   await assert.rejects(fresh('?ignored', { body: '{}' }, 'compare-and-swap'), /PARENT_CAS_CHANGED/);
   console.log(JSON.stringify({ normalGcm: true, originalCipherSha256: crypto.createHash('sha256').update(originalCipher).digest('hex'),
     atomicNormalRestoreAndInstall: true, wholeManifestIdentical: true, realPublisherParentCas: true,
-    changedParentRefusedBeforeUpload: true, externalNetwork: false, ordinaryOriginAdmissionProved: false,
+    changedParentRefusedBeforeUpload: true, durableRetirementReplay: true, externalNetwork: false,
+    ordinaryOriginAdmissionProved: false,
     scoringPerformed: false, providerRequestsPerformed: false }));
 }
 test('normal GCM/B/atomic install/recreated B and real publisher bind the original producer to exact parent CAS', assertNormalStagePublication);

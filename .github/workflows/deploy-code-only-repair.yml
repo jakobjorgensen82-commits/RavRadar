@@ -1480,6 +1480,16 @@ jobs:
             echo "Exact predecessor runtime migrated and installed."
           fi
 
+      - name: Check capacity and rollback before changing a saved reference
+        if: inputs.restart_archived_weather != true && steps.current-private-install.outcome != 'success' && steps.migrated-private-install.outcome == 'success'
+        run: node scripts/check-private-weather-rebind.mjs
+        env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Pair already-current native-original B and actual S without origin or SQL replay
         if: env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CURRENT_FAMILY == 'current'
         shell: bash
