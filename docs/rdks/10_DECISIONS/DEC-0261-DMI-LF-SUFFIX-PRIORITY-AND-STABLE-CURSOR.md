@@ -1,3 +1,11 @@
+## 21. november — tidlig støtte til den første vandstandsændring
+
+Den autentificerede genlæsning af vejrkørsel #363 viste, at alle 673 kystdele havde vandstand ved kl. 04.00 og 07.00 UTC, men ingen havde tretimersændringen kl. 04.00. Samme DKSS-NSBS-modelkørsel havde kl. 07.00 og 10.00 i køen på plads 41 og 46. Begge stod som ubehandlede i dens kørselsspor, mens den første time var behandlet. Sibirien havde kvalificerede direkte værdier fra forskellige DMI-modelkørsler. De fire undersøgte zoners arkiverede kildevalg og den verificerede Fur-kilde viste også uforenelige endepunkter. Kl. 07.00 var ændringen frem til kl. 10.00 stadig kendt for alle 673 kystdele.
+
+Den lokalt afprøvede rettelse kan fremrykke to støtteaktiver tre og seks timer frem, som den eksisterende plan allerede har udpeget i den første almindelige kø for dkss_nsbs og dkss_idw. Den kræver et kvalificeret trendhul i den første time og støtte fra samme katalog og modelkørsel. De tre første timer beholder forrang. Fremrykningen passerer kun timer med dokumenteret højst samme behov for absolutte vejrdata og uden uafhængige strømbehov. De eksisterende budgetter og kildekrav gælder for hvert aktiv. Ved afbrydelse mellem støtteaktiverne kan den efterfølgende tretimersændring stadig mangle.
+
+Den normale DKSS-prøve består lokalt med 51 aktiver og afslag ved manglende støtte, en anden modelkørsel og budgetstop. Den eksisterende planlægger kræver fuld kildekontrol med `CURRENT_DMI_RECOVERY_FIXTURE_SCOPE_CHANGED`, fordi reglen for den første kø går ud over den tidligere parregel. Præcis kildekontrol og næste almindelige kørsels offentlige effekt skal bekræftes. Sammenlign den første time og de næste to støttepunkter for samme kystdele og UTC-timer.
+
 ## 21. november – bevar parret når kun andre trendbehov tæller forskelligt
 
 Den normale DKSS-prøve genskaber, at H7 og H10 skilles ad. H7 er samtidig støttetime for en anden kystdels H4, så den samlede behovstæller bliver 2 mod 1, selv om begge timer og den mellemliggende H8 har nul uafhængige værdi- og strømhuller.

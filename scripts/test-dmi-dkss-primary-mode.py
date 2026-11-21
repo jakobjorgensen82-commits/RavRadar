@@ -1334,6 +1334,7 @@ def check_qualified_production_gaps_precede_native_only_deficits():
         scalar_gap_plan=trend)
     assert trend_requirement["criticalPriority"] == 0
     assert "waterLevel" in trend_requirement["missingComponentKinds"]
+    assert trend_requirement["retainedWaterLevelDemand"] is True
     support_requirement = producer.classify_dkss_primary_asset(collection="dkss_lf",
         model_run=MODEL_RUN,
         asset={"valid": support_time, "id": "normal-private-support", "privateComponentSupport": True},
@@ -1343,6 +1344,7 @@ def check_qualified_production_gaps_precede_native_only_deficits():
         scalar_gap_plan=trend)
     assert support_requirement["criticalPriority"] == 0
     assert support_requirement["currentMissingPairCount"] == 0
+    assert support_requirement["retainedWaterLevelDemand"] is True
     assert support_requirement["currentNativeDeficitCount"] == 0
 
     # Reproduce the observed H7 -> H10 interruption after the first three
@@ -1625,3 +1627,107 @@ def check_qualified_broad_tail_holes_precede_sparse_front_and_native_takeovers()
 
 
 check_qualified_broad_tail_holes_precede_sparse_front_and_native_takeovers()
+
+
+def check_b363_leading_water_support_preserves_stronger_work_and_budget():
+    """Use the normal primary queue and exact first-turn caller; no GRIB or network."""
+    model_run = "2026-11-21T00:00:00Z"
+    reference = datetime(2026, 11, 21, 4, tzinfo=timezone.utc)
+    at = lambda offset: producer.canonical_time(reference + timedelta(hours=offset))
+    hours = list(range(51))
+    assets = [{"valid": at(hour), "id": hour, "modelRun": model_run} for hour in hours]
+    valid_times = {asset["valid"] for asset in assets}
+    covered = {("fixture", valid) for valid in valid_times}
+    requirements = {
+        at(hour): {
+            "critical": True, "criticalPriority": 0,
+            "retainedScalarPlanQualified": True,
+            "criticalGapPairCount": 4 if hour in (1, 2) else 677,
+            "retainedScalarValueGapPairCount": 4,
+            "retainedWaterTrendGap": hour == 0,
+            "retainedWaterLevelDemand": hour in (0, 3, 6),
+            "currentMissingPairCount": 0,
+        }
+        for hour in hours
+    }
+
+    def order(rows=None, work=None, current=None, *, model=model_run, pairing=True, regional=None):
+        current = covered if current is None else current
+        return producer.prioritize_dkss_primary_assets(
+            assets if work is None else work, ["fixture"], current,
+            requirements if rows is None else rows,
+            direct_valid_times=valid_times, regional_gap_pairs_by_time=regional or {},
+            verified_reusable_valid_times=set(), critical_cursor_valid_time=at(6),
+            pair_water_trends=pairing, leading_water_model_run=model,
+        )
+
+    def ids(rows):
+        return [asset["id"] for asset in rows]
+
+    baseline = ids(order(model=None))
+    assert baseline[:3] == [0, 1, 2]
+    assert baseline.index(3) > 39 and baseline.index(6) > 39
+    real = order()
+    ordered = ids(real)
+    assert ordered[:5] == [0, 1, 2, 3, 6]
+    assert [hour for hour in ordered if hour not in (3, 6)] == [
+        hour for hour in baseline if hour not in (3, 6)
+    ]
+    assert all(row is assets[row["id"]] for row in real)
+    assert ids(order(pairing=False)) == baseline
+    assert ids(order(model="2026-11-21T06:00:00Z")) == baseline
+
+    crossed = [dict(asset, modelRun="2026-11-20T18:00:00Z") if asset["id"] == 6 else asset for asset in assets]
+    assert ids(order(work=crossed)) == baseline
+    missing_support = [asset for asset in assets if asset["id"] != 6]
+    assert ids(order(work=missing_support)) == ids(order(work=missing_support, model=None))
+    no_water_reason = {**requirements, at(6): {**requirements[at(6)], "retainedWaterLevelDemand": False}}
+    assert ids(order(rows=no_water_reason)) == baseline
+    no_front_gap = {**requirements, at(0): {**requirements[at(0)], "retainedWaterTrendGap": False}}
+    assert ids(order(rows=no_front_gap)) == baseline
+
+    # A large independent scalar value hole, a real current hole, and a
+    # regional need each stay ahead of both promoted water-only support hours.
+    larger = {**requirements, at(8): {**requirements[at(8)], "retainedScalarValueGapPairCount": 5}}
+    meteorological = ids(order(rows=larger))
+    assert meteorological[:3] == baseline[:3]
+    assert meteorological.index(8) < meteorological.index(3) < meteorological.index(6) < baseline.index(3)
+    subsurface = ids(order(current=covered - {("fixture", at(8))}))
+    assert subsurface[:3] == baseline[:3]
+    assert subsurface.index(8) < subsurface.index(3) < subsurface.index(6)
+    regional = ids(order(regional={at(8): {("fixture", at(8))}}))
+    assert regional.index(8) < regional.index(3) < regional.index(6)
+    unknown = {**requirements, at(8): {key: value for key, value in requirements[at(8)].items()
+                                     if key != "retainedScalarValueGapPairCount"}}
+    assert ids(order(rows=unknown)).index(8) < ids(order(rows=unknown)).index(3)
+    conflicting = {**requirements, at(4): {**requirements[at(4)], "retainedScalarValueGapPairCount": 5}}
+    assert ids(order(rows=conflicting)) == ids(order(rows=conflicting, model=None))
+
+    tree = ast.parse(inspect.getsource(producer.main))
+    callsites = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Name) and node.func.id == "prioritize_dkss_primary_assets"]
+    options = [keyword.value for call in callsites for keyword in call.keywords
+               if keyword.arg == "leading_water_model_run"]
+    assert len(options) == 1
+    for term in ("collection_turn", "'native'", "'dkss_idw'", "'dkss_nsbs'", "'firstTurnOrder'"):
+        assert term in ast.unparse(options[0])
+    assert any(isinstance(node, ast.If) and ast.unparse(node.test).startswith(
+        "not checkpoint_controller.can_start_asset(reserve_seconds=reserve_for_pending_critical, cost_family=collection)")
+        for node in ast.walk(tree))
+
+    # Both budget cuts use the real existing native admission reserve. A queue
+    # recommendation neither commits an unvisited endpoint nor advances budget.
+    for cutoff in (1, 4, 5):
+        trace = []
+        with patch.object(producer, "runtime_remaining", side_effect=lambda: 216 if len(trace) < cutoff else 215):
+            controller = producer.ProgressCheckpointController({}, set(), {"bytes": 0})
+            for asset in real:
+                if not controller.can_start_asset(reserve_seconds=120, cost_family="dkss_nsbs"):
+                    break
+                trace.append(asset["id"])
+        assert trace == ordered[:cutoff]
+        assert (6 in trace) == (cutoff == 5)
+    print("B363 all known H0/H3/H6 support, protected independent work, exact same run and ordinary budget OK")
+
+
+check_b363_leading_water_support_preserves_stronger_work_and_budget()

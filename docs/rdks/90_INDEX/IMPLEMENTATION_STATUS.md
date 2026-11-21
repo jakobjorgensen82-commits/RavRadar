@@ -1,3 +1,10 @@
+## 21. november — vandstandsændring i den første prognosetime
+
+- [x] Fastslå årsagen i den autentificerede vejrkørsel #363. DMI-køen nåede den første time, mens de to planlagte støtteaktiver fra samme modelkørsel stod ubehandlede.
+- [x] Afprøv den normale direkte DKSS-kø lokalt. Prøven dækker fremrykning af de to støtteaktiver efter de tre første timer, forrang til væsentlige uafhængige huller, afslag ved ukendt eller uforenelig støtte og den almindelige budgetgrænse.
+- [ ] Bestå den fulde kildekontrol på den præcise ændring. Den tidligere korte parregel dækker ikke det nye første-kø-tilfælde.
+- [ ] Verificér næste almindelige vejrhentning og den offentlige vandstandsændring ved den første prognosetime og tre timer senere. Kontrollér de tilsvarende kystdele og gyldige værdier. Se [DEC-0261](../10_DECISIONS/DEC-0261-DMI-LF-SUFFIX-PRIORITY-AND-STABLE-CURSOR.md).
+
 ## 19. november — opfølgning under indlæsning af kortet
 
 - [x] Genskab det generiske svar i browseren med den offentlige app og fremprovokér samme rækkefølge i den eksisterende brugerfladeprøve for dansk, tysk og engelsk.
