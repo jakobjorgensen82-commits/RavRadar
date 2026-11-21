@@ -17,14 +17,14 @@ export async function inspectDatabaseBackupPlan({env=process.env, confirmMain=co
     && env.RUNNER_OS === 'Linux' && env.GITHUB_WORKFLOW === workflow && env.GITHUB_REPOSITORY === repository
     && env.GITHUB_EVENT_NAME === 'workflow_dispatch' && env.GITHUB_REF === 'refs/heads/main'
     && env.GITHUB_RUN_ATTEMPT === '1', 'BACKUP_STOCK_HOSTED_MAIN');
-  const commitment = /^rr-supabase-restore-v1:([a-f0-9]{64})$/.exec(env.RESTORE_ARCHIVE_INDEX_COMMITMENT ?? '');
+  const commitment = /^rr-supabase-(restore-v1|backup-pair-v1):([a-f0-9]{64})$/.exec(env.RESTORE_ARCHIVE_INDEX_COMMITMENT ?? '');
   requireCondition(commitment, 'BACKUP_STOCK_SELECTOR');
+  const qualifyPair = commitment[1] === 'backup-pair-v1';
   confirmMain(env);
-  const stock = await inspectStock(commitment[1], {env, fetchImpl});
-  // A receipt may explain a prior restore attempt. With unclassified objects,
-  // neither its absence nor the absence of an unsettled writer is established.
-  if (stock.selfContainedCurrentOnly) {
-    requireNoUnresolvedDatabaseCapture({...stock, restoreRunIds:[]}, {env, read:readGithub});
+  const stock = await inspectStock(commitment[2], {env, fetchImpl, ...(qualifyPair ? {qualifyPair} : {})});
+  // Durable receipts can explain which recent restore runs completed.
+  if (stock.selfContainedCurrentOnly || stock.pairQualification?.status === 'VERIFIED_CURRENT_AND_RESERVE') {
+    requireNoUnresolvedDatabaseCapture({...stock, restoreRunIds:stock.restoreRunIds ?? []}, {env, read:readGithub});
   }
   confirmMain(env);
   const bucketLimitBytes = DB_REMOTE_BACKUP_POLICY.maximumBucketBytes;
@@ -43,6 +43,7 @@ export async function inspectDatabaseBackupPlan({env=process.env, confirmMain=co
     rotationState: stock.selfContainedCurrentOnly ? 'SINGLE_CURRENT_ARCHIVE' : 'UNCLASSIFIED_STOCK',
     durableRestoreReceipt: stock.selfContainedCurrentOnly ? false : null,
     nextEligibleWeeklyAction: stock.selfContainedCurrentOnly ? 'restore' : null,
+    ...(qualifyPair ? {pairQualification:stock.pairQualification} : {}),
   };
 }
 
