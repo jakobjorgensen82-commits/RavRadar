@@ -564,6 +564,9 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/test-dmi-bulk-supervised.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test-dmi-supervisor-parent-loss.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test-dmi-native-provenance.py':COMMANDS.dmiCollectionRecovery,
+  'scripts/test_dmi_wave_bootstrap_update_integration.py':[
+    'python -B scripts/test_dmi_wave_bootstrap_update_integration.py',
+  ],
   'scripts/test-ordinary-provider-cgroup.py':COMMANDS.dmiCollectionRecovery,
   'scripts/lib/weather_acquisition_plan.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test-dmi-dkss-primary-mode.py':COMMANDS.dmiCollectionRecovery,
