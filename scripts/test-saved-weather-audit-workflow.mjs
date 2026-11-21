@@ -805,6 +805,80 @@ test('B358 causes follow the exact normal SOURCE reader and the original LF7 sel
 
 });
 
+test('B361 admits only its exact separately authenticated archived producer', async () => {
+  const { B361_ARTIFACT, createB361ArtifactFetch } = await import('./audit-b358-water-level-trend.mjs');
+  const workflow = (await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const block = workflow.split('\n  water-level-trend-361:')[1].split('\n  water-level-trend-358:')[0];
+  assert.match(block, /if: inputs\.confirmation == 'READ-B361-WATERLEVEL-TREND-ONLY'/);
+  for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272'])
+    assert.ok(workflow.split('\n  '+job+':\n')[1]?.split('\n')[0]
+      .includes("inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY'"));
+  assert.match(block, /git -c protocol\.allow=never archive 257d1cb527ab734d935d71a75608982f12fdc61e/);
+  assert.doesNotMatch(block, /actions\/cache|secrets: inherit|set -x|gh workflow run|npm run|--publish|\/logs/);
+  const call = block.indexOf('node scripts/audit-b358-water-level-trend.mjs --b361');
+  const sourceProof = block.indexOf('test "$SOURCE_REQUIRED" = false');
+  assert.ok(sourceProof > 0 && sourceProof < call && call < block.indexOf('STAGED_PRIVATE_BUILD_MASTER_SECRET:'));
+  assert.match(block, /path: \$\{\{ runner.temp \}\}\/ravradar-b361-water-audit\/water-level-trend-safe\.json/);
+  const admission = block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE\n/)[1];
+  const head = 'a'.repeat(40);
+  const exact = { confirmation: 'READ-B361-WATERLEVEL-TREND-ONLY', expected_main_head: head,
+    progress_source_run_id: '44810601191', progress_source_attempt: '1' };
+  for (const [input, accepted] of [[exact, true], [{...exact, progress_source_run_id: '44701860497'}, false],
+    [{...exact, progress_source_attempt:'2'}, false], [{...exact, component_summary_only:true}, false],
+    [{...exact, include_raw_file_presence:true}, false], [{...exact, unexpectedInput:false}, false]]) {
+    const checked = spawnSync(process.execPath, ['--input-type=module'], {
+      input: admission, encoding: 'utf8', env: { ...process.env, ALL_INPUTS: JSON.stringify(input), GITHUB_SHA: head },
+    }).status;
+    assert.equal(checked === 0, accepted);
+  }
+  const root = 'https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/actions/';
+  const metadata = root+'runs/44810601191/artifacts?per_page=100';
+  const zip = root+'artifacts/'+B361_ARTIFACT.id+'/zip';
+  const signed = 'https://fixture.blob.core.windows.net/only-361';
+  const init = { redirect: 'manual' };
+  const row = { name: 'ravradar-private-build-stage-44810601191-1', id: B361_ARTIFACT.id,
+    size_in_bytes: B361_ARTIFACT.bytes, digest: B361_ARTIFACT.digest };
+  const prepare = candidate => createB361ArtifactFetch(async url => url === metadata ? Response.json({ artifacts: [candidate] })
+    : url === zip ? new Response(null, { status: 302, headers: { Location: signed } }) : new Response('fixture'));
+  for (const bad of [{id: B358_ARTIFACT.id}, {digest: B358_ARTIFACT.digest}, {size_in_bytes: B358_ARTIFACT.bytes},
+    {name:'ravradar-private-build-stage-44810601191-2'}]) {
+    const pinned = prepare({...row, ...bad});
+    await assert.rejects(pinned(metadata, init), /B361_ARTIFACT_PIN/);
+    await assert.rejects(pinned(zip, init), /B361_TRANSPORT_SCOPE/);
+  }
+  const pinned = prepare(row);
+  await assert.rejects(pinned(root+'runs/44701860497/attempts/1', init), /B361_TRANSPORT_SCOPE/);
+  assert.equal((await pinned(metadata, init)).status, 200);
+  assert.equal((await pinned(zip, init)).status, 302);
+  await assert.rejects(pinned(signed, {...init, headers:{ Authorization:'not allowed' }}), /B361_TRANSPORT_SCOPE/);
+  assert.equal((await pinned(signed, init)).status, 200);
+  await assert.rejects(pinned(signed, init), /B361_TRANSPORT_SCOPE/);
+});
+
+test('B361 counts national public endpoint presence without publishing PART identities', async () => {
+  const { createB361PublicEndpointEvidence } = await import('./audit-b358-water-level-trend.mjs');
+  const t = offset => new Date(Date.parse('2026-11-20T20:00:00.000Z') + offset * 3_600_000).toISOString();
+  const hours = [5,8,25,26,27,28,29,30,32,35,36,38,39];
+  const makeParts = (hour, available = 586) => Object.fromEntries(Array.from({length:673}, (_,i) => {
+    const id='artificial-private-part-'+String(i);
+    return [id, { id, current:{ time:t(hour), weather:{ waterLevelCm:0, waterLevelTrendCm3h:
+      hour === 5 && i < available ? 0 : null } } }];
+  }));
+  const exact = createB361PublicEndpointEvidence(), mismatch = createB361PublicEndpointEvidence();
+  exact.collect(117, null); // The fixed episode has no other hour selectors.
+  for (const hour of hours) {
+    exact.collect(hour, makeParts(hour));
+    mismatch.collect(hour, makeParts(hour, 585));
+  }
+  const result = exact.finish();
+  assert.deepEqual(result.map(row=>row.offset), [5,25,26,27,29,35,36]);
+  assert.deepEqual(result[0], { offset:5, time:t(5), withBothLevels:673, trendPresent:586, missingDespiteBoth:87 });
+  assert.doesNotMatch(JSON.stringify(result), /artificial-private-part/);
+  assert.throws(()=>mismatch.finish(), /B361_KNOWN_PUBLIC_OBSERVATION_MISMATCH/);
+  assert.throws(()=>createB361PublicEndpointEvidence().collect(5, makeParts(8)), /B361_PUBLIC_PART_BINDING/);
+  assert.throws(()=>createB361PublicEndpointEvidence().finish(), /B361_PUBLIC_HOUR_UNBOUND/);
+});
+
 test('B358 DKSS queue publishes only fixed onboarding hours and bounded reason fields', async () => {
   const { projectDkssOnsetQueue } = await import('./audit-b358-water-level-trend.mjs');
   const referenceAt = '2026-11-20T08:00:00.000Z';

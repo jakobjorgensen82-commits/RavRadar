@@ -1,3 +1,9 @@
+## Skrivefri opfølgning på de resterende huller i #361
+
+Den offentligt verificerede #361 viste vandstandsændringen ved kl. 02 dansk tid for 586 af 673 kystdele. Begge niveauer var tilgængelige for alle. Ved syv udvalgte timer viser jobloggen, at de relevante DMI-samlinger i samme kørsel kun gennemførte den ene af de to timer. Loggen beviser ikke det faktisk valgte endepunkt hos hver kystdel.
+
+Den eksisterende læsekontrol får et særskilt valg for den ene krypterede #361-pakke. Den oprindelige pakkelæser autentificerer hele pakken før læsning. Den normale SOURCE-kontrol og køfortegnelsen sammenholder de faste syv tidspar. Den nationale optælling beskriver alene tilstedeværelse i de leverede kystdeltimer. Årsager for zoner og kystdele kræver samme konkrete kildebevis som ved #358. Rapport, kildekvalifikation og udførelse på den ægte pakke udestår.
+
 ## Skrivefri årsagslæsning af kørsel #358
 
 Den eksisterende kontrol af gemte vejrdata får et afgrænset valg for den ene autentificerede #358-pakke. Kildeforløb og normal kø kontrolleres før hentning. Den oprindelige pakkelæser og SOURCE-kontrol afgør, om det valgte slutpunkt mangler, tilhører en anden modelserie eller kan sammenlignes. Rapporten indeholder alene identitet for den undersøgte generation samt optællinger og faste kategorier. Resultater for enkelte kystdele kræver bevis for kildesættet fra den originale Fur-observation eller match med de gemte LF7-digests for konfiguration, kildevalg og de offentliggjorte værdier.
