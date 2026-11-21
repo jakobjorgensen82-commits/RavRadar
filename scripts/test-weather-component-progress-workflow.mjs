@@ -530,7 +530,11 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       assert.equal(command, 'python3');
       assert.deepEqual(Array.from(args), ['-B', path.join(path.dirname(actionPath), '../../../scripts/run-owned-dmi-grib-save.py'),
         ...(options.distribution ? ['--prepare-distribution'] : [])]);
-      assert.equal(settings.env, env);
+      if (env.INPUT_ARCHIVE_LIMIT) {
+        assert.deepEqual({ ...settings.env }, { ...env, RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: env.INPUT_ARCHIVE_LIMIT });
+      } else {
+        assert.equal(settings.env, env);
+      }
       assert.equal(settings.shell, false);
       assert.deepEqual(Array.from(settings.stdio), ['ignore', 'pipe', 'pipe', 'pipe']);
       child = Object.assign(new OwnedRawEmitter(), {
@@ -719,8 +723,8 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       assert.deepEqual(value.events, ['acquire', 'assert', 'spawn', 'assert', 'release']);
       assert.deepEqual(value.outputs, ['saved=true\n']);
     });
-    await t.test('RAW membership requires unchanged verified members and a finalized archive', async () => {
-      for (const scenario of ['unchanged', 'file changed', 'digest mismatch', 'archive capacity skipped']) {
+    await t.test('RAW inventory requires unchanged files and a finalized archive', async () => {
+      for (const scenario of ['unchanged', 'file changed', 'missing manifest', 'archive capacity skipped']) {
         const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'rr-raw-save-observation-')));
         const raw = path.join(root, '.cache', 'dmi-grib');
         const manifest = path.join(raw, 'asset-manifest.json');
@@ -732,20 +736,16 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
         };
         const archiveCapacitySkipped = scenario === 'archive capacity skipped';
         const archiveLimit = archiveCapacitySkipped ? '1024' : undefined;
-        const value = fixture({ rawRoot: root, env: { RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES: archiveLimit } });
+        const value = fixture({ rawRoot: root, env: archiveCapacitySkipped
+          ? { INPUT_ARCHIVE_LIMIT: archiveLimit } : { RAVRADAR_MEASURE_RAW_SAVE_INVENTORY: 'true' } });
         try {
           await fs.mkdir(raw, { recursive: true });
-          await fs.writeFile(manifest, '{}');
+          if (scenario !== 'missing manifest') await fs.writeFile(manifest, '{}');
           await fs.writeFile(file, 'synthetic');
-          const capture = '4'.repeat(64);
-          const captureSetSha256 = crypto.createHash('sha256').update(JSON.stringify([capture])).digest('hex');
-          await fs.writeFile(path.join(root, '.cache', 'dmi-raw-save-membership.json'), JSON.stringify({
-            schemaVersion: 2, execution: { RUN_ID: '42', RUN_ATTEMPT: '1', SHA: 'f'.repeat(40) },
-            boundarySha256: '1'.repeat(64),
-            captureSetSha256: scenario === 'digest mismatch' ? '2'.repeat(64) : captureSetSha256,
-            manifestSha256: '3'.repeat(64), directory: await identity(raw), manifest: await identity(manifest),
-            files: [[name, await identity(file), capture]],
-          }));
+          const members = await Promise.all((await fs.readdir(raw)).sort().map(async entry =>
+            [entry, await identity(path.join(raw, entry))]));
+          const inventorySha256 = crypto.createHash('sha256')
+            .update(JSON.stringify([await identity(raw), members])).digest('hex');
           const operation = value.runOwnedSave();
           await value.started;
           assert.deepEqual(value.observations, []);
@@ -767,16 +767,9 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
           assert.equal(outcome.saved, true);
           if (scenario === 'unchanged') {
             assert.equal(value.outputs.length, 1);
-            const output = value.outputs[0].match(/^saved=true\nsaved_membership=(.*)\n$/);
+            const output = value.outputs[0].match(/^saved=true\nsaved_inventory=(.*)\n$/);
             assert.ok(output);
-            const receipt = JSON.parse(output[1]);
-            assert.equal(receipt.kind, 'DMI_RAW_SAVE_COMMITTED_MEMBERSHIP');
-            assert.equal(receipt.schemaVersion, 2);
-            assert.equal(receipt.key, value.receipt.key);
-            assert.equal(receipt.cacheId, value.receipt.cacheId);
-            assert.equal(receipt.verifiedCaptureCount, 1);
-            assert.equal(receipt.captureSetSha256, captureSetSha256);
-            assert.equal(JSON.stringify(receipt).includes(name), false);
+            assert.deepEqual(JSON.parse(output[1]), { cacheId: value.receipt.cacheId, inventorySha256 });
           } else {
             assert.deepEqual(value.outputs, ['saved=true\n']);
           }

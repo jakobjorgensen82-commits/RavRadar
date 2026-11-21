@@ -10,6 +10,7 @@ interceptor is used. CI must supply an actual Node24 executable with
 The distribution cases run the actual runtime npm against only the fixed own
 offline cache; a missing warm cache is a prerequisite failure, never a skip.
 The owner-SIGKILL case covers action-process loss only, not runner destruction.
+The staged cipher case proves local sealing, SDK transport and normal restore.
 None proves hosted durability, full runner loss or all-writer exclusion.
 """
 from __future__ import annotations
@@ -41,6 +42,7 @@ CLAIM = Path('.cache/weather-acquisition-writer.claim')
 NODE24 = None
 BODY_SECONDS = 8.0  # Own fixture observer, not a new product deadline.
 CLEANUP_SECONDS = 3.0
+TERMINAL_NEAR_EXPIRY_MS = 6_500
 
 SYNTHETIC_CACHE = r'''
 import fs from 'node:fs';
@@ -681,8 +683,22 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         self.assertEqual(self._cipher_sdk_parent_loss,
                          ['ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP'])
 
+    def test_official_sdk_staged_cipher_restores_in_normal_workspace(self):
+        self.official_chain(finalize_ok=True, ciphertext=True, staged_roundtrip=True)
+
+    def terminal_deadline_evidence(self):
+        self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
+        self.assertGreaterEqual(time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000,
+            240_000 - TERMINAL_NEAR_EXPIRY_MS,
+            'Run the selected deadline case after the other hosted source checks; no near-expiry proof on a young boot')
+        for blocked_cohort in (False, True):
+            with self.subTest(blocked_cohort=blocked_cohort):
+                self.official_chain(finalize_ok=False, ciphertext=True, staged_roundtrip=True,
+                                    staged_hold_cohort=blocked_cohort)
+
     def official_chain(self, *, finalize_ok, ciphertext=False, archive_limit=None,
-                       archive_refusal=None, archive_capacity_skipped=False):
+                       archive_refusal=None, archive_capacity_skipped=False, staged_roundtrip=False,
+                       staged_hold_cohort=False):
         import hashlib
         import random
         import resource
@@ -690,6 +706,9 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
 
         self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
         self.assertFalse(ciphertext and archive_limit is not None)
+        if staged_roundtrip:
+            self.assertTrue(ciphertext and getattr(self, '_cipher_sdk_parent_loss', None) is None)
+        self.assertFalse(staged_hold_cohort and (not staged_roundtrip or finalize_ok))
         for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
             self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_REQUIRED:{name}')
         self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
@@ -706,7 +725,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)
         temp_parent = Path(tempfile.gettempdir()).resolve()
         root = Path(tempfile.mkdtemp(prefix='rr-owned-sdk-save-', dir=temp_parent)).resolve()
-        parent = server = None
+        parent = server = downloader = None
         fds, observed, logs, calls = {}, {}, [], []
         claim_fd = None
         claim_identity = None
@@ -724,8 +743,14 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         # Opaque own bytes test the transport only. This is NOT a fabricated
         # authenticated SAVE, GCM result or proof of the upstream seal caller.
         own_cipher = b'own opaque synthetic encrypted-progress transport bytes\\n'
+        staged_cipher = None
+        stage_root = root / 'sdk-temp' / 'ravradar-terminal-weather-progress-17-1'
+        restore_root = root / 'normal-restore-workspace'
         cipher_identity = None
+        stage_identity = None
+        terminal_deadline = None
         service = '/twirp/github.actions.results.api.v1.CacheService/'
+        blob_path = '/ownaccount/cache/archive'
         case = self
 
         def deadline(_number, _frame):
@@ -782,7 +807,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                         value = entry.stat()
                     except FileNotFoundError:
                         continue
-                    if (value.st_dev, value.st_ino) == cipher_identity:
+                    if (value.st_dev, value.st_ino) == (stage_identity if staged_roundtrip else cipher_identity):
                         matched.append(int(entry.name))
                 case.assertEqual(len(matched), 1, 'The actual fixed worker owns one selected cipher fd')
             os.killpg(observed['worker']['pid'], 0)  # Observation, not a signal.
@@ -905,11 +930,72 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                             'ACTUAL_CIPHER_SDK_PARENT_LOSS_CLOSED_BEFORE_CLEANUP')
                         finished = True
                         return  # Deliberately no successful Finalize response.
+                    if staged_roundtrip and not finalize_ok:
+                        calls.append('finalize-unanswered')
+                        # In the second case hold only the owned cohort to
+                        # force an unprovable closure across the deadline.
+                        if staged_hold_cohort:
+                            signal.pidfd_send_signal(fds['cohort'], signal.SIGSTOP)
+                            proc_stat = f"/proc/{observed['cohort']['pid']}/stat"
+                            stop_observation = time.monotonic() + 1.0
+                            while small(proc_stat).rsplit(b')', 1)[1].split()[0] != b'T':
+                                case.assertLess(time.monotonic(), stop_observation, 'Own cohort did not stop')
+                                time.sleep(0.001)
+                        # No Finalize response and no test signal to the owner.
+                        # Its actual BOOTTIME timer must make it stop waiting.
+                        remaining = (terminal_deadline - time.clock_gettime_ns(time.CLOCK_BOOTTIME)
+                                     // 1_000_000) / 1_000
+                        case.assertGreater(remaining, 0)
+                        case.assertTrue(exited(fds['action'], remaining),
+                                        'The terminal SDK observer did not exit in the real terminal window')
+                        if staged_hold_cohort:
+                            case.assertFalse(exited(fds['cohort']))
+                            case.assertFalse(exited(fds['worker']))
+                            claim = (root / CLAIM).lstat()
+                            case.assertEqual((claim.st_dev, claim.st_ino), claim_identity)
+                            case.assertEqual(small(root / 'action-output'), b'')
+                            # Release the test hold only. The product must see
+                            # its dead pidfd owner and close its own SDK group.
+                            signal.pidfd_send_signal(fds['cohort'], signal.SIGCONT)
+                            case.assertTrue(exited(fds['cohort'], 1.0), 'Released cohort did not end on owner loss')
+                            case.assertTrue(exited(fds['worker']))
+                            stopped = os.waitid(os.P_PIDFD, fds['cohort'], os.WEXITED | os.WNOHANG)
+                            case.assertEqual(stopped.si_pid, observed['cohort']['pid'])
+                        finished = True
+                        return
                     calls.append('finalize')
                     self.reply(200, {'ok': finalize_ok, 'entry_id': '17' if finalize_ok else '0'})
                     finished = True
+                elif staged_roundtrip and self.path == service + 'GetCacheEntryDownloadURL':
+                    case.assertEqual(calls, ['create', 'put', 'finalize'])
+                    case.assertEqual(set(value) - {'restore_keys'}, {'key', 'version'})
+                    case.assertEqual(value.get('restore_keys', []), [])
+                    case.assertEqual(value['version'], archive_version, 'Only the normal exact cache version is readable')
+                    calls.append('lookup')
+                    self.reply(200, {'ok': True, 'matched_key': key, 'signed_download_url':
+                        f'http://127.0.0.1:{server.server_port}{blob_path}'})
                 else:
                     raise AssertionError('Unexpected official SDK endpoint')
+
+            def do_HEAD(self):
+                raise AssertionError('Cache SDK 6.1.0 uses direct GET for non-Azure archive hosts')
+
+            def do_GET(self):
+                nonlocal finished
+                case.assertTrue(staged_roundtrip)
+                case.assertEqual(self.path, blob_path)
+                case.assertEqual(calls, ['create', 'put', 'finalize', 'lookup'])
+                case.assertIsNone(self.headers.get('Authorization'))
+                case.assertIsNone(self.headers.get('Range'))
+                case.assertIsNone(self.headers.get('x-ms-range'))
+                self.send_response(200)
+                self.send_header('Content-Length', str(len(archive_bytes)))
+                self.send_header('Connection', 'close')
+                self.end_headers()
+                self.wfile.write(archive_bytes)
+                self.wfile.flush()
+                calls.append('download')
+                finished = True
 
             def do_PUT(self):
                 nonlocal archive_bytes
@@ -941,7 +1027,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     cwd=root, env=runtime_environment(), stdin=subprocess.DEVNULL,
                     capture_output=True, timeout=1, check=True)
                 if ciphertext:
-                    case.assertEqual(extracted.stdout, own_cipher)
+                    case.assertEqual(extracted.stdout, staged_cipher if staged_roundtrip else own_cipher)
                 else:
                     case.assertEqual(extracted.stdout, own_raw)
                 case.assertEqual(listing.stderr + extracted.stderr, b'')
@@ -970,6 +1056,9 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 ('lib/internal/tar.js', '7fdb340eb93cedfb97e27c1a9599969cbbE3512ba63baf940da0a6ed5c92e029'),
                 ('lib/internal/uploadUtils.js', 'ea761d1c70ce503be0eb5c4cd7accda773d74c6fa8bd63af03b19d75d6646b03')):
                 self.assertEqual(hashlib.sha256((package / relative).read_bytes()).hexdigest(), digest.lower())
+            if staged_roundtrip:
+                self.assertEqual(hashlib.sha256((package / 'lib/internal/cacheUtils.js').read_bytes()).hexdigest(),
+                    'ba1b2de90f5abc0475065f0eb3017db727dd548b53cd6e4053fd70bf223ab75a')
             # Read-only dependency reference; no npm, SDK rewrite or package shim.
             (root / ENTRY.parent / 'node_modules').symlink_to(dependency, target_is_directory=True)
             raw = root / '.cache/dmi-grib/own.grib'
@@ -998,6 +1087,65 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 logs.append((root / name).open('wb'))
             if archive_limit is not None:
                 environment['RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES'] = str(archive_limit)
+            if staged_roundtrip:
+                source_root = root / 'authenticated-stage-source'
+                progress_script = ROOT / 'scripts/weather-component-progress-cache.mjs'
+                seal_environment = runtime_environment()
+                seal_environment.update({
+                    'RUNNER_TEMP': environment['RUNNER_TEMP'], 'GITHUB_RUN_ID': '17', 'GITHUB_RUN_ATTEMPT': '1',
+                    'GITHUB_REPOSITORY': 'owner/stage-fixture',
+                    'WEATHER_PROGRESS_ENCRYPTION_KEY': 'Q0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0M=',
+                })
+                seal_base = root / 'stage-source-base.json'
+                restore_base = root / 'stage-restore-base.json'
+                stage_program = r'''
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const [sourceRoot, script, restoreRoot, sourceBase, restoreBase] = process.argv.slice(1);
+const { weatherComponentProgressCache, sealTerminalWeatherProgressStage } = await import(pathToFileURL(script));
+for (const [repositoryRoot, basePath] of [[sourceRoot, sourceBase], [restoreRoot, restoreBase]]) {
+  await fs.mkdir(path.join(repositoryRoot, 'data/live'), { recursive: true });
+  await fs.writeFile(path.join(repositoryRoot, 'data/live/conditions.json'), '{"fixture":true}\n');
+  assert.equal((await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot,
+    basePath, protectedBundleSha256: 'a'.repeat(64) })).captured, true);
+}
+await fs.mkdir(path.join(sourceRoot, '.cache'));
+await fs.writeFile(path.join(sourceRoot, '.cache/weather-component-fallback-cursor.json'), '{"staged":true}');
+const result = await sealTerminalWeatherProgressStage({ repositoryRoot: sourceRoot, basePath: sourceBase });
+assert.equal(result.staged, true, JSON.stringify(result));
+assert.equal(result.saved, false);
+assert.equal(result.productionAuthority, false);
+console.log(result.sha256);
+'''
+                started = time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000
+                boot = Path('/proc/sys/kernel/random/boot_id').read_text('ascii').strip()
+                sealed = subprocess.run([str(NODE24), '--input-type=module', '-e', stage_program,
+                    str(source_root), str(progress_script), str(restore_root), str(seal_base), str(restore_base)],
+                    cwd=root, env=seal_environment, stdin=subprocess.DEVNULL, capture_output=True,
+                    timeout=2.0, check=True)
+                staged_cipher = (stage_root / cipher_path).read_bytes()
+                digest = hashlib.sha256(staged_cipher).hexdigest()
+                self.assertEqual(sealed.stdout.decode('ascii').strip(), digest)
+                self.assertEqual(sealed.stderr, b'')
+                member_stat, root_stat, cache_stat = [(stage_root / leaf).lstat()
+                    for leaf in (cipher_path, '.', '.cache')]
+                stage_identity = (member_stat.st_dev, member_stat.st_ino)
+                if not finalize_ok:
+                    # This fixture represents a seal following earlier elapsed
+                    # work. No clock or production deadline is substituted.
+                    started -= 240_000 - TERMINAL_NEAR_EXPIRY_MS
+                terminal_deadline = started + 240_000
+                environment['RAVRADAR_TERMINAL_CIPHER_HANDOFF'] = json.dumps({
+                    'schemaVersion': 1, 'runId': '17', 'runAttempt': '1', 'bootId': boot,
+                    'startedAt': started, 'deadline': terminal_deadline,
+                    'bytes': len(staged_cipher), 'sha256': digest,
+                    'device': str(member_stat.st_dev), 'inode': str(member_stat.st_ino),
+                    'mtimeNs': str(member_stat.st_mtime_ns), 'ctimeNs': str(member_stat.st_ctime_ns),
+                    'stageDevice': str(root_stat.st_dev), 'stageInode': str(root_stat.st_ino),
+                    'cacheDevice': str(cache_stat.st_dev), 'cacheInode': str(cache_stat.st_ino),
+                })
             parent = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
@@ -1031,6 +1179,63 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 self.assertFalse(any((root / 'sdk-temp').glob('rr-dmi-raw-archive-*')))
                 self.assertEqual(raw.read_bytes(), own_raw)
                 no_children()
+                return
+            if staged_roundtrip:
+                self.assertEqual(parent.wait(timeout=2.0), 0 if finalize_ok else 1,
+                                 small(root / 'stderr').decode('utf-8'))
+                for role in ('action', 'cohort', 'worker'):
+                    self.assertTrue(exited(fds[role]), f'{role} actual exit required')
+                with self.assertRaises(ProcessLookupError):
+                    os.killpg(observed['worker']['pid'], 0)
+                self.assertEqual((root / CLAIM).exists(), staged_hold_cohort)
+                if staged_hold_cohort:
+                    self.assertEqual(small(root / CLAIM), b'')
+                self.assertEqual(small(output), b'', 'Terminal success is the action exit status only')
+                self.assertEqual((root / cipher_path).read_bytes(), own_cipher)
+                old = (root / cipher_path).lstat()
+                self.assertEqual((old.st_dev, old.st_ino), cipher_identity)
+                self.assertEqual((stage_root / cipher_path).read_bytes(), staged_cipher)
+                self.assertEqual(raw.read_bytes(), own_raw)
+                if not finalize_ok:
+                    self.assertEqual(calls, ['create', 'put', 'finalize-unanswered'])
+                    diagnostic = (b'WEATHER_CIPHER_TERMINAL_WINDOW_EXPIRED' if staged_hold_cohort
+                                  else b'DMI_RAW_SAVE_INTERRUPTED')
+                    self.assertEqual(small(root / 'stderr'), b'DMI_RAW_SAVE_REFUSED\n'
+                                     b'DMI_RAW_SAVE_DIAGNOSTIC stage=CLOSURE reason=' + diagnostic + b'\n')
+                    return
+                download_env = {name: environment[name] for name in ('RUNNER_TEMP', 'INPUT_KEY',
+                    'ACTIONS_CACHE_SERVICE_V2', 'ACTIONS_RESULTS_URL', 'ACTIONS_RUNTIME_TOKEN')}
+                download_env.update(runtime_environment(), GITHUB_WORKSPACE=str(restore_root),
+                                    GITHUB_REF='refs/heads/main')
+                program = r'''
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+const { restoreCache } = await import(pathToFileURL(process.argv[1]));
+const key = process.env.INPUT_KEY;
+assert.equal(await restoreCache(['.cache/weather-private-progress.encrypted'], key, [], undefined, false), key);
+'''
+                downloader = subprocess.Popen([str(NODE24), '--input-type=module', '-e', program,
+                    str(package / 'lib/cache.js')], cwd=restore_root, env=download_env,
+                    stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
+                fds['downloader'] = retain_pidfd(downloader.pid)
+                finished = False
+                while not finished:
+                    self.assertFalse(exited(fds['downloader']), 'Normal SDK exited before restore response')
+                    server.handle_request()
+                    if server_failure:
+                        raise server_failure[0]
+                self.assertEqual(downloader.wait(timeout=2.0), 0, small(root / 'stderr').decode('utf-8'))
+                self.assertEqual(calls, ['create', 'put', 'finalize', 'lookup', 'download'])
+                self.assertEqual((restore_root / cipher_path).read_bytes(), staged_cipher)
+                self.assertEqual((stage_root / cipher_path).read_bytes(), staged_cipher)
+                report = root / 'stage-restore-report.json'
+                restored = subprocess.run([str(NODE24), str(progress_script), 'restore', '--root', str(restore_root),
+                    '--base', str(restore_base), '--report', str(report)], cwd=root, env=seal_environment,
+                    stdin=subprocess.DEVNULL, capture_output=True, timeout=2.0, check=True)
+                self.assertEqual(restored.stderr, b'')
+                self.assertTrue(json.loads(report.read_bytes())['restored'])
+                self.assertEqual((restore_root / '.cache/weather-component-fallback-cursor.json').read_bytes(),
+                                 b'{"staged":true}')
                 return
             if getattr(self, '_cipher_sdk_parent_loss', None) is not None:
                 self.assertEqual(self._cipher_sdk_parent_loss,
@@ -1074,6 +1279,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                         signal.pidfd_send_signal(fd, signal.SIGKILL)
                 if parent is not None:
                     parent.wait(timeout=1.0)
+                if downloader is not None:
+                    downloader.wait(timeout=1.0)
                 for fd in fds.values():
                     if not exited(fd, 1.0):
                         raise RuntimeError('OWN_SDK_STOP_UNPROVED; fixture retained')
@@ -1271,14 +1478,19 @@ class OwnedRawDistributionNative(unittest.TestCase):
             self.assertEqual(small(f'/proc/{worker_pid}/cmdline').split(b'\0')[:-1],
                              [os.fsencode(NODE24), os.fsencode(root / ENTRY), b'--fixed-distribution-worker'])
             self.assertEqual(Path(os.readlink(f'/proc/{npm_pid}/exe')).resolve(), NODE24)
-            worker = observed['worker']
-            self.assertEqual((worker['pgid'], worker['sid']), (worker_pid, worker_pid))
-            self.assertEqual((observed['npm']['pgid'], observed['npm']['sid']),
-                             (worker_pid, worker_pid))
-            self.assertNotEqual(observed['cohort']['pgid'], worker_pid)
             # Pause only our already kernel-identified npm object to observe
             # the real pending interval; this does not replace npm or SDK code.
             stop_fixed_npm_observation(npm_pid, fds['npm'], NODE24, npm_cli, observed['npm'])
+            # The fork observation can precede setsid. The actual npm child
+            # proves the worker has exec'd; keep its original pidfd and start.
+            started_worker = identity(worker_pid)
+            self.assertFalse(exited(fds['worker']), 'Worker exited before its session was proved')
+            self.assertEqual(started_worker, {**observed['worker'],
+                                            'pgid': worker_pid, 'sid': worker_pid})
+            observed['worker'] = started_worker
+            self.assertEqual((observed['npm']['pgid'], observed['npm']['sid']),
+                             (worker_pid, worker_pid))
+            self.assertNotEqual(observed['cohort']['pgid'], worker_pid)
             claim_fd = os.open(root / CLAIM, os.O_RDONLY | os.O_NOFOLLOW)
             claim_stat = os.fstat(claim_fd)
             claim_identity = (claim_stat.st_dev, claim_stat.st_ino)
@@ -1414,8 +1626,10 @@ if __name__ == '__main__':
                         help='Only real-SDK raw/cipher loopback cases; default runs all native cases')
     parser.add_argument('--distribution-only', action='store_true',
                         help='Only real npm prepare cases; requires the fixed warm offline cache')
+    parser.add_argument('--terminal-deadline-only', action='store_true',
+                        help='Only the held-Finalize deadline case on a genuinely aged Linux boot')
     args = parser.parse_args()
-    if args.official_sdk_only and args.distribution_only:
+    if sum((args.official_sdk_only, args.distribution_only, args.terminal_deadline_only)) > 1:
         parser.error('Select at most one native class')
     if sys.platform != 'linux':
         raise SystemExit('NATIVE_LINUX_REQUIRED; syntax-only on other platforms, never PASS')
@@ -1427,5 +1641,6 @@ if __name__ == '__main__':
     if not version.stdout.startswith(b'v24.') or version.stderr:
         raise SystemExit('ACTUAL_NODE24_REQUIRED; PATH Node22 is not evidence')
     selected = ['OwnedRawDistributionNative'] if args.distribution_only else (
-        ['OwnedRawSaveOfficialSdkNative'] if args.official_sdk_only else [])
+        ['OwnedRawSaveOfficialSdkNative'] if args.official_sdk_only else (
+            ['OwnedRawSaveOfficialSdkNative.terminal_deadline_evidence'] if args.terminal_deadline_only else []))
     unittest.main(argv=[sys.argv[0], *selected])

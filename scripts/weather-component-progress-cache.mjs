@@ -83,6 +83,41 @@ async function rootPath(repositoryRoot) {
   if (!stat.isDirectory() || stat.isSymbolicLink()) fail('ROOT_INVALID');
   return fs.realpath(requested);
 }
+
+async function openTerminalSealStage(repositoryRoot) {
+  const { RUNNER_TEMP: runnerTemp, GITHUB_RUN_ID: runId, GITHUB_RUN_ATTEMPT: attempt } = process.env;
+  if (!runnerTemp || !path.isAbsolute(runnerTemp)
+    || !/^[1-9]\d{0,18}$/.test(runId ?? '') || !/^[1-9]\d{0,9}$/.test(attempt ?? '')) fail('TERMINAL_STAGE_INVALID');
+  const temp = await rootPath(runnerTemp);
+  const relative = path.relative(repositoryRoot, temp);
+  if (temp !== path.resolve(runnerTemp) || relative === ''
+    || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`))) {
+    fail('TERMINAL_STAGE_INVALID');
+  }
+  const root = path.join(temp, `ravradar-terminal-weather-progress-${runId}-${attempt}`);
+  const cache = path.join(root, '.cache');
+  const statDirectory = async (directory, privateDirectory) => {
+    const stat = await fs.lstat(directory, { bigint: true });
+    if (!stat.isDirectory() || stat.isSymbolicLink() || stat.ino <= 0n || await fs.realpath(directory) !== directory
+      || (privateDirectory && typeof process.getuid === 'function'
+        && (stat.uid !== BigInt(process.getuid()) || (stat.mode & 0o777n) !== 0o700n))) fail('TERMINAL_STAGE_INVALID');
+    return stat;
+  };
+  const tempIdentity = await statDirectory(temp, false);
+  try { await fs.mkdir(root, { mode: 0o700 }); }
+  catch (error) { if (error.code === 'EEXIST') fail('TERMINAL_STAGE_EXISTS'); throw error; }
+  const rootIdentity = await statDirectory(root, true);
+  await fs.mkdir(cache, { mode: 0o700 });
+  const cacheIdentity = await statDirectory(cache, true);
+  return { root, async assertCurrent() {
+    for (const [file, identity, privateDirectory] of [[temp, tempIdentity, false],
+      [root, rootIdentity, true], [cache, cacheIdentity, true]]) {
+      const actual = await statDirectory(file, privateDirectory);
+      if (actual.dev !== identity.dev || actual.ino !== identity.ino) fail('TERMINAL_STAGE_CHANGED');
+    }
+  } };
+}
+
 async function checkedPath(root, relative, { optional = false, maximum = MAX_PACK_BYTES } = {}) {
   const destination = path.resolve(root, relative);
   const rel = path.relative(root, destination);
@@ -630,7 +665,17 @@ async function coldProgressScope(capability, root, base, productionReferenceAt, 
   return { scope, conditions: conditions.value };
 }
 
-export async function weatherComponentProgressCache({
+export function weatherComponentProgressCache(options) {
+  return runWeatherComponentProgressCache(options);
+}
+
+// Seal only. The terminal supervisor must own the source lease and physical
+// deadline before invoking this path. No upload or canonical promotion here.
+export function sealTerminalWeatherProgressStage(options) {
+  return runWeatherComponentProgressCache({ ...options, mode: 'save' }, true);
+}
+
+async function runWeatherComponentProgressCache({
   mode, repositoryRoot = process.cwd(), basePath,
   protectedBundleSha256,
   repository = process.env.GITHUB_REPOSITORY,
@@ -642,7 +687,7 @@ export async function weatherComponentProgressCache({
   currentFamilyColdStartCapability = null,
   pythonExecutable, renameImpl, rollbackRenameImpl,
   maximumEncryptedBytes = MAX_CIPHER_BYTES,
-} = {}) {
+} = {}, terminalStage = false) {
   let temporary = null;
   let packInvocation = null;
   let unionInvocation = null;
@@ -679,7 +724,9 @@ export async function weatherComponentProgressCache({
     const base = await readBase(baselineFile, repository);
     const coldBinding = currentFamilyColdStartCapability === null ? null
       : await coldProgressScope(currentFamilyColdStartCapability, root, base, productionReferenceAt, coldLifetime);
-    const cipherPath = path.join(root, WEATHER_PROGRESS_CIPHER_PATH);
+    const stage = terminalStage ? await openTerminalSealStage(root) : null;
+    const cipherRoot = stage?.root ?? root;
+    const cipherPath = path.join(cipherRoot, WEATHER_PROGRESS_CIPHER_PATH);
     if (mode === 'save') {
       if (!Number.isSafeInteger(maximumEncryptedBytes) || maximumEncryptedBytes < 1024
         || maximumEncryptedBytes > MAX_CIPHER_BYTES) fail('SIZE_BUDGET_INVALID');
@@ -691,9 +738,12 @@ export async function weatherComponentProgressCache({
       });
       const pack = await packInvocation;
       if (!pack) return status('SKIPPED', 'NO_COMPONENT_PROGRESS');
-      await checkedPath(root, WEATHER_PROGRESS_CIPHER_PATH, { optional: true, maximum: MAX_CIPHER_BYTES });
-      await fs.mkdir(path.dirname(cipherPath), { recursive: true, mode: 0o700 });
-      await checkedPath(root, WEATHER_PROGRESS_CIPHER_PATH, { optional: true, maximum: MAX_CIPHER_BYTES });
+      if (stage) await stage.assertCurrent();
+      else {
+        await checkedPath(root, WEATHER_PROGRESS_CIPHER_PATH, { optional: true, maximum: MAX_CIPHER_BYTES });
+        await fs.mkdir(path.dirname(cipherPath), { recursive: true, mode: 0o700 });
+        await checkedPath(root, WEATHER_PROGRESS_CIPHER_PATH, { optional: true, maximum: MAX_CIPHER_BYTES });
+      }
       const header = Buffer.from(JSON.stringify({ kind: PURPOSE, schemaVersion: 1, repository,
         baselineSha256: base.baselineSha256, protectedBundleContentSha256: base.protectedBundleContentSha256 }));
       const length = Buffer.alloc(4);
@@ -705,9 +755,15 @@ export async function weatherComponentProgressCache({
       cipherTemporary = `${cipherPath}.new-${crypto.randomUUID()}`;
       const prefix = Buffer.concat([aad, iv]);
       await fs.writeFile(cipherTemporary, prefix, { flag: 'wx', mode: 0o600 });
-      await pipeline(createReadStream(pack.sourcePath), boundedStream(MAX_PACK_BYTES), createGzip(),
-        boundedStream(maximumEncryptedBytes - prefix.length - 16), cipher,
-        createWriteStream(cipherTemporary, { flags: 'a', mode: 0o600 }));
+      const digest = stage ? crypto.createHash('sha256').update(prefix) : null;
+      const streams = [createReadStream(pack.sourcePath), boundedStream(MAX_PACK_BYTES), createGzip(),
+        boundedStream(maximumEncryptedBytes - prefix.length - 16), cipher];
+      if (digest) streams.push(new Transform({ transform(chunk, _encoding, callback) {
+        digest.update(chunk);
+        callback(null, chunk);
+      } }));
+      streams.push(createWriteStream(cipherTemporary, { flags: 'a', mode: 0o600 }));
+      await pipeline(...streams);
       await fs.appendFile(cipherTemporary, cipher.getAuthTag());
       const encryptedBytes = (await fs.stat(cipherTemporary)).size;
       if (encryptedBytes > maximumEncryptedBytes) fail('SIZE_LIMIT');
@@ -721,6 +777,15 @@ export async function weatherComponentProgressCache({
       try { await cipherHandle.close(); }
       catch { flushFailure ??= 'CIPHER_CLOSE_FAILED'; }
       if (flushFailure !== null) fail(flushFailure);
+      if (stage) {
+        await stage.assertCurrent();
+        // Publish a closed staged member exactly once without replacement.
+        await fs.link(cipherTemporary, cipherPath);
+        await fs.unlink(cipherTemporary);
+        cipherTemporary = null;
+        return status('STAGED', 'ENCRYPTED_PROGRESS_STAGED', { staged: true, encryptedBytes,
+          sha256: digest.update(cipher.getAuthTag()).digest('hex') });
+      }
       await fs.rename(cipherTemporary, cipherPath);
       cipherTemporary = null;
       return status('SAVED', 'ENCRYPTED_PROGRESS_SAVED', { saved: true, encryptedBytes });
@@ -873,7 +938,30 @@ export async function weatherComponentProgressCache({
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const DIRECT_CALL = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (DIRECT_CALL && process.argv[2] === '--seal-terminal-stage') {
+  try {
+    const { GITHUB_OUTPUT: output, RUNNER_TEMP: runnerTemp } = process.env;
+    if (process.platform !== 'linux' || process.versions.node.split('.')[0] !== '22' || process.argv.length !== 3
+      || !runnerTemp || !path.isAbsolute(runnerTemp) || !output || path.basename(output) !== 'GITHUB_OUTPUT'
+      || path.dirname(path.dirname(output)) !== runnerTemp
+      || !/^rr-weather-provider-[a-zA-Z0-9_]+$/.test(path.basename(path.dirname(output)))) fail('ARGUMENT_INVALID');
+    const result = await sealTerminalWeatherProgressStage({
+      repositoryRoot: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
+      basePath: path.join(runnerTemp, 'weather-progress-base.json'),
+    });
+    if (!result.staged) fail('TERMINAL_STAGE_UNAVAILABLE');
+    const destination = await fs.open(output, fsConstants.O_WRONLY | fsConstants.O_APPEND | fsConstants.O_NOFOLLOW);
+    try {
+      await destination.writeFile(`terminal_stage_sha256=${result.sha256}\nterminal_stage_bytes=${result.encryptedBytes}\n`);
+    } finally {
+      await destination.close();
+    }
+  } catch {
+    console.error('WEATHER_PROGRESS_TERMINAL_STAGE_REFUSED');
+    process.exitCode = 1;
+  }
+} else if (DIRECT_CALL) {
   try {
     const args = process.argv.slice(2);
     const mode = args.shift();

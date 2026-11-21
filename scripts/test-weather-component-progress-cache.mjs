@@ -7,7 +7,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
-import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
+import { sealTerminalWeatherProgressStage, weatherComponentProgressCache, withAuthenticatedWeatherProgress,
   WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
 import { buildPrivateWeatherComponentPack, assertPrivateWeatherPackSize, privateWeatherPackSizeFailure } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
@@ -569,6 +569,54 @@ test('encrypted roundtrip changes component files only and never caches plaintex
   assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
   await assert.rejects(fs.access(path.join(f.target, '.cache/secret-token.json')));
   await assert.rejects(fs.access(path.join(f.target, '.cache/weather-component-inputs.pack')));
+});
+
+test('terminal stage leaves the previous cipher file and passes the ordinary authenticated restore', async t => {
+  const f = await fixture(t);
+  const runnerTemp = path.join(await fs.realpath(f.folder), 'runner-temp');
+  await fs.mkdir(runnerTemp);
+  const environment = { RUNNER_TEMP: runnerTemp, GITHUB_RUN_ID: '101', GITHUB_RUN_ATTEMPT: '2' };
+  for (const [name, value] of Object.entries(environment)) {
+    const previous = process.env[name];
+    process.env[name] = value;
+    t.after(() => {
+      if (previous === undefined) delete process.env[name];
+      else process.env[name] = previous;
+    });
+  }
+  assert.equal((await f.call('save')).saved, true);
+  const priorFile = path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH);
+  const prior = await fs.readFile(priorFile);
+  const original = await fs.stat(priorFile, { bigint: true });
+  await write(f.source, files.openMeteoBank, progressedBank);
+  const request = { repositoryRoot: f.source, basePath: f.sourceBase, repository, encryptionKey };
+  const stage = path.join(runnerTemp, 'ravradar-terminal-weather-progress-101-2', WEATHER_PROGRESS_CIPHER_PATH);
+
+  const sealed = await sealTerminalWeatherProgressStage(request);
+  const encrypted = await fs.readFile(stage);
+  assert.equal(sealed.status, 'STAGED');
+  assert.equal(sealed.staged, true);
+  assert.equal(sealed.saved, false);
+  assert.equal(sealed.productionAuthority, false);
+  assert.equal(sealed.encryptedBytes, encrypted.length);
+  assert.equal(sealed.sha256, crypto.createHash('sha256').update(encrypted).digest('hex'));
+  assert.deepEqual(await fs.readdir(path.dirname(stage)), [path.basename(stage)]);
+  assert.equal((await fs.stat(stage)).nlink, 1);
+  assert.equal((await sealTerminalWeatherProgressStage(request)).code, 'TERMINAL_STAGE_EXISTS');
+  assert.deepEqual(await fs.readFile(stage), encrypted);
+
+  process.env.GITHUB_RUN_ATTEMPT = '3';
+  await write(f.source, files.fallbackCursor, { schedulingOnly: crypto.randomBytes(16_384).toString('hex') });
+  assert.equal((await sealTerminalWeatherProgressStage({ ...request, maximumEncryptedBytes: 4096 })).code, 'SIZE_LIMIT');
+  assert.deepEqual(await fs.readdir(path.join(runnerTemp, 'ravradar-terminal-weather-progress-101-3', '.cache')), []);
+  assert.deepEqual(await fs.readFile(priorFile), prior);
+  const retained = await fs.stat(priorFile, { bigint: true });
+  assert.deepEqual([retained.dev, retained.ino], [original.dev, original.ino]);
+
+  await fs.copyFile(stage, path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  assert.equal((await f.call('restore', f.target)).restored, true);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.openMeteoBank), 'utf8')), progressedBank);
+  assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
 });
 
 test('authenticated audit callback exposes verified temporary inputs and exact sizes without installation', async t => {

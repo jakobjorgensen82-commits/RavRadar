@@ -5,7 +5,9 @@ from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
+import re
 import select
+import shutil
 import signal
 import stat
 import subprocess
@@ -18,9 +20,12 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 SELF = Path(__file__).resolve()
 BOOTSTRAP_PYTHON = "/usr/bin/python3"
+TERMINAL_SEAL = "terminal-progress-seal"
+TERMINAL_SECONDS = 240
 PROVIDERS = {
     "dmi": ("run-dmi-bulk-supervised.py", b"ordinary_dmi_producer_closed=true\n"),
     "copernicus": ("run-copernicus-current-pilot-with-retry.py", b"copernicus_producer_closed=true\n"),
+    TERMINAL_SEAL: ("weather-component-progress-cache.mjs", None),
 }
 FRAME_LIMIT = 128 * 1024
 OUTPUT_LIMIT = 64 * 1024
@@ -56,6 +61,9 @@ COPERNICUS_PROVIDER_ENV = frozenset({
     "COPERNICUS_OPERATIONAL_REFRESH_MAX_SHARDS", "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_CACHE",
     "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_TARGET_REGISTRY",
 })
+TERMINAL_SEAL_ENV = frozenset({"PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "TMP", "TEMP",
+    "LD_LIBRARY_PATH", "GITHUB_OUTPUT", "RUNNER_TEMP", "RUNNER_TRACKING_ID", "GITHUB_RUN_ID",
+    "GITHUB_RUN_ATTEMPT", "GITHUB_REPOSITORY", "WEATHER_PROGRESS_MASTER_SECRET"})
 PYTHON_EXECUTABLE_KEY = "RAVRADAR_PROVIDER_PYTHON"
 
 
@@ -123,7 +131,8 @@ def watch_owner(provider_fd):
 
 
 def provider_environment(provider, environ, executable):
-    names = SHARED_PROVIDER_ENV | (DMI_PROVIDER_ENV if provider == "dmi" else COPERNICUS_PROVIDER_ENV)
+    provider_names = {"dmi": DMI_PROVIDER_ENV, "copernicus": COPERNICUS_PROVIDER_ENV}
+    names = TERMINAL_SEAL_ENV if provider == TERMINAL_SEAL else SHARED_PROVIDER_ENV | provider_names[provider]
     dmi_prefixes = ("DMI_BULK_", "CURRENT_FIELD_SHADOW_", "ECCODES_")
     environment = {
         name: value for name, value in environ.items()
@@ -132,7 +141,7 @@ def provider_environment(provider, environ, executable):
     environment[PYTHON_EXECUTABLE_KEY] = executable
     if provider == "dmi":
         environment["DMI_BULK_REQUIRE_ORDINARY_CLOSURE"] = "true"
-    else:
+    elif provider == "copernicus":
         environment["RAVRADAR_COPERNICUS_REQUIRE_CLOSURE"] = "true"
     return environment
 
@@ -141,6 +150,9 @@ def provider_command(provider, args, executable):
     script, _ = PROVIDERS[provider]
     require(provider != "dmi" or not args, "PROVIDER_ARGUMENTS_REFUSED")
     require(Path(executable).is_absolute(), "PROVIDER_PYTHON_REQUIRED")
+    if provider == TERMINAL_SEAL:
+        require(not args and Path(executable).name == "node", "TERMINAL_SEAL_ARGUMENTS_REFUSED")
+        return [executable, str(ROOT / "scripts" / script), "--seal-terminal-stage"]
     return [executable, "-u", str(ROOT / "scripts" / script), *args]
 
 
@@ -209,7 +221,41 @@ def relay_provider_log(stream, failures):
         failures.append("PROVIDER_LOG_RELAY_FAILED")
 
 
-def ferry_closed_channels(provider, channels):
+def terminal_boot_ms():
+    return time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000
+
+
+def terminal_cipher_handoff(window, outputs):
+    runner_temp, run, attempt, boot, started = window
+    deadline = started + TERMINAL_SECONDS * 1000
+    require(terminal_boot_ms() < deadline - 2_000, "TERMINAL_SEAL_DEADLINE")
+    receipt = re.fullmatch(rb"terminal_stage_sha256=([a-f0-9]{64})\nterminal_stage_bytes=([1-9][0-9]{0,8})\n", outputs)
+    require(receipt is not None, "TERMINAL_SEAL_RECEIPT_REFUSED")
+    digest, size = receipt.groups()
+    root = runner_temp / f"ravradar-terminal-weather-progress-{run}-{attempt}"
+    cache = root / ".cache"
+    def directory_identity(directory):
+        value = directory.lstat()
+        require(stat.S_ISDIR(value.st_mode) and stat.S_IMODE(value.st_mode) == 0o700
+                and value.st_ino > 0 and value.st_uid == os.geteuid()
+                and directory.resolve(strict=True) == directory, "TERMINAL_SEAL_DIRECTORY_REFUSED")
+        return value
+    stage_identity, cache_identity = directory_identity(root), directory_identity(cache)
+    file = cache / "weather-private-progress.encrypted"
+    with os.fdopen(owned_regular_file(file, os.O_RDONLY), "rb") as member:
+        selected = os.fstat(member.fileno())
+        require(stat.S_IMODE(selected.st_mode) == 0o600 and selected.st_ino > 0
+                and selected.st_size == int(size) <= 384 * 1024 * 1024, "TERMINAL_SEAL_FILE_REFUSED")
+    handoff = {"schemaVersion": 1, "runId": run, "runAttempt": attempt, "bootId": boot,
+               "startedAt": started, "deadline": deadline, "bytes": selected.st_size,
+               "sha256": digest.decode("ascii"), "device": str(selected.st_dev), "inode": str(selected.st_ino),
+               "mtimeNs": str(selected.st_mtime_ns), "ctimeNs": str(selected.st_ctime_ns),
+               "stageDevice": str(stage_identity.st_dev), "stageInode": str(stage_identity.st_ino),
+               "cacheDevice": str(cache_identity.st_dev), "cacheInode": str(cache_identity.st_ino)}
+    return b"terminal_cipher_handoff=" + json.dumps(handoff, separators=(",", ":")).encode("ascii") + b"\n"
+
+
+def ferry_closed_channels(provider, channels, terminal_window=None):
     # Read and validate all channels before forwarding any. Publish the original
     # provider's closure marker last, after the caller proved physical stop.
     collected = []
@@ -219,11 +265,16 @@ def ferry_closed_channels(provider, channels):
             data = capture.read(limit + 1)
         require(len(data) <= limit, "PROVIDER_OUTPUT_SIZE_REFUSED")
         collected.append((source.name, target, target_identity, data))
-    name, _, _, outputs = collected[0]
-    lines = outputs.splitlines(keepends=True)
-    require(name == "GITHUB_OUTPUT" and lines and lines[-1] == marker
-            and lines.count(marker) == 1 and b"\0" not in outputs,
-            "PROVIDER_NATIVE_STOP_RECEIPT_MISSING")
+    name, target, identity, outputs = collected[0]
+    if provider == TERMINAL_SEAL:
+        require(name == "GITHUB_OUTPUT" and terminal_window is not None
+                and all(not row[3] for row in collected[1:]), "TERMINAL_SEAL_RECEIPT_REFUSED")
+        collected = [(name, target, identity, terminal_cipher_handoff(terminal_window, outputs))]
+    else:
+        lines = outputs.splitlines(keepends=True)
+        require(name == "GITHUB_OUTPUT" and lines and lines[-1] == marker
+                and lines.count(marker) == 1 and b"\0" not in outputs,
+                "PROVIDER_NATIVE_STOP_RECEIPT_MISSING")
     with ExitStack() as stack:
         destinations = [
             (stack.enter_context(os.fdopen(
@@ -320,7 +371,25 @@ def hosted_controller(provider, runtime_seconds, args):
     require(sys.platform == "linux" and os.getenv("RUNNER_ENVIRONMENT") == "github-hosted"
             and os.getenv("ImageOS") == "ubuntu24" and os.geteuid() != 0,
             "PROVIDER_HOSTED_UBUNTU24_REQUIRED")
-    provider_command(provider, args, sys.executable)
+    terminal = provider == TERMINAL_SEAL
+    executable = sys.executable
+    if terminal:
+        started = terminal_boot_ms()
+        from lib.weather_acquisition_writer import (
+            acquire_weather_acquisition_writer, assert_weather_acquisition_writer,
+            release_weather_acquisition_writer, retain_weather_acquisition_writer,
+        )
+        deadline = started + TERMINAL_SECONDS * 1_000
+        setup_deadline = started + 2 * CONTROL_SECONDS * 1_000
+        stop_before = deadline - (OWNER_GRACE_SECONDS + 2 * CONTROL_SECONDS) * 1_000
+        boot = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
+        run, attempt = os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"]
+        require(re.fullmatch(r"[1-9][0-9]{0,18}", run) and re.fullmatch(r"[1-9][0-9]{0,9}", attempt)
+                and re.fullmatch(r"[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}", boot),
+                "TERMINAL_SEAL_ATTEMPT_REFUSED")
+        executable = shutil.which("node") or ""
+        require(terminal_boot_ms() < setup_deadline, "TERMINAL_SEAL_SETUP_DEADLINE")
+    provider_command(provider, args, executable)
     uid = os.geteuid()
     bus = Path(f"/run/user/{uid}/bus")
     endpoint = bus.stat()
@@ -340,6 +409,9 @@ def hosted_controller(provider, runtime_seconds, args):
     scope = None
     group = identity = invocation = None
     scratch_releasable = False
+    seal_lease = None
+    terminal_launch_attempted = False
+    terminal_closed = False
     previous = {}
     try:
         for signum in (signal.SIGINT, signal.SIGTERM):
@@ -349,21 +421,32 @@ def hosted_controller(provider, runtime_seconds, args):
         parent_fd = os.pidfd_open(parent)
 
         def alive():
-            return pending is None and os.getppid() == parent and not poll_fd(parent_fd)
+            return (pending is None and os.getppid() == parent and not poll_fd(parent_fd)
+                    and (not terminal or terminal_boot_ms() < stop_before))
 
-        require(alive(), "PROVIDER_STEP_OWNER_LOST")
+        def setup_alive():
+            return alive() and (not terminal or terminal_boot_ms() < setup_deadline)
+
+        require(setup_alive(), "PROVIDER_STEP_OWNER_LOST")
         scope = Path(tempfile.mkdtemp(prefix="rr-weather-provider-", dir=runner_temp))
         unit = scope.name + ".service"
         require(unit_state(control_environment, unit).get("LoadState") == "not-found",
                 "PROVIDER_UNIT_ALREADY_EXISTS")
-        environment = provider_environment(provider, os.environ, sys.executable)
+        environment = provider_environment(provider, os.environ, executable)
         channels = staged_channels(scope, runner_temp, environment)
         frame = environment_frame(environment)
         owner_read, owner_write = os.pipe2(os.O_CLOEXEC)
         os.set_blocking(owner_write, False)
+        if terminal:
+            require(setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE")
+            seal_lease = acquire_weather_acquisition_writer()
+            assert_weather_acquisition_writer(seal_lease)
+            runtime_seconds = (stop_before - terminal_boot_ms()) // 1_000
+            require(runtime_seconds > 0 and setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE")
         properties = ["ExitType=main", "KillMode=mixed", f"TimeoutStopSec={OWNER_GRACE_SECONDS}s",
                       f"RuntimeMaxSec={runtime_seconds}s", "Restart=no", "NoNewPrivileges=yes",
                       f"WorkingDirectory={ROOT}"]
+        terminal_launch_attempted = terminal
         launcher = subprocess.Popen(
             ["/usr/bin/systemd-run", "--user", "--quiet", "--pipe", "--wait",
              "--service-type=exec", "--expand-environment=no", f"--unit={unit}",
@@ -379,8 +462,8 @@ def hosted_controller(provider, runtime_seconds, args):
         log_relay.start()
         os.close(owner_read)
         owner_read = None
-        deadline = time.monotonic() + CONTROL_SECONDS
-        while alive() and launcher.poll() is None and time.monotonic() < deadline:
+        control_deadline = time.monotonic() + CONTROL_SECONDS
+        while setup_alive() and launcher.poll() is None and time.monotonic() < control_deadline:
             state = unit_state(control_environment, unit)
             if state.get("ActiveState") == "active":
                 invocation = state.get("InvocationID")
@@ -395,10 +478,10 @@ def hosted_controller(provider, runtime_seconds, args):
                 group, identity = owned_cgroup(state, unit, uid)
                 break
             time.sleep(0.05)
-        require(group is not None and alive() and launcher.poll() is None,
+        require(group is not None and setup_alive() and launcher.poll() is None,
                 "PROVIDER_UNIT_START_UNPROVED")
         print("WEATHER_PROVIDER_CGROUP_READY", flush=True)
-        pipe_frame(owner_write, frame, alive)
+        pipe_frame(owner_write, frame, setup_alive)
         while alive() and launcher.poll() is None:
             time.sleep(0.05)
         normal_wait = alive()
@@ -409,27 +492,41 @@ def hosted_controller(provider, runtime_seconds, args):
                 pass
         os.close(owner_write)
         owner_write = None
-        deadline = time.monotonic() + CONTROL_SECONDS + OWNER_GRACE_SECONDS
-        while not physically_closed(group, identity) and time.monotonic() < deadline:
+        control_deadline = time.monotonic() + CONTROL_SECONDS + OWNER_GRACE_SECONDS
+        while (not physically_closed(group, identity) and time.monotonic() < control_deadline
+               and (not terminal or terminal_boot_ms() < deadline)):
             time.sleep(0.05)
         require(physically_closed(group, identity), "PROVIDER_PHYSICAL_STOP_UNPROVED")
         status = launcher.wait(timeout=2)
-        terminal = retire_closed_unit(control_environment, unit, invocation, group, identity)
+        retired_state = retire_closed_unit(control_environment, unit, invocation, group, identity)
         log_relay.join(timeout=2)
         require(not log_relay.is_alive() and not log_failures, "PROVIDER_LOG_RELAY_UNPROVED")
+        terminal_closed = terminal
         print("WEATHER_PROVIDER_CGROUP_CLOSED", flush=True)
         if not normal_wait or not alive():
             scratch_releasable = True
             return 128 + int(pending) if pending is not None else 1
-        require_controlled_exit(status, terminal, unit, invocation)
-        ferry_closed_channels(provider, channels)
+        require_controlled_exit(status, retired_state, unit, invocation)
+        if terminal:
+            require(status == 0, "TERMINAL_SEAL_EXIT_REFUSED")
+            assert_weather_acquisition_writer(seal_lease)
+            release_owner, seal_lease = seal_lease, None
+            release_weather_acquisition_writer(release_owner)
+            ferry_closed_channels(provider, channels, (runner_temp, run, attempt, boot, started))
+        else:
+            ferry_closed_channels(provider, channels)
         scratch_releasable = True
         return status
     finally:
         for fd in (owner_read, owner_write, parent_fd):
             if fd is not None:
                 os.close(fd)
-        if scope is not None and (launcher is None or scratch_releasable):
+        if seal_lease is not None:
+            if terminal_launch_attempted and not terminal_closed:
+                retain_weather_acquisition_writer(seal_lease)
+            else:
+                release_weather_acquisition_writer(seal_lease)
+        if scope is not None and ((launcher is None and not terminal_launch_attempted) or scratch_releasable):
             # This fixed scratch contains only the staged GitHub output files.
             for channel in CHANNELS:
                 (scope / channel).unlink(missing_ok=True)
@@ -447,6 +544,8 @@ def main(arguments):
     kind, seconds, _, *args = arguments
     runtime_seconds = int(seconds)
     require(kind in PROVIDERS and 60 <= runtime_seconds <= 70 * 60, "PROVIDER_ARGUMENTS_REFUSED")
+    if kind == TERMINAL_SEAL:
+        require(seconds == str(TERMINAL_SECONDS) and not args, "TERMINAL_SEAL_ARGUMENTS_REFUSED")
     return hosted_controller(kind, runtime_seconds, args)
 
 

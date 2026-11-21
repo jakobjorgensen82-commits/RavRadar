@@ -286,6 +286,18 @@ jobs:
       ready: ${{ steps.readiness.outputs.ready }}
       target_hour: ${{ steps.cache-state.outputs.target_hour }}
     steps:
+      # validate-dispatch has already checked every special operation and confirmation.
+      - name: Require the protected RAW caller for fresh ordinary weather
+        if: >-
+          vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'enforce' &&
+          inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true &&
+          inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true &&
+          inputs.ravscore_integrated_return != true
+        shell: bash
+        run: |
+          echo '::error::DIRECT_FRESH_WEATHER_REQUIRES_RAW_ROTATION: Use the protected RavRadar weather cadence or its authorized owner retry.' >&2
+          exit 1
+
       - uses: actions/checkout@v7
 
       - name: Require checked-out HEAD to equal current origin/main
