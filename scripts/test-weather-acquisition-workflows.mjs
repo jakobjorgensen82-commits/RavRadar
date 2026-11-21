@@ -30,6 +30,27 @@ function step(source, name) {
   return found[0];
 }
 
+test('legacy weather dispatch stops before fresh work when the protected RAW caller is required', () => {
+  const readiness = orchestrator.split('\n  current-hour-readiness:\n')[1].split('\n  trip-storage-readiness:\n')[0];
+  const guard = step(readiness, 'Require the protected RAW caller for fresh ordinary weather');
+  const condition = /^        if: >-\n((?:          .*\n)+)/m.exec(guard)?.[1]?.trim();
+  assert.ok(condition);
+  assert.match(readiness, /needs: operational-recovery-gate[\s\S]*?outputs\.closure_deferred == 'false'/);
+  assert.ok(readiness.indexOf(guard) < readiness.indexOf('uses: actions/checkout'));
+  assert.match(guard, /DIRECT_FRESH_WEATHER_REQUIRES_RAW_ROTATION[\s\S]*?^          exit 1$/m);
+  assert.doesNotMatch(guard, /continue-on-error|always\(/);
+
+  const rejects = (mode, inputs = {}) => runInNewContext(condition, {vars:{RAVRADAR_RAW_BOOTSTRAP_PROOF:mode},inputs});
+  assert.equal(rejects('enforce'), true);
+  assert.equal(rejects('enforce', {force:true,extended_provider_bootstrap:true}), true);
+  assert.equal(rejects('observe'), false);
+  assert.equal(rejects(''), false);
+  for (const operation of ['geometry_v2_pilot','geometry_v2_national','produce_weather_handoff',
+    'ravscore_integrated_first_cutover','ravscore_integrated_return']) {
+    assert.equal(rejects('enforce', {[operation]:true}), false, operation);
+  }
+});
+
 test('ordinary producer cessation precedes RAW, consumers and encrypted progress', () => {
   const source = actualNormalWorkflow;
   const dmi = step(source, 'Update DMI bulk model cache');
