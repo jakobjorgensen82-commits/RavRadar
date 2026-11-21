@@ -1,3 +1,7 @@
+## 21. november — lokalt svar om UV-fluorescens og dagslys
+
+Et tydeligt, todelt spørgsmål om hvorfor rav lyser under UV, og hvordan dagslys påvirker testen, fik et offentligt HTTP 502-afslag. Den lokale app kan nu besvare hele hensigten på dansk, tysk og engelsk med den godkendte forklaring af fluorescens og det eksisterende råd om kontrast i dagslys. Spørgsmål med andre ønsker, ukendte detaljer eller private tilføjelser følger den almindelige vej med hele teksten. Den lokale prøve er uden ekstern AI. Frontsiden, startmodulet og hjælpemodulet har nye cacheadresser, så en normal navigation kan hente den nye tekst, også med forrige filer i cachen. Præcis GitHub-kvalifikation og offentlig levering udestår.
+
 ## 21. november — fast læsning efter assistentafslag
 
 Den normale offentlige assistentklient fik ét afslag kl. 17.12 UTC med HTTP 502 og ASSISTANT_RESPONSE_REJECTED. Der kom ingen valideret AI-proveniens. Årsagen er ukendt; hændelsen er ikke gentaget. Den lokale kandidat tilføjer alene kategorilæsning for 17.12.11–17.12.22 UTC i det eksisterende skrivefri job. Kun trin, to statuskoder og fast afvisningskode kan udskrives. Rettigheder, eksakt main, første forsøg, kildebevis, frisk idle og én læsning bevares. Historiske assertions læser autentiske arkivbytes; aktuelle guards og afslag prøves direkte. Kildekvalifikation og faktisk hosted læsning udestår. Edge, AI-kald og faglige svar er uændrede.

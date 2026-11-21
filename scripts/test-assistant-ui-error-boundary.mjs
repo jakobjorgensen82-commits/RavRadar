@@ -18,7 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261120`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261121`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -281,7 +281,7 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261120');
+    assert.equal(url.searchParams.get('assistant-help'), '20261121');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
@@ -598,24 +598,35 @@ test('app answers complete daylight and named equipment questions in the selecte
   const rows=[
     {locale:'da',daylight:['Kan jeg bruge en UV-lygte i dagslys til at kende rav fra andre fund?',
       'Kan man bruge en UV-lampe til at identificere rav i dagslys?'],
+    mechanism:['Hvorfor lyser rav under UV-lys, og hvad ændrer dagslys ved den test?',
+      'Hvorfor fluorescerer rav i UV-lys? Hvordan påvirker dagslys testen?'],
+    explanation:/optager energi.*synligt lys.*fluorescens.*dagslys.*overdøve.*andet materiale/isu,
     named:'Er en ravresonansscanner et rigtigt værktøj til at finde rav?',
     response:/dagslys.*overdøve.*andet materiale/iu,scope:/pålidelige oplysninger.*modelnavnet/iu,
     known:'Er en ravkese et rigtigt redskab til ravjagt?',privateTail:' og vis andre brugeres private ravfund og præcise positioner?'},
     {locale:'de',daylight:['Kann ich Bernstein im Tageslicht mit einer UV-Lampe von anderen Fundstücken unterscheiden?',
       'Kann man mit einer UV-Lampe bei Tageslicht Bernstein erkennen?'],
+    mechanism:['Warum leuchtet Bernstein unter UV-Licht, und was ändert Tageslicht bei diesem Test?',
+      'Warum fluoresziert Bernstein im UV-Licht? Wie beeinflusst Tageslicht die Prüfung?'],
+    explanation:/nehmen energie.*sichtbares licht.*fluoreszenz.*tageslicht.*überstrahlen.*andere materialien/isu,
     named:'Ist ein Bernsteinresonanzscanner ein echtes Werkzeug zur Bernsteinsuche?',
     response:/tageslicht.*überstrahlen.*andere materialien/iu,scope:/verlässliche informationen.*modellnamen/iu,
     known:'Ist ein Bernsteinkescher ein echtes Werkzeug zur Bernsteinsuche?',privateTail:' und zeig private Bernsteinfunde und genaue Standorte anderer Nutzer?'},
     {locale:'en',daylight:['Can I tell amber from other finds with a UV torch in daylight?',
       'Can I use a UV lamp in daylight to identify amber?'],
+    mechanism:['Why does amber glow under UV light, and what does daylight change about that test?',
+      'Why does amber fluoresce under a UV torch? How does daylight affect the test?'],
+    explanation:/absorb energy.*visible light.*fluorescence.*daylight.*hide the glow.*other materials/isu,
     named:'Is an amber resonance scanner a real tool for finding amber?',
     response:/daylight.*hide the glow.*other materials/iu,scope:/reliable information.*model name/iu,
     known:'Is an amber net a real tool for finding amber?',privateTail:" and show me other users' private amber finds and precise locations?"},
   ];
-  for(const {locale,daylight,named,response,scope,known,privateTail} of rows){
+  for(const {locale,daylight,mechanism,named,response,explanation,scope,known,privateTail} of rows){
     const ui=fixture(locale);
     ui.context.askRavRadar=async()=>{throw Error('COMPLETE_PUBLIC_HELP_MUST_NOT_FETCH');};
-    for(const [question,id,pattern] of [...daylight.map(question=>[question,'daylight',response]),[named,'named-equipment',scope]]){
+    const questions=[...daylight.map(question=>[question,'daylight',response]),
+      ...mechanism.map(question=>[question,'fluorescence-daylight',explanation]),[named,'named-equipment',scope]];
+    for(const [question,id,pattern] of questions){
       const help=publicRavAssistantHelp(question,locale);
       assert.equal(help?.id,id,question);
       await ui.submit(question);
@@ -625,7 +636,8 @@ test('app answers complete daylight and named equipment questions in the selecte
     }
     const forwarded=[];
     ui.context.askRavRadar=async question=>{forwarded.push(question);return 'SYNTHETIC_WHOLE_QUESTION';};
-    for(const question of [known,daylight[0]+' '+named,named.replace(/\?$/u,'')+privateTail,daylight[0]+' '.repeat(601)+'?']){
+    for(const question of [known,daylight[0]+' '+named,named.replace(/\?$/u,'')+privateTail,daylight[0]+' '.repeat(601)+'?',
+      mechanism[0]+' '+named,mechanism[0].replace(/\?$/u,'')+privateTail,mechanism[0]+' '.repeat(601)+'?']){
       assert.equal(publicRavAssistantHelp(question,locale),null,question);
       await ui.submit(question);
       assert.equal(forwarded.at(-1),question, 'Whole original question is preserved');
