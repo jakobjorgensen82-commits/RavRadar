@@ -1003,6 +1003,68 @@ function positiveRestoreReport(f,indexSha256=f.locator.payload.index.sha256){
     atomicDatabaseSnapshot:false,storageObjectBytesRestored:false,erasureBarriersVerified:false,freeReady:false};
 }
 
+test('opt-in stock inspection qualifies only two complete distinct archives with durable restore proof',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist}=await import('./archive-supabase-database-backup.mjs');
+  const {f}=await captured(t),reserve=tinyOwnedParts(f);
+  f.env.GITHUB_RUN_ID='12346';
+  await run({mode:'capture'},f.dependencies());
+  const current=tinyOwnedParts(f),reserveSha=reserve.payload.index.sha256,currentSha=current.payload.index.sha256;
+  Object.assign(f.env,{GITHUB_WORKFLOW:'Maintain RavRadar admin document history',GITHUB_REF:'refs/heads/main',
+    GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_RUN_ID:'12347'});
+  const writeReceipt=indexSha256=>persist({indexSha256,report:positiveRestoreReport(f,indexSha256)},
+    {...f.dependencies(),confirmMain:()=>{}});
+  await writeReceipt(currentSha);
+  const commitment=databaseRestoreCommitment(currentSha);
+  const options={...f.dependencies(),confirmMain:()=>{},readGithub:()=>({total_count:0,workflow_runs:[]})};
+  const inspect=()=>{
+    Object.assign(f.env,{GITHUB_WORKFLOW:'Inspect RavRadar database backup stock',GITHUB_RUN_ID:'12348',
+      RESTORE_ARCHIVE_INDEX_COMMITMENT:'rr-supabase-backup-pair-v1:'+commitment});
+    return inspectDatabaseBackupPlan(options);
+  };
+  const noReserveReceipt=await inspect();
+  assert.deepEqual(noReserveReceipt.pairQualification,{status:'NOT_QUALIFIED',authenticatedArchiveCount:2,
+    currentRestoreVerified:true,reserveRestoreVerified:false,reserveFormerCurrent:true,completeDistinctPair:true});
+
+  Object.assign(f.env,{GITHUB_WORKFLOW:'Maintain RavRadar admin document history',GITHUB_RUN_ID:'12347'});
+  await writeReceipt(reserveSha);
+  const firstRead=f.calls.length,childCount=f.children.length;
+  const qualified=await inspect();
+  assert.deepEqual(qualified.pairQualification,{status:'VERIFIED_CURRENT_AND_RESERVE',authenticatedArchiveCount:2,
+    currentRestoreVerified:true,reserveRestoreVerified:true,reserveFormerCurrent:true,completeDistinctPair:true});
+  assert.equal(qualified.objectCount,f.objects.size);
+  assert.equal(qualified.usedBytes,[...f.objects.values()].reduce((sum,wire)=>sum+wire.length,0));
+  assert.equal(qualified.captureHeadroomAvailable,true);
+  assert(!JSON.stringify(qualified).includes(currentSha)&&!JSON.stringify(qualified).includes(reserveSha));
+  const reads=f.calls.slice(firstRead);
+  assert.equal(reads.filter(call=>new URL(call.url).searchParams.get('list-type')==='2').length,1);
+  assert.equal(reads.some(call=>call.method==='GET'&&new URL(call.url).pathname.endsWith('.part')),false);
+  const posts=reads.filter(call=>call.method==='POST');
+  assert.equal(posts.length,2);
+  assert(posts.every(call=>new URL(call.url).hostname==='api.supabase.com'));
+  assert(posts.some(call=>JSON.parse(call.body).query.startsWith('with current_privacy as')));
+  assert(posts.some(call=>JSON.parse(call.body).read_only===true));
+
+  const audit=clone(f.oldLocators);
+  f.oldLocators.length=0;
+  assert.equal((await inspect()).pairQualification.reserveFormerCurrent,false);
+  f.oldLocators.push(...audit);
+  const opaqueKey='unrelated-backup-object';
+  f.objects.set(opaqueKey,Buffer.from('opaque'));
+  assert.equal((await inspect()).pairQualification.completeDistinctPair,false);
+  f.objects.delete(opaqueKey);
+
+  const reservePart=[...f.objects.keys()].find(key=>key.startsWith('bundles/sha256/'+reserve.payload.manifestSha256+'/'));
+  const reserveBytes=f.objects.get(reservePart);
+  f.objects.set(reservePart,Buffer.concat([reserveBytes,Buffer.alloc(1)]));
+  await rejectCode(inspect,'BACKUP_STOCK_RESERVE_OBJECT_MISSING_OR_CHANGED');
+  f.objects.delete(reservePart);
+  await rejectCode(inspect,'BACKUP_STOCK_RESERVE_OBJECT_MISSING_OR_CHANGED');
+  f.objects.set(reservePart,reserveBytes);
+  assert.deepEqual(f.locator,current);
+  assert.equal(f.children.length,childCount);
+  assert(!f.calls.slice(firstRead).some(call=>['PUT','DELETE','PATCH'].includes(call.method)));
+});
+
 test('durable normal reserve uses exact598 strong flags before IO and only one R2 receipt without database access',async t=>{
   const {persistSupabaseDatabaseRestoreReceipt:persist}=await import('./archive-supabase-database-backup.mjs');
   const q=await tinyRotation(t,{verifyCurrent:false}),indexSha256=q.f.locator.payload.index.sha256;
