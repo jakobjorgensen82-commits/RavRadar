@@ -292,6 +292,18 @@ jobs:
           assert.equal(process.env.CHECKPOINT_TARGET_HOUR, NATIVE_IDENTITY_ORIGINAL_PROGRESS.target.replace('.000Z', 'Z'));
           NODE
 
+      # Keep the authenticated completed/checkpoint routes and validated starts explicit.
+      - name: Require the protected RAW caller for fresh ordinary weather
+        if: >-
+          vars.RAVRADAR_RAW_BOOTSTRAP_PROOF == 'enforce' &&
+          steps.automatic-completed-scope.outputs.eligible != 'true' &&
+          steps.completed-target.outcome != 'success' && steps.checkpoint-target.outcome != 'success' &&
+          inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true
+        shell: bash
+        run: |
+          echo '::error::DIRECT_FRESH_WEATHER_REQUIRES_RAW_ROTATION: Use the protected RavRadar weather cadence or its authorized owner retry.' >&2
+          exit 1
+
       - name: Select fresh weather and verify a prior closed Pages outcome
         id: automatic-completed-target
         if: steps.automatic-completed-scope.outputs.eligible == 'true' && needs.operational-recovery-gate.outputs.recovery_action == 'NONE'
