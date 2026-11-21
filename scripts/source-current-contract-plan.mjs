@@ -71,9 +71,8 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
   ],
-  // Samme eksisterende 594-oraclemodel: den brede historiske test er input, ikke et nyt mål.
-  assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST,
-    'node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'],
+  assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST],
+  assistantDiagnostic1712:['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -258,7 +257,8 @@ const PATH_AREAS=freeze({
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
   ],
   assistantDiagnostic:[FIXED_ASSISTANT_LOG_TEST,'scripts/read-fixed-assistant-failure-log-20261101.mjs',
-    'scripts/read-fixed-assistant-failure-log-20261121-1712.mjs',
+    '.github/workflows/deploy-trip-storage.yml'],
+  assistantDiagnostic1712:['scripts/read-fixed-assistant-failure-log-20261121-1712.mjs',
     'scripts/test-fixed-assistant-failure-log-20261121-1712.mjs',
     '.github/workflows/deploy-trip-storage.yml'],
   publicUI:[
@@ -1332,7 +1332,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('assistantDiagnostic')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('assistantDiagnostic')||areas.includes('assistantDiagnostic1712')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
