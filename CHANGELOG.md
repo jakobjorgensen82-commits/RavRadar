@@ -4,6 +4,7 @@
 
 ## 4.0.602 — opfølgning i Spørg RavRadar ved opstart
 
+- Spørg RavRadar kan besvare, hvorfor rav lyser i UV-lys, og hvorfor gløden kan være sværere at se i dagslys. Svaret findes på dansk, tysk og engelsk.
 - Et spørgsmål om et muligt ravfund kan følges op, selv hvis kortet først bliver færdigt med at indlæse mellem de to svar. Opfølgningen om gennemsigtighed og svag UV-reaktion besvarer begge dele.
 
 ## Drift — rotation af DMI-råcacher

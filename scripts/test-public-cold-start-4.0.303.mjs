@@ -84,7 +84,9 @@ const previousAssistantSuffix = `${previousPanelSuffix}&assistant=forecast-follo
 const previousDomainSuffix = `${previousAssistantSuffix}&share=custom-domain-20261102`;
 const previousTransportSuffix = `${previousDomainSuffix}&transport=public-json-bridge-20261103`;
 const previousMapSuffix = `${previousTransportSuffix}&map=plain-map-v3-20261104`;
-const suffix = `${previousMapSuffix}&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261120`;
+const assistantSuffix = `${previousMapSuffix}&assistant-topic=wind-followup-20261110&assistant-find=20261119`;
+const previousHelpSuffix = `${assistantSuffix}&assistant-help=20261120`;
+const suffix = `${assistantSuffix}&assistant-help=20261121`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
@@ -104,15 +106,20 @@ const visitorReportSuffix = `?v=${releaseVersion}&report=scope-20261108`;
 assert.ok(dashboard.includes(`../services/visitor-report-service.js${visitorReportSuffix}`));
 const workerMapTag = worker.match(/const COMPACT_MAP = "([^"]+)";/)?.[1];
 assert.ok(workerMapTag);
-const workerAssets = worker.replaceAll('${APP_VERSION}', releaseVersion).replaceAll('${COMPACT_MAP}', workerMapTag);
+const workerTransportTag = worker.match(/const PUBLIC_JSON_TRANSPORT = "([^"]+)";/)?.[1];
+assert.ok(workerTransportTag);
+const workerAssets = worker.replaceAll('${APP_VERSION}', releaseVersion)
+  .replaceAll('${COMPACT_MAP}', workerMapTag).replaceAll('${PUBLIC_JSON_TRANSPORT}', workerTransportTag);
+assert.ok(workerAssets.includes(`./bootstrap.js${suffix}`));
+assert.ok(workerAssets.includes(`./app.js${suffix}`));
 assert.ok(workerAssets.includes(`./js/ui/admin-dashboard.js${adminEntrypointSuffix}`));
 assert.ok(workerAssets.includes(`./js/services/visitor-report-service.js${visitorReportSuffix}`));
 assert.ok(worker.replaceAll('${APP_VERSION}',releaseVersion).includes(`./js/ui/admin-private-trip-study.js${adminStudySuffix}`),
   'Offline-listen skal følge den præcise nye statistikimportadresse.');
 
 // Exercise the existing worker with earlier same-version assets in cache.
-// The mobile UI update must bypass version-only, footer-only and earlier
-// account UI copies without deleting any or refetching its own cached asset.
+// A new app URL must bypass previous same-version copies without deleting
+// them or refetching the new asset once cached.
 const handlers = new Map();
 const origin = 'https://ravradar.test';
 const cached = new Map([
@@ -134,7 +141,7 @@ const cached = new Map([
 ]);
 const previousDeliveredAssets = [
   [previousPanelSuffix, 'panel'], [previousAssistantSuffix, 'assistant'], [previousDomainSuffix, 'domain'],
-  [previousTransportSuffix, 'transport'], [previousMapSuffix, 'map'],
+  [previousTransportSuffix, 'transport'], [previousMapSuffix, 'map'], [previousHelpSuffix, 'help'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
@@ -165,13 +172,25 @@ for (const file of ['bootstrap.js', 'app.js']) {
     file === 'bootstrap.js' ? 'share-bootstrap' : 'share-app');
   for (const [oldSuffix, label] of previousDeliveredAssets) {
     assert.equal(await cached.get(`${origin}/${file}${oldSuffix}`).clone().text(), `${label}-${file}`,
-      'Already delivered same-version panel/assistant/domain assets stay separate from the new transport cache key.');
+      'Previously delivered same-version assets stay separate from the new assistant cache key.');
   }
   handlers.get('fetch')({request,respondWith:value => {response=value;}});
   assert.equal(await (await response).text(), `new:${request.url}`,
     'The exact new UI asset must be reusable from its own cache key.');
 }
-assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`]);
+const oldHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261120`;
+const helpPath = `./js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261121`;
+assert.ok(app.includes(`from "${helpPath}"`));
+cached.set(oldHelpUrl, new Response('old-help-module'));
+const helpRequest = {method:'GET',mode:'cors',url:new URL(helpPath, origin).href};
+for (let pass = 0; pass < 2; pass++) {
+  let response;
+  handlers.get('fetch')({request:helpRequest,respondWith:value => {response=value;}});
+  assert.equal(await (await response).text(), `new:${helpRequest.url}`);
+}
+assert.equal(await cached.get(oldHelpUrl).clone().text(), 'old-help-module');
+const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, helpRequest.url];
+assert.deepEqual(fetched, startupRequests);
 
 // The admin-only copy update gets a new exact key; its unchanged data import
 // must still reuse its existing key. Exercise the real service-worker handler.
@@ -197,7 +216,7 @@ let adminDataResponse;
 handlers.get('fetch')({request:adminDataRequest,respondWith:value=>{adminDataResponse=value;}});
 assert.equal(await (await adminDataResponse).text(),'current-admin-data',
   'The unchanged admin data-service address must remain reusable without a network request.');
-assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`,adminRequest.url]);
+assert.deepEqual(fetched,[...startupRequests, adminRequest.url]);
 
 // A fresh dashboard address must lead to a fresh child address, even when the
 // old worker already cached both previous same-version modules.
@@ -209,7 +228,7 @@ for(let pass=0;pass<2;pass++){
   assert.equal(await cached.get(`${origin}/js/ui/admin-private-trip-study.js?v=${releaseVersion}`).clone().text(),'old-private-study',
     'Den nye statistikadresse må ikke genbruge eller slette den gamle v-only-kopi.');
 }
-assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`,adminRequest.url,studyRequest.url]);
+assert.deepEqual(fetched,[...startupRequests, adminRequest.url, studyRequest.url]);
 
 
 

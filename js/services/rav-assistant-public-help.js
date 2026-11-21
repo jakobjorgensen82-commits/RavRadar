@@ -65,6 +65,17 @@ const UV_DAYLIGHT={
   de:/^kann (?:ich|man) (?:bernstein (?:im|bei) tageslicht mit einer uv[- ]lampe (?:erkennen|identifizieren|von anderen fundstücken unterscheiden)|mit einer uv[- ]lampe (?:im|bei) tageslicht bernstein (?:erkennen|identifizieren))$/iu,
   en:/^can (?:i|we|you) (?:use a uv[- ](?:torch|lamp|light) (?:in daylight to (?:identify amber|tell amber from other finds)|to identify amber in daylight)|tell amber from other finds with a uv[- ](?:torch|lamp|light) in daylight)$/iu
 };
+// Both clauses must ask about the mechanism and visibility of the same UV test.
+const UV_FLUORESCENCE_DAYLIGHT={
+  da:/^hvorfor (?:lyser|fluorescerer) rav (?:under|i) (?:(?:en|et) )?uv[- ](?:lys|lygte|lampe)(?:,? og |[?.] )(?:hvad ændrer dagslys ved (?:den test|testen|prøven)|hvordan påvirker dagslys (?:testen|prøven))$/iu,
+  de:/^warum (?:leuchtet|fluoresziert) bernstein (?:unter (?:einer )?uv[- ](?:licht|lampe)|im uv[- ]licht)(?:,? und |[?.] )(?:was ändert tageslicht (?:bei|an) (?:diesem test|der prüfung)|wie beeinflusst tageslicht (?:den test|die prüfung))$/iu,
+  en:/^why does amber (?:glow|fluoresce) (?:under|in) (?:a )?uv[- ](?:light|lamp|torch)(?:,? and |[?.] )(?:what does daylight change about (?:that|the|this) test|how does daylight affect (?:that|the|this) test)$/iu
+};
+const UV_FLUORESCENCE={
+  da:'Nogle molekyler i rav optager energi fra UV-lyset og afgiver hurtigt en del af den som synligt lys. Det kaldes fluorescens.',
+  de:'Bestimmte Moleküle im Bernstein nehmen Energie aus dem UV-Licht auf und geben einen Teil davon rasch als sichtbares Licht ab. Das nennt man Fluoreszenz.',
+  en:'Some molecules in amber absorb energy from UV light and quickly release part of it as visible light. This is called fluorescence.'
+};
 const NAMED_EQUIPMENT={
   da:/^er (?:en|et) rav[- ]?[\p{L}\p{N}-]{0,35}(?:scanner|skanner|sensor|måler|apparat|instrument) et (?:rigtigt|reelt) (?:værktøj|redskab|instrument) til (?:at finde rav|ravjagt)$/iu,
   de:/^ist (?:ein|eine) bernstein[- ]?[\p{L}\p{N}-]{0,35}(?:scanner|sensor|messgerät|messer|instrument) ein (?:echtes|reales) (?:werkzeug|gerät|instrument) (?:zur bernsteinsuche|um bernstein zu finden)$/iu,
@@ -140,6 +151,10 @@ export function publicRavAssistantHelp(question,language){
   if(!text)return null;
   const practical=practicalBeachEquipmentHelp(text,language);
   if(practical)return practical;
+  if(UV_FLUORESCENCE_DAYLIGHT[language].test(text)){
+    return {kind:'local-public-help',id:'fluorescence-daylight',
+      answer:UV_FLUORESCENCE[language]+'\n\n'+ANSWERS.daylight[language]};
+  }
   let id=Object.keys(FORMS).find(key=>FORMS[key][language].test(text));
   if(!id&&WATER[language].test(text))id='water';
   if(!id&&UV_DAYLIGHT[language].test(text))id='daylight';

@@ -1,3 +1,9 @@
+## 21. november — lokalt svar om UV og dagslys
+
+- [x] Genskab det konkrete spørgsmål og afprøv det samlede lokale svar på dansk, tysk og engelsk.
+- [x] Knyt de tre JavaScript-adresser til den nye hjælpetekst, så normal navigation i den lokale cacheprøve henter rettelsen, selv når forrige version af filerne er gemt.
+- [ ] Kvalificér den præcise kilde og verificér svaret efter offentlig udgivelse.
+
 ## 21. november — afgrænset assistentdiagnose kl. 17.12
 
 - [x] Bevar det ene normale offentlige afslag og afgræns tre mulige kodegrene uden årsagsgæt.

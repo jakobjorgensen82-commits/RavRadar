@@ -316,7 +316,7 @@ try{
   assert.match(version,/^4\.0\.\d+$/);
   const bootstrapQuery='?v='+version+'&copy=footer-20261005&ui=zone-panels-20261027'
     +'&assistant=forecast-followup-20261101&share=custom-domain-20261102'
-    +'&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261120';
+    +'&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261121';
   const shareQuery='?v='+version+'&ui=forecast-share-20261024&share=custom-domain-20261102';
   for(const[file,needles]of[
     ['../index.html',['bootstrap.js'+bootstrapQuery]],
