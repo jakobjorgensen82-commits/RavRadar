@@ -1,6 +1,7 @@
 """Small offline regressions for the owned provider's framed stdin and output."""
 
 from contextlib import redirect_stdout
+import hashlib
 import io
 import json
 import os
@@ -209,62 +210,88 @@ class HostedProviderLaunchTests(unittest.TestCase):
     def test_actual_terminal_seal_owner_only_relays_after_cgroup_and_lease_close(self):
         runner_temp = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
         run = str(time.time_ns())
-        stage = runner_temp / f"ravradar-terminal-weather-progress-{run}-1"
-        with tempfile.TemporaryDirectory(prefix="rr-terminal-owner-test-", dir=runner_temp) as folder, \
-                tempfile.NamedTemporaryFile(dir=runner_temp / "_runner_file_commands",
-                                            prefix="set_output_rr_terminal_") as sink:
-            root = Path(folder)
+        folder = Path(tempfile.mkdtemp(prefix="rr-terminal-owner-test-", dir=runner_temp))
+        owner_finished = False
+        launched = False
+        try:
+            root, scratch = folder / "workspace", folder / "runner-temp"
+            commands = scratch / "_runner_file_commands"
+            commands.mkdir(parents=True)
+            sink = commands / "set_output_rr_terminal_fixture"
+            sink.touch()
             scripts = root / "scripts"
             (scripts / "lib").mkdir(parents=True)
             originals = Path(__file__).resolve().parent
-            for name in ("run-ordinary-provider-cgroup.py", "lib/weather_acquisition_writer.py"):
+            for name in ("run-ordinary-provider-cgroup.py", "lib/weather_acquisition_writer.py",
+                         "weather-component-progress-cache.mjs"):
                 shutil.copyfile(originals / name, scripts / name)
+            # The real CLI resolves its own checkout; read-only dependencies
+            # resolve against the original source tree without copying any data.
+            for name in ("check-production-target-freshness.mjs", "lib/dmi-bulk-storage.mjs",
+                         "lib/copernicus-offline-environment.mjs", "lib/private-weather-component-pack.mjs",
+                         "lib/private-weather-component-inventory.mjs", "lib/private-weather-progress-files.mjs",
+                         "lib/verified-protected-progress-components.mjs"):
+                (scripts / name).symlink_to(originals / name)
             (root / ".cache").mkdir()
+            cursor = ".cache/weather-component-fallback-cursor.json"
+            (root / cursor).write_bytes(b'{"stageTest":true}')
+            conditions = root / "data/live/conditions.json"
+            conditions.parent.mkdir(parents=True)
+            conditions.write_bytes(b'{"protected":true}')
             prior = root / ".cache/weather-private-progress.encrypted"
             prior.write_bytes(b"synthetic prior cipher")
             old = prior.stat()
-            (scripts / "weather-component-progress-cache.mjs").write_text(r'''
-import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
-assert.deepEqual(process.argv.slice(2), ['--seal-terminal-stage']);
-assert.equal(process.env.WEATHER_PROGRESS_MASTER_SECRET, 'own-synthetic-seal-secret');
-assert.ok(!process.env.ACTIONS_RUNTIME_TOKEN && !process.env.SUPABASE_SERVICE_ROLE_KEY);
-assert.equal(fs.statSync('.cache/weather-acquisition-writer.claim').size, 0);
-const root = path.join(process.env.RUNNER_TEMP,
-  `ravradar-terminal-weather-progress-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`);
-fs.mkdirSync(root, { mode: 0o700 });
-fs.mkdirSync(path.join(root, '.cache'), { mode: 0o700 });
-const bytes = Buffer.from('own opaque controller fixture');
-fs.writeFileSync(path.join(root, '.cache/weather-private-progress.encrypted'), bytes, { flag: 'wx', mode: 0o600 });
-const hash = crypto.createHash('sha256').update(bytes).digest('hex');
-fs.appendFileSync(process.env.GITHUB_OUTPUT, `terminal_stage_sha256=${hash}\nterminal_stage_bytes=${bytes.length}\n`);
-''', encoding="utf-8")
             environment = {name: os.environ[name] for name in ("PATH", "HOME", "LANG", "LD_LIBRARY_PATH",
-                "RUNNER_ENVIRONMENT", "ImageOS", "RUNNER_TEMP") if name in os.environ}
-            environment.update(GITHUB_OUTPUT=sink.name, GITHUB_REPOSITORY="owner/fixture", GITHUB_RUN_ID=run,
-                               GITHUB_RUN_ATTEMPT="1", WEATHER_PROGRESS_MASTER_SECRET="own-synthetic-seal-secret",
-                               ACTIONS_RUNTIME_TOKEN="exclude", SUPABASE_SERVICE_ROLE_KEY="exclude")
+                "RUNNER_ENVIRONMENT", "ImageOS") if name in os.environ}
+            environment.update(RUNNER_TEMP=str(scratch), GITHUB_OUTPUT=str(sink), GITHUB_REPOSITORY="owner/fixture",
+                               GITHUB_RUN_ID=run, GITHUB_RUN_ATTEMPT="1",
+                               WEATHER_PROGRESS_MASTER_SECRET="own-synthetic-seal-secret-fixture-only")
+            node = shutil.which("node", path=environment["PATH"])
+            self.assertIsNotNone(node)
+            version = subprocess.check_output([node, "--version"], env=environment, text=True, timeout=2)
+            self.assertRegex(version, r"^v22\.", "Match the restored Node22 in the ordinary weather build")
+            cli = str(scripts / "weather-component-progress-cache.mjs")
+            base = scratch / "weather-progress-base.json"
+            captured = scratch / "capture-report.json"
+            subprocess.run([node, cli, "capture-base", "--root", str(root), "--base", str(base),
+                "--report", str(captured), "--protected-bundle-sha256", "a" * 64], env=environment, cwd=root,
+                stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=3)
+            self.assertTrue(json.loads(captured.read_bytes())["captured"])
+            launched = True
             result = subprocess.run([sys.executable, "-B", str(scripts / "run-ordinary-provider-cgroup.py"),
                 "terminal-progress-seal", "240", "--"], env=environment, cwd=root, stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=15)
+            owner_finished = "WEATHER_PROVIDER_CGROUP_CLOSED" in result.stdout and not (
+                root / ".cache/weather-acquisition-writer.claim").exists()
             self.assertEqual(result.returncode, 0, result.stdout)
             self.assertIn("WEATHER_PROVIDER_CGROUP_CLOSED", result.stdout)
             self.assertFalse((root / ".cache/weather-acquisition-writer.claim").exists())
-            line, = Path(sink.name).read_text("ascii").splitlines()
+            line, = sink.read_text("ascii").splitlines()
             self.assertTrue(line.startswith("terminal_cipher_handoff="))
             handoff = json.loads(line.split("=", 1)[1])
             self.assertEqual((handoff["runId"], handoff["runAttempt"], handoff["deadline"] - handoff["startedAt"]),
                              (run, "1", 240_000))
+            stage = scratch / f"ravradar-terminal-weather-progress-{run}-1"
             member = stage / ".cache/weather-private-progress.encrypted"
             self.assertEqual(handoff["inode"], str(member.stat().st_ino))
             self.assertEqual(handoff["bytes"], member.stat().st_size)
+            self.assertEqual(handoff["sha256"], hashlib.sha256(member.read_bytes()).hexdigest())
             self.assertTrue(os.path.samestat(prior.stat(), old))
             self.assertEqual(prior.read_bytes(), b"synthetic prior cipher")
-            member.unlink()
-            member.parent.rmdir()
-            stage.rmdir()
+            restored = folder / "restored"
+            (restored / "data/live").mkdir(parents=True)
+            (restored / ".cache").mkdir()
+            shutil.copyfile(conditions, restored / "data/live/conditions.json")
+            shutil.copyfile(member, restored / ".cache/weather-private-progress.encrypted")
+            report = scratch / "restore-report.json"
+            subprocess.run([node, cli, "restore", "--root", str(restored), "--base", str(base),
+                "--report", str(report)], env=environment, cwd=root, stdin=subprocess.DEVNULL,
+                capture_output=True, check=True, timeout=3)
+            self.assertTrue(json.loads(report.read_bytes())["restored"])
+            self.assertEqual((restored / cursor).read_bytes(), b'{"stageTest":true}')
+        finally:
+            if not launched or owner_finished:
+                shutil.rmtree(folder)
 
     def test_actual_controller_and_supervisors_return_staged_outputs_without_providers(self):
         runner_temp = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)

@@ -942,7 +942,7 @@ const DIRECT_CALL = process.argv[1] && path.resolve(process.argv[1]) === fileURL
 if (DIRECT_CALL && process.argv[2] === '--seal-terminal-stage') {
   try {
     const { GITHUB_OUTPUT: output, RUNNER_TEMP: runnerTemp } = process.env;
-    if (process.platform !== 'linux' || process.versions.node.split('.')[0] !== '24' || process.argv.length !== 3
+    if (process.platform !== 'linux' || process.versions.node.split('.')[0] !== '22' || process.argv.length !== 3
       || !runnerTemp || !path.isAbsolute(runnerTemp) || !output || path.basename(output) !== 'GITHUB_OUTPUT'
       || path.dirname(path.dirname(output)) !== runnerTemp
       || !/^rr-weather-provider-[a-zA-Z0-9_]+$/.test(path.basename(path.dirname(output)))) fail('ARGUMENT_INVALID');
