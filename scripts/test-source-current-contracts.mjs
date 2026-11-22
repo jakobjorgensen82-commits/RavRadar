@@ -22,6 +22,8 @@ const dmiBudgetScopeOnly=process.argv.includes('--dmi-budget-scope-only');
 const dmiRecoveryScopeOnly=process.argv.includes('--dmi-recovery-scope-only');
 const adminHistoryScopeOnly=process.argv.includes('--admin-history-scope-only');
 const weatherPublicationScopeOnly=process.argv.includes('--weather-publication-scope-only');
+const syntheticCacheScopeOnly=process.argv.includes('--synthetic-cache-scope-only');
+if(syntheticCacheScopeOnly)assert.deepEqual(process.argv.slice(2),['--synthetic-cache-scope-only']);
 
 // The fixed restore command owns only its reviewed fixture body. Import and
 // dispatch frames retain the old form plus the closed inventory mode; --self-test runs separately.
@@ -180,6 +182,39 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],[modified('scripts/sourc
   [modified(transportInputs[0]),{}],[modified(transportInputs[0]),null]])
   assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
 // Slut på de nye rene transportassertions.
+
+// Den afgrænsede opt-in ejer kun sine fire filer og starter aldrig cache fra standardtesten.
+const syntheticCachePaths=[
+  '.github/actions/prove-synthetic-cache-recovery/action.yml',
+  '.github/actions/prove-synthetic-cache-recovery/index.cjs',
+  '.github/workflows/verify-synthetic-owned-cache-recovery.yml',
+  'scripts/test-owned-cache-cross-runner.mjs',
+];
+const syntheticCacheCommands=['node --test scripts/test-owned-cache-cross-runner.mjs',
+  'node scripts/test-github-action-versions.mjs'];
+assert.deepEqual(CURRENT_CONTRACT_COMMANDS.syntheticCacheRecoveryFixture,syntheticCacheCommands);
+for(const file of syntheticCachePaths){
+  const target=currentSourceTargets(file);
+  assert.deepEqual(target,{path:file,owners:[{area:'syntheticCacheRecoveryFixture',commands:syntheticCacheCommands}]});
+  assert(Object.isFrozen(target)&&Object.isFrozen(target.owners[0].commands));
+}
+assert.deepEqual(currentWorkflowTargets(syntheticCachePaths[2]),
+  {path:syntheticCachePaths[2],owners:[{area:'syntheticCacheRecoveryFixture',commands:syntheticCacheCommands}]});
+for(const file of ['.github/actions/prove-synthetic-cache-recovery/other.cjs',
+  '.github/actions/prove-synthetic-cache-recovery-extra/index.cjs',
+  '.github/workflows/verify-synthetic-owned-cache-recovery-other.yml',
+  'scripts/owned-cache-cross-runner.mjs'])assert.equal(currentSourceTargets(file),null);
+assert.equal(currentWorkflowTargets('.github/workflows/verify-synthetic-owned-cache-recovery-other.yml'),null);
+assert.deepEqual(currentSourceTargets('scripts/test-owned-cache-cross-runner-other.mjs').owners,
+  [{area:'changedTest',commands:['node --test scripts/test-owned-cache-cross-runner-other.mjs']}]);
+for(const file of ['.github/actions/save-owned-dmi-grib/index.cjs','scripts/test-owned-dmi-grib-save-native.py']){
+  assert(currentSourceTargets(file).owners.every(owner=>owner.area!=='syntheticCacheRecoveryFixture'));
+  assert(!currentSourceTargets(file).owners.some(owner=>owner.commands.includes(syntheticCacheCommands[0])));
+}
+if(syntheticCacheScopeOnly){
+  console.log('Synthetic cache fixture ownership: four exact paths, two source commands and unchanged neighbour refusals passed.');
+  process.exit(0);
+}
 
 // Assistant Edge scope: the same assertions run in the normal Git fixture.
 function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){

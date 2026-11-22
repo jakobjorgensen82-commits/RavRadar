@@ -4,6 +4,8 @@ En særskilt opt-in-prøve forbereder en lille syntetisk fremdriftspakke med den
 
 Prøven kræver aktuel main og eksisterende live kildekvalifikation i begge jobs. Lokal kildeprøve er ikke hosted cacheholdbarhed. Tab af HTTP-kvitteringen inde i SDK'et og tab af hele runneren er fortsat særskilte bevisgrænser. De tidligere faktiske Linux-beviser for deadline og lease genbruges med deres egne identiteter. Ingen syntetisk kvittering giver produktionsmyndighed.
 
+Den normale kildeejer omfatter kun prøvens fire workflow-, action- og fixturefiler. Ændringer i disse filer vælger den kompakte fixtureprøve og det eksisterende Action-versionstjek. Standardprøven starter ingen SDK- eller cachekald. Det virkelige to-job-forløb kræver fortsat eksplicit opt-in. Planlæggerændringer beholder deres eksisterende kontrolmål og uafhængige gennemgang.
+
 ## 21. november — lokal kandidat til afgrænset fejlgemning
 
 Kun en terminalt fejlet almindelig `integrated`-vejrhentning kan bruge den nye forseglingsvej. Den kræver den normale autentificerede gendannelse og allerede bekræftet fysisk lukning af de forsøgte leverandørkald. En kørsel, der fortsætter gennem normal fallback, bruger den hidtidige gemning.
