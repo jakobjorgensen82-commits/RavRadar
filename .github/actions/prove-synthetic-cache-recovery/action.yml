@@ -1,0 +1,9 @@
+name: Prove synthetic cache caller receipt loss and separate boot restore
+description: Fixed synthetic-only proof with no production secrets or cache keys.
+inputs:
+  mode:
+    description: Fixed produce or restore job role.
+    required: true
+runs:
+  using: node24
+  main: index.cjs

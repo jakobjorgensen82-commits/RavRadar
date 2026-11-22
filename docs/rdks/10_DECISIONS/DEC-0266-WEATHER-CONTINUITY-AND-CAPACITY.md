@@ -1,3 +1,9 @@
+## 22. november – syntetisk genlæsning på en anden runner
+
+En særskilt opt-in-prøve forbereder en lille syntetisk fremdriftspakke med den normale krypterede skrive- og læservej. Den bruger den eksisterende låste SDK, en offentlig prøvenøgle og sit eget cacheprefix. Første job tilbageholder SDK'ets positive resultat før kvittering til kaldersiden og lukker sin ejede arbejdsproces via et tilbageholdt Linux-pidfd. Andet job kræver en anden boot og gendanner præcis samme cache med kontrol af kryptering, baseline og cursor. Produktionsactionens adgang, nøgler og kørsler bevares.
+
+Prøven kræver aktuel main og eksisterende live kildekvalifikation i begge jobs. Lokal kildeprøve er ikke hosted cacheholdbarhed. Tab af HTTP-kvitteringen inde i SDK'et og tab af hele runneren er fortsat særskilte bevisgrænser. De tidligere faktiske Linux-beviser for deadline og lease genbruges med deres egne identiteter. Ingen syntetisk kvittering giver produktionsmyndighed.
+
 ## 21. november — lokal kandidat til afgrænset fejlgemning
 
 Kun en terminalt fejlet almindelig `integrated`-vejrhentning kan bruge den nye forseglingsvej. Den kræver den normale autentificerede gendannelse og allerede bekræftet fysisk lukning af de forsøgte leverandørkald. En kørsel, der fortsætter gennem normal fallback, bruger den hidtidige gemning.
