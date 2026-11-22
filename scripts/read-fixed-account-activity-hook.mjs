@@ -16,7 +16,7 @@ export function isFixedActivityHookReadOwner(env) {
     && env.GITHUB_WORKFLOW_REF === REPOSITORY + '/.github/workflows/deploy-trip-storage.yml@refs/heads/main';
 }
 
-async function readConfig(response) {
+async function readBoundedJson(response) {
   const declaredLength = response.headers.get('content-length');
   if (declaredLength !== null && (!/^[0-9]+$/.test(declaredLength) || Number(declaredLength) > MAX_RESPONSE_BYTES)) {
     return null;
@@ -31,9 +31,12 @@ async function readConfig(response) {
     bytes.set(chunk, length);
     length += chunk.byteLength;
   }
-  const config = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, length)));
-  if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
-  return config;
+  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, length)));
+}
+
+async function readConfig(response) {
+  const config = await readBoundedJson(response);
+  return config && typeof config === 'object' && !Array.isArray(config) ? config : null;
 }
 
 function classifyDisabledHookUri(uri) {
@@ -42,7 +45,7 @@ function classifyDisabledHookUri(uri) {
   return uri === ACTIVITY_HOOK_URI ? 'EXPECTED' : 'DIFFERENT';
 }
 
-export async function readFixedAccountActivityHookProjection({ accessToken, fetchImpl = globalThis.fetch }) {
+async function readFixedAccountActivityHookConfig({ accessToken, fetchImpl = globalThis.fetch }) {
   if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -60,11 +63,7 @@ export async function readFixedAccountActivityHookProjection({ accessToken, fetc
     if (response.status !== 200) return { status: 'CONFIG_UNAVAILABLE' };
 
     const config = await readConfig(response);
-    const enabled = config?.hook_custom_access_token_enabled;
-    const uri = config?.hook_custom_access_token_uri;
-    if (enabled === false) return { status: 'HOOK_DISABLED', disabledHookUri: classifyDisabledHookUri(uri) };
-    if (enabled !== true || typeof uri !== 'string' || !uri.trim()) return { status: 'CONFIG_UNAVAILABLE' };
-    return { status: uri === ACTIVITY_HOOK_URI ? 'HOOK_ENABLED_EXPECTED' : 'HOOK_ENABLED_DIFFERENT' };
+    return config ? { status: 'CONFIG_READ', config } : { status: 'CONFIG_UNAVAILABLE' };
   } catch {
     // Do not expose provider messages, the response, or the exception cause.
     return { status: 'CONFIG_UNAVAILABLE' };
@@ -74,16 +73,214 @@ export async function readFixedAccountActivityHookProjection({ accessToken, fetc
   }
 }
 
+function projectHookConfig(config) {
+  const enabled = config.hook_custom_access_token_enabled;
+  const uri = config.hook_custom_access_token_uri;
+  if (enabled === false) return { status: 'HOOK_DISABLED', disabledHookUri: classifyDisabledHookUri(uri) };
+  if (enabled !== true || typeof uri !== 'string' || !uri.trim()) return { status: 'CONFIG_UNAVAILABLE' };
+  return { status: uri === ACTIVITY_HOOK_URI ? 'HOOK_ENABLED_EXPECTED' : 'HOOK_ENABLED_DIFFERENT' };
+}
+
+export async function readFixedAccountActivityHookProjection(options) {
+  const result = await readFixedAccountActivityHookConfig(options);
+  return result.status === 'CONFIG_READ' ? projectHookConfig(result.config) : result;
+}
+
+// Library-only preparation: no CLI/write owner or hosted activation is supplied here.
+// One admitted caller must hold the production writer window and qualify the live
+// schema/ACL and Auth configuration before using this controller. GET is no proof
+// of auth:write. Keep the exact prior null/empty URI only in this transient closure.
+export function createFixedAccountActivityHookController({ accessToken, fetchImpl = globalThis.fetch }) {
+  let busy = false;
+  let unresolved = false;
+  let rollbackAvailable = false;
+  let priorUri;
+  const attempted = new Set();
+
+  async function patch(payload) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetchImpl(AUTH_CONFIG_URL, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+      });
+      if (response.redirected) return 'UNKNOWN';
+      if (response.status === 401 || response.status === 403) return 'PERMISSION_REFUSED';
+      if (response.status !== 200) return 'UNKNOWN';
+      // The response can contain unrelated secrets; bound it, then discard it.
+      return await readConfig(response) ? 'ACKNOWLEDGED' : 'UNKNOWN';
+    } catch {
+      return 'UNKNOWN';
+    } finally {
+      clearTimeout(timeout);
+      controller.abort();
+    }
+  }
+
+  async function operate(operation) {
+    if (busy) return { status: 'OPERATION_IN_PROGRESS' };
+    if (unresolved) return { status: 'WRITE_UNRESOLVED' };
+    if (operation === 'rollback' && !rollbackAvailable) return { status: 'ROLLBACK_NOT_AVAILABLE' };
+    // GET may return null, but the supported PATCH body documents a string URI.
+    // Preserve that distinction; explicit disable remains available without a
+    // speculative null PATCH or a false claim of exact prior-state restoration.
+    if (operation === 'rollback' && priorUri === null) return { status: 'ROLLBACK_URI_UNPROVED' };
+    if (attempted.has(operation)) return { status: 'OPERATION_ALREADY_ATTEMPTED' };
+    attempted.add(operation);
+    busy = true;
+    try {
+      const before = await readFixedAccountActivityHookConfig({ accessToken, fetchImpl });
+      if (before.status !== 'CONFIG_READ') return { status: before.status };
+      const enabled = before.config.hook_custom_access_token_enabled;
+      const uri = before.config.hook_custom_access_token_uri;
+      if (operation === 'enable') {
+        if (enabled !== false || (uri !== null && uri !== '')) return { status: 'PRECONDITION_REFUSED' };
+        priorUri = uri;
+      } else if (enabled !== true || uri !== ACTIVITY_HOOK_URI) {
+        return { status: 'PRECONDITION_REFUSED' };
+      }
+      const target = {
+        hook_custom_access_token_enabled: operation === 'enable',
+        hook_custom_access_token_uri: operation === 'rollback' ? priorUri : ACTIVITY_HOOK_URI,
+      };
+      rollbackAvailable = false;
+      const outcome = await patch(target);
+      if (outcome === 'PERMISSION_REFUSED') return { status: 'PERMISSION_REFUSED' };
+      // An unknown PATCH can still be in flight. Even a matching GET is only an
+      // observation: never turn it into rollback/retry authority in this instance.
+      const after = await readFixedAccountActivityHookConfig({ accessToken, fetchImpl });
+      const matches = after.status === 'CONFIG_READ'
+        && after.config.hook_custom_access_token_enabled === target.hook_custom_access_token_enabled
+        && after.config.hook_custom_access_token_uri === target.hook_custom_access_token_uri;
+      if (outcome !== 'ACKNOWLEDGED' || !matches) {
+        unresolved = true;
+        return { status: 'WRITE_UNRESOLVED', patchOutcome: outcome,
+          readback: after.status === 'CONFIG_READ' ? projectHookConfig(after.config) : { status: after.status } };
+      }
+      rollbackAvailable = operation === 'enable';
+      return { status: operation === 'enable' ? 'HOOK_ENABLED_VERIFIED'
+        : operation === 'rollback' ? 'HOOK_ROLLBACK_VERIFIED' : 'HOOK_DISABLED_VERIFIED' };
+    } finally {
+      busy = false;
+    }
+  }
+
+  return Object.freeze({
+    enable: () => operate('enable'),
+    disable: () => operate('disable'),
+    rollback: () => operate('rollback'),
+  });
+}
+
+
+const WRITE_CONFIRMATIONS = Object.freeze({
+  enable: 'ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK',
+  disable: 'DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK',
+});
+
+export function isFixedActivityHookWriteOwner(env, operation) {
+  return env !== null && typeof env === 'object' && !Array.isArray(env)
+    && Object.hasOwn(WRITE_CONFIRMATIONS, operation)
+    && isFixedActivityHookReadOwner(env)
+    && env.GITHUB_JOB === 'configure-fixed-account-activity-hook'
+    && /^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? '')
+    && env.RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION === operation
+    && env.RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION === WRITE_CONFIRMATIONS[operation];
+}
+
+export function isFixedActivityHookCatalogReadOwner(env) {
+  return env !== null && typeof env === 'object' && !Array.isArray(env)
+    && isFixedActivityHookReadOwner(env)
+    && env.GITHUB_JOB === 'read-fixed-supabase-metadata'
+    && /^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? '')
+    && env.RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION === 'catalog-read';
+}
+
+function onlyKeys(value, expected) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).length === expected.length
+    && Object.keys(value).sort().join('\n') === [...expected].sort().join('\n');
+}
+
+// Reuse the installed OFF catalog and its source/body/ACL verifier. The sole
+// additional catalog fact is schema USAGE, never table rows or arbitrary SQL.
+// Historical CHECK-expression qualification remains the installation's proof;
+// this read must not manufacture a fresh native or hosted login result.
+export async function readFixedAccountActivityHookCatalog({ accessToken, fetchImpl = globalThis.fetch }) {
+  if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const { accountInactivityCatalogQuery, verifyAccountInactivityCatalogMetadata } = await import('./verify-account-erasure-schema.mjs');
+    const query = "select saved.metadata, pg_catalog.has_schema_privilege('supabase_auth_admin','public','USAGE') as \"authAdminPublicUsage\" from ("
+      + accountInactivityCatalogQuery.trim().replace(/;$/, '') + ') as saved;';
+    const response = await fetchImpl('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query', {
+      method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+      headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, read_only: true }),
+    });
+    if (response.redirected) return { status: 'HOOK_CATALOG_UNAVAILABLE' };
+    if (response.status === 401 || response.status === 403) return { status: 'HOOK_CATALOG_PERMISSION_REFUSED' };
+    if (response.status !== 201) return { status: 'HOOK_CATALOG_UNAVAILABLE' };
+    const value = await readBoundedJson(response);
+    const rows = Array.isArray(value) ? value : onlyKeys(value, ['result']) ? value.result : onlyKeys(value, ['data']) ? value.data : null;
+    if (!Array.isArray(rows) || rows.length !== 1 || !onlyKeys(rows[0], ['metadata', 'authAdminPublicUsage'])
+      || rows[0].authAdminPublicUsage !== true) return { status: 'HOOK_CATALOG_REFUSED' };
+    let result;
+    try { result = verifyAccountInactivityCatalogMetadata([{ metadata: rows[0].metadata }]); }
+    catch { return { status: 'HOOK_CATALOG_REFUSED' }; }
+    // The reused validator also serves isolated rr_native_test databases.
+    // The hosted activation owner accepts only the actual production owner.
+    if (result.catalogVerified !== true || rows[0].metadata.functions.account_native_activity_token_hook.owner !== 'postgres')
+      return { status: 'HOOK_CATALOG_REFUSED' };
+    return { status: 'HOOK_CATALOG_VERIFIED', publicSchemaUsage: true,
+      sourceBodyAndAclVerified: true, checkExpressionSemanticsVerified: result.checkExpressionSemanticsVerified };
+  } catch {
+    return { status: 'HOOK_CATALOG_UNAVAILABLE' };
+  } finally {
+    clearTimeout(timeout);
+    controller.abort();
+  }
+}
+
+export async function runFixedAccountActivityHookOperation({ operation, env, accessToken, fetchImpl = globalThis.fetch }) {
+  if (!isFixedActivityHookWriteOwner(env ?? {}, operation)) return { status: 'OWNER_REQUIRED' };
+  if (operation === 'enable') {
+    const catalog = await readFixedAccountActivityHookCatalog({ accessToken, fetchImpl });
+    if (catalog.status !== 'HOOK_CATALOG_VERIFIED') return catalog;
+  }
+  // Disabling must remain available if capture conservatively invalidated the
+  // policy or the database is unavailable. Its exact own-URI read is mandatory.
+  return createFixedAccountActivityHookController({ accessToken, fetchImpl })[operation]();
+}
+
 export async function readFixedAccountActivityHook(options) {
   return (await readFixedAccountActivityHookProjection(options)).status;
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  const permitted = process.argv.length === 2 && isFixedActivityHookReadOwner(process.env);
-  const { status, disabledHookUri } = permitted
-    ? await readFixedAccountActivityHookProjection({ accessToken: process.env.SUPABASE_ACCESS_TOKEN })
-    : { status: 'OWNER_REQUIRED' };
-  console.log(JSON.stringify({ status }));
-  if (status === 'HOOK_DISABLED') console.log(JSON.stringify({ disabledHookUri }));
-  if (!['HOOK_DISABLED', 'HOOK_ENABLED_EXPECTED', 'HOOK_ENABLED_DIFFERENT'].includes(status)) process.exitCode = 1;
+  const operation = process.argv.length === 3 && process.argv[2] === '--enable' ? 'enable'
+    : process.argv.length === 3 && process.argv[2] === '--disable' ? 'disable' : null;
+  if (process.argv.length === 3 && process.argv[2] === '--catalog') {
+    const result = isFixedActivityHookCatalogReadOwner(process.env)
+      ? await readFixedAccountActivityHookCatalog({ accessToken: process.env.SUPABASE_ACCESS_TOKEN })
+      : { status: 'OWNER_REQUIRED' };
+    console.log(JSON.stringify(result));
+    if (result.status !== 'HOOK_CATALOG_VERIFIED') process.exitCode = 1;
+  } else if (operation !== null) {
+    const result = await runFixedAccountActivityHookOperation({ operation, env: process.env, accessToken: process.env.SUPABASE_ACCESS_TOKEN });
+    console.log(JSON.stringify(result));
+    if (!['HOOK_ENABLED_VERIFIED', 'HOOK_DISABLED_VERIFIED'].includes(result.status)) process.exitCode = 1;
+  } else {
+    const permitted = process.argv.length === 2 && isFixedActivityHookReadOwner(process.env);
+    const { status, disabledHookUri } = permitted
+      ? await readFixedAccountActivityHookProjection({ accessToken: process.env.SUPABASE_ACCESS_TOKEN })
+      : { status: 'OWNER_REQUIRED' };
+    console.log(JSON.stringify({ status }));
+    if (status === 'HOOK_DISABLED') console.log(JSON.stringify({ disabledHookUri }));
+    if (!['HOOK_DISABLED', 'HOOK_ENABLED_EXPECTED', 'HOOK_ENABLED_DIFFERENT'].includes(status)) process.exitCode = 1;
+  }
 }

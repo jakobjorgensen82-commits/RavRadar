@@ -15,6 +15,9 @@ on:
           - existing-owner-erasure-guard
           - typed-trip-catalog-read
           - fixed-account-activity-hook-read
+          - fixed-account-activity-hook-catalog-read
+          - fixed-account-activity-hook-enable
+          - fixed-account-activity-hook-disable
           - fixed-public-rate-log-read
           - fixed-public-rate-log-read-20261013
           - fixed-public-rate-console-read-20261015
@@ -23,13 +26,19 @@ on:
           - fixed-assistant-failure-log-read-20261121-2344
           - fixed-storage-upload-log-read-20261013
 
+      activity_hook_confirmation:
+        description: Exact confirmation for the separately selected fixed activity hook action
+        type: string
+        required: false
+        default: ''
+
 permissions:
   contents: read
   actions: read
   pull-requests: read
 
 concurrency:
-  group: ravradar-trip-storage-production
+  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}
   cancel-in-progress: false
 
 jobs:
@@ -987,7 +996,7 @@ jobs:
         run: node scripts/verify-cloudflare-trip-gateway.mjs
 
   read-fixed-supabase-metadata:
-    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-account-activity-hook-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-2344' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-account-activity-hook-read' || inputs.operation == 'fixed-account-activity-hook-catalog-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-2344' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
     name: Bounded fixed Supabase read (no installation or repair)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1032,7 +1041,7 @@ jobs:
         run: test "${{ steps.fixed_read_source.outputs.required }}" = false
 
       - name: Verify the fixed account activity projection with synthetic input
-        if: inputs.operation == 'fixed-account-activity-hook-read'
+        if: inputs.operation == 'fixed-account-activity-hook-read' || inputs.operation == 'fixed-account-activity-hook-catalog-read'
         timeout-minutes: 1
         run: node --test scripts/test-fixed-account-activity-hook.mjs
 
@@ -1050,6 +1059,14 @@ jobs:
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Read only the fixed account activity hook catalog
+        if: inputs.operation == 'fixed-account-activity-hook-catalog-read'
+        timeout-minutes: 1
+        run: node scripts/read-fixed-account-activity-hook.mjs --catalog
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: catalog-read
 
       - name: Read only the fixed account activity Auth hook status
         if: inputs.operation == 'fixed-account-activity-hook-read'
@@ -1636,3 +1653,73 @@ jobs:
           edge('d1');
           worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
           REPAIR_NODE
+
+  configure-fixed-account-activity-hook:
+    if: inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable'
+    name: Configure only the fixed account activity token hook
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    steps:
+      - name: Require the exact hook purpose before any credential
+        shell: bash
+        env:
+          HOOK_OPERATION: ${{ inputs.operation }}
+          HOOK_CONFIRMATION: ${{ inputs.activity_hook_confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          case "$HOOK_OPERATION" in
+            fixed-account-activity-hook-enable) test "$HOOK_CONFIRMATION" = ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK ;;
+            fixed-account-activity-hook-disable) test "$HOOK_CONFIRMATION" = DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK ;;
+            *) exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require the already verified exact source before Auth configuration
+        id: fixed_hook_source
+        timeout-minutes: 2
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Reject unavailable source authority before Auth configuration
+        run: test "${{ steps.fixed_hook_source.outputs.required }}" = false
+
+      - name: Verify the normal fixed hook controller with synthetic input
+        timeout-minutes: 1
+        run: node --test scripts/test-fixed-account-activity-hook.mjs
+
+      - name: Require fresh idle main inside both writer locks
+        timeout-minutes: 1
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/check-fixed-supabase-account-read-idle.mjs
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Configure the exact hook after catalog and state preconditions
+        timeout-minutes: 1
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: ${{ inputs.operation == 'fixed-account-activity-hook-enable' && 'enable' || 'disable' }}
+          RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION: ${{ inputs.activity_hook_confirmation }}
+        run: node scripts/read-fixed-account-activity-hook.mjs --${{ inputs.operation == 'fixed-account-activity-hook-enable' && 'enable' || 'disable' }}
