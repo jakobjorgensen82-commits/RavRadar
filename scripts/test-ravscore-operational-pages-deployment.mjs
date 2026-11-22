@@ -21,6 +21,8 @@ import {
 } from './lib/ravscore-public-browser-closure.mjs';
 
 const sourceHead = 'e'.repeat(40);
+const publicVerificationOnly=process.argv.includes('--public-verification-only');
+if(publicVerificationOnly)assert.deepEqual(process.argv.slice(2),['--public-verification-only']);
 const productionReferenceAt = '2026-08-29T12:00:00.000Z';
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 // Only the deterministic input template is shared; every case owns its bytes/state.
@@ -2140,7 +2142,7 @@ if(process.argv.includes('--owner-completion-only')) {
   console.log('Owner-completion and existing final phase-clear guards: passed.');
   process.exit(0);
 }
-await verifyNormalPublishedOwnerCompletion();
+if(!publicVerificationOnly)await verifyNormalPublishedOwnerCompletion();
 
 await verifySealed594CompactShareRegression();
 await verifySealedStartupPropagationContract();
@@ -2633,6 +2635,7 @@ await assert.rejects(() => verifyRavScoreOperationalPagesDeployment({
 }), /incompatible|exact|another model/);
 
 console.log('Operational Pages exact integrated/Candidate 210/673 verification and mixed/tampered fail-closed: passed.');
+if(publicVerificationOnly)process.exit(0);
 
 // The existing complete 210/673 public fixture drives the real verifier here;
 // neither a caller supplied "verified" object nor a stubbed clear is used.
