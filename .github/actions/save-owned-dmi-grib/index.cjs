@@ -573,6 +573,7 @@ async function runOwnedOperation(operation) {
   let terminalStop;
   let expireTerminalWait;
   let terminalWaitExpired = false;
+  let leaseIoPending = false;
   const interrupt = () => {
     interrupted = true;
     // Request only. The Python owner must still prove its entire group absent.
@@ -586,16 +587,27 @@ async function runOwnedOperation(operation) {
         try { input.stage.requireTime(TERMINAL_CIPHER_STOP_RESERVE_MS); }
         catch {
           if (!interrupted) interrupt();
-          if (expireTerminalWait) {
+          const canEndLeaseWait = require.main === module && leaseIoPending && (!child || physicalClosed);
+          if (expireTerminalWait || canEndLeaseWait) {
             try { input.stage.requireTime(TERMINAL_CIPHER_OBSERVER_RESERVE_MS); }
-            catch (error) { expireTerminalWait(error); }
+            catch (error) {
+              if (expireTerminalWait) expireTerminalWait(error);
+              else {
+                // A file operation may already have happened. Ending the CLI
+                // prevents its pending continuation from spawning a child or
+                // reporting success. Neither cleanup nor claim state is proved.
+                process.exit(1);
+              }
+            }
           }
         }
       }, 50);
     }
     if (require.main === module) cliPhase = 'LEASE';
+    leaseIoPending = true;
     lease = await owner.acquireWeatherAcquisitionWriter();
     await owner.assertWeatherAcquisitionWriter(lease);
+    leaseIoPending = false;
     if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
     if (input?.stage) {
       input.stage.requireTime(TERMINAL_CIPHER_STOP_RESERVE_MS);
@@ -673,7 +685,9 @@ async function runOwnedOperation(operation) {
       }
     }
     if (require.main === module) cliPhase = 'LEASE';
+    leaseIoPending = true;
     await owner.assertWeatherAcquisitionWriter(lease);
+    leaseIoPending = false;
     if (inventoryBefore !== null && !archiveCapacitySkipped && rawInventorySha256() === inventoryBefore) {
       finalizedInventory = { cacheId: receipt.cacheId, inventorySha256: inventoryBefore };
     }
@@ -687,8 +701,10 @@ async function runOwnedOperation(operation) {
       }
       else {
         if (firstFailure === null && require.main === module) cliPhase = 'LEASE_RELEASE';
+        leaseIoPending = true;
         try { await owner.releaseWeatherAcquisitionWriter(lease); }
         catch (error) { firstFailure ??= { value: error }; }
+        leaseIoPending = false;
       }
     }
     if (terminalWaitExpired && !physicalClosed) {
