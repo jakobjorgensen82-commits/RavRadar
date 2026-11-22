@@ -14,6 +14,7 @@ on:
           - existing-owner-export-upgrade
           - existing-owner-erasure-guard
           - typed-trip-catalog-read
+          - fixed-account-activity-hook-read
           - fixed-public-rate-log-read
           - fixed-public-rate-log-read-20261013
           - fixed-public-rate-console-read-20261015
@@ -986,7 +987,7 @@ jobs:
         run: node scripts/verify-cloudflare-trip-gateway.mjs
 
   read-fixed-supabase-metadata:
-    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-2344' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-account-activity-hook-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-2344' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
     name: Bounded fixed Supabase read (no installation or repair)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1030,6 +1031,11 @@ jobs:
         shell: bash
         run: test "${{ steps.fixed_read_source.outputs.required }}" = false
 
+      - name: Verify the fixed account activity projection with synthetic input
+        if: inputs.operation == 'fixed-account-activity-hook-read'
+        timeout-minutes: 1
+        run: node --test scripts/test-fixed-account-activity-hook.mjs
+
       # No active writer; only the three exact inert legacy queues with fresh jobs=0.
       # This bounded snapshot is not an atomic writer lease or cancellation authority.
       - name: Require genuinely fresh idle main before the fixed read
@@ -1044,6 +1050,13 @@ jobs:
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Read only the fixed account activity Auth hook status
+        if: inputs.operation == 'fixed-account-activity-hook-read'
+        timeout-minutes: 1
+        run: node scripts/read-fixed-account-activity-hook.mjs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Read the one fixed typed trip catalog
         if: inputs.operation == 'typed-trip-catalog-read'
@@ -1102,7 +1115,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-account-activity-hook-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1

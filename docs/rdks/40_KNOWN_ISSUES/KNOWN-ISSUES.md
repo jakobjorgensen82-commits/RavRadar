@@ -1,3 +1,9 @@
+## 22. november — verificering af kontoaktivitet før inaktivitetsvarsling
+
+Den eksisterende GitHub-arbejdsgang har en afgrænset læsning af Supabases indstilling for registrering af kontoaktivitet. Læsningen kræver verificeret hovedgren og en ledig kø. Den rapporterer kun en fast status om den forventede binding. Appen må fortsat ikke bruge manglende aktivitetsregistrering som bevis for inaktivitet.
+
+Kildekontrol, aflæsning af den faktiske indstilling og bekræftelse af aktivitetsregistrering ved almindeligt login udestår. Automatisk varsling og sletning forbliver deaktiveret.
+
 ## 22. november — offentliggjort Pages-mål kan afvente en delt statusadresse
 
 Pages kan vise det præcise forseglede mål, mens deploymentkalderen fortsat afventer en entydig API-status. En delt kilde-SHA kan også beskrive et ældre artifact; offentlig synlighed alene forklarer derfor ikke den konkrete ventetid.
