@@ -22,6 +22,8 @@ const dmiBudgetScopeOnly=process.argv.includes('--dmi-budget-scope-only');
 const dmiRecoveryScopeOnly=process.argv.includes('--dmi-recovery-scope-only');
 const adminHistoryScopeOnly=process.argv.includes('--admin-history-scope-only');
 const weatherPublicationScopeOnly=process.argv.includes('--weather-publication-scope-only');
+const pagesCommandSelectionOnly=process.argv.includes('--pages-command-selection-only');
+if(pagesCommandSelectionOnly)assert.deepEqual(process.argv.slice(2),['--pages-command-selection-only']);
 
 // The fixed restore command owns only its reviewed fixture body. Import and
 // dispatch frames retain the old form plus the closed inventory mode; --self-test runs separately.
@@ -58,9 +60,10 @@ for(const changed of [
 ])assert.equal(isBoundedLocalRestoreFixtureChange(currentRestoreSource,changed),false);
 // Eksisterende ownerindgang: kun fast helper-scope, aldrig et blanket Pages-skip.
 const ownerHelpers=['scripts/github-pages-attempt-evidence.mjs','scripts/protected-operational-reentry-evidence.mjs'];
-const deploymentCommand='node scripts/test-ravscore-operational-pages-deployment.mjs';
-const ownerCommand=deploymentCommand+' --owner-completion-only';
-const ownerCommands=CURRENT_CONTRACT_COMMANDS.pages.map(command=>command===deploymentCommand?ownerCommand:command);
+const deploymentEntry='node scripts/test-ravscore-operational-pages-deployment.mjs';
+const deploymentCommand=deploymentEntry+' --public-verification-only';
+const ownerCommand=deploymentEntry+' --owner-completion-only';
+const ownerCommands=CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command!==deploymentCommand);
 const modified=path=>({path,status:'M',beforeMode:'100644',afterMode:'100644'});
 for(const inputs of [[modified(ownerHelpers[0])],ownerHelpers.map(modified),
   [modified(ownerHelpers[1]),modified('docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md')],
@@ -128,7 +131,7 @@ const plannerControlSelectionCases=assertPlannerControlCommandSelection();
 
 // Rene transportændringer vælger fire fulde mål; ingen ejerindgang eller blanket Pages-fritagelse.
 const transportInputs=['scripts/lib/run-sealed-pages-deployment.mjs','scripts/test-ordinary-pages-immediate-retry.mjs'];
-const transportCommands=CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command!==deploymentCommand);
+const transportCommands=CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command!==deploymentCommand&&command!==ownerCommand);
 const publicObserverCli='scripts/deploy-ordinary-pages-with-immediate-retry.mjs';
 const publicObserverAddition='    readPublicTarget: readPublic,\n';
 // Fast syntetisk klipfixture; den aktuelle CLI må fortsat ændres via den brede normale vej.
@@ -180,6 +183,15 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],[modified('scripts/sourc
   [modified(transportInputs[0]),{}],[modified(transportInputs[0]),null]])
   assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
 // Slut på de nye rene transportassertions.
+assert.deepEqual(currentSourceTargets('scripts/verify-ravscore-operational-pages-deployment.mjs').owners,
+  [{area:'sourceExecution',commands:[deploymentCommand,'node scripts/test-forecast-share-projection.mjs']}]);
+assert.deepEqual(currentSourceTargets('scripts/test-ravscore-operational-pages-deployment.mjs').owners,
+  [{area:'pages',commands:CURRENT_CONTRACT_COMMANDS.pages}]);
+assert.equal(CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command.startsWith(deploymentEntry)).length,2);
+if(pagesCommandSelectionOnly){
+  console.log('Pages command selection: public verification, complete owner cases and unchanged narrow refusals passed.');
+  process.exit(0);
+}
 
 // Assistant Edge scope: the same assertions run in the normal Git fixture.
 function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
@@ -1459,7 +1471,8 @@ try{
         assert.deepEqual(selected.areas.pages.commands,narrow?transportCommands:CURRENT_CONTRACT_COMMANDS.pages,label);
         assert.equal(selected.commands.includes(deploymentCommand),!narrow,label);
       }
-      assert(!selected.commands.includes(ownerCommand),label);
+      if(selected.selection==='CURRENT_CONTRACTS')assert.equal(selected.commands.includes(ownerCommand),!narrow,label);
+      else assert.deepEqual(selected.commands,[],label);
       if(control!==null)assert.equal(selected.controlQualificationRequired,control,label);
       for(const key of ['postgresUnchanged','CUnchanged','IUnchanged','TUnchanged'])assert.equal(selected.protectedInputs[key],true,label);
       cases++;
@@ -1483,7 +1496,9 @@ try{
       assert(narrow?selected.selection==='CURRENT_CONTRACTS':['CURRENT_CONTRACTS','FULL'].includes(selected.selection),label);
       if(selected.selection==='CURRENT_CONTRACTS')assert.deepEqual(selected.areas.pages.commands,
         narrow?transportCommands:CURRENT_CONTRACT_COMMANDS.pages,label);
-      assert(!selected.commands.includes(ownerCommand),label);cases++;
+      if(selected.selection==='CURRENT_CONTRACTS')assert.equal(selected.commands.includes(ownerCommand),!narrow,label);
+      else assert.deepEqual(selected.commands,[],label);
+      cases++;
     }
     for(const kind of ['A','D','mode']){
       checkout(transportBase);const file=transportInputs[0];git(root,['update-index','--force-remove','--',file]);
@@ -1499,7 +1514,9 @@ try{
       const selected=plan({baselineCommit:comparisonBase,candidateCommit:candidate,expectedHead:candidate});
       assert(['CURRENT_CONTRACTS','FULL'].includes(selected.selection),kind);
       if(selected.selection==='CURRENT_CONTRACTS')assert.deepEqual(selected.areas.pages.commands,CURRENT_CONTRACT_COMMANDS.pages,kind);
-      assert(!selected.commands.includes(ownerCommand),kind);cases++;
+      if(selected.selection==='CURRENT_CONTRACTS')assert(selected.commands.includes(ownerCommand),kind);
+      else assert.deepEqual(selected.commands,[],kind);
+      cases++;
     }
     for(const [label,file]of [['unknown','js/unclassified-production-feature.js'],['PG',profile.postgresModules[0]]]){
       const bytes=label==='unknown'?Buffer.from('export const changed=true;\n'):Buffer.concat([
@@ -2105,7 +2122,7 @@ try{
       const selected=plan({baselineCommit:firstDelivery.main,candidateCommit:candidate,expectedHead:candidate});
       assert.equal(selected.selection,'CURRENT_CONTRACTS');
       assert.deepEqual(selected.areas.pages.commands,bounded?ownerCommands:CURRENT_CONTRACT_COMMANDS.pages);
-      assert.equal(selected.commands.includes(ownerCommand),bounded);
+      assert(selected.commands.includes(ownerCommand));
       assert.equal(selected.commands.includes(deploymentCommand),!bounded);
       assert.equal(selected.protectedInputs.postgresUnchanged,true);
       assert.equal(selected.protectedInputs.CUnchanged,true);assert.equal(selected.protectedInputs.IUnchanged,true);

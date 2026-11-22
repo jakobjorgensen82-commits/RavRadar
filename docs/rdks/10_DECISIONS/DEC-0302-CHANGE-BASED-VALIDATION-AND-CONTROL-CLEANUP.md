@@ -1,3 +1,7 @@
+## 22. november – offentlig Pages-kontrol og ejerprøver
+
+Den eksisterende Pages-prøve har to afgrænsede indgange til offentlig artifactverifikation og ejerens afslutning og genoptagelse. Den brede Pages-ejer kører begge sæt med alle deres hidtidige positive og negative tilfælde. Standardindgangen bevarer hele forløbet. Ændring af den offentlige verifier vælger artifactprøverne og den eksisterende ægte delingsprojektion. Transportens og ejerhjælpernes snævre valg bevarer deres hidtidige ansvar. Hver kommando beholder sin normale tidsgrænse, og ændring af planlæggeren kræver de eksisterende kontrolmål og uafhængig gennemgang.
+
 ## 22. november – test af planlægning af vejrfelter
 
 Den eksisterende weatherScalarPlanning-ejer omfatter runtimeprøven og Copernicus-prøven af det byteverificerede indeks. Den separate hele wireup-prøve bevarer sin normale Copernicus-klargøring. Området deler updaterens eksisterende fire-fils runtimekommando og kører hele indeksprøven. Den fælles kommandoliste kører hver berørt prøve én gang.
