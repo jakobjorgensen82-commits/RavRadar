@@ -1884,3 +1884,74 @@ def check_b365_earlier_new_cycle_protects_both_leading_pairs():
 
 
 check_b365_earlier_new_cycle_protects_both_leading_pairs()
+
+
+def check_b368_leading_water_pairs_do_not_share_their_weakest_guard():
+    reference = datetime(2026, 11, 22, tzinfo=timezone.utc)
+    at = lambda hour: producer.canonical_time(reference + timedelta(hours=hour))
+    selected = at(-6)
+    hours = range(118)
+    assets = [{"valid": at(hour), "id": hour, "modelRun": selected, "collection": "dkss_idw"}
+              for hour in hours]
+    times = {asset["valid"] for asset in assets}
+    covered = {("fixture", time) for time in times}
+    def gap_count(hour):
+        if hour in (0, 1, 4):
+            return 4
+        if hour in (2, 3, 5, 6):
+            return 354
+        if hour <= 73:
+            return 355
+        return 5 if hour <= 109 else 3
+
+    # The two inputs project to the same archived #368 report. It only
+    # recorded a water need, not the retained-only water predicate or whether
+    # a component gap was an independent missing scalar value.
+    def order(*, retained_h4=True, self_contained_gaps=(), work=assets, leading_run=selected):
+        requirements = {
+            at(hour): {
+                "critical": True, "criticalPriority": 0, "retainedScalarPlanQualified": True,
+                "criticalGapPairCount": gap_count(hour),
+                "retainedScalarValueGapPairCount": int(hour in self_contained_gaps),
+                "retainedWaterTrendGap": hour == 3,
+                "retainedWaterLevelDemand": hour <= 6 and (hour != 4 or retained_h4),
+                "currentMissingPairCount": 0,
+            }
+            for hour in hours
+        }
+        queue = producer.prioritize_dkss_primary_assets(
+            work, ["fixture"], covered, requirements,
+            direct_valid_times=times, regional_gap_pairs_by_time={}, verified_reusable_valid_times=set(),
+            critical_cursor_valid_time=None, leading_water_model_run=leading_run,
+        )
+        return [asset["id"] for asset in queue]
+
+    def ranks(queue):
+        return [queue.index(hour) + 1 for hour in range(6)]
+
+    original = order(leading_run=None)
+    assert ranks(original) == [2, 3, 1, 71, 110, 73]
+    missing_retained_h4 = order(retained_h4=False)
+    protected_h4 = order(self_contained_gaps=(90,))
+    assert ranks(missing_retained_h4) == [2, 3, 1, 4, 110, 5]
+    assert ranks(protected_h4) == [2, 3, 1, 4, 91, 5]
+    assert protected_h4.index(90) < protected_h4.index(4)
+    for scheduled in (missing_retained_h4, protected_h4):
+        assert scheduled[:3] == original[:3]
+        assert [hour for hour in scheduled if hour not in (3, 4, 5)] == [
+            hour for hour in original if hour not in (3, 4, 5)
+        ]
+
+    # Trend-only work must remain behind a stronger genuine value hole.
+    protected_h3_and_h5 = order(self_contained_gaps=(8, 90))
+    assert protected_h3_and_h5.index(8) < protected_h3_and_h5.index(3) < protected_h3_and_h5.index(5)
+    for change in ({"modelRun": at(-12)}, {"modelRun": None}, {"collection": "dkss_lf"}):
+        wrong_support = [{**asset, **change} if asset["id"] == 5 else asset for asset in assets]
+        assert order(retained_h4=False, work=wrong_support) == original
+
+    # The new support does not displace the previously admitted H3/H4/H6.
+    assert order()[:7] == [2, 0, 1, 3, 4, 6, 5]
+    print("B368 three independently qualified leading water pairs and stronger value holes OK")
+
+
+check_b368_leading_water_pairs_do_not_share_their_weakest_guard()
