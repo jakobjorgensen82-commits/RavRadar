@@ -1,3 +1,9 @@
+## 22. november — uafhængig støtte til de første tre tretimerspar
+
+Den autentificerede audit af #368 fandt gyldige vandstande i begge ender af alle tre første par i alle 673 kystdele. Ingen havde en tretimersændring. IDW behandlede starttimerne i rækkefølgen H2, H0, H1. Støttepunkterne H3, H4 og H5 stod som nr. 71, 110 og 73 og blev ikke behandlet. H0 og H1 havde tilsvarende gyldige ændringer i det foregående offentlige datasæt. De fire undersøgte kilder skiftede model mellem de valgte endepunkter. Den arkiverede kø viser det samlede arbejde pr. time. Det præcise vagtafslag for H3/H4 er ukendt.
+
+Den lokale kandidat kan fremrykke den kvalificerede H5-støtte for H2 gennem den eksisterende kø. Når H3/H4 ikke kan fremrykkes sammen, får hvert kvalificeret par sin egen vurdering af samme model og samling, selvstændige værdihuller samt strøm- og regionale behov. Det gamle arbejde holder sin indbyrdes rækkefølge. Tidligere accepteret støtte til et efterfølgende tretimerspar bevarer sin plads. En bestandig usikkerhed efter budgetstop eller native kildeafslag resulterer fortsat i manglende ændring. Den lokale køprøve reproducerer arkivets placeringer med to forskellige afslag og fremrykker H3/H5 i begge. Faktisk virkning afventer en almindelig kørsel.
+
 ## 21. november — hold kvalificerede tretimerspar sammen i DMI-køen
 
 Den autentificerede audit af #365 viste, at begge vandstande var til stede ved de to første tretimerspar, men ændringen manglede for alle 673 kystdele. IDW-køen havde starttimerne kl. 12 og 13 UTC som nr. 2 og 3. De kvalificerede støttetimer kl. 15 og 16 UTC stod som nr. 113 og 114 og blev ikke behandlet. De kontrollerede ruter havde uforenelige serier. Den tidligere rettelse krævede fronttimerne i tidsorden og kunne misse et hul, som først opstod under skiftet. Den oprindelige maske for #365 er ukendt.

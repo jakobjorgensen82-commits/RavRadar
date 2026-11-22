@@ -2351,7 +2351,9 @@ def regional_lf_asset_gap_pairs_by_time(
     }
 
 
-def advance_leading_water_assets(ordered, times, ranks, support, scoped_value_gap_counts):
+def advance_leading_water_assets(
+    ordered, times, ranks, support, scoped_value_gap_counts, *, insertion_floor=3,
+):
     """Move already-qualified support without overtaking independent work."""
     indices = [times.index(valid) for valid in support]
     first = ranks[support[0]]
@@ -2366,8 +2368,8 @@ def advance_leading_water_assets(ordered, times, ranks, support, scoped_value_ga
     ):
         return ordered
     value_limit = min(scoped_value_gap_counts[valid][0] for valid in support)
-    insert_at = 3
-    for index in range(3, max(indices)):
+    insert_at = insertion_floor
+    for index in range(insertion_floor, max(indices)):
         valid = times[index]
         if valid in support:
             continue
@@ -2410,39 +2412,72 @@ def prioritize_leading_water_support(
     by_time = dict(zip(times, ordered))
     ranks = {canonical_time(asset.get("valid")): rank for rank, asset in ranked}
 
-    def schedule_support(origins, offsets, direct_collection=None):
+    def qualified_support(origins, offsets, direct_collection=None):
         support = [by_epoch.get(start_epoch + offset * 3600) for offset in offsets]
         if any(valid not in qualified_water_times for valid in support):
-            return ordered
+            return []
         assets = [by_time[valid] for valid in (*origins, *support)]
         if direct_collection is not None and any(
             asset.get("collection") != direct_collection or not asset.get("modelRun")
             for asset in assets
         ):
-            return ordered
+            return []
         if any(canonical_time(asset.get("modelRun", selected_run)) != selected_run for asset in assets):
-            return ordered
-        return advance_leading_water_assets(ordered, times, ranks, support, scoped_value_gap_counts)
+            return []
+        return support
 
-    onset = by_epoch[start_epoch]
-    starts = (onset, by_epoch[start_epoch + 3600])
+    def advance(queue, support, floor=3):
+        if not support:
+            return queue
+        queue_times = times if queue is ordered else [canonical_time(asset.get("valid")) for asset in queue]
+        return advance_leading_water_assets(
+            queue, queue_times, ranks, support, scoped_value_gap_counts, insertion_floor=floor,
+        )
+
+    starts = [by_epoch[value] for value in expected_front]
+    onset = starts[0]
     collection = by_time[onset].get("collection")
-    if collection in {"dkss_idw", "dkss_nsbs"} and all(valid in qualified_water_times for valid in starts):
-        pair = schedule_support(starts, (3, 4), collection)
+    direct = collection in {"dkss_idw", "dkss_nsbs"}
+    third = (qualified_support((starts[2],), (5,), collection)
+             if direct and starts[2] in qualified_water_times else [])
+    if direct and all(valid in qualified_water_times for valid in starts[:2]):
+        paired_support = qualified_support(starts[:2], (3, 4), collection)
+        pair = advance(ordered, paired_support)
         if pair is not ordered:
             companions = tuple(offset for offset in (6, 7)
                                if by_epoch.get(start_epoch + offset * 3600) in qualified_water_times)
             if companions:
-                extended = schedule_support(starts, (3, 4, *companions), collection)
-                first_support = by_time[by_epoch[start_epoch + 3 * 3600]]
+                extended_support = qualified_support(starts[:2], (3, 4, *companions), collection)
+                extended = advance(ordered, extended_support)
+                first_support = by_time[paired_support[0]]
                 # Optional continuation may share the same placement. It
                 # cannot delay the pair or let it displace independent work.
                 if extended is not ordered and extended.index(first_support) == pair.index(first_support):
-                    return extended
+                    pair, paired_support = extended, extended_support
+            # Preserve already advanced support for the following pair as well.
+            if third:
+                floor = max(pair.index(by_time[valid]) for valid in paired_support) + 1
+                return advance(pair, third, floor)
             return pair
     if front == expected_front and onset in water_trend_gap_times:
-        return schedule_support((onset,), (3, 6))
-    return ordered
+        legacy = advance(ordered, qualified_support((onset,), (3, 6)))
+        if legacy is not ordered:
+            return legacy
+    if not third:
+        return ordered
+
+    # The three leading hours can have different needs. Protect the
+    # established order of the eligible supports, without letting H4's
+    # qualification or unrelated work block the independent H3/H5 pairs.
+    independent = third
+    for offset, start in enumerate(starts[:2], start=3):
+        if start in qualified_water_times:
+            independent.extend(qualified_support((start,), (offset,), collection))
+    queue, floor = ordered, 3
+    for valid in sorted(independent, key=times.index):
+        queue = advance(queue, [valid], floor)
+        floor = max(floor, queue.index(by_time[valid]) + 1)
+    return queue
 
 
 def prioritize_marine_assets_for_current_gaps(
@@ -19047,7 +19082,9 @@ def main() -> int:
         productive=producer_productive,
         diagnostics=diag,
     )
-    wave_report_ready = write_ordinary_wave_acquisition_report(result, locked_production_reference)
+    wave_report_ready = not CACHE_ONLY and write_ordinary_wave_acquisition_report(
+        result, locked_production_reference,
+    )
     write_github_outputs(
         result["refreshStatus"], fresh_successes, fresh_partials,
         len(result["zones"]), budget["bytes"],
