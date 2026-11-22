@@ -989,15 +989,21 @@ function reviewObject(plan){
       {current,fullBaseline:reference,changeBase,currentPlan,cumulativePlan:plan}),reviewSha256:sha(reviewText)};
 }
 function currentPull(){
-  const review=reviewObject(baselinePlan);
-  if(state.hintOverride)review.baselineCommit=state.hintOverride;
-  if(state.headMismatch)review.head=base;
-  if(state.wrongPlan)review.planSha256='f'.repeat(64);
-  if(state.movedReview&&rows.length)review.reviewSha256='e'.repeat(64);
+  let body;
+  if(state.missingReview)body='Synthetic missing review';
+  else if(state.malformedReview)body='<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 {bad-json} -->';
+  else{
+    const review=reviewObject(baselinePlan);
+    if(state.hintOverride)review.baselineCommit=state.hintOverride;
+    if(state.headMismatch)review.head=base;
+    if(state.wrongPlan)review.planSha256='f'.repeat(64);
+    if(state.movedReview&&rows.length)review.reviewSha256='e'.repeat(64);
+    body=('Synthetic fixture only\n<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 '+JSON.stringify(review)+' -->\n').repeat(state.duplicateReview?2:1);
+  }
   return {number:selectedPr,state:state.merged?'closed':'open',...(state.merged?{merged_at:stamp(24),merge_commit_sha:main}:{}),
     user:{login:native.ORIGIN.repository.split('/')[0]},head:{sha:head,ref:'codex/synthetic-domain-current',repo:{full_name:native.ORIGIN.repository}},
     base:{sha:state.merged&&state.closedBaseTip?state.closedBaseTip:state.baseTip??base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
-    body:state.missingReview?'Synthetic missing review':state.malformedReview?'<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 {bad-json} -->':('Synthetic fixture only\n<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 '+JSON.stringify(review)+' -->\n').repeat(state.duplicateReview?2:1)};
+    body};
 }
 function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
   head_branch:selected?'codex/synthetic-domain-current':'codex/synthetic-domain-full',event:'pull_request',
@@ -1724,10 +1730,6 @@ try{
     const scalarTree=rewrite(baselineTree,[[scalarTarget,Buffer.concat([
       git(root,['cat-file','blob',base+':'+scalarTarget]),Buffer.from('\n// Synthetic selected scalar target delta\n')])]]);
     const scalarHead=commit(scalarTree,[base],'synthetic selected scalar prerequisite');
-    const ordinaryTree=rewrite(baselineTree,[['scripts/source-current-contract-receipt.mjs',Buffer.concat([
-      git(root,['cat-file','blob',base+':scripts/source-current-contract-receipt.mjs']),
-      Buffer.from('\n// Synthetic ordinary control target delta\n')])]]);
-    const ordinaryHead=commit(ordinaryTree,[base],'synthetic unselected scalar prerequisite');
     const originalExec=childProcess.execFileSync,savedFetch=globalThis.fetch,savedLog=console.log;
     const environmentKeys=['LD_LIBRARY_PATH','DYLD_LIBRARY_PATH','SUPABASE_SERVICE_ROLE_KEY','COPERNICUSMARINE_SERVICE_PASSWORD'];
     const savedEnvironment=Object.fromEntries(environmentKeys.map(key=>[key,process.env[key]]));
@@ -1772,10 +1774,6 @@ try{
       await assert.rejects(coordinate(),/SOURCE_TARGETED_SCALAR_PREREQUISITE_FAILED/);
       assert.equal(preparationCalls.length,1);assert.equal(rows.length,0);
       cases++;scenarios.push('failed scalar runtime preparation is red before targets with no retry or FULL fallback');
-      failPreparation=false;preparationCalls=[];
-      configure(ordinaryHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
-      assert.equal((await coordinate()).selection,'TARGETED');assert.equal(preparationCalls.length,0);
-      cases++;scenarios.push('unselected scalar target installs no CP runtime');
     }finally{
       childProcess.execFileSync=originalExec;syncBuiltinESMExports();
       globalThis.fetch=savedFetch;console.log=savedLog;
@@ -1856,7 +1854,21 @@ try{
     }
     originalLog(...args);
   };
-  rebuildMaps();const positive=await coordinate();
+  rebuildMaps();
+  const originalExec=childProcess.execFileSync;
+  let preparationCalls=0,positive;
+  childProcess.execFileSync=function(executable,args,options){
+    if(args?.[0]==='-m'&&args?.[1]==='pip'){
+      preparationCalls++;
+      throw Error('SYNTHETIC_UNSELECTED_SCALAR_PREPARATION');
+    }
+    return Reflect.apply(originalExec,childProcess,[executable,args,options]);
+  };
+  syncBuiltinESMExports();
+  try{positive=await coordinate();}
+  finally{childProcess.execFileSync=originalExec;syncBuiltinESMExports();}
+  assert.equal(preparationCalls,0);
+  cases++;scenarios.push('ordinary producer without the selected scalar target installs no CP runtime');
   assert.equal(positive.selection,'TARGETED');selectedReceipt=positive.receipt;
   assert.equal(selectedReceipt.schemaVersion,4);assert.equal(selectedReceipt.scope,'CURRENT_CHANGE_CONTRACT_RESULTS_ONLY');
   assert.equal(rows.length,baselinePlan.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
@@ -2211,13 +2223,26 @@ try{
     row=>{row.changeBase.commit=base;},
     row=>{row.changeBase.gitTree='f'.repeat(40);},
     row=>{row.changeBase.pullBaseCommit=base;},
-    ...['postgres','C','I','T'].map(family=>row=>{row.baselineContinuity.inputDigests[family+'After']='f'.repeat(64);}),
+    row=>{row.baselineContinuity.inputDigests.postgresAfter='f'.repeat(64);},
   ]){
     selectedReceipt=clone(nextValid);alter(selectedReceipt);
     selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
     selectedMetadata=meta(selectedArtifactId,selectedReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
     const altered=await discover(nextContext,next.sourceTreeSha256,{...freshAccess(),readGit});
     assert.equal((await decide(altered.locator,nextContext,{...freshAccess(),readGit})).required,true);cases++;
+  }
+  // The live consumer checks these digest fields in the same canonical receipt
+  // comparison as PostgreSQL above. Use both real Git plans again without
+  // redoing the full artifact and source roundtrip for each model field.
+  const nextExpected={current:nextValid.current,fullBaseline:legacyFull,changeBase:nextValid.changeBase,
+    currentPlan:onlyPages,cumulativePlan:baselinePlan,frontier:nextValid.frontier,
+    commandResults:nextValid.reportedCommandResults};
+  assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(nextValid,nextExpected).validStructure,true);
+  for(const family of ['C','I','T']){
+    const altered=clone(nextValid);
+    altered.baselineContinuity.inputDigests[family+'After']='f'.repeat(64);
+    assert.throws(()=>currentReceiptHelpers.validateCurrentChangeSourceReceipt(altered,nextExpected),/RECEIPT_MISMATCH/);
+    cases++;
   }
   scenarios.push('three false current bases and four false FULL-origin protected input digests are refused');
 
