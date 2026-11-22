@@ -1,3 +1,8 @@
+## 22. november — holdt skrivelås ved fejlworkerens frist
+
+- [x] Genskab forsinket låse-I/O før upload og efter bevist fysisk ophør. Den lokale kandidat afslutter terminalhandlingen med fejl inden for den fælles frist uden en positiv uploadkvittering. En afsendt fjernelse af låsefilen regnes som uafklaret.
+- [ ] Kvalificér den præcise kandidat med eksisterende Linux- og SDK-prøve. Den dækker holdt låse-I/O omkring oprettelse og fjernelse samt tilbageholdt Finalize og uafklaret fysisk ophør. Den lokale Node-prøve simulerer Linux-tid og SDK-processen.
+
 ## 22. november — offentlig målverifikation under Pages-ventetid
 
 - [x] Klargør afgrænset offentlig manifestlæsning efter autentisk CREATE-kvittering; en delt SHA-status giver fortsat ingen terminal-, annullerings- eller retryautoritet.
