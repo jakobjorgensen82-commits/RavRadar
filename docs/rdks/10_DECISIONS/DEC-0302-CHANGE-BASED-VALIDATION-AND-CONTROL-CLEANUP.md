@@ -1,3 +1,9 @@
+## 22. november – test af planlægning af vejrfelter
+
+Den eksisterende weatherScalarPlanning-ejer omfatter runtimeprøven og Copernicus-prøven af det byteverificerede indeks. Den separate hele wireup-prøve bevarer sin normale Copernicus-klargøring. Området deler updaterens eksisterende fire-fils runtimekommando og kører hele indeksprøven. Den fælles kommandoliste kører hver berørt prøve én gang.
+
+Ændringen af planlæggeren kræver de fire eksisterende kontrolmål og uafhængig gennemgang. Ændrede beskyttede input og ukendte stier sendes til den relevante fulde kontrol. Kildekvalifikation og faktisk vejrvirkning dokumenteres særskilt.
+
 ## 22. november — bevist uudført PostgreSQL i grøn CURRENT-kontrol
 
 Den normale after599-genbrugslæser må passere et nyere, faktisk grønt CURRENT-forløb, når den fælles normale workflow-/stepformslæser beviser udført relevant kildekontrol samt legitimt sprunget PostgreSQL og native-upload. Det er ingen ny SQL-origin: den autentiske EXECUTED-fase, input, runtime, artifact og friske identiteter skal fortsat kvalificeres. Rød eller ukendt relevant source-/PostgreSQL-fase, blandet stepform og identitetsafvigelse giver fortsat faktisk SQL. Et senere grønt CURRENT-forløb ophæver ikke en sådan tidligere afvisning. Lokale syntetiske prøver er ikke hosted kvalifikation.

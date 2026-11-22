@@ -2466,6 +2466,10 @@ function collect(file){
     assert.deepEqual(CURRENT_CONTRACT_COMMANDS.waterSourceRouting,expectedWater);
     assert.deepEqual(CURRENT_CONTRACT_COMMANDS.runtimeAudit,expectedRuntime);
     assert.deepEqual(CURRENT_CONTRACT_COMMANDS.weatherUpdater,expectedUpdater);
+    const expectedScalar=['node --test scripts/test-weather-component-normal-wireup.mjs',
+      expectedUpdater.find(command=>command.startsWith('node --test scripts/test-weather-component-runtime.mjs ')),
+      'node scripts/test-copernicus-component-index.mjs'];
+    assert.deepEqual(CURRENT_CONTRACT_COMMANDS.weatherScalarPlanning,expectedScalar);
     assert(expectedRuntime.includes('node scripts/test-ravscore-integrated-public-runtime-audit.mjs'));
     const expectedHistoricalUpdater=[
       expectedUpdater.find(command=>command.startsWith('node --test scripts/test-ravscore-integrated-generator.mjs ')),
@@ -2485,6 +2489,10 @@ function collect(file){
       'scripts/test-weather-history-retention-4.0.209.mjs':[expectedHistoricalUpdater[2]],
     };
     const ownerAreas={
+      'scripts/lib/weather-component-runtime.mjs':['weatherScalarPlanning'],
+      'scripts/test-weather-component-normal-wireup.mjs':['weatherScalarPlanning'],
+      'scripts/test-weather-component-runtime.mjs':['weatherScalarPlanning'],
+      'scripts/test-copernicus-component-index.mjs':['weatherScalarPlanning'],
       'scripts/lib/water-source-forecast-routing.mjs':['waterSourceRouting','runtimeAudit'],
       'scripts/test-water-source-forecast-routing-4.0.100.mjs':['waterSourceRouting'],
       'scripts/test-water-source-production-chain-4.0.103.mjs':['waterSourceRouting'],
@@ -2522,9 +2530,9 @@ function collect(file){
     console.log(JSON.stringify({kind:'WEATHER_OPERATION_RECEIPT_PREFLIGHT',commands:budgetPlan.commands.length,
       maximumCommands:128,areas:Object.keys(budgetPlan.areas).length,maximumAreas:32,...capacity,scopeCasesStarted:0}));
     let checked=0;
-    const positive=(selected,wanted,commands=null)=>{
+    const positive=(selected,wanted,commands=null,reviewRequired=true)=>{
       assert.equal(selected.status,'PLANNED');assert.equal(selected.selection,'CURRENT_CONTRACTS');
-      assert.equal(selected.controlQualificationRequired,true);
+      assert.equal(selected.controlQualificationRequired,reviewRequired);
       assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
       const areas=['core',...Object.keys(CURRENT_CONTRACT_COMMANDS).filter(area=>wanted.includes(area))];
       assert.deepEqual(Object.keys(selected.areas),areas);
@@ -2535,9 +2543,18 @@ function collect(file){
       const child=commit(rewrite(seedTree,[...changes,...extra]),[seed],label);return run(seed,child);
     };
     for(const [file,areas]of Object.entries(ownerAreas)){
-      positive(select([file],'synthetic single natural weather owner'),areas);
+      positive(select([file],'synthetic single natural weather owner'),areas,null,
+        !areas.includes('weatherScalarPlanning')||file.startsWith('scripts/test-'));
     }
-    positive(select(paths,'synthetic combined natural weather owners'),['waterSourceRouting','weatherUpdater','runtimeAudit']);
+    const sharedPlan=select(paths,'synthetic combined natural weather owners');
+    positive(sharedPlan,['weatherScalarPlanning','waterSourceRouting','weatherUpdater','runtimeAudit']);
+    const scalarPaths=Object.entries(ownerAreas).filter(([,areas])=>areas.includes('weatherScalarPlanning')).map(([file])=>file);
+    positive(select(scalarPaths,'synthetic scalar-only followup'),['weatherScalarPlanning']);
+    for(const file of ['scripts/test-weather-component-normal-wireup.mjs','scripts/test-weather-component-runtime.mjs',
+      'scripts/test-open-meteo-part-bank.mjs','scripts/test-open-meteo-part-runtime.mjs',
+      'scripts/test-open-meteo-normal-component-chain.mjs','scripts/test-copernicus-component-index.mjs'])
+      assert.equal(sharedPlan.commands.flatMap(command=>command.split(' ')).filter(word=>word===file).length,1,
+        'Every shared scalar/updater target runs once: '+file);
     const mixed=select([...paths,'CHANGELOG.md','scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'],
       'synthetic mixed documentation and owner controls');
     assert.equal(mixed.selection,'CURRENT_CONTRACTS');assert.equal(mixed.controlQualificationRequired,true);
@@ -2611,7 +2628,7 @@ function collect(file){
     // END FOCUSED HISTORICAL UPDATER OWNER CASES
     console.log(JSON.stringify({kind:'FOCUSED_NEW_WEATHER_OWNER_SELECTION_CASES',cases:checked,passed:checked,
       realIsolatedGit:true,modelsAndSqlExecuted:false,wholeCurrentExecuted:false,production:false,
-      expectedUpdaterCommands:20,expectedWaterCommands:4,expectedRuntimeCommands:5,
+      expectedUpdaterCommands:20,expectedWaterCommands:4,expectedRuntimeCommands:5,expectedScalarCommands:3,
       wholeRuntimeAuditStillRequired:true,sourceInputProfile:budgetPlan.inputProfile.id}));
   }finally{
     assert.equal(path.dirname(fs.realpathSync(root)),temp);
