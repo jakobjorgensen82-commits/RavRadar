@@ -1,3 +1,7 @@
+## 22. november — R2-plads ved vejrarkiver og databasebackup
+
+Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lageropslagene før den første nye arkivfil og før upload af rotationsmarkøren. Den normale backupplan rapporterer målt lagerplads, når den kan læse den. Det samme lageropslag bruges fortsat til hver adgangskontrol. Offentlig prognose, bevaringsregler, sletning og adgang er uændrede. Måling i almindelig drift og Free-budget over hele fakturaperioden afventer.
+
 ## 22. november — tysk AI-svar afvist efter assistentudgivelsen
 
 Den offentligt leverede assistent gav validerede eksterne AI-svar i den danske og engelske prøve. Den tyske prøve fik HTTP 502 omkring kl. 00.44 dansk tid. Den allerede installerede logmarkør kan angive svarets form eller afkortning ved udtræksfejl.
