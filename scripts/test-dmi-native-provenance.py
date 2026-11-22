@@ -2716,6 +2716,7 @@ try:
         assert terminal_events[0][0][:3] == ("partial", 0, 0)
         assert terminal_events[0][1]["terminal_code"] == "DMI_CACHE_ONLY_PARTIAL"
         assert terminal_events[0][1]["strict_current_anchor_ready"] is False
+        assert terminal_events[0][1]["wave_acquisition_report_ready"] is False
         assert terminal_document["diagnostics"]["currentOperationalLedger"]["ready"] is False
         assert terminal_document["diagnostics"]["currentOperationalLedger"] == older_ledger
         assert producer.PROMOTION_PATH.read_bytes() == before_active

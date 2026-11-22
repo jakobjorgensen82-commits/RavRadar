@@ -19082,7 +19082,9 @@ def main() -> int:
         productive=producer_productive,
         diagnostics=diag,
     )
-    wave_report_ready = write_ordinary_wave_acquisition_report(result, locked_production_reference)
+    wave_report_ready = not CACHE_ONLY and write_ordinary_wave_acquisition_report(
+        result, locked_production_reference,
+    )
     write_github_outputs(
         result["refreshStatus"], fresh_successes, fresh_partials,
         len(result["zones"]), budget["bytes"],
