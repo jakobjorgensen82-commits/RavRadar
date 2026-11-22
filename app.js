@@ -712,14 +712,14 @@ async function submitAssistantQuestion(question){
       (daylightFollowup??findFollowup??assistantLocalFollowupAnswer(clean,previous,frame.language));
     const assistantIntent=classifyRavQuestion(routedQuestion);
     const needsDetails=ravQuestionNeedsConditionDetails(routedQuestion,assistantContext());
-      const zoneDataIntent=['current','waves','water','model','limitations'].includes(assistantIntent);
-      if(followup===null&&!coreViewReady&&(forecast||needsDetails||(state.selectedZone&&zoneDataIntent))){
-        const ready=await initialDataReady;
-        if(!ready||turn!==assistantTurn||frame.language!==getLanguage())throw new Error(t('data.loadError'));
-        frame=assistantTopicFrame();
-      }
+    const zoneDataIntent=['current','waves','water','model','limitations'].includes(assistantIntent);
+    if(followup===null&&!coreViewReady&&(forecast||needsDetails||(state.selectedZone&&zoneDataIntent))){
+      const ready=await initialDataReady;
+      if(!ready||turn!==assistantTurn||frame.language!==getLanguage())throw new Error(t('data.loadError'));
+      frame=assistantTopicFrame();
+    }
     const usesCurrentZone=activeLandingView&&state.selectedZone
-        &&zoneDataIntent;
+      &&zoneDataIntent;
     if(followup===null&&(needsDetails||usesCurrentZone)){
       const requestZone=state.selectedZone,requestMode=state.mode,requestGeneration=runtimeGeneration;
       const needsZone=activeLandingView&&requestZone&&needsDetails&&assistantIntent!=='best-place';
