@@ -23,3 +23,7 @@ Candidate G, 20/50/30, scorekurver, transport-, bølge-, mobiliserings- og lever
 ## 22. november 2026 — assistentknap under kold opstart
 
 Headerens assistentknap starter deaktiveret og aktiveres umiddelbart efter montering af dens eksisterende klikhandler. Det forhindrer synligt tilgængelige klik uden handling under langsom modulindlæsning. Aktiveringen venter ikke på prognosedata; samme dialog, emnenulstilling og danske, tyske og engelske tekster bevares. HTML, bootstrap og service-worker følger samme nye cacheadresse. Rettelsen ændrer hverken assistentens netkald, numeriske bindinger, SQL eller ekstern AI. Lokal browser-/kildeprøve er ikke offentlig levering eller samlet AI-accept.
+
+## 22. november 2026 – dagslysopfølgning med kendt UV-lampe
+
+En hel dagslysopfølgning efter assistentens allerede kendte UV-lampeemne genbruger den eksisterende lokale forklaring på dansk, tysk og engelsk. Svaret forklarer dagslysets kontrast og bevarer forbeholdet om, at andre materialer også kan lyse. Samtalens normale sprog-, kontekst- og nulstillingsgrænser gælder fortsat. Andre emner og blandede ekstra ønsker følger hele det normale spørgsmål. Den eksisterende udstyrsopfølgning bevarer sin eksterne rute. App, bootstrap og service-worker bruger en sammenhængende ny cacheadresse til den ændrede hjælper. Faktisk offentlig brugeraccept følger den normale kildekvalifikation og levering.

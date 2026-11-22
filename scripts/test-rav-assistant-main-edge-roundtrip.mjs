@@ -184,7 +184,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
   assert.equal(typeof edgeHandler, 'function');
   const { askRavRadar, classifyRavQuestion, routeRavQuestion } = await import('../js/services/rav-assistant.js');
   const { t } = await import('../js/i18n.js');
-  const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup}=await import('../js/services/rav-assistant-public-help.js');
+  const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup}=await import('../js/services/rav-assistant-public-help.js');
 
   const answers = {
     da: 'En lav RavScore udelukker ikke et ravfund. Scoren beskriver modellerede forhold; den er ikke en målt fundchance og fortæller ikke, hvor meget rav du vil finde. Rav kan stadig være til stede fra tidligere opskyl eller lokale lagre.',
@@ -1492,7 +1492,7 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
         assistantTopicForQuestion: service.assistantTopicForQuestion,
         assistantLocalFollowupAnswer: service.assistantLocalFollowupAnswer,
         assistantPublicFollowupQuestion: service.assistantPublicFollowupQuestion,
-        publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup,
+        publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup,
         ravQuestionNeedsConditionDetails: service.ravQuestionNeedsConditionDetails,
         askRavRadar: async (...args) => {
           const answer = await service.askRavRadar(...args);
@@ -2423,7 +2423,7 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
       assistantTopicForQuestion: service.assistantTopicForQuestion,
       assistantLocalFollowupAnswer: service.assistantLocalFollowupAnswer,
       assistantPublicFollowupQuestion: service.assistantPublicFollowupQuestion,
-      publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup,
+      publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup,
       ravQuestionNeedsConditionDetails: service.ravQuestionNeedsConditionDetails,
       ensureConditionDetails: async () => {}, assistantContext: () => context,
       askRavRadar, t: (key, args) => t(key, args, browserLanguage),

@@ -87,7 +87,8 @@ const previousMapSuffix = `${previousTransportSuffix}&map=plain-map-v3-20261104`
 const assistantSuffix = `${previousMapSuffix}&assistant-topic=wind-followup-20261110&assistant-find=20261119`;
 const previousHelpSuffix = `${assistantSuffix}&assistant-help=20261120`;
 const previousReadySuffix = `${assistantSuffix}&assistant-help=20261121`;
-const suffix = `${previousReadySuffix}&assistant-ready=20261122`;
+const previousDaylightSuffix = `${previousReadySuffix}&assistant-ready=20261122`;
+const suffix = `${previousDaylightSuffix}&assistant-followup=daylight-20261122`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
@@ -142,7 +143,7 @@ const cached = new Map([
 ]);
 const previousDeliveredAssets = [
   [previousPanelSuffix, 'panel'], [previousAssistantSuffix, 'assistant'], [previousDomainSuffix, 'domain'],
-  [previousTransportSuffix, 'transport'], [previousMapSuffix, 'map'], [previousHelpSuffix, 'help'], [previousReadySuffix, 'ready'],
+  [previousTransportSuffix, 'transport'], [previousMapSuffix, 'map'], [previousHelpSuffix, 'help'], [previousReadySuffix, 'ready'], [previousDaylightSuffix, 'startup-ready'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
@@ -180,9 +181,11 @@ for (const file of ['bootstrap.js', 'app.js']) {
     'The exact new UI asset must be reusable from its own cache key.');
 }
 const oldHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261120`;
-const helpPath = `./js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261121`;
+const helpPath = `./js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261121&followup=daylight-20261122`;
 assert.ok(app.includes(`from "${helpPath}"`));
 cached.set(oldHelpUrl, new Response('old-help-module'));
+const previousHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261121`;
+cached.set(previousHelpUrl, new Response('previous-help-module'));
 const helpRequest = {method:'GET',mode:'cors',url:new URL(helpPath, origin).href};
 for (let pass = 0; pass < 2; pass++) {
   let response;
@@ -190,6 +193,7 @@ for (let pass = 0; pass < 2; pass++) {
   assert.equal(await (await response).text(), `new:${helpRequest.url}`);
 }
 assert.equal(await cached.get(oldHelpUrl).clone().text(), 'old-help-module');
+assert.equal(await cached.get(previousHelpUrl).clone().text(), 'previous-help-module');
 const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, helpRequest.url];
 assert.deepEqual(fetched, startupRequests);
 

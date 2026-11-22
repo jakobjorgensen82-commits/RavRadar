@@ -14,7 +14,7 @@ import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.602&ui=account-20261006";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.602";
 import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.602";
-import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.602&ui=public-help-20261121";
+import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.602&ui=public-help-20261121&followup=daylight-20261122";
 import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.602";
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.602";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.602";
@@ -702,11 +702,12 @@ async function submitAssistantQuestion(question){
     const publicHelp=publicRavAssistantHelp(clean,frame.language);
     if(publicHelp){pending.querySelector("p").textContent=publicHelp.answer;pending.classList.remove("loading");return;}
     const forecast=assistantForecastQuestion(clean,previous);
-    const knowledgeQuestion=forecast?null:assistantPublicFollowupQuestion(clean,previous,frame.language);
+    const daylightFollowup=forecast?null:publicRavAssistantDaylightFollowup(clean,previous,frame.language);
+    const knowledgeQuestion=forecast||daylightFollowup!==null?null:assistantPublicFollowupQuestion(clean,previous,frame.language);
     const routedQuestion=forecast?.question??knowledgeQuestion??clean;
     const findFollowup=forecast||knowledgeQuestion?null:publicRavAssistantFindFollowup(clean,previous,frame.language);
     const followup=forecast||knowledgeQuestion?null:
-      (findFollowup??assistantLocalFollowupAnswer(clean,previous,frame.language));
+      (daylightFollowup??findFollowup??assistantLocalFollowupAnswer(clean,previous,frame.language));
     const assistantIntent=classifyRavQuestion(routedQuestion);
     const needsDetails=ravQuestionNeedsConditionDetails(routedQuestion,assistantContext());
     const usesCurrentZone=activeLandingView&&state.selectedZone
