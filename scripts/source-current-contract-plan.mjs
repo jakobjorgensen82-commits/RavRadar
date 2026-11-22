@@ -574,6 +574,7 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/verify-account-assistant-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-account-erasure-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-code-only-migration-plan.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
+  'scripts/read-fixed-account-activity-hook.mjs':['node --test scripts/test-fixed-account-activity-hook.mjs'],
   'supabase/functions/_shared/account-inactivity-notice.js':[TRIP_LOG_SOURCE_TEST],
   'supabase/functions/_shared/account-lifecycle.js':[TRIP_LOG_SOURCE_TEST,...COMMANDS.ownerErasure],
   'supabase/functions/_shared/inactivity-notice-mail.mjs':[TRIP_LOG_SOURCE_TEST],
