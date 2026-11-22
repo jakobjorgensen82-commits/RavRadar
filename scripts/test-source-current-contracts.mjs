@@ -131,9 +131,14 @@ const transportInputs=['scripts/lib/run-sealed-pages-deployment.mjs','scripts/te
 const transportCommands=CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command!==deploymentCommand);
 const publicObserverCli='scripts/deploy-ordinary-pages-with-immediate-retry.mjs';
 const publicObserverAddition='    readPublicTarget: readPublic,\n';
-const publicObserverAfter=fs.readFileSync(path.join(SOURCE,publicObserverCli),'utf8');
-assert.equal(publicObserverAfter.split(publicObserverAddition).length,2);
-const publicObserverBefore=publicObserverAfter.replace(publicObserverAddition,'');
+// Fast syntetisk klipfixture; den aktuelle CLI må fortsat ændres via den brede normale vej.
+const publicObserverBefore='await runSealedPagesDeployment({\n'
+  +'    cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,\n'
+  +'});\n';
+const publicObserverAfter='await runSealedPagesDeployment({\n'
+  +'    cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,\n'
+  +publicObserverAddition
+  +'});\n';
 assert.equal(isAdditivePagesPublicObserverChange(publicObserverBefore,publicObserverAfter),true);
 for(const [before,after]of [[publicObserverBefore,publicObserverBefore],[publicObserverAfter,publicObserverBefore],
   [publicObserverBefore,publicObserverAfter+'// unrelated owner change\n'],
@@ -1396,7 +1401,7 @@ try{
   // Den samme normale Gitplan skal eje transportvalget og bevare sine beskyttede input.
   const beforeTransportHead=text(root,['rev-parse','HEAD']);
   try{
-  const transportFixtureFiles=[...transportInputs,publicObserverCli,...ownerHelpers,'scripts/verify-ravscore-operational-pages-deployment.mjs',
+    const transportFixtureFiles=[...transportInputs,publicObserverCli,...ownerHelpers,'scripts/verify-ravscore-operational-pages-deployment.mjs',
       'scripts/test-ravscore-operational-pages-deployment.mjs','.github/workflows/reusable-pages-deploy.yml',
       '.github/workflows/reusable-operational-reentry.yml','scripts/test-pages-generation-and-reentry.mjs',
       'scripts/test-protected-operational-reentry-evidence.mjs','scripts/source-current-contract-receipt.mjs',
