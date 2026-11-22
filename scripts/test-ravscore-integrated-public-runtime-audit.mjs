@@ -953,12 +953,15 @@ for (const publicDestination of [
     'the private Feggesund proof chain must not enter public payloads',
   );
 }
-const savedFeggesundProof = national.coastalParts.waveInputProofs.feggesund;
-delete national.coastalParts.waveInputProofs;
-assert.ok(audit(national, nationalPackage, 210, 673).errors
+// Both ledger cases run the same auditor and all 354 Feggesund entries.
+const feggesund = syntheticFull({ zoneCount: 1, partCounts: [3], includeFeggesund: true });
+const feggesundPackage = publicPackage(feggesund);
+const savedFeggesundProof = feggesund.coastalParts.waveInputProofs.feggesund;
+delete feggesund.coastalParts.waveInputProofs;
+assert.ok(audit(feggesund, feggesundPackage, 1, 3).errors
   .includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
-'a national 210/673 runtime must fail without its exact Feggesund proof ledger');
-national.coastalParts.waveInputProofs = { feggesund: savedFeggesundProof };
+'the runtime must reject a Feggesund zone without its exact proof ledger');
+feggesund.coastalParts.waveInputProofs = { feggesund: savedFeggesundProof };
 const missingProofEntry = buildFeggesundWaveInputProofEntry({
   partId: savedFeggesundProof.entries[0].partId,
   time: savedFeggesundProof.entries[0].time,
@@ -974,10 +977,10 @@ const missingProofEntry = buildFeggesundWaveInputProofEntry({
     },
   },
 });
-let oneMissingFeggesundHour = {
-  ...national,
+const oneMissingFeggesundHour = {
+  ...feggesund,
   coastalParts: {
-    ...national.coastalParts,
+    ...feggesund.coastalParts,
     waveInputProofs: {
       feggesund: buildFeggesundWaveCoverageProof({
         forecastStartAt: savedFeggesundProof.forecastStartAt,
@@ -991,14 +994,14 @@ let oneMissingFeggesundHour = {
 };
 const oneMissingFeggesundHourReport = audit(
   oneMissingFeggesundHour,
-  nationalPackage,
-  210,
-  673,
+  feggesundPackage,
+  1,
+  3,
 );
 assert.equal(
   oneMissingFeggesundHourReport.errors.includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
   false,
-  'an honestly materialized local MISSING Feggesund hour must not block the national runtime',
+  'an honestly materialized local MISSING Feggesund hour must satisfy the coverage-ledger check',
 );
 assert.deepEqual(
   {
@@ -1008,7 +1011,6 @@ assert.deepEqual(
   { acceptedEntries: 353, missingEntries: 1 },
   'the final audit must preserve exact local Feggesund coverage accounting',
 );
-oneMissingFeggesundHour = null;
 assert.equal(nationalReport.continuation.continuedStateCount, 673);
 assert.equal(nationalReport.continuation.uniqueSamplingContextCount, 673);
 assert.deepEqual(nationalReport.history, {

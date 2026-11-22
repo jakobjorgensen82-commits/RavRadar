@@ -10,6 +10,8 @@ Den normale producent opdeler sine eksisterende `weather-build-stage`-hændelser
 
 Tiderne følger den eksisterende lokale vægklokke og giver ingen kilde-, budget- eller leveringsautoritet. Vejrdata, kildevalg, score, rækkefølge og kontroller bevares. Den lokale prøve beviser kald og dataadskillelse. Først en almindelig kørsel på den kvalificerede kilde kan vise, hvor meget arbejde hver fase faktisk tager. Målingen er ikke en dokumenteret tidsbesparelse.
 
+GitHub-kørslen 45081775511 med den nye vejrmåling nåede gennem den landsdækkende prøve og LF7-ruteprøven. Den samlede prøve ramte femminuttersgrænsen under kontrollen af gemte timefiler. De to lokale fejlsituationer for Feggesund kontrolleres med samme audit og alle 118 timer for hver af Feggesunds tre kystdele. Begge landsdækkende gennemløb med 210 zoner og 673 kystdele, kontrollen af gemte timefiler og femminuttersgrænsen består.
+
 ## 21. november — lokal kandidat til afgrænset fejlgemning
 
 Kun en terminalt fejlet almindelig `integrated`-vejrhentning kan bruge den nye forseglingsvej. Den kræver den normale autentificerede gendannelse og allerede bekræftet fysisk lukning af de forsøgte leverandørkald. En kørsel, der fortsætter gennem normal fallback, bruger den hidtidige gemning.
