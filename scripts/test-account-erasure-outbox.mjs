@@ -207,3 +207,98 @@ test('current79 app qualification CLI refuses before transport without the norma
   assert.equal(result.status,1);assert.equal(result.stdout,'');assert.equal(result.stderr.trim(),'ACCOUNT_ERASURE_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED');
  }
 });
+
+// Current80 installer protocol only. No native server, hosted data or write is used.
+test('current80 receipt finite installer stages one exact append and preserves old79 OFF admission',async()=>{
+ const path=await import('node:path'),os=await import('node:os');
+ const cutover=await import('./integrated-cutover-readiness.mjs');
+ const work=await fs.promises.mkdtemp(path.join(os.tmpdir(),'rr-receipt80-install-'));
+ const required=cutover.REQUIRED_CUTOVER_MIGRATIONS,pair=ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,receipt=cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION;
+ const local=[...required,...pair,receipt],remote=new Set([...required,...pair].map(r=>r.version));
+ const list=(selected=local,installed=remote)=>'Local | Remote | Time\n'+selected.map(row=>row.version+' | '+(installed.has(row.version)?row.version:'')+' |').join('\n');
+ const dry=names=>'DRY RUN: migrations will *not* be pushed to the database.\n'+(names.length?'Would push these migrations:\n'+names.map(name=>' • '+name).join('\n')+'\nFinished supabase db push.':'Remote database is up to date.');
+ try{
+  const prepared=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:work,includeAccountNativeReceiptSource:true});
+  assert.equal(required.length,66);assert.equal((await fs.promises.readdir(prepared.migrationsDirectory)).length,69);
+  for(const row of local)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),await fs.promises.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)));
+  const input={migrationListText:list(),dryRunText:dry([receipt.filename]),migrationsDirectory:prepared.migrationsDirectory};
+  assert.deepEqual((await cutover.assertSupabaseMigrationPlan({...input,allowAccountNativeReceiptPlan:true})).pendingVersions,[receipt.version]);
+  await assert.rejects(cutover.assertSupabaseMigrationPlan(input));
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,allowAccountErasurePlan:true}));
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,allowAccountNativeReceiptPlan:true,allowAccountErasurePlan:true}));
+  for(const row of [required.at(-1),...pair]){const missing=new Set(remote);missing.delete(row.version);await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list(local,missing),allowAccountNativeReceiptPlan:true}));}
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,dryRunText:dry(pair.map(r=>r.filename)),allowAccountNativeReceiptPlan:true}));
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list([...local,{version:'20261122999999'}]),allowAccountNativeReceiptPlan:true}));
+  const filename=path.join(prepared.migrationsDirectory,receipt.filename),original=await fs.promises.readFile(filename);
+  await fs.promises.appendFile(filename,'-- SYNTHETIC_CHANGED_APPEND\n');await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,allowAccountNativeReceiptPlan:true}));await fs.promises.writeFile(filename,original);
+  remote.add(receipt.version);
+  assert.deepEqual((await cutover.assertSupabaseMigrationPlan({...input,migrationListText:list(),dryRunText:dry([]),allowAccountNativeReceiptPlan:true})).pendingVersions,[]);
+  assert.equal(cutover.assertSupabaseMigrationsApplied(list(),{requireAccountNativeReceipt:true}).appliedVersions.length,66);
+  // Actual CLI dispatch on synthetic files; no credentials or SQL execution.
+  const listFile=path.join(work,'list.txt'),dryFile=path.join(work,'dry.txt');await fs.promises.writeFile(listFile,list());await fs.promises.writeFile(dryFile,dry([]));
+  const {spawnSync}=await import('node:child_process');const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  Object.assign(env,{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'apply-binding',RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN:'true',GITHUB_WORKFLOW_REF:'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main'});
+  const args=['scripts/verify-code-only-migration-plan.mjs','--account-native-receipt-plan','--migration-list',listFile,'--dry-run',dryFile,'--migrations-directory',prepared.migrationsDirectory];
+  const result=spawnSync(process.execPath,args,{env,encoding:'utf8',timeout:15000});assert.equal(result.status,0,result.stderr);assert.deepEqual(JSON.parse(result.stdout).pendingVersions,[]);
+  for(const extra of ['--enable','--account-erasure-plan'])assert.notEqual(spawnSync(process.execPath,[...args,extra],{env,encoding:'utf8',timeout:15000}).status,0);
+ }finally{const absolute=path.resolve(work);assert(path.dirname(absolute)===path.resolve(os.tmpdir())&&path.basename(absolute).startsWith('rr-receipt80-install-'));await fs.promises.rm(absolute,{recursive:true,force:true});}
+});
+
+test('current80 applied receipt hydrates exact source for ordinary successors without granting a pending write',async()=>{
+ const path=await import('node:path'),os=await import('node:os'),cutover=await import('./integrated-cutover-readiness.mjs');
+ const work=await fs.promises.mkdtemp(path.join(os.tmpdir(),'rr-receipt80-applied-'));
+ try{
+  const prepared=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:work});
+  const prior=cutover.REQUIRED_CUTOVER_MIGRATIONS,extra=[...ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION];
+  const list='Local | Remote | Time\n'+[...prior.map(r=>r.version+' | '+r.version+' |'),...extra.map(r=>' | '+r.version+' |')].join('\n');
+  assert.deepEqual((await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list})).placeholders,[]);
+  for(const row of extra)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),await fs.promises.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)));
+  await assert.rejects(cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list+'\n | 20261122999999 |'}));
+ }finally{const absolute=path.resolve(work);assert(path.dirname(absolute)===path.resolve(os.tmpdir())&&path.basename(absolute).startsWith('rr-receipt80-applied-'));await fs.promises.rm(absolute,{recursive:true,force:true});}
+});
+
+test('current80 installation readback is fixed metadata only and refuses enabled armed or changed OFF state',async()=>{
+ const {verifyFixedNativeActivityReceiptInstallState,readFixedNativeActivityReceiptSource}=await import('./read-fixed-account-activity-hook.mjs');
+ const manual=metadata(),off=inactivityMetadata(),manualRef=accountErasureCheckReference(manual[0].metadata.checks),offRef=verifyAccountInactivityCatalogMetadata(off).checkReference,append=readFixedNativeActivityReceiptSource();
+ for(const row of Object.values(off[0].metadata.tables))row.owner='postgres';for(const row of Object.values(off[0].metadata.functions))row.owner='postgres';
+ const installed=structuredClone(off);installed[0].authAdminPublicUsage=true;installed[0].policyEpoch='60000000-0000-4000-8000-000000000001';installed[0].observedAt='2026-11-23T12:00:00.000000Z';
+ installed[0].metadata.functions.account_native_activity_token_hook.bodySha256=append.hookBodySha256;
+ installed[0].metadata.tables.account_native_activity_receipt={...structuredClone(off[0].metadata.tables.account_inactivity_policy),columns:[['singleton','bool',true,true,0],['arm_epoch','uuid',true,true,0],['coverage_epoch','uuid',false,false,0],['armed_at','timestamptz',false,false,0],['native_started_at','timestamptz',false,false,0],['native_captured_at','timestamptz',false,false,0]],checks:7,constraintCount:8};
+ installed[0].receipt=[{armEpoch:'60000000-0000-4000-8000-000000000002',coverageEpoch:null,armedAt:null,nativeStartedAt:null,nativeCapturedAt:null}];
+ const options={accessToken:'SYNTHETIC',expectedManualCheckReference:manualRef,expectedInactivityCheckReference:offRef,expectedAppendSha256:append.sha256};
+ const run=async(phase,change=()=>{})=>{const current=structuredClone(installed),config={hook_custom_access_token_enabled:false,hook_custom_access_token_uri:''};change(current,config);let calls=0;
+  const result=await verifyFixedNativeActivityReceiptInstallState({...options,phase,fetchImpl:async(url,request)=>{calls++;
+   if(url.endsWith('/config/auth')){assert.equal(request.method,'GET');return Response.json(config);}
+   assert.equal(request.method,'POST');const body=JSON.parse(request.body);assert.equal(body.read_only,true);
+   if(body.query===accountErasureCatalogQuery)return Response.json(manual,{status:201});
+   if(body.query===accountInactivityCatalogQuery)return Response.json(off,{status:201});
+   if(body.query.includes('account_native_activity_receipt'))return Response.json(current,{status:201});
+   assert(body.query.includes('authAdminPublicUsage'));return Response.json([{metadata:off[0].metadata,authAdminPublicUsage:true}],{status:201});
+  }});return {result,calls};};
+ for(const phase of ['before','installed']){const {result,calls}=await run(phase);assert.equal(calls,phase==='before'?4:3);assert.equal(result.activityEligibility,'HOLD');assert.equal(result.originalOffCheckExpressionSemanticsVerified,true);for(const key of ['coverageStarted','noticesEnabled','automaticDeletionEnabled','activationAuthority'])assert.equal(result[key],false);}
+ for(const mutate of [(rows,c)=>c.hook_custom_access_token_enabled=true,(rows,c)=>c.hook_custom_access_token_uri='pg-functions://postgres/public/unknown',rows=>rows[0].metadata.policy.noticesEnabled=true,rows=>rows[0].metadata.checks.definitions[0][1]='CHECK (true)',rows=>{rows[0].receipt[0].armedAt='2026-11-23T11:00:00.000000Z';rows[0].receipt[0].coverageEpoch=rows[0].policyEpoch;}])await assert.rejects(run('installed',mutate));
+ let calls=0;await assert.rejects(verifyFixedNativeActivityReceiptInstallState({...options,phase:'enable',fetchImpl:async()=>{calls++;}}));assert.equal(calls,0);
+});
+
+test('current80 normal workflow binds qualification finite plan and inactive readback without an activation caller',async()=>{
+ const workflow=fs.readFileSync(new URL('../.github/workflows/apply-weather-model-binding-only.yml',import.meta.url),'utf8');
+ assert.match(workflow,/install_account_native_receipt:[\s\S]*?default: false/);assert(workflow.includes('APPLY-ACCOUNT-NATIVE-RECEIPT'));
+ assert(workflow.includes('group: ravradar-weather-production-v2'));assert(workflow.includes('group: ravradar-trip-storage-production'));
+ const qual=workflow.indexOf('run: node scripts/verify-code-only-migration-plan.mjs --qualify-account-native-receipt-source');
+ const view=workflow.indexOf('extra_app_source+=(--account-native-receipt-source)');
+ const apply=workflow.slice(workflow.indexOf('      - name: Apply only the dry-run-verified binding migration'),workflow.indexOf('      - name: Read back applied migration'));
+ assert(qual>workflow.indexOf('Require existing source proof')&&view>qual);
+ assert(apply.indexOf('supabase migration list --linked')<apply.indexOf('--account-native-receipt-plan'));
+ assert(apply.indexOf('--account-native-receipt-plan')<apply.indexOf('--read-account-native-receipt-before'));
+ assert(apply.indexOf('--read-account-native-receipt-before')<apply.indexOf('git fetch --no-tags origin'));
+ assert(apply.indexOf('git fetch --no-tags origin')<apply.indexOf('supabase db push --linked --skip-vault'));
+ assert.equal(apply.split('supabase db push --linked --skip-vault').length,2);
+ assert(workflow.includes('extra_app_readback+=(--account-native-receipt)'));assert(workflow.includes('run: node scripts/verify-code-only-migration-plan.mjs --read-account-native-receipt-installed'));
+ assert(workflow.includes('inputs.install_account_erasure != true && inputs.install_account_native_receipt != true'));
+ assert(!/--enable|--disable|fixedNativeActivityReceiptArmQuery/.test(workflow));
+});
+
+test('current80 installation proof modes refuse before transport without exact owned FULL authority',async()=>{
+ const {spawnSync}=await import('node:child_process');const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+ for(const mode of ['--qualify-account-native-receipt-source','--read-account-native-receipt-before','--read-account-native-receipt-installed']){const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],{env,encoding:'utf8',timeout:15000});assert.equal(result.status,1);assert.equal(result.stdout,'');assert.equal(result.stderr.trim(),'ACCOUNT_NATIVE_RECEIPT_QUALIFIED_INSTALL_EVIDENCE_REQUIRED');}
+});

@@ -1,3 +1,29 @@
+## 23. november — lokal finite receipt80-installation med OFF-readback
+
+- [x] Klargør ét særskilt default-false valg i den eksisterende backend-installationsworkflow; kun den eksakte append må være pending efter alle installerede forgængere. Allerede installeret SQL genlæses uden push, og normale efterfølgere bevarer dens faktiske kilde.
+- [x] Bind source/native80-kvalifikation, gamle CHECK-facit, Auth-disabled førkontrol, frisk dry-run/main og uarmeret UNKNOWN/OFF/HOLD efterkontrol. De eksisterende lokale konto-/Auth-mål består; de gamle79-SQL, OFF-orakler og numeriske C/I/T er bevaret.
+- [ ] Faktisk native PostgreSQL80 og præcis source-PR-kvalifikation samt hosted installation/readback er stadig åbne. Ingen arm, Auth-enable, coverage-start, varsling, mail eller sletning er udført eller tilkoblet af denne installationsfølge.
+
+## 23. november — current80-caller og direkte PG-afhængighed
+
+- [x] Flyt kun fast migrations-/source-/arm-data til ét fælles sourceblad og registrér det positivt som80-afhængighed. Historisk79-input ændres ikke.
+- [x] Tilknyt den faktiske ni-case-fixture i den eksisterende native kalder og kræv en særskilt current80-facet gennem decoder og slutrecord. Originale49/17-facit og79-payloads bevares som deres egen scope.
+- [x] Afprøv de nye ikke-native kontrakter: Auth, særskilt80-decoder, normal A/B-dispatch, kvalificeret FULL-resultat og faktisk Git-inputafhængighed. De afgrænsede cases består; de større parentforløb er ikke samlet afsluttet lokalt og kræver normal Linux-kontrol.
+- [ ] Kør faktisk native PostgreSQL gennem den eksisterende kilde-PR-vej. Ingen egnet lokal runtime er fundet; de ni SQL-cases og80-kvalifikation er stadig UNRUN. De normale migrations-/live-læse- og aktiveringsled er fortsat separate, uden hosted handlinger.
+
+## 22. november — native receipt-append er ikke installeret
+
+- [x] Forbered én append med bounded engangskvittering og særskilt fast metadata-læser. De gamle SQL- og OFF-kontrakter er bevaret; normal klient-RPC, claims, capture/invalidation og manuelle slettebarrierer er uændrede.
+- [x] Kør syntaks på de tre ændrede JavaScript-moduler og det eksisterende Auth-mål med de seks nye kilde-/privacy-/afslagsgrene. Det er mock-/kildebevis, ikke udført SQL eller hosted Auth.
+- [ ] Kør de ni forberedte cases på den eksisterende ejede native PostgreSQL-vært. Ingen egnet lokal runtime var tilgængelig; intet er installeret eller startet. En faktisk GoTrue-/Auth-responseaccept er fortsat særskilt.
+- [ ] Tilknyt appendens egen normale migrations-/læsevej og faktiske native kvalifikation før installation og arm. Den hidtidige normale katalogmode bevarer sit gamle kildegrundlag og kan ikke bruges som accept af den nye body. Dækningsstart, automatisk kandidatvalg, varsel og sletning er ikke åbnet.
+
+## 22. november — dækningsstart afventer autentisk Auth-accept
+
+- [x] Klargør særskilt fast, skrivefri policygenlæsning hos den eksisterende kontoaktivitetsejer. Den bevarer serverens datoer og epoch som metadata og giver fortsat HOLD uden aktiverings- eller sletteautoritet.
+- [x] Afprøv læserens normale syntetiske mål og bevar den eksisterende OFF-installationsprøve. De lokale mål består; det er ikke en hosted policyaflæsning.
+- [ ] Bind den senere parameterløse, fremadrettede dækningsstart til faktisk tidsstemplet Auth-accept og den samme lukkede epoch; der er endnu ingen normal acceptkvittering eller start-dispatch. Automatisk kandidatvalg, varsel, leveringsaccept og sikker fristudløbsbehandling er fortsat separate åbne led.
+
 ## 22. november — holdt skrivelås ved fejlworkerens frist
 
 - [x] Genskab forsinket låse-I/O før upload og efter bevist fysisk ophør. Den lokale kandidat afslutter terminalhandlingen med fejl inden for den fælles frist uden en positiv uploadkvittering. En afsendt fjernelse af låsefilen regnes som uafklaret.
