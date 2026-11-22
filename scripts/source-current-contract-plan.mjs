@@ -107,6 +107,10 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-release-contract-metadata.mjs',
   ],
   ownedCacheNative:[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND],
+  syntheticCacheRecoveryFixture:[
+    'node --test scripts/test-owned-cache-cross-runner.mjs',
+    'node scripts/test-github-action-versions.mjs',
+  ],
   rawCacheRotation:[RAW_CACHE_ROTATION_SOURCE_COMMAND],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
@@ -341,6 +345,12 @@ const PATH_AREAS=freeze({
     'scripts/run-owned-dmi-grib-save.py',
     'scripts/test-owned-dmi-grib-save-native.py',
     'scripts/test-owned-dmi-cache-dependency.mjs',
+  ],
+  syntheticCacheRecoveryFixture:[
+    '.github/actions/prove-synthetic-cache-recovery/action.yml',
+    '.github/actions/prove-synthetic-cache-recovery/index.cjs',
+    '.github/workflows/verify-synthetic-owned-cache-recovery.yml',
+    'scripts/test-owned-cache-cross-runner.mjs',
   ],
   sourceControls:[
     '.github/workflows/validate-pull-request.yml',

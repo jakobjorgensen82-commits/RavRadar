@@ -1,0 +1,145 @@
+name: Verify synthetic cache caller receipt loss and separate runner restore
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: PROVE-SYNTHETIC-CACHE-CALLER-RECEIPT-LOSS
+        required: true
+        type: string
+      expected_main_head:
+        description: Exact reviewed current main with live qualified source proof
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: ravradar-synthetic-cache-recovery-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    name: Commit only synthetic cipher and lose the caller receipt
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.expected_main_head }}
+      - name: Require exact current main and fixed synthetic confirmation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ inputs.expected_main_head }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = PROVE-SYNTHETIC-CACHE-CALLER-RECEIPT-LOSS
+          [[ "$EXPECTED_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_HEAD"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$EXPECTED_HEAD"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require live qualified exact-main source
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/weather-source-gate.mjs check
+      - name: Refuse missing source qualification
+        env:
+          SOURCE_REQUIRED: ${{ steps.source.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install only the existing locked SDK without scripts
+        working-directory: .github/actions/save-owned-dmi-grib
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify the existing locked official SDK
+        run: node scripts/test-owned-dmi-cache-dependency.mjs
+      - name: Exercise synthetic committed cache with withheld caller result
+        uses: ./.github/actions/prove-synthetic-cache-recovery
+        env:
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+        with:
+          mode: produce
+      - name: Retain only the fixed aggregate producer receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: synthetic-cache-producer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-synthetic-cache-proof/producer.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  restore:
+    name: Authenticate the exact synthetic cache on a different Linux boot
+    needs: produce
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.expected_main_head }}
+      - name: Require the same exact current main and confirmation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ inputs.expected_main_head }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = PROVE-SYNTHETIC-CACHE-CALLER-RECEIPT-LOSS
+          [[ "$EXPECTED_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_HEAD"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$EXPECTED_HEAD"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require live qualified exact-main source again
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/weather-source-gate.mjs check
+      - name: Refuse missing source qualification
+        env:
+          SOURCE_REQUIRED: ${{ steps.source.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install only the existing locked SDK without scripts
+        working-directory: .github/actions/save-owned-dmi-grib
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify the existing locked official SDK
+        run: node scripts/test-owned-dmi-cache-dependency.mjs
+      - name: Read only this attempt's fixed producer receipt
+        uses: actions/download-artifact@v8
+        with:
+          name: synthetic-cache-producer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-synthetic-cache-received
+      - name: Require new boot and normal exact SDK and authenticated restore
+        uses: ./.github/actions/prove-synthetic-cache-recovery
+        env:
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+        with:
+          mode: restore
+      - name: Retain only the fixed aggregate restore report
+        uses: actions/upload-artifact@v7
+        with:
+          name: synthetic-cache-restore-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-synthetic-cache-proof/restore.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
