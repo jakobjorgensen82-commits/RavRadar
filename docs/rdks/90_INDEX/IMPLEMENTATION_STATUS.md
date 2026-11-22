@@ -1,3 +1,8 @@
+## 22. november — faktisk R2-lagerplads i den normale drift
+
+- [x] Genbrug eksisterende lageropslag i publicering og backupplan. Den lokale prøve dækker også ukendt startmåling og uafsluttet rotation.
+- [ ] Kvalificér kilden og verificér de to målinger under almindelig vejrarkivering og databasebackup.
+
 ## 21. november — lokalt svar om UV og dagslys
 
 - [x] Genskab det konkrete spørgsmål og afprøv det samlede lokale svar på dansk, tysk og engelsk.

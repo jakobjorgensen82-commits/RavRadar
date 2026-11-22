@@ -49,17 +49,20 @@ export async function runAutonomousDatabaseBackup({phase='plan'}={},dependencies
   (dependencies.requireSettled??requireNoUnresolvedDatabaseCapture)(current,{env,read:dependencies.readGithub});
   const age=now()-Date.parse(current.completedAt);
   need(Number.isFinite(age)&&age>=0,'DATABASE_BACKUP_CURRENT_TIME');
+  const measuredPlanStock = phase === 'plan' && Number.isSafeInteger(current.usedBytes) && current.usedBytes >= 0
+    ? {backupBucketStock: {usedBytes: current.usedBytes, policyLimitBytes: DB_REMOTE_BACKUP_POLICY.maximumBucketBytes}}
+    : {};
   if(current.rotationHeld)return {status:'DATABASE_BACKUP_RETENTION_HELD',proceed:false,
-    privateAccessStarted:true,retentionReady:false,freeReady:false};
+    privateAccessStarted:true,retentionReady:false,freeReady:false,...measuredPlanStock};
   // Do not create another generation while restore or retirement is unsettled.
   // Capture, restore and rotation each use a separate normal weather gap.
   const action=current.restoreVerified===false?'restore':current.rotationPending?'rotate'
     :age>=DATABASE_BACKUP_INTERVAL_MS?'capture':null;
-  if(!action)return {status:'DATABASE_BACKUP_SKIPPED_NOT_DUE',proceed:false,privateAccessStarted:true};
+  if(!action)return {status:'DATABASE_BACKUP_SKIPPED_NOT_DUE',proceed:false,privateAccessStarted:true,...measuredPlanStock};
   if(action==='capture')need(Number.isSafeInteger(current.usedBytes)&&current.usedBytes>=0
     &&current.usedBytes+DB_BACKUP_CIPHER_LIMITS.wireBytes<=DB_REMOTE_BACKUP_POLICY.maximumBucketBytes,
     'R2_CAPTURE_HEADROOM');
-  if(phase==='plan')return {status:'DATABASE_BACKUP_MAINTENANCE_DUE',action,proceed:true,privateAccessStarted:true};
+  if(phase==='plan')return {status:'DATABASE_BACKUP_MAINTENANCE_DUE',action,proceed:true,privateAccessStarted:true,...measuredPlanStock};
   if(action==='restore'){
     const restoreEnv={...env,RESTORE_ARCHIVE_INDEX_COMMITMENT:'rr-supabase-restore-v1:'+databaseRestoreCommitment(current.indexSha256),
       RESTORE_ARCHIVE_CONFIRMATION:'RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES'};

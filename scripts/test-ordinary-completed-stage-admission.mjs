@@ -17,7 +17,8 @@ import { createPrivateProductionRuntimeBundle, restorePrivateProductionRuntimeBu
 import { sealStagedPrivateProductionRuntime, openStagedPrivateProductionRuntime }
   from './staged-private-production-runtime.mjs';
 import { publishProtectedPrivateProductionRuntime } from './protected-private-production-runtime.mjs';
-import { checkCodeOnlyPrivateWeatherRebind, publishPrivateWeatherRuntime } from './publish-private-weather-runtime.mjs';
+import { appendPrivateWeatherPublicationSummary, checkCodeOnlyPrivateWeatherRebind, publishPrivateWeatherRuntime }
+  from './publish-private-weather-runtime.mjs';
 import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
@@ -140,11 +141,12 @@ export async function assertNormalStagePublication(t) {
   const parentReceipt = { parentPin: pin.pin, parentDescriptor: pin.descriptor };
   let virtualUsed = 2_050_000_001;
   const r2Calls = [];
-  const r2OptionsFor = (remote, calls) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
+  const r2OptionsFor = (remote, calls, listPositions) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
     secretAccessKey: 'synthetic-secret', delayImpl: async () => {}, fetchImpl: async (url, request) => {
       const address = new URL(url);
       calls.push(request.method);
       if (request.method === 'GET' && address.searchParams.has('list-type')) {
+        listPositions?.push(calls.length - 1);
         return new Response(`<ListBucketResult><Contents><Key>preserved</Key><Size>${virtualUsed}</Size></Contents><KeyCount>1</KeyCount><IsTruncated>false</IsTruncated></ListBucketResult>`);
       }
       if (request.method === 'HEAD' && address.pathname === '/ravradar-private-production-runtime') return new Response(null);
@@ -162,7 +164,8 @@ export async function assertNormalStagePublication(t) {
       if (request.method === 'DELETE') { await remote.storage.removeExact(key); return new Response(null, { status: 204 }); }
       throw new Error('unexpected normal publisher storage method');
     } });
-  const r2Options = r2OptionsFor(transport, r2Calls);
+  const r2ListPositions = [];
+  const r2Options = r2OptionsFor(transport, r2Calls, r2ListPositions);
   const { storage: _syntheticOriginalStorage, ...normalPublication } = publish(child);
   const publishChild = () => publishPrivateWeatherRuntime({ ...normalPublication,
     request: bindOrdinaryStagePublicationRequest(transport.documentRequest, parentReceipt) }, r2Options);
@@ -200,8 +203,33 @@ export async function assertNormalStagePublication(t) {
     assert.equal(crypto.createHash('sha256').update(await late.storage.download(part.objectPath)).digest('hex'),
       part.objectSha256, 'The late authoritative CAS still points at every verified candidate byte.');
   }
+  const beforeSuccessfulPublicationCalls = r2Calls.length;
   const publication = await publishChild();
   assert.equal(publication.published, true);
+  assert.deepEqual(publication.bucketUsageBeforeArchiveUpload, { usedBytes: virtualUsed, objectCount: 1 });
+  assert.deepEqual(publication.bucketUsageBeforeRetirementMarker, { usedBytes: virtualUsed, objectCount: 1 });
+  const successfulListPositions = r2ListPositions.filter(position => position >= beforeSuccessfulPublicationCalls);
+  const successfulPuts = r2Calls.slice(beforeSuccessfulPublicationCalls).filter(method => method === 'PUT');
+  const firstArchivePut = r2Calls.indexOf('PUT', beforeSuccessfulPublicationCalls);
+  assert.equal(successfulListPositions[1], firstArchivePut - 1,
+    'The initial stock is sampled at the existing first archive PUT admission.');
+  assert.equal(successfulListPositions.length, successfulPuts.length + 2,
+    'The observation adds no R2 listing to archive or retirement marker admission.');
+  assert.deepEqual(r2Calls.slice(successfulListPositions.at(-2), successfulListPositions.at(-1) + 2),
+    ['GET', 'HEAD', 'GET', 'PUT'], 'The sampled listing stays before the retirement marker upload.');
+  const summaryPath = path.join(own, 'weather-r2-summary');
+  const summaryEnvironment = { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summaryPath };
+  await appendPrivateWeatherPublicationSummary(publication, { GITHUB_STEP_SUMMARY: summaryPath });
+  await assert.rejects(fs.stat(summaryPath), { code: 'ENOENT' });
+  await appendPrivateWeatherPublicationSummary(publication, summaryEnvironment);
+  const publicationSummary = await fs.readFile(summaryPath, 'utf8');
+  assert.match(publicationSummary,
+    /R2 reported 1734856529 bytes after archive verification and before the retirement marker upload\. The object count was 1\./);
+  assert.match(publicationSummary,
+    /R2 reported 1734856529 bytes before the first new archive object, following any retirement from earlier runs\. The object count was 1\./);
+  assert.match(publicationSummary, /The retirement check completed\./);
+  await assert.doesNotReject(() => appendPrivateWeatherPublicationSummary(publication,
+    { ...summaryEnvironment, GITHUB_STEP_SUMMARY: path.join(own, 'missing', 'summary') }));
   const row = transport.documents.get('ravscore-private-production-runtime-pointer');
   assert.equal(row.version, 2);
   assert.equal(row.payload.current.sourceHead, identity.sourceHead);
@@ -223,6 +251,20 @@ export async function assertNormalStagePublication(t) {
   assert.equal(r2Calls.slice(beforeCodeOnlyCalls).includes('PUT'), false);
   assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').version, 2);
   assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').payload.current.sourceHead, identity.sourceHead);
+
+  const missingCurrentObject = row.payload.current.objects[0].objectPath;
+  const expectedCurrentBytes = Buffer.from(transport.objects.get(missingCurrentObject));
+  assert.equal(transport.objects.delete(missingCurrentObject), true);
+  virtualUsed = 1_734_856_529;
+  const repairCalls = [];
+  const repairedCurrent = await publishPrivateWeatherRuntime({
+    ...normalPublication, request: transport.documentRequest,
+  }, r2OptionsFor(transport, repairCalls));
+  assert.equal(repairedCurrent.published, false);
+  assert.ok(repairCalls.includes('PUT'), 'The existing repair restores the missing current archive object.');
+  assert.deepEqual(transport.objects.get(missingCurrentObject), expectedCurrentBytes);
+  assert.equal(repairedCurrent.bucketUsageBeforeArchiveUpload, undefined,
+    'Repair of an already-referenced object does not prove prior retirement happened before its PUT.');
   const nextHour = '2026-10-19T12:00:00.000Z', nextNow = '2026-10-19T13:00:00.000Z';
   const third = await create(nextHour, 'third', '2026-10-19T12:05:00.000Z');
   const nextExpected = await buildPrivateRuntimeExpectation({
@@ -238,7 +280,8 @@ export async function assertNormalStagePublication(t) {
     if (phase === 'compare-and-swap') thirdCasWritten = true;
     return result;
   };
-  const interrupted = r2OptionsFor(transport, []);
+  const interruptedLists = [];
+  const interrupted = r2OptionsFor(transport, [], interruptedLists);
   const interruptedFetch = interrupted.fetchImpl;
   interrupted.fetchImpl = async (url, request) => {
     if (thirdCasWritten) throw new Error('synthetic runner loss after central B CAS');
@@ -273,6 +316,12 @@ export async function assertNormalStagePublication(t) {
   const thirdResult = await publishPrivateWeatherRuntime({ ...thirdPublication, request: thirdRequest }, interrupted);
   assert.equal(thirdResult.published, true);
   assert.equal(thirdResult.retentionCleanupComplete, false);
+  assert.equal(thirdResult.bucketUsageBeforeArchiveUpload, undefined);
+  assert.equal(thirdResult.bucketUsageBeforeRetirementMarker, undefined);
+  assert.deepEqual(interruptedLists, [], 'Reusing the verified marker does not measure the bucket.');
+  await appendPrivateWeatherPublicationSummary(thirdResult, summaryEnvironment);
+  assert.match(await fs.readFile(summaryPath, 'utf8'),
+    /was not measured\.\n\nRetirement cleanup remains unresolved\./);
   assert.deepEqual(new Set(transport.objects.keys()), afterPrepared, 'The same immutable intent was reused.');
   const thirdRow = transport.documents.get(pointerKey);
   assert.equal(thirdRow.version, 3);
