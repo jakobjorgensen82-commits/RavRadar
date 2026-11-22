@@ -145,6 +145,19 @@ export function publicRavAssistantFindFollowup(question, topic, language) {
   return fluorescence && transparency ? fluorescence + '\n\n' + transparency : null;
 }
 
+// Den eksisterende bølgelængde-/mørkereferent identificerer UV-lampen.
+// Hele spørgsmålet og de eksisterende sprog- og sikkerhedsgrænser bevares.
+const UV_LAMP_DAYLIGHT_FOLLOWUP = Object.freeze({
+  da:/^kan den (?:også )?bruges i dagslys(?:,? og hvorfor)?$/iu,
+  de:/^kann man sie (?:auch )?bei tageslicht benutzen(?:,? und warum)?$/iu,
+  en:/^can it (?:also )?be used in daylight(?:,? and why)?$/iu,
+});
+export function publicRavAssistantDaylightFollowup(question, topic, language) {
+  if (topic !== 'public-knowledge:identification.uv-clue-not-proof') return null;
+  const text = publicHelpText(question, language);
+  return text && UV_LAMP_DAYLIGHT_FOLLOWUP[language].test(text) ? ANSWERS.daylight[language] : null;
+}
+
 export function publicRavAssistantHelp(question,language){
   const raw=String(question||'').trim();
   const text=publicHelpText(raw,language);
