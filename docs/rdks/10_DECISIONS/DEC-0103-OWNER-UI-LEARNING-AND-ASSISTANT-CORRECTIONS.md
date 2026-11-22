@@ -19,3 +19,7 @@
 ## Fast grænse
 
 Candidate G, 20/50/30, scorekurver, transport-, bølge-, mobiliserings- og leveringssemantik, DMI/Copernicus-input, state/cache/recovery, modelprofil, geometri samt land-/vandpunkter ændres ikke. Temperaturteksten er faglig formidling og aktiverer ikke et nyt scoreinput.
+
+## 22. november 2026 — assistentknap under kold opstart
+
+Headerens assistentknap starter deaktiveret og aktiveres umiddelbart efter montering af dens eksisterende klikhandler. Det forhindrer synligt tilgængelige klik uden handling under langsom modulindlæsning. Aktiveringen venter ikke på prognosedata; samme dialog, emnenulstilling og danske, tyske og engelske tekster bevares. HTML, bootstrap og service-worker følger samme nye cacheadresse. Rettelsen ændrer hverken assistentens netkald, numeriske bindinger, SQL eller ekstern AI. Lokal browser-/kildeprøve er ikke offentlig levering eller samlet AI-accept.

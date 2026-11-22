@@ -265,6 +265,42 @@ test('actual extracted topic state/frame/reset dependencies remain live, not gua
   assert.equal(fetchCalls, 0);
 });
 
+test('assistant header waits for its handler, independently of forecast readiness', async () => {
+  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const header = html.match(/<button\b[^>]*\bid="assistantButton"[^>]*>/u)?.[0];
+  assert.ok(header);
+  assert.match(header, /\sdisabled(?:\s|>|=)/u);
+  const start = app.indexOf('const assistantButton = ');
+  const end = app.indexOf('document.querySelector("#assistantForm").addEventListener("submit"', start);
+  const forecastStart = app.indexOf('\ntry {', end);
+  assert.ok(start >= 0 && end > start && forecastStart > end);
+  for (const locale of ['da', 'de', 'en']) {
+    let disabled = true, opened = 0, resets = 0;
+    const listeners = [];
+    const button = {
+      get disabled() { return disabled; },
+      set disabled(value) {
+        assert.equal(value, false);
+        assert.equal(listeners.length, 1, 'Enable only after the actual click handler is installed');
+        disabled = value;
+      },
+      addEventListener(type, listener) { assert.equal(type, 'click'); listeners.push(listener); },
+    };
+    assert.equal(disabled, true);
+    assert.ok(i18n.t('header.assistant', {}, locale));
+    vm.runInNewContext(app.slice(start, end), {
+      document: { querySelector(selector) { assert.equal(selector, '#assistantButton'); return button; } },
+      resetAssistantTopic() { resets += 1; },
+      assistantDialog: { showModal() { opened += 1; } },
+    });
+    assert.equal(disabled, false);
+    assert.equal(opened, 0, 'Startup must not open the dialog on its own');
+    listeners[0]();
+    assert.equal(opened, 1); assert.equal(resets, 1);
+  }
+  assert.equal(fetchCalls, 0);
+});
+
 test('forecast cache identity reaches actual index, bootstrap and app without changing the model service URL', async () => {
   const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
   const boot = await fs.readFile(new URL('../bootstrap.js', import.meta.url), 'utf8');
@@ -283,6 +319,8 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('assistant').length, 1);
     assert.equal(url.searchParams.get('assistant-help'), '20261121');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
+    assert.equal(url.searchParams.get('assistant-ready'), '20261122');
+    assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
   assert.equal(serviceImports.length, 1);

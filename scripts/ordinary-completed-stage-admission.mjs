@@ -23,7 +23,8 @@ import { restoreProtectedRavScoreContinuationCheckpoint, createProtectedRavScore
 import { createProtectedPrivateRuntimeClients,
   validateProtectedPrivateRuntimePointer, PROTECTED_PRIVATE_RUNTIME_POLICY }
   from './protected-private-production-runtime.mjs';
-import { publishPrivateWeatherRuntime, assertPrivateWeatherPublicationBackend } from './publish-private-weather-runtime.mjs';
+import { appendPrivateWeatherPublicationSummary, publishPrivateWeatherRuntime, assertPrivateWeatherPublicationBackend }
+  from './publish-private-weather-runtime.mjs';
 import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { ravScoreModelBinding as candidateBinding } from './rollback-assets/ravscore-model-contract.js';
@@ -370,6 +371,7 @@ async function main() {
       bundlePath: env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE, repositoryRoot: p.root,
       expected: await json(p.expectedPath), sourceHead: receipt.originalIdentity.sourceHead,
       request: bindOrdinaryStagePublicationRequest(clients.documentRequest, receipt) });
+    await appendPrivateWeatherPublicationSummary(publication, env);
     if (publication.published === true && publication.retentionCleanupComplete === false) {
       console.warn('::warning title=Private runtime retention::Published with incomplete retired-object cleanup.');
     }

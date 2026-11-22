@@ -7,6 +7,9 @@ import { AGGREGATE_LIMITS, aggregateFail }
 
 const encoder = new TextEncoder();
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const REQUIRED_REPORT_METRICS = Object.freeze([
+  'windSpeedMs', 'waveHeightM', 'currentSpeedMs', 'waterLevelTrendM3h',
+]);
 
 // Server-internal row qualification, not candidate/contributor attestation.
 // The normal caller owns validated request/binding, cumulative state and sets.
@@ -53,7 +56,13 @@ export async function qualifyTripWeatherAggregateRow(row, {
   // Normal storage omits nulls; grams:null is a null-only read view,
   // not an invented measurement or a mutation of the stored payload.
   const reportedView = Object.hasOwn(payload, 'grams') ? payload : { ...payload, grams: null };
-  if (!expectedCalibrationEligibility(reportedView, binding)) { exclusions.ineligible++; return null; }
+  // A valid trip can retain unknown weather. Both report paths require a
+  // finite contribution in each of the four fixed metric bins.
+  if (!expectedCalibrationEligibility(reportedView, binding)
+      || !REQUIRED_REPORT_METRICS.every(metric => Number.isFinite(payload.calibration_features[metric]))) {
+    exclusions.ineligible++;
+    return null;
+  }
   // Only this hash/schema/origin/binding-qualified original may supply these
   // existing reported fields. This is internal input, not a new report policy,
   // effort band, observed trip-quality claim or persistent winner format.

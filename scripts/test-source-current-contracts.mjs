@@ -12,7 +12,7 @@ import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
-import {CURRENT_CONTRACT_COMMANDS,currentWorkflowTargets,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,isAdditivePagesPublicObserverChange,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,currentWorkflowTargets,currentSourceTargets,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,isAdditivePagesPublicObserverChange,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
   PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
@@ -385,16 +385,23 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
 
 // Existing whole account target also owns its normally imported month/controller modules.
 function assertPrivateStudyPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
-  const paths=[".github/workflows/private-trip-weather-study.yml","scripts/publish-private-trip-weather-study.mjs","scripts/deploy-private-trip-study.mjs","scripts/test-trip-aggregate-month-rollover.mjs","scripts/test-private-trip-study-categorical-controller.mjs","scripts/test-account-statistics-assistant-callers.mjs"],command='node --test scripts/test-account-statistics-assistant-callers.mjs';
+  const paths=[".github/workflows/private-trip-weather-study.yml","scripts/publish-private-trip-weather-study.mjs","scripts/deploy-private-trip-study.mjs","scripts/test-trip-aggregate-month-rollover.mjs","scripts/test-private-trip-study-categorical-controller.mjs","scripts/test-account-statistics-assistant-callers.mjs","cloudflare/trip-gateway/trip-aggregate-row.js"],command='node --test scripts/test-account-statistics-assistant-callers.mjs';
   assert.deepEqual(CURRENT_CONTRACT_COMMANDS.privateStudy,[command]);
   // The one normal account target executes its imported month/controller cases.
-  // Planning checks owner scope and refusal boundaries, not source spelling.
-  const owner=currentWorkflowTargets(paths[0]);
-  assert.deepEqual(owner,{path:paths[0],owners:[{area:'privateStudy',commands:[command]}]});
-  const original=paths.map(file=>[file,fixtureControlBytes(file)]),tree=rewriteTree(baselineTree,original);
+  // Check the exact registration of every input, then qualify their union
+  // through the normal Git planner once.
+  const owners=[{area:'privateStudy',commands:[command]}];
+  assert.deepEqual(currentWorkflowTargets(paths[0]),{path:paths[0],owners});
+  for(const file of paths){
+    const expectedOwners=file==='scripts/test-account-statistics-assistant-callers.mjs'
+      ?[...owners,{area:'historicalTests',commands:[]}]:owners;
+    assert.deepEqual(currentSourceTargets(file),{path:file,owners:expectedOwners});
+  }
+  const originals=new Map(paths.map(file=>[file,fixtureControlBytes(file)]));
+  const tree=rewriteTree(baselineTree,[...originals]);
   const prior=makeCommit(tree,[baselineCommit],'synthetic existing private-study callers'),results=[];
   const select=(files,extra=[])=>{
-    const changes=files.map(file=>[file,Buffer.concat([git(root,['cat-file','blob',prior+':'+file]),Buffer.from('\n// Synthetic private-study owner delta\n')])]);
+    const changes=files.map(file=>[file,Buffer.concat([originals.get(file),Buffer.from('\n// Synthetic private-study owner delta\n')])]);
     const candidate=makeCommit(rewriteTree(tree,[...changes,...extra]),[prior],'synthetic private-study scope');
     checkoutCommit(candidate);const result=plan({baselineCommit:prior,candidateCommit:candidate,expectedHead:candidate});results.push(result);return result;
   };
@@ -409,10 +416,9 @@ function assertPrivateStudyPlanScope({baselineCommit,baselineTree,rewriteTree,ma
   };
   const refused=result=>{assert.equal(result.selection,'FULL',JSON.stringify(result));assert.deepEqual(result.commands,[]);};
   try{
-    for(const file of paths){const result=select([file]);safe(result);assert.deepEqual(result.areas.privateStudy.changedPaths,[file]);}
     const together=select(paths);safe(together);assert.deepEqual(together.areas.privateStudy.changedPaths,[...paths].sort());
     assert.deepEqual(together.commands,[...CURRENT_CONTRACT_COMMANDS.core,command]);
-    for(const neighbour of ['scripts/publish-private-trip-weather-study-extra.mjs','.github/workflows/private-trip-weather-study-extra.yml']){
+    for(const neighbour of ['scripts/publish-private-trip-weather-study-extra.mjs','.github/workflows/private-trip-weather-study-extra.yml','cloudflare/trip-gateway/trip-aggregate-row-extra.js']){
       const result=select([paths[0]],[[neighbour,Buffer.from('// Unknown adjacent owner\n')]]);refused(result);
       assert.deepEqual(result.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);
     }

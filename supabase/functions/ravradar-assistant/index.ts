@@ -8,6 +8,7 @@ import {
   assistantUnknownEquipmentGuaranteeReply,
   assistantSystemInstruction,
   assistantResponseFormat,
+  assistantOutputNodeIsVisible,
   extractCloudflareAssistantResult,
   normaliseAssistantLocale,
   RAV_ASSISTANT_BINDING_HEADERS,
@@ -22,6 +23,10 @@ import {
   sameAssistantRavScoreModelBinding,
   validateAssistantResult,
 } from "../_shared/rav-assistant-contract.ts";
+
+const ASSISTANT_QUOTA = { minute: 6, hour: 40, globalDay: 300 };
+const ASSISTANT_SEED = 827;
+const EMPTY_REPLY_RETRY_MIN_MS = 2_000;
 
 function assistantHeaders(request: Request) {
   const headers: Record<string, string> = {
@@ -180,6 +185,20 @@ function describeProviderOutput(payload: Awaited<ReturnType<typeof assistantProv
   return "UNKNOWN";
 }
 
+function plainAssistantStopMessage(payload: Awaited<ReturnType<typeof assistantProviderJson>>) {
+  const result = payload?.result ?? payload;
+  if (!assistantOutputNodeIsVisible(result) || !Array.isArray(result.choices) || result.choices.length !== 1) return null;
+  const [choice] = result.choices;
+  const message = choice?.message;
+  if (choice?.finish_reason !== "stop" || message?.role !== "assistant"
+      || !assistantOutputNodeIsVisible(choice) || !assistantOutputNodeIsVisible(message)
+      || message.refusal != null || message.function_call != null || message.audio != null || message.parsed != null
+      || (message.tool_calls != null && (!Array.isArray(message.tool_calls) || message.tool_calls.length !== 0))) {
+    return null;
+  }
+  return message;
+}
+
 // Failure observation contains only fixed categories and numeric HTTP status.
 // A missing/failing logger must preserve the original public error unchanged.
 type AssistantFailureObservation = {
@@ -253,53 +272,80 @@ Deno.serve(async (request) => {
     if (identification && rawQuestion.length > 600)
       return assistantJsonResponse(request, { answer:assistantIdentificationFocusAnswer(locale) });
     deadline.check();
-    await deadline.wait(enforceRateLimits(request, "ravradar-assistant", { minute: 6, hour: 40, globalDay: 300 })); deadline.check();
+    await deadline.wait(enforceRateLimits(request, "ravradar-assistant", ASSISTANT_QUOTA)); deadline.check();
     quotaCompleted = deadline.observation();
     const { accountId, token } = cloudflareCredential();
-    observedStage = "UPSTREAM_REQUEST";
-    deadline.check();
-    const fetchProvider = (input: string, init: RequestInit) => {
-      providerStarted = deadline!.observation(); providerFetchCalled = true;
-      return fetch(input, init);
-    };
-    const response = await deadline.wait(fetchProvider(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${RAV_ASSISTANT_MODEL}`, {
-      method: "POST",
-      signal: deadline.signal,
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: assistantSystemInstruction() },
-          { role: "user", content: assistantPrompt(question, body.context, locale, rawQuestion) },
-        ],
+    const activeDeadline = deadline;
+    const messages = [
+      { role: "system", content: assistantSystemInstruction() },
+      { role: "user", content: assistantPrompt(question, body.context, locale, rawQuestion) },
+    ];
+    const readProviderReply = async (seed: number) => {
+      observedStage = "UPSTREAM_REQUEST";
+      observedUpstreamStatus = null;
+      activeDeadline.check();
+      const providerBody = JSON.stringify({
+        messages,
         max_completion_tokens: 800,
         reasoning_effort: "low",
-        seed: 827,
+        seed,
         store: false,
         response_format: assistantResponseFormat(locale),
-      }),
-    }).then(value => {
-      try { deadline!.check(); return value; }
-      catch (error) { if (value.body) void value.body.cancel().catch(() => {}); throw error; }
-    })); deadline.check(); upstream = response;
-    observedUpstreamStatus = response.status;
-    if (!response.ok) {
-      observedStage = "UPSTREAM_HTTP_REJECTED";
-      throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
-    }
-    observedStage = "UPSTREAM_JSON_PARSE";
-    const payload = await assistantProviderJson(response, deadline); deadline.check();
-    if (payload?.success === false) {
-      observedStage = "UPSTREAM_ENVELOPE_REJECTED";
-      throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
-    }
+      });
+      activeDeadline.check();
+      providerStarted ??= activeDeadline.observation();
+      providerFetchCalled = true;
+      const response = await activeDeadline.wait(fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${RAV_ASSISTANT_MODEL}`, {
+        method: "POST",
+        signal: activeDeadline.signal,
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: providerBody,
+      }).then(value => {
+        try { activeDeadline.check(); return value; }
+        catch (error) { if (value.body) void value.body.cancel().catch(() => {}); throw error; }
+      }));
+      upstream = response;
+      observedUpstreamStatus = response.status;
+      if (!response.ok) {
+        observedStage = "UPSTREAM_HTTP_REJECTED";
+        throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
+      }
+      observedStage = "UPSTREAM_JSON_PARSE";
+      const payload = await assistantProviderJson(response, activeDeadline);
+      if (payload?.success === false) {
+        observedStage = "UPSTREAM_ENVELOPE_REJECTED";
+        throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
+      }
+      return { payload, status: response.status };
+    };
+    const { payload, status } = await readProviderReply(ASSISTANT_SEED);
     observedStage = "RESULT_EXTRACTION";
     const parsed = extractCloudflareAssistantResult(payload);
     if (parsed === null) {
       try { providerOutputState = describeProviderOutput(payload); } catch { /* Keep the existing rejection path. */ }
     }
     observedStage = parsed === null ? "RESULT_EXTRACTION" : "RESULT_VALIDATION";
-    const validated = validateAssistantResult(parsed, locale, body.context, rawQuestion,
+    let validated = validateAssistantResult(parsed, locale, body.context, rawQuestion,
       (code: string) => { observedRejectionCode = code; });
+    if (!validated && status === 200 && providerOutputState === "CHAT_STOP_EMPTY" && plainAssistantStopMessage(payload)
+        && deadline.observation().remainingMs >= EMPTY_REPLY_RETRY_MIN_MS) {
+      // Charge every provider request to the same quota and keep the same deadline.
+      try {
+        await deadline.wait(enforceRateLimits(request, "ravradar-assistant", ASSISTANT_QUOTA));
+        if (deadline.observation().remainingMs >= EMPTY_REPLY_RETRY_MIN_MS) {
+          const retry = await readProviderReply(ASSISTANT_SEED + 1);
+          const content = retry.status === 200 ? plainAssistantStopMessage(retry.payload)?.content : null;
+          if (typeof content === "string" && content.trim()) {
+            validated = validateAssistantResult(extractCloudflareAssistantResult(content), locale, body.context, rawQuestion);
+          }
+        }
+      } catch {
+        // Keep the original rejection unless the request was cancelled or expired.
+        deadline.check();
+      }
+      observedStage = "RESULT_EXTRACTION";
+      observedUpstreamStatus = status;
+    }
     if (!validated) throw new GatewayError(502, "ASSISTANT_RESPONSE_REJECTED");
     deadline.check();
     const answerResponse = assistantProviderResponse(request, validated.answer);

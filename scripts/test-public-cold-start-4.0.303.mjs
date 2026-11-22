@@ -86,7 +86,8 @@ const previousTransportSuffix = `${previousDomainSuffix}&transport=public-json-b
 const previousMapSuffix = `${previousTransportSuffix}&map=plain-map-v3-20261104`;
 const assistantSuffix = `${previousMapSuffix}&assistant-topic=wind-followup-20261110&assistant-find=20261119`;
 const previousHelpSuffix = `${assistantSuffix}&assistant-help=20261120`;
-const suffix = `${assistantSuffix}&assistant-help=20261121`;
+const previousReadySuffix = `${assistantSuffix}&assistant-help=20261121`;
+const suffix = `${previousReadySuffix}&assistant-ready=20261122`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
@@ -141,7 +142,7 @@ const cached = new Map([
 ]);
 const previousDeliveredAssets = [
   [previousPanelSuffix, 'panel'], [previousAssistantSuffix, 'assistant'], [previousDomainSuffix, 'domain'],
-  [previousTransportSuffix, 'transport'], [previousMapSuffix, 'map'], [previousHelpSuffix, 'help'],
+  [previousTransportSuffix, 'transport'], [previousMapSuffix, 'map'], [previousHelpSuffix, 'help'], [previousReadySuffix, 'ready'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
