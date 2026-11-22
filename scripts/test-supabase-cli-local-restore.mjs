@@ -1187,31 +1187,43 @@ async function verifySyntheticEmailConfirmation(c,p,readActivity=confirmationAct
   c.stage='LOCAL_CONFIRMATION_VERIFY';
   need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   const verified=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(Math.min(5_000,c.deadline-Date.now()))});
-  let confirmationAccess;
+  let confirmationAccess,confirmationRefresh;
   try{
     need(verified.status===303&&verified.headers.has('location'),'LOCAL_CONFIRMATION_VERIFY_RESPONSE');
     const destination=new URL(verified.headers.get('location'));
     const params=new URLSearchParams(destination.hash.slice(1));destination.hash='';
     confirmationAccess=params.get('access_token');
+    confirmationRefresh=params.get('refresh_token');
     need(destination.href===new URL(LOCAL_SITE_URL).href&&params.get('type')==='signup'&&!params.has('error')&&confirmationAccess,
       'LOCAL_CONFIRMATION_VERIFY_DESTINATION');
+    need(confirmationRefresh&&confirmationRefresh.length<=16_384,'LOCAL_CONFIRMATION_REFRESH_TOKEN');
   }finally{await verified.body?.cancel().catch(()=>{});}
 
   // The vendor's verification request must record native activity before any
   // browser activity RPC or password login can hide a missed first issuance.
   await checkActivity(1);
+  const initialClaims=syntheticIssuedJwtClaims(confirmationAccess,signup.id);
   const confirmedUser=await auth(c,p,'/user',{token:confirmationAccess});
   need(confirmedUser?.id===signup.id&&confirmedUser.email===email&&Number.isFinite(Date.parse(confirmedUser.email_confirmed_at)),
     'LOCAL_CONFIRMATION_INITIAL_SESSION');
+  const refreshed=await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:confirmationRefresh}});
+  const refreshedClaims=syntheticIssuedJwtClaims(refreshed?.access_token,signup.id);
+  need(refreshed.user?.id===signup.id&&refreshedClaims.sessionId===initialClaims.sessionId,'LOCAL_CONFIRMATION_REFRESH_SESSION');
+  await checkActivity(2);
+  const refreshedUser=await auth(c,p,'/user',{token:refreshed.access_token});
+  need(refreshedUser?.id===signup.id&&refreshedUser.email===email&&Number.isFinite(Date.parse(refreshedUser.email_confirmed_at)),
+    'LOCAL_CONFIRMATION_REFRESH_USER');
+
   const login=await auth(c,p,'/token?grant_type=password',{body});
   need(login?.user?.id===signup.id&&typeof login.access_token==='string','LOCAL_CONFIRMATION_LOGIN');
   const user=await auth(c,p,'/user',{token:login.access_token});
   need(user?.id===signup.id&&user.email===email&&Number.isFinite(Date.parse(user.email_confirmed_at)),
     'LOCAL_CONFIRMATION_CONFIRMED_USER');
-  await checkActivity(2);
+  await checkActivity(3);
   return {confirmationEnabled:true,loginDeniedBeforeConfirmation:true,mailpitConfirmationCaptured:true,
     localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true,
-    noActivityBeforeConfirmation:true,nativeActivityOnConfirmation:true,nativeActivityOnPasswordLogin:true,noticesStayedOff:true};
+    noActivityBeforeConfirmation:true,nativeActivityOnConfirmation:true,nativeActivityOnConfirmationRefresh:true,
+    nativeActivityOnPasswordLogin:true,noticesStayedOff:true};
 }
 async function verifyArchiveAuthFunction(c,p){
   const email='isolated-archive-'+crypto.randomBytes(16).toString('hex')+'@example.invalid';
@@ -2945,13 +2957,18 @@ async function selfTest(){
     }
     assert.throws(()=>localConfirmationLink(html(link)+html(link),api),{code:'LOCAL_CONFIRMATION_LINK_COUNT'});
   });
-  test('synthetic email confirmation transport pins signup, pre-login refusal, captured message and post-login identity in order',async t=>{
+  test('synthetic email confirmation checks signup, first token, same-session refresh and password login in order',async t=>{
     const p={side:'B',api:new URL('http://127.0.0.1:54321'),mailpit:new URL('http://127.0.0.1:54324'),inbucket:'owned',anon:'synthetic'};
     const c={emailConfirmation:true,archive:false,deadline:Date.now()+10_000,authRequests:[]};
     const id=crypto.randomUUID(),mailId='fixture-1',link=new URL('/auth/v1/verify',p.api);
+    const sessionId=crypto.randomUUID(),exp=Math.floor(Date.now()/1000)+120;
+    const jwt=(sub,session,tag)=>'e30.'+Buffer.from(JSON.stringify({sub,session_id:session,exp})).toString('base64url')+'.'+tag;
+    const confirmationAccess=jwt(id,sessionId,'synthetic-confirmation');
+    const refreshToken='synthetic-first-refresh';
     const confirmed='2026-11-20T00:00:00Z',seen=[];
     link.search=new URLSearchParams({token:'b'.repeat(56),type:'signup',redirect_to:LOCAL_SITE_URL});
     let email,beforeConfirmation='email_not_confirmed',revision=0;
+    let includeRefreshToken=true,recordRefresh=true,refreshedSession=sessionId,refreshedSubject=id;
     t.mock.method(globalThis,'fetch',async(url,options)=>{
       seen.push(url.pathname);
       if(url.pathname==='/auth/v1/signup'){
@@ -2960,7 +2977,16 @@ async function selfTest(){
         return Response.json({id,email});
       }
       if(url.pathname==='/auth/v1/token'){
+        assert.ok(!options.headers.Authorization&&options.headers.apikey===p.anon);
+        if(url.searchParams.get('grant_type')==='refresh_token'){
+          assert.deepEqual(JSON.parse(options.body),{refresh_token:refreshToken});
+          assert.equal(revision,1);
+          if(recordRefresh)revision++;
+          return Response.json({access_token:jwt(refreshedSubject,refreshedSession,'synthetic-refreshed'),user:{id}});
+        }
+        assert.equal(url.searchParams.get('grant_type'),'password');
         if(seen.length===2)return Response.json({error_code:beforeConfirmation},{status:400});
+        assert.equal(revision,2);
         revision++;
         return Response.json({access_token:'synthetic-session',user:{id}});
       }
@@ -2973,10 +2999,13 @@ async function selfTest(){
       if(url.pathname==='/auth/v1/verify'){
         assert.ok(url.href===link.href&&options.redirect==='manual');
         revision++;
-        return new Response(null,{status:303,headers:{location:LOCAL_SITE_URL+'/#type=signup&access_token=synthetic-confirmation'}});
+        const fragment=new URLSearchParams({type:'signup',access_token:confirmationAccess});
+        if(includeRefreshToken)fragment.set('refresh_token',refreshToken);
+        return new Response(null,{status:303,headers:{location:LOCAL_SITE_URL+'/#'+fragment}});
       }
       if(url.pathname==='/auth/v1/user'){
-        assert.equal(options.headers.Authorization,revision===1?'Bearer synthetic-confirmation':'Bearer synthetic-session');
+        const expected=revision===1?confirmationAccess:revision===2?jwt(id,sessionId,'synthetic-refreshed'):'synthetic-session';
+        assert.equal(options.headers.Authorization,'Bearer '+expected);
         return Response.json({id,email,email_confirmed_at:confirmed});
       }
       assert.fail('Unexpected synthetic confirmation endpoint');
@@ -2990,10 +3019,11 @@ async function selfTest(){
     };
     assert.deepEqual(await verifySyntheticEmailConfirmation(c,p,readActivity),{confirmationEnabled:true,loginDeniedBeforeConfirmation:true,
       mailpitConfirmationCaptured:true,localConfirmationLinkVerified:true,passwordLoginAndConfirmedUserVerified:true,
-      noActivityBeforeConfirmation:true,nativeActivityOnConfirmation:true,nativeActivityOnPasswordLogin:true,noticesStayedOff:true});
-    assert.deepEqual(observed,[0,1,2]);
+      noActivityBeforeConfirmation:true,nativeActivityOnConfirmation:true,nativeActivityOnConfirmationRefresh:true,
+      nativeActivityOnPasswordLogin:true,noticesStayedOff:true});
+    assert.deepEqual(observed,[0,1,2,3]);
     assert.deepEqual(seen,['/auth/v1/signup','/auth/v1/token','/api/v1/search','/api/v1/message/'+mailId,
-      '/auth/v1/verify','/auth/v1/user','/auth/v1/token','/auth/v1/user']);
+      '/auth/v1/verify','/auth/v1/user','/auth/v1/token','/auth/v1/user','/auth/v1/token','/auth/v1/user']);
     seen.length=0;
     beforeConfirmation='invalid_credentials';
     await assert.rejects(verifySyntheticEmailConfirmation(c,p,readActivity),{code:'LOCAL_CONFIRMATION_UNCONFIRMED_RESULT'});
@@ -3004,6 +3034,21 @@ async function selfTest(){
       return revision===1?{...state,activityRevision:0,journalPresent:false,recordsMatch:false}:state;
     }),{code:'LOCAL_CONFIRMATION_ACTIVITY_STATE'});
     assert.equal(seen.at(-1),'/auth/v1/verify','A password login must not mask missing activity on confirmation');
+
+    seen.length=0;revision=0;includeRefreshToken=false;
+    await assert.rejects(verifySyntheticEmailConfirmation(c,p,readActivity),{code:'LOCAL_CONFIRMATION_REFRESH_TOKEN'});
+    assert.equal(seen.at(-1),'/auth/v1/verify');
+    includeRefreshToken=true;
+    for(const [subject,session,record,code] of [
+      [id,sessionId,false,'LOCAL_CONFIRMATION_ACTIVITY_STATE'],
+      [id,crypto.randomUUID(),true,'LOCAL_CONFIRMATION_REFRESH_SESSION'],
+      [crypto.randomUUID(),sessionId,true,'SYNTHETIC_AUTH_JWT_CLAIMS'],
+    ]){
+      seen.length=0;revision=0;refreshedSubject=subject;refreshedSession=session;recordRefresh=record;
+      await assert.rejects(verifySyntheticEmailConfirmation(c,p,readActivity),{code});
+      assert.equal(seen.length,7);
+      assert.equal(seen.at(-1),'/auth/v1/token');
+    }
   });
   async function ownArchive(run,{large=false,receiptEdit=null,roleSql=null,fileSql={}}={}){
     const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-archive-stream-self-'));await fs.chmod(root,0o700);
