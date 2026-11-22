@@ -39,6 +39,7 @@ permissions:
 
 concurrency:
   group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}
+  queue: max
   cancel-in-progress: false
 
 jobs:
@@ -1661,6 +1662,7 @@ jobs:
     timeout-minutes: 5
     concurrency:
       group: ravradar-trip-storage-production
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Require the exact hook purpose before any credential

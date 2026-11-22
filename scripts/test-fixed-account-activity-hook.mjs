@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { checkFixedSupabaseAccountReadIdle } from './check-fixed-supabase-account-read-idle.mjs';
 import { readAccountInactivitySource, accountInactivityCatalogQuery } from './verify-account-erasure-schema.mjs';
 import { test } from 'node:test';
 import {
@@ -512,14 +513,14 @@ test('actual workflow preserves old operations and gates the fixed job with weat
     assert.ok(header.includes('          - ' + option + '\n'));
   }
   assert.ok(header.includes("  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}"));
-  assert.match(header, /concurrency:\n  group: [^\n]+\n  cancel-in-progress: false/);
+  assert.match(header, /concurrency:\n  group: [^\n]+\n  queue: max\n  cancel-in-progress: false/);
   assert.match(header, /permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n/);
   const start = workflow.indexOf('\n  configure-fixed-account-activity-hook:\n');
   assert.ok(start > 0 && workflow.indexOf('\n  configure-fixed-account-activity-hook:\n', start + 1) < 0);
   const next = workflow.slice(start + 1).search(/\n  [a-zA-Z0-9_-]+:\n/);
   const job = next < 0 ? workflow.slice(start) : workflow.slice(start, start + next + 1);
   assert.ok(job.includes("    if: inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable'\n"));
-  assert.match(job, /concurrency:\n      group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
+  assert.match(job, /concurrency:\n      group: ravradar-trip-storage-production\n      queue: max\n      cancel-in-progress: false/);
   const positions = [
     'Require the exact hook purpose before any credential', 'actions/checkout@v7',
     'node scripts/weather-source-gate.mjs check', 'Reject unavailable source authority before Auth configuration',
@@ -557,4 +558,27 @@ test('catalog-only read has its own exact read-job purpose and never qualifies a
   assert.ok(source >= 0 && idle > source && catalog > idle);
   assert.ok(job.includes('RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: catalog-read'));
   assert.ok(job.includes("if: inputs.operation == 'fixed-account-activity-hook-read'\n"));
+});
+
+
+test('a queued ordinary weather request or another real writer still refuses Auth admission before its credential step', async () => {
+  for (const blocked of ['queued', 'in_progress']) {
+    let calls = 0;
+    await assert.rejects(checkFixedSupabaseAccountReadIdle({
+      repository: 'jakobjorgensen82-commits/RavRadar', runId: 100, githubToken: 'SYNTHETIC',
+      fetchImpl: async (url, request) => {
+        calls++;
+        assert.equal(request.method, 'GET');
+        assert.ok(url.startsWith('https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/actions/runs?'));
+        if (url.includes('status=in_progress')) return Response.json({ total_count: 1, workflow_runs: [
+          { id: blocked === 'in_progress' ? 101 : 100, status: 'in_progress', head_branch: 'main' },
+        ] });
+        assert.ok(url.includes('status=queued'));
+        return Response.json({ total_count: 1, workflow_runs: [{
+          id: 102, status: 'queued', head_branch: 'main', path: '.github/workflows/update-and-deploy.yml',
+        }] });
+      },
+    }), /FIXED_READ_MAIN_NOT_IDLE/);
+    assert.equal(calls, blocked === 'queued' ? 2 : 1);
+  }
 });
