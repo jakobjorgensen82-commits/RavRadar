@@ -2157,7 +2157,8 @@ export async function captureAssistantAfter599PgInput(options){
     scopes.push({file,present:true,mode:row[1],type:value.type??null,name:value.name??null,main:value.main??null,imports:value.imports??null,exports:value.exports??null});
   }
   const anchors=[...profile.frozenGitAnchors,{head:FROZEN599_NATIVE_SOURCE.codeHead,tree:FROZEN599_NATIVE_SOURCE.codeTree}];
-  const frozenGitTrees=[...new Map(anchors.map(row=>[row.head,row])).values()].sort((a,b)=>a.head.localeCompare(b.head));
+  const frozenGitTrees=[...new Map(anchors.map(row=>[row.head,row])).values()]
+    .sort((a,b)=>a.head < b.head ? -1 : a.head > b.head ? 1 : 0);
   for(const row of frozenGitTrees)assert.equal(readGit(['rev-parse',row.head+'^{tree}']).trim(),row.tree);
   const files=[...rows.values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
   return {schemaVersion:1,kind:'AFTER599_ACTUAL_PG_INPUT_V1',files:files.length,sqlFiles:sql.length,
