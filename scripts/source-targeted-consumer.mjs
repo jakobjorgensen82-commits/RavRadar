@@ -14,9 +14,7 @@ import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentCon
   currentChangeSourceArtifactName,validateCurrentChangeSourceReceipt,readCurrentChangeReview,CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES}
   from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
-import {inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
-  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow,verifyTargetedSourceStepShape,TARGETED_SOURCE_STEP_NAMES,
-  TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,verifyTargetedSourceStepShape}
   from './lib/source-impact-workflow-review.mjs';
 
 // Archived namespaces are parsed here without initializing their old planner.

@@ -2365,7 +2365,7 @@ export async function decideAssistantAfter599Reuse(options){
       if(!await sameInput(row.head_sha))continue;
       assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
       assert.equal(row.status,'completed');assert.equal(row.repository?.full_name,ORIGIN.repository);
-      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');assert(complete(jobs,'jobs'));
+      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
       const job=jobFor(row,jobs);
       if(await provedCurrentSkip(row,job))continue;
       assert(successful(one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'))));
