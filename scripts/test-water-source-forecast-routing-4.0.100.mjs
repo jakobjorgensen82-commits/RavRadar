@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, mergeWaterSourceForecastContinuity, summarizeLf7WaterRouting } from './lib/water-source-forecast-routing.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, mergeWaterSourceForecastContinuity, summarizeLf7WaterRouting, summarizeRomoWaterT3 } from './lib/water-source-forecast-routing.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -885,3 +885,75 @@ console.log('SOURCE_SPLIT_BANK_T3: complete and selected same-series endpoints r
   assert.equal(JSON.stringify({input,lfBulk,config}),before,'All original/config inputs remain immutable');
 }
 console.log('LF7_NORMAL_ROUTING_OBSERVATION: actual LF-water/predicate, missing T+3 and forbidden component counters; no value/proof changes.');
+
+// The real selected SOURCE map decides H0 -> H3. An available direct PART
+// at H3 must not be mistaken for support in those selected SOURCE records.
+{
+  const future = new Date(Date.parse(currentHour) + 3 * 3600000).toISOString();
+  const source = aware[0], key = source.sourceKey;
+  const direct = [
+    {time:currentHour,waterLevelCm:42,waterLevelTrendCm3h:null,windSpeedMps:7},
+    {time:future,waterLevelCm:43,waterLevelTrendCm3h:null,windSpeedMps:8},
+  ];
+  const missing = new Map(index), incomplete = structuredClone(index.get(key));
+  incomplete.hourly = incomplete.hourly.filter(row => row.time !== future);missing.set(key,incomplete);
+  const changedBulk = structuredClone(bulk);
+  for(const row of Object.values(changedBulk.zones['SOURCE::'+key].hourly)){
+    row.sources.waterLevel.modelRun='2026-08-05T03:00:00Z';
+    row.sources.waterLevel.leadTimeHours=(Date.parse(row.sources.waterLevel.nativeValidTime)
+      -Date.parse(row.sources.waterLevel.modelRun))/3600000;
+  }
+  const alternative=buildWaterSourceForecastIndex(sources,changedBulk,generatedAt);
+  const mixed=new Map(index), mixedRecord=structuredClone(index.get(key));
+  mixedRecord.hourly=mixedRecord.hourly.map(row=>row.time===future
+    ?structuredClone(alternative.get(key).hourly.find(item=>item.time===future)):row);
+  mixed.set(key,mixedRecord);
+  const contract={zones:{'DK-B04-07':[],'DK-B04-08':[]}}, observed=[];
+  for(const zoneId of Object.keys(contract.zones)){
+    const part={partId:zoneId+'-SYNTHETIC',zoneId,waterPoint:[10.25,56]};
+    const parentFeature={properties:{id:zoneId,name:'Own synthetic coastal part',
+      coastLine:[[10,55.9],[10,56.1]],onshoreDirectionDeg:0}};
+    const config={zones:{[zoneId]:{enabled:true,requireAll:true,stations:[{sourceKey:key}]}}};
+    const args={part,parentFeature,hourly:direct,sources:aware,index,routing:config,
+      haversineKm:()=>1,diagnosticReferenceAt:currentHour};
+    const route=(selected,input=direct)=>applyVerifiedWaterSourceRoutingToPartHourly({...args,index:selected,hourly:input});
+    const before=JSON.stringify({direct,config,sources:aware,records:[...index]});
+    for(const [selected,decision]of [[index,'SOURCE_COMPARABLE'],[missing,'SOURCE_QUALIFIED_T3_MISSING'],
+      [mixed,'SOURCE_SERIES_OR_POLICY_REFUSED']]){
+      const result=route(selected), trace=result.romoWaterTrendObservation;
+      assert.deepEqual(result.hourly,applyVerifiedWaterSourceRoutingToPartHourly({...args,index:selected,
+        diagnosticReferenceAt:null}).hourly,'Observation changes no routed value or native proof');
+      assert.equal(trace.selectedPath,'ROUTED_SOURCE');assert.equal(trace.decision,decision);
+      assert.equal(trace.directInputH3LevelPresent,true);
+      assert.equal(trace.comparisonUsed,decision==='SOURCE_COMPARABLE');
+      assert.equal(trace.selectedSourceT3Qualified,decision!=='SOURCE_QUALIFIED_T3_MISSING');
+      if(selected===missing)assert.equal(result.hourly[1],direct[1],'H3 really kept the direct PART input');
+    }
+    const directOnly=route(new Map());
+    assert.equal(directOnly.romoWaterTrendObservation.selectedPath,'DIRECT_PART');
+    assert.equal(directOnly.romoWaterTrendObservation.decision,'UNKNOWN');
+    assert.equal(directOnly.romoWaterTrendObservation.comparisonUsed,null);
+    const available=route(new Map(),direct.map((row,i)=>i?row:{...row,waterLevelTrendCm3h:0}));
+    assert.equal(available.romoWaterTrendObservation.decision,'DIRECT_FIELD_AVAILABLE');
+    assert.equal(JSON.stringify({direct,config,sources:aware,records:[...index]}),before,'All existing inputs remain immutable');
+    contract.zones[zoneId].push(part);
+    observed.push({partId:part.partId,zoneId,romoWaterTrendObservation:route(missing).romoWaterTrendObservation});
+  }
+  const report=summarizeRomoWaterT3(observed,contract,currentHour);
+  assert.equal(report.status,'OBSERVED');assert.equal(report.parts.length,2);
+  assert.equal(report.rawValuesIncluded,false);assert.equal(report.sourceIdentitiesIncluded,false);
+  assert(report.parts.every(row=>row.decision==='SOURCE_QUALIFIED_T3_MISSING'));
+  for(const row of report.parts)for(const [field,value]of Object.entries(row)){
+    assert.notEqual(typeof value,'number',field);
+    assert(!/sourceKey|station|modelRun|gridPoint|samplingPoint/i.test(field));
+  }
+  const malformed=structuredClone(observed);
+  malformed[0].romoWaterTrendObservation.h0LevelPresent=42;
+  malformed[1].romoWaterTrendObservation.decision='native-source-secret';
+  const unknown=summarizeRomoWaterT3(malformed,contract,currentHour);
+  assert.equal(unknown.status,'PARTIALLY_UNKNOWN');assert(unknown.parts.every(row=>row.decision==='UNKNOWN'));
+  assert(!JSON.stringify(unknown).includes('native-source-secret'));
+  assert.equal(summarizeRomoWaterT3(observed,contract,'invalid'),null);
+  assert.equal(summarizeRomoWaterT3(observed,{zones:{}},currentHour),null);
+}
+console.log('ROMO_H0_T3_OBSERVATION: actual selected SOURCE support/series and direct PART unknown; no values, identities or forecast changes.');

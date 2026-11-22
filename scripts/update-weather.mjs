@@ -79,7 +79,7 @@ import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurren
 import { readDmiLegacyCurrentOriginals } from './lib/dmi-legacy-current-originals.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
-import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, summarizeLf7WaterRouting } from './lib/water-source-forecast-routing.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, summarizeLf7WaterRouting, summarizeRomoWaterT3 } from './lib/water-source-forecast-routing.mjs';
 import { buildFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
@@ -2903,6 +2903,7 @@ function scoreCoastalPartsRuntime(
           candidateGRollbackScores,
           record: { ...record, hourly },
           waterRoutingObservation: routedWater.waterRoutingObservation ?? null,
+          romoWaterTrendObservation: routedWater.romoWaterTrendObservation ?? null,
           scores
         });
       }
@@ -3038,6 +3039,7 @@ function scoreCoastalPartsRuntime(
     currentSourceDomainTransitions,
     furWaterRoutingTrace,
     waterRoutingAudit: summarizeLf7WaterRouting(partRows, contract, partForecastStartAt),
+    romoWaterTrendAudit: summarizeRomoWaterT3(partRows, contract, partForecastStartAt),
     weatherSourceAge,
     currentInputTrace: RAVSCORE_CURRENT_TRACE_PART_IDS.size > 0 ? {
       schemaVersion: 1,
@@ -4780,6 +4782,7 @@ if (establishedNativeCurrentOrigin !== null) {
 // Retained output projections and the completed attestation no longer need
 // the full per-part production/recovery working owner.
 const lf7WaterRoutingAudit = coastalPartScoreBuild?.waterRoutingAudit ?? null;
+const romoWaterTrendAudit = coastalPartScoreBuild?.romoWaterTrendAudit ?? null;
 coastalPartScoreBuild = null;
 reportWeatherBuildStage('current-origin-ready');
 // Byg først de offentlige, begrænsede timefiler fra den komplette beregning i
@@ -4797,6 +4800,11 @@ let privateHourlyMetrics;
 let privatePairInstalled = false;
 try {
   const publicRuntime = await writePublicRuntimeFromFull(output);
+  if (romoWaterTrendAudit) console.log('ROMO_H0_T3_SELECTION_OBSERVATION ' + JSON.stringify({
+    ...romoWaterTrendAudit, datasetId: publicRuntime.manifest.datasetId,
+    generatedAt: publicRuntime.manifest.generatedAt,
+    productionReferenceAt: publicRuntime.manifest.productionReferenceAt,
+  }));
   reportWeatherBuildStage('public-runtime-ready');
   publicHourPack = await buildPrivatePublicHourDeliveryPack({
     liveDirectory: path.dirname('data/live/manifest.json'),
