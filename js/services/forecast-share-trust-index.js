@@ -21,7 +21,7 @@ export function buildForecastShareTrustIndex(manifest, descriptor, expectedBindi
     zones: descriptor.zones.map(entry => ({...entry}))};
   return assertForecastShareTrustIndex(index);
 }
-export function assertForecastShareTrustIndex(index) {
+export function assertForecastShareTrustMetadata(index) {
   keys(index, ['schemaVersion','manifestSha256','publicMetadata','axis','zones']);
   need(index.schemaVersion === FORECAST_SHARE_TRUST_SCHEMA && HASH.test(index.manifestSha256 ?? ''),
     'FORECAST_SHARE_TRUST_BINDING');
@@ -36,15 +36,23 @@ export function assertForecastShareTrustIndex(index) {
     && index.axis.firstHour === metadata.productionReferenceAt
     && index.axis.count === HOURS && index.axis.stepMs === HOUR,
     'FORECAST_SHARE_TRUST_AXIS');
+  return index;
+}
+export function assertForecastShareTrustEntry(entry) {
+  keys(entry, ['id','path','sha256','bytes']);
+  need(typeof entry.id === 'string' && /^[a-zA-Z0-9_-]+$/.test(entry.id)
+    && HASH.test(entry.sha256 ?? '') && entry.path === './share/' + entry.sha256 + '.json'
+    && Number.isSafeInteger(entry.bytes) && entry.bytes > 0
+    && entry.bytes <= FORECAST_SHARE_ZONE_MAX_BYTES, 'FORECAST_SHARE_TRUST_FILE');
+  return entry;
+}
+export function assertForecastShareTrustIndex(index) {
+  assertForecastShareTrustMetadata(index);
   need(Array.isArray(index.zones) && index.zones.length === ZONES, 'FORECAST_SHARE_TRUST_INVENTORY');
   let previous = ''; const paths = new Set();
   for (const entry of index.zones) {
-    keys(entry, ['id','path','sha256','bytes']);
-    need(typeof entry.id === 'string' && /^[a-zA-Z0-9_-]+$/.test(entry.id)
-      && entry.id > previous && HASH.test(entry.sha256 ?? '')
-      && entry.path === './share/' + entry.sha256 + '.json' && !paths.has(entry.path)
-      && Number.isSafeInteger(entry.bytes) && entry.bytes > 0
-      && entry.bytes <= FORECAST_SHARE_ZONE_MAX_BYTES, 'FORECAST_SHARE_TRUST_FILE');
+    assertForecastShareTrustEntry(entry);
+    need(entry.id > previous && !paths.has(entry.path), 'FORECAST_SHARE_TRUST_FILE');
     previous = entry.id; paths.add(entry.path);
   }
   return index;

@@ -25,6 +25,7 @@ const ASSISTANT_SUCCESSOR_TESTS=new Set([
 ]);
 const FIXED_ASSISTANT_LOG_TEST='scripts/test-fixed-assistant-failure-log-20261101.mjs';
 const SHARE_PROJECTION_SOURCE_TEST='node scripts/test-forecast-share-projection.mjs';
+const SHARE_ZONE_BUNDLE_MODULE='js/services/forecast-share-zone-bundle.js';
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
 const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
@@ -272,6 +273,7 @@ const PATH_AREAS=freeze({
   ],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
+    'js/services/data-service.js',
     'js/services/rav-assistant-public-help.js','scripts/test-assistant-ui-error-boundary.mjs',
     'scripts/test-ravscore-public-data-service-binding.mjs',
     'scripts/test-ravscore-public-browser-closure.mjs',
@@ -411,6 +413,8 @@ const PATH_AREAS=freeze({
     'scripts/test-copernicus-component-index.mjs',
   ],
   sharing:[
+    SHARE_ZONE_BUNDLE_MODULE,'js/services/data-service.js','js/services/forecast-share-trust-index.js',
+    'scripts/build-forecast-share-projection.mjs','scripts/audit-pages-artifact-privacy.mjs',
     'scripts/forecast-share/handler.mjs',
     'scripts/test-forecast-share-projection.mjs',
     '.github/workflows/deploy-forecast-share-pages.yml',
@@ -1327,7 +1331,9 @@ export function planSourceCurrentContractsFromGit(input){
       if(WEATHER_PROGRESS_RECOVERY_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE');
-      if(SMALL_USER_CONTRACT_PATHS.has(file)
+      const addsShareZoneBundle=file===SHARE_ZONE_BUNDLE_MODULE
+        &&row.status==='A'&&row.beforeMode==='000000'&&row.afterMode==='100644';
+      if(SMALL_USER_CONTRACT_PATHS.has(file)&&!addsShareZoneBundle
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(DMI_BUDGET_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))

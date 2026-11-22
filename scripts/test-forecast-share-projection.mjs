@@ -12,7 +12,8 @@ import {buildPublicConditions,buildPublicConditionDetails,buildPublicManifest,bu
 import {auditPagesArtifactPrivacy,PagesArtifactPrivacyError} from './audit-pages-artifact-privacy.mjs';
 import {writeForecastShareProjection,readForecastShareProjectionFiles,copyForecastShareProjection} from './build-forecast-share-projection.mjs';
 import {assertForecastShareDescriptor,assertForecastShareProjection,assertForecastShareZoneProjection,assembleForecastShareProjection,assertForecastShareProjectionParity} from '../js/services/forecast-share-projection.js';
-import {loadCompactPublicForecastShareSelection,loadLegacyCompactPublicForecastShareSelection,loadPublicForecastShareSelection} from '../js/services/data-service.js';
+import {loadCompactPublicForecastShareSelection,loadLegacyCompactPublicForecastShareSelection,loadPublicForecastShareSelection,loadSingleZonePublicForecastShareSelection} from '../js/services/data-service.js';
+import {buildForecastShareZoneBundle, forecastShareZoneBundlePath, FORECAST_SHARE_ZONE_BUNDLE_MODULE} from '../js/services/forecast-share-zone-bundle.js';
 import {exactMapZoneScore} from '../js/services/map-forecast-view.js';
 import {buildReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
 import {handleForecastShare} from './forecast-share/handler.mjs';
@@ -138,28 +139,34 @@ try{
     assert.throws(()=>assembleForecastShareProjection(files.zoneFiles.map(file=>file.payload),files.descriptor,manifest,invalidExpected),/binding/i);
     assert.throws(()=>assertForecastShareProjectionParity({projection:files.projection,descriptor:files.descriptor,manifest,details,registry},invalidExpected),/binding/i);cases++;
   }
-  const copy=await copyPublicDeliveryShards({source:live,target});assert.equal(copy.files,540);
+  const copy=await copyPublicDeliveryShards({source:live,target});assert.equal(copy.files,750);
   for(const name of ['manifest.json','public-conditions.json','public-condition-details.json','coastal-parts-v2.json'])await fs.copyFile(path.join(live,name),path.join(target,name));
   await fs.copyFile(path.join(workspace,'data/zones.geojson'),path.join(artifact,'data/zones.geojson'));
   await fs.writeFile(path.join(artifact,'index.html'),'<!doctype html><title>Synthetic sharing artifact</title>\n');
   await fs.writeFile(path.join(artifact,'version.json'),text({version:'9.9.9',releasedAt:source.generatedAt,minimumSupportedVersion:'9.9.9',releaseContract:buildReleaseContractMetadata({releaseVersion:'9.9.9'})}));
   await fs.mkdir(path.join(artifact,'js/services'),{recursive:true});
   await fs.copyFile(new URL('../js/services/forecast-share-projection.js',import.meta.url),path.join(artifact,'js/services/forecast-share-projection.js'));
-  const privacy=await auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false});assert.ok(privacy.fileCount>=546);cases++;
+  await fs.copyFile(path.join(fileURLToPath(new URL('../',import.meta.url)),FORECAST_SHARE_ZONE_BUNDLE_MODULE),path.join(artifact,FORECAST_SHARE_ZONE_BUNDLE_MODULE));
+  const privacy=await auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false});assert.ok(privacy.fileCount>=757);cases++;
+  assert.equal(files.bundleFiles.length,210);
+  for(const file of files.bundleFiles)assert.deepEqual(await fs.readFile(path.join(target,file.relative)),file.bytes);cases++;
   assert.deepEqual(await fs.readFile(path.join(target,'forecast-share.json')),files.descriptorBytes);
   assert.deepEqual(await fs.readFile(path.join(target,'forecast-share-trust.json')),files.trustBytes);
   for(const file of files.zoneFiles)assert.deepEqual(await fs.readFile(path.join(target,file.entry.path.slice(2))),file.bytes);cases++;
   const zoneId=files.projection.zones[0].id,time=horizonTimes[availableIndex],mode='beach';
   const selection={zoneId,time,mode,language:'da'};
   const selectedFile=files.zoneFiles.find(file=>file.entry.id===zoneId);
+  const bundleRelative=forecastShareZoneBundlePath(zoneId),bundleKey='./data/live/'+bundleRelative;
+  const selectedBundle=files.bundleFiles.find(file=>file.relative===bundleRelative);
+  const bundlePath=path.join(target,bundleRelative);
   const zoneEntry=manifest.detailDelivery.zones[zoneId];
   const zoneBytes=await fs.readFile(path.join(live,zoneEntry.path.slice(2)));
   const available=new Map([['./data/live/manifest.json',manifestBytes],['./data/live/forecast-share.json',files.descriptorBytes],
-    ['./data/live/forecast-share-trust.json',files.trustBytes],
+    ['./data/live/forecast-share-trust.json',files.trustBytes], [bundleKey,selectedBundle.bytes],
     ['./data/live/'+selectedFile.entry.path.slice(2),selectedFile.bytes],
     ['./data/live/'+zoneEntry.path.slice(2),zoneBytes],['./data/zones.geojson',Buffer.from(zoneRegistryText)]]);
-  const requests=[];let offline=null;Date.now=()=>freshNow;
-  const fetchPublic=async(relative)=>{requests.push(relative);if(relative===offline)throw new Error('SYNTHETIC_OFFLINE');assert.ok(available.has(relative));return new Response(available.get(relative),{headers:{'content-type':'application/json'}});};
+  const requests=[];let offline=null, missingBundle=false;Date.now=()=>freshNow;
+  const fetchPublic=async(relative)=>{requests.push(relative);if(relative===offline)throw new Error('SYNTHETIC_OFFLINE');if(missingBundle&&relative===bundleKey)return new Response(null,{status:404});assert.ok(available.has(relative));return new Response(available.get(relative),{headers:{'content-type':'application/json'}});};
   const compact=await loadCompactPublicForecastShareSelection(selection,{fetchPublic});assert.equal(requests.length,2);
   const oldCompact=await loadLegacyCompactPublicForecastShareSelection(selection,{fetchPublic});
   assert.deepEqual(compact,oldCompact);assert.equal(requests.length,5);
@@ -167,14 +174,40 @@ try{
   assert.deepEqual(compact,legacy);
   const normal=exactMapZoneScore({conditions:{coastalParts:details.coastalParts,mapForecastTime:time},zoneId,time,mode});
   assert.equal(compact.result.score,normal.score);assert.equal(compact.result.scoreQuality,normal.scoreQuality);cases++;
-  // Samme normale210/673-artifact og normale tre læsninger; ingen eksterne kald.
+  let before=requests.length;
+  assert.deepEqual(await loadSingleZonePublicForecastShareSelection(selection,{fetchPublic}),compact);
+  assert.deepEqual(requests.slice(before),[bundleKey]);cases++;
+  missingBundle=true;before=requests.length;
+  assert.deepEqual(await loadSingleZonePublicForecastShareSelection(selection,{fetchPublic}),compact);
+  assert.equal(requests.length-before,3);missingBundle=false;cases++;
+  for(const alter of [
+    bundle=>bundle.index.zones[0].id='wrong-zone',
+    bundle=>bundle.index.axis.count=117,
+    bundle=>bundle.index.publicMetadata.datasetId+='-different',
+    bundle=>bundle.projectionText=bundle.projectionText.replace(selectedFile.payload.datasetId,'wrong-dataset'),
+  ]){
+    const malformed=JSON.parse(selectedBundle.bytes);
+    alter(malformed);available.set(bundleKey,Buffer.from(JSON.stringify(malformed)));before=requests.length;
+    await assert.rejects(()=>loadSingleZonePublicForecastShareSelection(selection,{fetchPublic}));
+    assert.deepEqual(requests.slice(before),[bundleKey]);cases++;
+  }
+  available.set(bundleKey,Buffer.from('null'));before=requests.length;
+  await assert.rejects(()=>loadSingleZonePublicForecastShareSelection(selection,{fetchPublic}),/FORECAST_SHARE_BUNDLE_FIELDS/);
+  assert.deepEqual(requests.slice(before),[bundleKey]);cases++;
+  available.set(bundleKey,selectedBundle.bytes);
+  await fs.unlink(bundlePath);
+  try{
+    await assert.rejects(()=>auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false}),
+      error=>error instanceof PagesArtifactPrivacyError&&error.issues.includes('invalid or missing public forecast sharing projection'));cases++;
+  }finally{await fs.writeFile(bundlePath,selectedBundle.bytes,{flag:'wx'});}
+  // Site sharing uses one request and preserves the server Open Graph tags.
   for(const host of [FORECAST_SHARE_PAGES_BASE_URL, FORECAST_SHARE_WORKER_BASE_URL]){
     const transport=async url=>fetchPublic('./'+new URL(url).pathname.slice(1));
     for(const language of ['da','de','en']){
       const link=forecastShareUrl(host,{...selection,language});
       const start=requests.length;
       const get=await handleForecastShare(new Request(link),{shareBaseUrl:host,fetchPublic:transport});
-      assert.equal(get.status,200);assert.equal(requests.length-start,2);
+      assert.equal(get.status,200);assert.equal(requests.length-start,1);
       const body=await get.text();assert(body.includes(String(normal.score)+'/100'));
       assertForecastShareAutoOpen(body,get.headers,forecastShareUrl('https://ravradar.dk/',{...selection,language}));
       const beforeHead=requests.length;
@@ -211,14 +244,17 @@ try{
   const alteredPath=path.join(target,alteredDescriptor.zones[entryIndex].path.slice(2));
   assert.equal(sha(await fs.readFile(projectionPath)),selectedFile.entry.sha256);await fs.unlink(projectionPath);
   try{await fs.writeFile(alteredPath,alteredBytes,{flag:'wx'});await fs.writeFile(descriptorPath,text(alteredDescriptor));
-    await fs.writeFile(path.join(target,'forecast-share-trust.json'),text({...files.trustIndex,zones:alteredDescriptor.zones}));
+    const changedIndex={...files.trustIndex,zones:alteredDescriptor.zones};
+    await fs.writeFile(path.join(target,'forecast-share-trust.json'),text(changedIndex));
+    await fs.writeFile(bundlePath,JSON.stringify(buildForecastShareZoneBundle(changedIndex,alteredDescriptor.zones[entryIndex],alteredBytes.toString('utf8'))));
     await assert.rejects(()=>auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false}),error=>error instanceof PagesArtifactPrivacyError&&error.issues.includes('public forecast sharing results differ from normal public results'));cases++;
-  }finally{await fs.unlink(alteredPath);await fs.writeFile(projectionPath,selectedFile.bytes,{flag:'wx'});await fs.writeFile(descriptorPath,files.descriptorBytes);await fs.writeFile(path.join(target,'forecast-share-trust.json'),files.trustBytes);}
+  }finally{await fs.unlink(alteredPath);await fs.writeFile(projectionPath,selectedFile.bytes,{flag:'wx'});await fs.writeFile(descriptorPath,files.descriptorBytes);await fs.writeFile(path.join(target,'forecast-share-trust.json'),files.trustBytes);await fs.writeFile(bundlePath,selectedBundle.bytes);}
   await fs.unlink(descriptorPath);try{await assert.rejects(()=>auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false}),error=>error instanceof PagesArtifactPrivacyError&&error.issues.includes('invalid or missing public forecast sharing projection'));cases++;}
   finally{await fs.writeFile(descriptorPath,files.descriptorBytes,{flag:'wx'});}
-  const copied=await copyForecastShareProjection({source:live,target:path.join(temporary,'share-only')});assert.equal(copied.files,212);
+  const copied=await copyForecastShareProjection({source:live,target:path.join(temporary,'share-only')});assert.equal(copied.files,422);
   const pagesOnly=path.join(temporary,'pages-copy');await fs.mkdir(pagesOnly);
   const pagesCopy=await copyPagesPublicDelivery({source:live,target:pagesOnly});
+  assert.equal(pagesCopy.files,750);
   assert.deepEqual(await fs.readFile(path.join(pagesOnly,'forecast-share-trust.json')),files.trustBytes);
   for(const file of files.zoneFiles)assert.deepEqual(await fs.readFile(path.join(pagesOnly,file.entry.path.slice(2))),file.bytes);cases++;
   // The actual normal hosted verifier reads the new index only for its
@@ -226,19 +262,25 @@ try{
   const root=fileURLToPath(new URL('../',import.meta.url));
   const closure=(await computeRavScorePublicBrowserClosure({root})).manifest;
   assert(closure.files.some(item=>item.path==='js/services/forecast-share-trust-index.js'));
+  assert(closure.files.some(item=>item.path===FORECAST_SHARE_ZONE_BUNDLE_MODULE));
   const sourceFiles=new Set([...closure.files.map(item=>item.path),...closure.htmlEntrypoints.map(item=>item.path)]);
   const common={baseUrl:'https://ravradar.example.test/',sourceHead:'45e943c9a53a27ceefc2773d4a83ee80c4b41b8a',
     expectedManifest:manifest,expectedModel:'integrated',expectedBinding:manifest.ravScoreModelBinding,
     expectedContractText:await fs.readFile(path.join(root,'js/core/ravscore-model-contract.js'),'utf8'),
     expectedBundleText:await fs.readFile(path.join(root,'js/core/ravscore-model-bundle.generated.js'),'utf8'),
     expectedPublicClosure:closure,observationNonce:'synthetic-trust-index-normal-artifact',attempts:1};
-  let omitHostedTrust=false;const hostedReads=[];
+  let omitHostedTrust=false,omitHostedBundle=false;const hostedReads=[];
   const hosted=async value=>{const relative=new URL(value).pathname.slice(1);hostedReads.push(relative);
     if(omitHostedTrust&&relative==='data/live/forecast-share-trust.json')return new Response('',{status:404});
+    if(omitHostedBundle&&relative==='data/live/'+bundleRelative)return new Response('',{status:404});
     const file=path.join(sourceFiles.has(relative)?root:artifact,relative);
     return new Response(await fs.readFile(file),{headers:{'Content-Type':'application/json'}});};
   assert.equal((await verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:hosted})).status,'passed');
-  assert(hostedReads.includes('data/live/forecast-share-trust.json'));cases++;
+  assert(hostedReads.includes('data/live/forecast-share-trust.json'));
+  assert.equal(hostedReads.filter(name=>name.startsWith('data/live/forecast-share-zones/')).length,210);cases++;
+  omitHostedBundle=true;
+  await assert.rejects(()=>verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:hosted}),/forecast-share-zones\/.* returned HTTP 404/);cases++;
+  omitHostedBundle=false;
   omitHostedTrust=true;
   await assert.rejects(()=>verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:hosted}),/forecast-share-trust.json returned HTTP 404/);cases++;
   // The new trust view is admitted independently against the WHOLE manifest;
