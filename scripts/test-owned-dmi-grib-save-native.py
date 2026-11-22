@@ -44,7 +44,10 @@ NODE24 = None
 BODY_SECONDS = 8.0  # Own fixture observer, not a new product deadline.
 CLEANUP_SECONDS = 3.0
 TERMINAL_NEAR_EXPIRY_MS = 6_500
-TERMINAL_LEASE_FIXTURE_ELAPSED_MS = 234_000
+# Leave 12 seconds after simulated elapsed work so the normal seal and SDK
+# upload can reach the held lease on a slow runner. The file wait lasts 15 s.
+TERMINAL_LEASE_FIXTURE_ELAPSED_MS = 228_000
+TERMINAL_LEASE_FIXTURE_OBSERVER_SECONDS = 14.0
 
 TERMINAL_LEASE_WAIT = r'''
 const fs = require('node:fs');
@@ -1206,6 +1209,9 @@ console.log(result.sha256);
                 preload.write_text('const fixture = ' + json.dumps(fixture) + '\n' + TERMINAL_LEASE_WAIT,
                                    encoding='ascii')
                 environment['NODE_OPTIONS'] = '--require=' + json.dumps(str(preload))
+                # Widen only this fixture's watchdog after setup. The actual
+                # bounded pidfd wait below still uses the shared stage deadline.
+                signal.setitimer(signal.ITIMER_REAL, TERMINAL_LEASE_FIXTURE_OBSERVER_SECONDS)
             parent = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
