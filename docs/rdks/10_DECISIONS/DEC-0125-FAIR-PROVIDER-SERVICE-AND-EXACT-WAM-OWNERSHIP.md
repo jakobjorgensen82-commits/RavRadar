@@ -45,3 +45,11 @@ Dette er lokal kontraktevidens, ikke provider- eller produktionsbevis. Før merg
 DEC-0125 supersederer alene de tidligere grove scheduler- og WAM-owner-antagelser. DEC-0124's granulære admission, DEC-0123's candidate/promotion, persistent cache, proveniens, sourceprioritet, fuld slutclosure og op til 48 timers verificeret historik består.
 
 Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret gennem den kontrollerede release- og cutoversekvens. Efter launch består arbejdet med tabsfri cachetransport, ekstern cron, faktisk provider-rækkefølge/tidsforbrug og bevis for normalt vedligeholdelsesoverskud.
+
+## 22. november — isolerede bølgehuller i en almindelig prognose
+
+Kørsel #370 viste et isoleret hul ved Fur nord og Nibe Bredning vest den 26. november kl. 12 dansk tid. Den eksakte WAM_DW-fil var offentliggjort. Tretimersudvælgelsen valgte støttefilerne omkring hullet, og kørselsloggen viser behandling af den første støttefil. De to zonefiler bekræfter, at bølger og RavScore manglede i den pågældende time.
+
+Den lokale kandidat genbruger den almindelige beregning af manglende kystdelstimer. En time inde i prognosen er egnet, når den samme kystdel har gyldige timer på begge sider. Efter modelvalget kan den primære kø tage op til to entydige officielle filer for sådanne timer, hvis der er plads efter den normale kø og de hele ældre reserver. Eksakte opgaver i den normale kø har førsteprioritet. Den almindelige validering af original, bølgetuple og bevarelse af tidligere dækkede timer afgør, om nye data må blive aktive. Ældre reserve kræver fortsat, at alle normale filer i den primære fase er gennemført, og at den primære fase er afsluttet uden et tids- eller processtop.
+
+De målrettede lokale prøver viser, at en eksakt fil kan lukke det isolerede hul, bevare gamle par og lade det normale modelvalg, den fulde kø og den ældre reserve bestå. Præcis kildekvalifikation og virkning i en ny almindelig offentlig prognose udestår.
