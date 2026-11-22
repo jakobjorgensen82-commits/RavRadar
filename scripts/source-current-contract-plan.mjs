@@ -639,6 +639,13 @@ const PAGES_FULLY_EXECUTED_TESTS=new Set(COMMANDS.pages.filter(command=>command!
 const PAGES_SCOPE_CONTROLS=new Set(['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs']);
 const PAGES_TRANSPORT_INPUTS=new Set(['scripts/lib/run-sealed-pages-deployment.mjs',
   'scripts/test-ordinary-pages-immediate-retry.mjs']);
+const PAGES_PUBLIC_OBSERVER_CLI='scripts/deploy-ordinary-pages-with-immediate-retry.mjs';
+export function isAdditivePagesPublicObserverChange(before,after){
+  const anchor='    cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,\n';
+  const addition='    readPublicTarget: readPublic,\n';
+  return typeof before==='string'&&typeof after==='string'&&!before.includes('readPublicTarget')
+    &&before.split(anchor).length===2&&after===before.replace(anchor,anchor+addition);
+}
 const HISTORICAL_UPDATER_PATHS=new Set(PATH_AREAS.historicalUpdaterOracles);
 function historicalUpdaterCommandsForChangedInputs(changes){
   const files=changes.filter(row=>HISTORICAL_UPDATER_PATHS.has(row.path)).map(row=>row.path);
@@ -659,13 +666,15 @@ for(const [area,files]of Object.entries(PATH_AREAS))for(const file of files){
 // beskyttede input og installerens DDL, foer kommandoerne bruges.
 export function pagesContractCommandsForChangedInputs(changes){
   const regular=row=>row.status==='M'&&row.beforeMode==='100644'&&row.afterMode==='100644';
+  const transport=row=>PAGES_TRANSPORT_INPUTS.has(row.path)
+    ||(row.path===PAGES_PUBLIC_OBSERVER_CLI&&row.pagesPublicObserverOnly===true);
   if(!Array.isArray(changes)||!changes.length
     ||changes.some(row=>!row||typeof row.path!=='string')
     ||new Set(changes.map(row=>row.path)).size!==changes.length)return COMMANDS.pages;
-  if(changes.some(row=>PAGES_TRANSPORT_INPUTS.has(row.path))){
+  if(changes.some(transport)){
     const documentation=row=>(pathAreas.get(row.path)?.every(area=>area==='documentation')
       &&!row.path.endsWith('.mjs'))||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(row.path);
-    if(changes.every(row=>regular(row)&&(PAGES_TRANSPORT_INPUTS.has(row.path)
+    if(changes.every(row=>regular(row)&&(transport(row)
       ||PAGES_SCOPE_CONTROLS.has(row.path)||documentation(row))))
       return freeze(COMMANDS.pages.filter(command=>command!==PAGES_DEPLOYMENT_COMMAND));
     return COMMANDS.pages;
@@ -1258,7 +1267,12 @@ export function planSourceCurrentContractsFromGit(input){
       if(!['A','M','D'].includes(row.status)
         ||![row.beforeMode,row.afterMode].every(mode=>['000000','100644','100755'].includes(mode)))
         return refuse('CURRENT_UNSUPPORTED_DIFF_ENTRY');
-      changedInputs.push({path:file,status:row.status,beforeMode:row.beforeMode,afterMode:row.afterMode});
+      const changed={path:file,status:row.status,beforeMode:row.beforeMode,afterMode:row.afterMode};
+      if(file===PAGES_PUBLIC_OBSERVER_CLI&&row.status==='M'
+        &&row.beforeMode==='100644'&&row.afterMode==='100644')
+        changed.pagesPublicObserverOnly=isAdditivePagesPublicObserverChange(
+          readCommittedText(input.baselineCommit,file,true),readCommittedText(input.candidateCommit,file,true));
+      changedInputs.push(changed);
       // Kun den lukkede normale Node24-miljøtilføjelse kan kvalificeres her.
       // Andre PR-workflowændringer beholder den eksisterende FULL-grænse.
       if(file==='.github/workflows/validate-pull-request.yml'
