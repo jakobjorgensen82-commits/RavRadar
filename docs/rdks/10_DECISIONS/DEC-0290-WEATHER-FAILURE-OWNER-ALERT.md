@@ -1,7 +1,13 @@
 # DEC-0290 – Ejeralarm for en afsluttet fejlet vejrhentning
 
-**Status:** DELVIST IMPLEMENTERET – oprindelig alarm leveret; botens afslutningshandoff er kun lokal og ikke leveret.
+**Status** Alarmen er i drift. Den ændrede rækkefølge er afprøvet lokalt og afventer kildekvalifikation.
 **Dato:** 2026-10-04
+
+## 22. november — alarmen venter på den parallelle arkivrotation
+
+I almindelig kørsel #353 nåede terminalkontrollen sit fejlresultat kl. 16.29.14 UTC. Alarm #124 opgav kl. 16.30.45 at se kørslen afsluttet, mens den parallelle DMI-arkivrotation først sluttede kl. 16.37.15.
+
+Alarmkaldet venter nu på både terminalkontrollen og arkivjobbet. Terminalkontrollens fejlresultat er stadig betingelsen for at sende alarmen, også hvis arkivjobbet springes over eller ender med fejl. Afhængigheden ligger kun på alarmkaldet. Alarmen kontrollerer stadig den faktiske afslutning med samme afgrænsede ventetid og samme værn mod dubletter og gentagne writes. Den lokale kadenceprøve dækker rækkefølgen. Kildekvalifikation og en faktisk alarm i drift udestår.
 
 ## Tillæg8.oktober kl.00.47 — botens normale fejlkørsel mangler faktisk alarm
 
