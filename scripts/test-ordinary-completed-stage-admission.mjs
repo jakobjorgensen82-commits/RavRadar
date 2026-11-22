@@ -251,6 +251,20 @@ export async function assertNormalStagePublication(t) {
   assert.equal(r2Calls.slice(beforeCodeOnlyCalls).includes('PUT'), false);
   assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').version, 2);
   assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').payload.current.sourceHead, identity.sourceHead);
+
+  const missingCurrentObject = row.payload.current.objects[0].objectPath;
+  const expectedCurrentBytes = Buffer.from(transport.objects.get(missingCurrentObject));
+  assert.equal(transport.objects.delete(missingCurrentObject), true);
+  virtualUsed = 1_734_856_529;
+  const repairCalls = [];
+  const repairedCurrent = await publishPrivateWeatherRuntime({
+    ...normalPublication, request: transport.documentRequest,
+  }, r2OptionsFor(transport, repairCalls));
+  assert.equal(repairedCurrent.published, false);
+  assert.ok(repairCalls.includes('PUT'), 'The existing repair restores the missing current archive object.');
+  assert.deepEqual(transport.objects.get(missingCurrentObject), expectedCurrentBytes);
+  assert.equal(repairedCurrent.bucketUsageBeforeArchiveUpload, undefined,
+    'Repair of an already-referenced object does not prove prior retirement happened before its PUT.');
   const nextHour = '2026-10-19T12:00:00.000Z', nextNow = '2026-10-19T13:00:00.000Z';
   const third = await create(nextHour, 'third', '2026-10-19T12:05:00.000Z');
   const nextExpected = await buildPrivateRuntimeExpectation({

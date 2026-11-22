@@ -80,16 +80,18 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
   const policy = PRIVATE_WEATHER_PUBLICATION_POLICY;
   const retirement = createPrivateWeatherRetirement(storageOptions, policy.bucketCeilingBytes);
   let before, lastRead, readQuery, priorSettled;
+  let priorRetirementSettled = false;
   const freshPointer = async () => {
     return decodePrivateWeatherPointerRow(await options.request(readQuery, {}, 'read'));
   };
   const settleBeforeMutation = async () => {
     priorSettled ??= retirement.settle(before, freshPointer);
     await priorSettled;
+    priorRetirementSettled = true;
   };
   let bucketUsageBeforeArchiveUpload;
   const storage = createPrivateWeatherPublicationStorage(storageOptions, true, usage => {
-    bucketUsageBeforeArchiveUpload = usage;
+    if (priorRetirementSettled) bucketUsageBeforeArchiveUpload = usage;
   });
   let bucketUsageBeforeRetirementMarker;
   const validateMarkerCapacity = async bytes => {
