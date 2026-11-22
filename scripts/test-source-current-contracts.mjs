@@ -12,7 +12,7 @@ import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
-import {CURRENT_CONTRACT_COMMANDS,currentWorkflowTargets,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,currentWorkflowTargets,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,isAdditivePagesPublicObserverChange,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
   PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
@@ -129,6 +129,29 @@ const plannerControlSelectionCases=assertPlannerControlCommandSelection();
 // Rene transportændringer vælger fire fulde mål; ingen ejerindgang eller blanket Pages-fritagelse.
 const transportInputs=['scripts/lib/run-sealed-pages-deployment.mjs','scripts/test-ordinary-pages-immediate-retry.mjs'];
 const transportCommands=CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command!==deploymentCommand);
+const publicObserverCli='scripts/deploy-ordinary-pages-with-immediate-retry.mjs';
+const publicObserverAddition='    readPublicTarget: readPublic,\n';
+// Fast syntetisk klipfixture; den aktuelle CLI må fortsat ændres via den brede normale vej.
+const publicObserverBefore='await runSealedPagesDeployment({\n'
+  +'    cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,\n'
+  +'});\n';
+const publicObserverAfter='await runSealedPagesDeployment({\n'
+  +'    cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,\n'
+  +publicObserverAddition
+  +'});\n';
+assert.equal(isAdditivePagesPublicObserverChange(publicObserverBefore,publicObserverAfter),true);
+for(const [before,after]of [[publicObserverBefore,publicObserverBefore],[publicObserverAfter,publicObserverBefore],
+  [publicObserverBefore,publicObserverAfter+'// unrelated owner change\n'],
+  [publicObserverBefore,publicObserverAfter.replace('readPublicTarget: readPublic','readPublicTarget: otherReader')],
+  [publicObserverBefore,publicObserverAfter.replace(publicObserverAddition,publicObserverAddition.repeat(2))]])
+  assert.equal(isAdditivePagesPublicObserverChange(before,after),false);
+for(const inputs of [[{...modified(publicObserverCli),pagesPublicObserverOnly:true}],
+  [modified(transportInputs[0]),{...modified(publicObserverCli),pagesPublicObserverOnly:true}]])
+  assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),transportCommands);
+for(const row of [modified(publicObserverCli),{...modified(publicObserverCli),pagesPublicObserverOnly:false},
+  {...modified(publicObserverCli),pagesPublicObserverOnly:true,status:'A',beforeMode:'000000'},
+  {...modified(publicObserverCli),pagesPublicObserverOnly:true,afterMode:'100755'}])
+  assert.deepEqual(pagesContractCommandsForChangedInputs([modified(transportInputs[0]),row]),CURRENT_CONTRACT_COMMANDS.pages);
 for(const inputs of [transportInputs.slice(0,1).map(modified),transportInputs.slice(1).map(modified),transportInputs.map(modified),
   [modified(transportInputs[0]),modified('CHANGELOG.md'),modified('docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md')],
   [...transportInputs.map(modified),modified('scripts/source-current-contract-plan.mjs'),modified('scripts/test-source-current-contracts.mjs')],
@@ -1378,12 +1401,13 @@ try{
   // Den samme normale Gitplan skal eje transportvalget og bevare sine beskyttede input.
   const beforeTransportHead=text(root,['rev-parse','HEAD']);
   try{
-    const transportFixtureFiles=[...transportInputs,...ownerHelpers,'scripts/verify-ravscore-operational-pages-deployment.mjs',
+    const transportFixtureFiles=[...transportInputs,publicObserverCli,...ownerHelpers,'scripts/verify-ravscore-operational-pages-deployment.mjs',
       'scripts/test-ravscore-operational-pages-deployment.mjs','.github/workflows/reusable-pages-deploy.yml',
       '.github/workflows/reusable-operational-reentry.yml','scripts/test-pages-generation-and-reentry.mjs',
       'scripts/test-protected-operational-reentry-evidence.mjs','scripts/source-current-contract-receipt.mjs',
       'scripts/sync-handbook-installation-copy.mjs','app.js','CHANGELOG.md'];
-    const transportBaseTree=rewrite(baselineTree,transportFixtureFiles.map(file=>[file,fixtureControlBytes(file)]));
+    const transportBaseTree=rewrite(baselineTree,transportFixtureFiles.map(file=>[file,
+      file===publicObserverCli?Buffer.from(publicObserverBefore):fixtureControlBytes(file)]));
     const transportBase=commit(transportBaseTree,[base],'synthetic genuine transport scope base');
     for(const [label,paths,narrow,control]of [
       ['transport',[transportInputs[0]],true,false],['test',[transportInputs[1]],true,true],
@@ -1408,6 +1432,27 @@ try{
       if(control!==null)assert.equal(selected.controlQualificationRequired,control,label);
       for(const key of ['postgresUnchanged','CUnchanged','IUnchanged','TUnchanged'])assert.equal(selected.protectedInputs[key],true,label);
       cases++;
+    }
+    // The real builder reads both committed CLI blobs; a path or supplied flag
+    // alone never qualifies an unrelated owner/verifier/storage/workflow change.
+    for(const [label,after,extra,narrow]of [
+      ['observer',publicObserverAfter,[],true],
+      ['observer and transport',publicObserverAfter,transportInputs,true],
+      ['observer and controls',publicObserverAfter,['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'],true],
+      ['changed reader',publicObserverAfter.replace('readPublicTarget: readPublic','readPublicTarget: otherReader'),[],false],
+      ['unrelated owner change',publicObserverAfter+'// changed owner fence\n',[],false],
+      ...['scripts/verify-ravscore-operational-pages-deployment.mjs',...ownerHelpers,
+        'scripts/protected-private-production-runtime.mjs','.github/workflows/reusable-pages-deploy.yml']
+        .map(file=>['observer plus '+file,publicObserverAfter,[file],false]),
+    ]){
+      const edits=[[publicObserverCli,Buffer.from(after)],...extra.map(file=>[file,Buffer.concat([
+        git(root,['cat-file','blob',transportBase+':'+file]),Buffer.from('\n// Synthetic independent change\n')])])];
+      const candidate=commit(rewrite(transportBaseTree,edits),[transportBase],'synthetic '+label);checkout(candidate);
+      const selected=plan({baselineCommit:transportBase,candidateCommit:candidate,expectedHead:candidate});
+      assert(narrow?selected.selection==='CURRENT_CONTRACTS':['CURRENT_CONTRACTS','FULL'].includes(selected.selection),label);
+      if(selected.selection==='CURRENT_CONTRACTS')assert.deepEqual(selected.areas.pages.commands,
+        narrow?transportCommands:CURRENT_CONTRACT_COMMANDS.pages,label);
+      assert(!selected.commands.includes(ownerCommand),label);cases++;
     }
     for(const kind of ['A','D','mode']){
       checkout(transportBase);const file=transportInputs[0];git(root,['update-index','--force-remove','--',file]);

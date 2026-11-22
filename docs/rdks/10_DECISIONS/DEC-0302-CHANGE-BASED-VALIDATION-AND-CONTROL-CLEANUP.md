@@ -1,3 +1,7 @@
+## 22. november — præcis læsekobling i Pages-transporten
+
+Den eksisterende transportkontrol med fire hele Pages-mål dækker også det ene additive `readPublicTarget: readPublic`-kald i den normale CLI. Den rigtige Gitbygger skal bevise, at dette er hele ændringen i en eksisterende almindelig CLI-fil; en sti eller prøveflag er ikke bevis. Andre ændringer i ejer, læser, verifier, lagring eller workflow beholder deres normale bredere kontrol. Kravet om uafhængig ROOT-kontrol består. Katalogvalg er ikke et bestået mål eller produktionsaccept.
+
 ## Drift frem for brede historiske kontrolkrav
 
 Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.

@@ -1,3 +1,9 @@
+## 22. november — offentlig målverifikation under Pages-ventetid
+
+- [x] Klargør afgrænset offentlig manifestlæsning efter autentisk CREATE-kvittering; en delt SHA-status giver fortsat ingen terminal-, annullerings- eller retryautoritet.
+- [x] Kvalificér den lokale rettelse og dens afslag med den eksisterende normale Pages-prøve; lokale prøver giver ingen hosted leveringsautoritet.
+- [ ] Kvalificér præcis kilde og verificér virkningen i en efterfølgende almindelig Pages-levering; tidligere observeret ventetid har endnu ingen bevist konkret ACK-/pollårsag.
+
 ## 22. november — faktisk R2-lagerplads i den normale drift
 
 - [x] Genbrug eksisterende lageropslag i publicering og backupplan. Den lokale prøve dækker også ukendt startmåling og uafsluttet rotation.
