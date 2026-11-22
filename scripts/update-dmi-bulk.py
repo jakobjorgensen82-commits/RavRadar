@@ -15039,8 +15039,55 @@ def write_failure_summary(error: Exception) -> None:
             handle.write(f"- Opstartsfejl: `{safe_error_message(error)}`\n")
 
 
+def ordinary_wave_first_turn_gap_summary(
+    evidence: dict[str, Any], reference: datetime, isolated_times: set[str],
+    primary_run: str | None, assets: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Project the first native gaps and the queue returned for those hours."""
+    try:
+        hours = operational_current_valid_times(reference)
+        missing_by_hour = dict.fromkeys(hours, 0)
+        isolated_by_hour = dict.fromkeys(hours, 0)
+        neighbors = {
+            valid: (before, after)
+            for before, valid, after in zip(hours, hours[1:], hours[2:])
+        }
+        verified = evidence["verifiedPairKeys"]
+        for part, valid in evidence["targetPairKeys"] - verified:
+            if valid not in missing_by_hour or part.startswith("PROXY_SOURCE::"):
+                continue
+            missing_by_hour[valid] += 1
+            if valid in neighbors and all((part, neighbor) in verified for neighbor in neighbors[valid]):
+                isolated_by_hour[valid] += 1
+        primary_assets = {
+            asset["valid"]: asset for asset in assets
+            if primary_run is not None and asset.get("modelRun") == primary_run
+            and asset.get("operationalWavePhaseRank") == 0
+        }
+        return {
+            "publicAxisHourCount": len(hours),
+            "primaryModelRun": canonical_time(primary_run),
+            "hours": [
+                {
+                    "validAt": valid,
+                    "missingNativePartCount": missing_by_hour[valid],
+                    "isolatedNativePartCount": isolated_by_hour[valid],
+                    "isolatedRepairRequested": valid in isolated_times,
+                    "primaryExactAssetSelected": valid in primary_assets,
+                    "isolatedRepairSelected": primary_assets.get(valid, {}).get(
+                        "operationalWaveIsolatedRepair"
+                    ) is True,
+                }
+                for valid in hours if missing_by_hour[valid] or valid in isolated_times
+            ],
+        }
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+
+
 def write_ordinary_wave_acquisition_report(
     result: dict[str, Any], reference: datetime,
+    *, first_turn_gaps: dict[str, Any] | None = None,
 ) -> bool:
     """Report what happened to WAM data without exporting raw or per-point input."""
     if os.getenv("DMI_BULK_REQUIRE_ORDINARY_CLOSURE") != "true" or FINALIZE_ONLY:
@@ -15088,6 +15135,7 @@ def write_ordinary_wave_acquisition_report(
                 "selectedModelRun": canonical_time(stac.get("selectedRun")),
                 "catalogueResolvesAxis": catalogue_resolves_axis if type(catalogue_resolves_axis) is bool else None,
                 "activeModelRun": canonical_time(result["runs"].get(collection, {}).get("referenceTime")),
+                "firstTurnNativeGaps": (first_turn_gaps or {}).get(collection),
                 "firstUnresolvedHour": canonical_time(progress.get("firstUnresolvedHour")),
                 "remainingPairCount": count(progress, "remainingClosurePairCount"),
                 "assetCoverage": {name: count(coverage, name) for name in coverage_counts},
@@ -15727,6 +15775,8 @@ def main() -> int:
     # Copernicus gap. A mature run may have an internal, explicitly observed
     # STAC hole, but a latest run whose tail is still publishing is deferred.
     prefetched_marine: dict[str, tuple[str | None, list[dict[str, Any]], dict[str, Any]]] = {}
+    # Keep report-only evidence outside result so checkpoints and caches keep their shape.
+    first_wave_turn_gaps: dict[str, Any] = {}
     research_replay_catalog: dict[str, dict[str, Any]] = {}
     required_current_valid_times = set(
         operational_current_valid_times(locked_production_reference)
@@ -16477,7 +16527,6 @@ def main() -> int:
                     active_wave_evidence,
                     locked_production_reference,
                 )
-                del active_wave_evidence
                 run, assets, stac_stats = list_latest_assets(
                     collection,
                     None,
@@ -16494,6 +16543,14 @@ def main() -> int:
                     include_operational_wave_fallback_phases=True,
                     isolated_wave_gap_times=isolated_wave_gap_times,
                 )
+                if (not CACHE_ONLY and not FINALIZE_ONLY
+                        and os.getenv("DMI_BULK_REQUIRE_ORDINARY_CLOSURE") == "true"
+                        and result["diagnostics"]["collectionsAttempted"].count(collection) == 1):
+                    first_wave_turn_gaps[collection] = ordinary_wave_first_turn_gap_summary(
+                        active_wave_evidence, locked_production_reference, isolated_wave_gap_times,
+                        run, assets,
+                    )
+                del active_wave_evidence
             elif collection_is_critical_atmosphere or collection_is_horizon:
                 run, assets, stac_stats = list_atmosphere_turn_assets(
                     collection, locked_production_reference,
@@ -19120,7 +19177,7 @@ def main() -> int:
         diagnostics=diag,
     )
     wave_report_ready = not CACHE_ONLY and write_ordinary_wave_acquisition_report(
-        result, locked_production_reference,
+        result, locked_production_reference, first_turn_gaps=first_wave_turn_gaps,
     )
     write_github_outputs(
         result["refreshStatus"], fresh_successes, fresh_partials,
