@@ -1,3 +1,10 @@
+## 23. november — current80-caller og direkte PG-afhængighed
+
+- [x] Flyt kun fast migrations-/source-/arm-data til ét fælles sourceblad og registrér det positivt som80-afhængighed. Historisk79-input ændres ikke.
+- [x] Tilknyt den faktiske ni-case-fixture i den eksisterende native kalder og kræv en særskilt current80-facet gennem decoder og slutrecord. Originale49/17-facit og79-payloads bevares som deres egen scope.
+- [x] Afprøv de nye ikke-native kontrakter: Auth, særskilt80-decoder, normal A/B-dispatch, kvalificeret FULL-resultat og faktisk Git-inputafhængighed. De afgrænsede cases består; de større parentforløb er ikke samlet afsluttet lokalt og kræver normal Linux-kontrol.
+- [ ] Kør faktisk native PostgreSQL gennem den eksisterende kilde-PR-vej. Ingen egnet lokal runtime er fundet; de ni SQL-cases og80-kvalifikation er stadig UNRUN. De normale migrations-/live-læse- og aktiveringsled er fortsat separate, uden hosted handlinger.
+
 ## 22. november — native receipt-append er ikke installeret
 
 - [x] Forbered én append med bounded engangskvittering og særskilt fast metadata-læser. De gamle SQL- og OFF-kontrakter er bevaret; normal klient-RPC, claims, capture/invalidation og manuelle slettebarrierer er uændrede.

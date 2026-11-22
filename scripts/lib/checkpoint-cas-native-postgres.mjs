@@ -34,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'ASSISTANT_AFTER599_SUCCESSOR', 'ACCOUNT_ERASURE_APP', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'ASSISTANT_AFTER599_SUCCESSOR', 'ACCOUNT_ERASURE_APP', 'ACCOUNT_NATIVE_RECEIPT_APP80', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -1190,7 +1190,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const {compareAssistantAfter599Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter599Successor=await compareAssistantAfter599Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
-    let assistantAfter598Successor,accountErasure,accountInactivity;
+    let assistantAfter598Successor,accountErasure,accountInactivity,accountNativeReceipt;
     if(includeAssistantAfter598Successor){
       nativePhase='ASSISTANT_AFTER598_SUCCESSOR';
       const {compareAssistantAfter598Successor}=await import('./assistant-later-h0-postgres.mjs');
@@ -1199,21 +1199,38 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     if(includeAssistantAfter598Successor||includeAssistantAfter599Successor){
       if(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION){
         nativePhase='ACCOUNT_ERASURE_APP';
-        const {exerciseAccountErasureOutbox}=await import('./account-erasure-outbox-native-fixture.mjs');
+        const {exerciseAccountErasureOutbox,exerciseAccountNativeReceipt}=await import('./account-erasure-outbox-native-fixture.mjs');
         const source=accountErasureSchema.readAccountErasureSource(repositoryRoot);
         const files=(await fs.readdir(path.join(repositoryRoot,'supabase/migrations'))).filter(file=>file.endsWith('.sql'));
         const hasNotice=accountErasureSchema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS!==undefined;
         assert(!hasNotice||includeAssistantAfter599Successor,'The notice append belongs only to current601');
-        assert.equal(files.length,includeAssistantAfter599Successor?(hasNotice?79:77):76);
+        const receiptPresent=files.includes('20261122200000_account_native_activity_receipt_off.sql');
+        let receiptSource=null;
+        if(receiptPresent){
+          assert(includeAssistantAfter599Successor&&hasNotice,'Receipt append belongs only to current80');
+          const {currentNativeActivityReceiptSourceContext}=await import('./account-native-activity-receipt-source.mjs');
+          receiptSource=currentNativeActivityReceiptSourceContext();assert(receiptSource);
+        }
+        assert.equal(files.length,(includeAssistantAfter599Successor?(hasNotice?79:77):76)+Number(receiptPresent));
+        // Freshly execute the unchanged original49/17 SQL scope. The separate
+        // current80 facet below is mandatory and never minted from old79 data.
+        const originalSqlScopeCount=files.length-Number(receiptPresent);
         assert(files.includes(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.filename));
         const {inactivityNotice,...manual}=await exerciseAccountErasureOutbox({psql,runSql,repositoryRoot});
         accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
           migrationVersion:accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.version,
-          migrationSQLSha256:source.sha256,sourceSqlFileCount:files.length,...manual};
+          migrationSQLSha256:source.sha256,sourceSqlFileCount:originalSqlScopeCount,...manual};
         if(hasNotice){
           assert(inactivityNotice,'The actual current79 source requires its separate OFF SQL result');
-          accountInactivity={kind:'ACCOUNT_INACTIVITY_OFF_NATIVE_SQL_CASES',sqlExecuted:true,sourceSqlFileCount:files.length,...inactivityNotice};
+          accountInactivity={kind:'ACCOUNT_INACTIVITY_OFF_NATIVE_SQL_CASES',sqlExecuted:true,sourceSqlFileCount:originalSqlScopeCount,...inactivityNotice};
         }else assert.equal(inactivityNotice,undefined);
+        if(receiptSource){
+          nativePhase='ACCOUNT_NATIVE_RECEIPT_APP80';
+          const executed=await exerciseAccountNativeReceipt({psql,runSql,repositoryRoot});
+          assert.equal(executed.appendSha256,receiptSource.migrationSQLSha256);
+          accountNativeReceipt={kind:'ACCOUNT_NATIVE_ACTIVITY_RECEIPT_NATIVE_SQL_CASES',sqlExecuted:true,
+            ...receiptSource,...executed};
+        }
       }
     }
     completedReport={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
@@ -1236,6 +1253,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeAssistantAfter599Successor?{assistantAfter599Successor}:{}),
       ...(accountErasure?{accountErasure}:{}),
       ...(accountInactivity?{accountInactivity}:{}),
+      ...(accountNativeReceipt?{accountNativeReceipt}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

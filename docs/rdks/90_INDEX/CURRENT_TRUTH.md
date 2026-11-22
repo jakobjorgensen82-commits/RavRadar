@@ -1,3 +1,11 @@
+## 23. november — normal App80-kvalifikation er lokalt tilkoblet
+
+Den lokale efterfølger skiller kvitteringens faste SQL/source-data fra HTTP-kontrolleren. Den normale PG-inputfortegnelse medtager det rene sourceblad sammen med den eksakte nye append; manglende eller delvis tilkobling afvises. En ændring af HTTP-kontrolleren alene bliver ikke numerisk PG-input.
+
+Den eksisterende ejede native kalder genudfører de uændrede 49/17-prøver i deres oprindelige 79-scope og kalder derefter de ni særskilte kvitteringscases. En obligatorisk current80-facet binder den nye append og source-body. Gamle79-kvitteringer ommærkes ikke og kan ikke alene opfylde80. Den normale decoder, inputgenlæsning og slutrecord kræver den nye facet, og kun normal autentisk FULL-kvalifikation kan frigive den som kvalificeret evidens.
+
+Dette er stadig lokal kildeforberedelse. PostgreSQL-kørsel, installation, normal live-læserute, arm, faktisk Auth-svar og dækningsstart er ikke udført. Der aktiveres ingen policy, varsling, cron eller sletning. Alle tidligere SQL og numeriske C/I/T bevares.
+
 ## 22. november — særskilt native engangskvittering er en lokal kontrakt
 
 Den lokale uinstallerede app-append forbereder én privat, uaktiveret kvitteringsrække. En særskilt arm bindes til den eksisterende dæknings-epoch. Kun den eksklusive native token-hook kan efter positiv capture sætte de faste servertider én gang. En hook startet før armen afvises som vidne. Klientens normale aktivitets-RPC ændres ikke og kan ikke sætte kvitteringen. Ingen brugeridentitet, token, claims eller fritekst gemmes; nye login giver ikke nye kvitteringsrækker. Observeren venter ikke på en låst række og må ikke erstatte capturefunktionens eksisterende invaliderings-/rollbackværn.

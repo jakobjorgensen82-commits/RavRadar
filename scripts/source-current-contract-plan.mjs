@@ -267,6 +267,7 @@ const PATH_AREAS=freeze({
     'scripts/test-fixed-assistant-failure-log-20261121-1712.mjs',
     '.github/workflows/deploy-trip-storage.yml'],
   accountActivityHookRead:[
+    'scripts/lib/account-native-activity-receipt-source.mjs',
     'scripts/read-fixed-account-activity-hook.mjs',
     'scripts/test-fixed-account-activity-hook.mjs',
   ],

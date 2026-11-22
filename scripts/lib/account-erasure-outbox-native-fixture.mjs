@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptArmQuery } from '../read-fixed-account-activity-hook.mjs';
+import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptArmQuery } from './account-native-activity-receipt-source.mjs';
 import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata,
  readAccountInactivitySource,accountInactivityCatalogQuery,verifyAccountInactivityCatalogMetadata}
  from '../verify-account-erasure-schema.mjs';
