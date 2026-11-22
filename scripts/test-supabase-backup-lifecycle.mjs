@@ -79,7 +79,10 @@ test('normal coordinator is disabled before IO, restores before rotation and cap
     rotate:async()=>{rotations++;current.rotationPending=false;return {status:'DATABASE_BACKUP_ONE_GROUP_RETIRED',deletedObjects:6};}};
   const disabled=await runAutonomousDatabaseBackup({phase:'execute'},{...dependencies,env:{...env,SUPABASE_BACKUP_AUTOMATION:''}});
   assert.equal(disabled.proceed,false);assert.equal(preflights,0);
-  assert.equal((await runAutonomousDatabaseBackup({phase:'plan'},dependencies)).action,'restore');
+  assert.equal(disabled.backupBucketStock,undefined);
+  const restorePlan=await runAutonomousDatabaseBackup({phase:'plan'},dependencies);
+  assert.equal(restorePlan.action,'restore');
+  assert.deepEqual(restorePlan.backupBucketStock,{usedBytes:250_000_000,policyLimitBytes:2_000_000_000});
   assert.equal(captures+restores+rotations+receipts,0);
   assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).action,'restore');
   assert.equal(captures,0);assert.equal(restores,1);assert.equal(receipts,1);
@@ -89,7 +92,16 @@ test('normal coordinator is disabled before IO, restores before rotation and cap
   assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).status,'DATABASE_BACKUP_WEEKLY_CAPTURE_CREATED_RESTORE_PENDING');
   assert.equal(captures,1);assert.equal(current.restoreVerified,false);
   assert.equal((await runAutonomousDatabaseBackup({phase:'plan'},dependencies)).action,'restore');assert.equal(captures,1);
-  current.restoreVerified=true;assert.equal((await runAutonomousDatabaseBackup({phase:'plan'},dependencies)).proceed,false);
+  current.restoreVerified=true;
+  current.usedBytes=195_000_000;
+  const afterRotation=await runAutonomousDatabaseBackup({phase:'plan'},dependencies);
+  assert.equal(afterRotation.status,'DATABASE_BACKUP_SKIPPED_NOT_DUE');
+  assert.equal(afterRotation.proceed,false);
+  assert.deepEqual(afterRotation.backupBucketStock,{usedBytes:195_000_000,policyLimitBytes:2_000_000_000});
+  const unknownStock=await runAutonomousDatabaseBackup({phase:'plan'},{
+    ...dependencies,inspectCurrent:async()=>({...current,usedBytes:undefined}),
+  });
+  assert.equal(unknownStock.backupBucketStock,undefined);
   clock+=DATABASE_BACKUP_INTERVAL_MS;current.usedBytes=1_700_000_001;
   await assert.rejects(()=>runAutonomousDatabaseBackup({phase:'execute'},dependencies),{code:'R2_CAPTURE_HEADROOM'});assert.equal(captures,1);
   current.usedBytes=250_000_000;current.rotationPending=true;
