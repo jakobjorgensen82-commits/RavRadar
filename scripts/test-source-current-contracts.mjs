@@ -928,7 +928,8 @@ let actualCurrentAfter598SourceVerified=false;
 let actualCurrentAfter599SourceVerified=false;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
-  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
+  baseTip:null,stalePullBase:null,liveMainFault:null,mainTipAfterTargets:null,hintOverride:null,duplicateReview:false,
+  malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
 const fallbackOnlyCommits=new Set();let observedRoutes=[],unexpectedRoutes=[],fixtureFailures=[],fallbackDiscoveries=[];
 const scenarios=[];
 const moduleAt=async file=>import(pathToFileURL(path.join(root,file)).href);
@@ -1002,7 +1003,7 @@ function currentPull(){
   }
   return {number:selectedPr,state:state.merged?'closed':'open',...(state.merged?{merged_at:stamp(24),merge_commit_sha:main}:{}),
     user:{login:native.ORIGIN.repository.split('/')[0]},head:{sha:head,ref:'codex/synthetic-domain-current',repo:{full_name:native.ORIGIN.repository}},
-    base:{sha:state.merged&&state.closedBaseTip?state.closedBaseTip:state.baseTip??base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
+    base:{sha:(state.merged?state.closedBaseTip:state.stalePullBase)??state.baseTip??base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
     body};
 }
 function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
@@ -1082,6 +1083,12 @@ async function transport(url,options){
   assert.equal(options.headers.Authorization,'Bearer synthetic-never-live');const route=target.pathname+target.search;
   observedRoutes.push(route);
   if(route===repo+'/pulls/'+selectedPr)return Response.json(currentPull());
+  if(route===repo+'/git/ref/heads/main'){
+    if(state.liveMainFault==='expired')return new Response(null,{status:410});
+    const ref=state.liveMainFault==='wrong-ref'?'refs/heads/other':'refs/heads/main';
+    const sha=(rows.length?state.mainTipAfterTargets:null)??state.baseTip??base;
+    return Response.json({ref,object:{type:'commit',sha}});
+  }
   if(route===actions+'/runs/'+selectedRun)return Response.json(run(true));
   if(route===actions+'/runs/'+selectedRun+'/attempts/1/jobs?per_page=100')return Response.json({total_count:1,jobs:[jobs(true)]});
   const match=new RegExp('^'+actions+'/artifacts/([0-9]+)/zip$').exec(route);
@@ -1101,6 +1108,7 @@ function configure(candidate){
   state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;state.closedBaseTip=null;
   state.modernWorkflow=false;state.ownedCacheNativeWorkflow=false;state.fullModernWorkflow=false;state.sdkStepFault=null;
   state.baseTip=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
+  state.stalePullBase=null;state.liveMainFault=null;state.mainTipAfterTargets=null;
   Object.assign(process.env,{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,SOURCE_GATE_HEAD_SHA:head,
     PULL_REQUEST_NUMBER:String(selectedPr),GITHUB_RUN_ID:String(selectedRun),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'validate',
     GITHUB_TOKEN:'synthetic-never-live'});
@@ -1969,9 +1977,10 @@ try{
   assert.equal(consumer.verifiedMainSourceFrontier(clone(accepted)),null);
   assert.equal(consumer.verifiedMainSourceFrontier({required:false}),null);
   const regularMerge=main;
+  const otherMainTip=commit(baselineTree,[base],'synthetic new main tip with the same merge-base');
   try{
-    for(const [parent,required] of [[base,false],[head,true]]){
-      main=commit(candidateTree,[parent],'synthetic GitHub squash with an exact tree');
+    for(const [parents,required] of [[[base],false],[[head],true],[[otherMainTip,head],true]]){
+      main=commit(candidateTree,parents,'synthetic GitHub merge or squash with an exact tree');
       checkout(main);rebuildMaps();
       const squashContext={...context,GITHUB_SHA:main};
       const located=await discover(squashContext,content,{...freshAccess(),readGit});
@@ -1980,7 +1989,7 @@ try{
       cases++;
     }
   }finally{main=regularMerge;checkout(main);rebuildMaps();}
-  scenarios.push('GitHub-linked V4 squash requires the same tested parent as well as an exact tree');
+  scenarios.push('GitHub-linked V4 squash or merge requires the exact tested first parent even when the merge-base and tree match');
   firstDelivery={head,main,receipt:clone(selectedReceipt),zip:selectedZip,metadata:clone(selectedMetadata),
     pull:currentPull(),run:run(true),job:jobs(true),runId:selectedRun,jobId:selectedJob,pr:selectedPr,artifactId:selectedArtifactId};
 
@@ -2043,6 +2052,16 @@ try{
     cases++;
   }
   scenarios.push('missing wrong or changed independent review gives no receipt');
+  for(const fault of ['expired','wrong-ref']){
+    configure(positiveHead);state.liveMainFault=fault;rebuildMaps();
+    await assert.rejects(coordinate(),/LIVE_MAIN_UNPROVED/);assert.equal(rows.length,0);cases++;
+  }
+  configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  assert.equal(text(root,['merge-base','--all',otherMainTip,head]),base);
+  state.mainTipAfterTargets=otherMainTip;rebuildMaps();
+  await assert.rejects(coordinate(),/MAIN_REF_MOVED/);
+  assert.equal(rows.length,baselinePlan.commands.length);cases++;
+  scenarios.push('expired and wrong live main refs refuse before targets; a real movement after targets refuses even with the same merge-base');
 
   const target='scripts/test-source-current-contracts.mjs';
   assert(targetFiles.includes(target));
@@ -2358,6 +2377,7 @@ try{
       selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;
       configure(commit(sdkTree,[base],'synthetic real committed SDK workflow change'));
       state.modernWorkflow=true;state.ownedCacheNativeWorkflow=true;state.fullModernWorkflow=true;
+      state.stalePullBase=saved.base;
       baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
       assert.equal(baselinePlan.status,'PLANNED');assert.equal(baselinePlan.selection,'CURRENT_CONTRACTS');
       assert.deepEqual(Object.keys(baselinePlan.areas),['core','sourceControls']);
@@ -2367,6 +2387,9 @@ try{
       const logFile=path.join(root,'.cache/actual-current-targets.jsonl');
       const beforeTargets=fs.readFileSync(logFile,'utf8').trim().split('\n').filter(Boolean).length;
       rebuildMaps();const sdk=await coordinate();assert.equal(sdk.selection,'TARGETED');
+      assert.notEqual(currentPull().base.sha,base);
+      assert.equal(sdk.receipt.changeBase.pullBaseCommit,base);
+      assert.equal(sdk.receipt.changeBase.commit,base);
       assert.equal(rows.length,baselinePlan.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
       const executed=fs.readFileSync(logFile,'utf8').trim().split('\n').filter(Boolean).slice(beforeTargets)
         .map(line=>path.relative(root,JSON.parse(line).file).split(path.sep).join('/'));

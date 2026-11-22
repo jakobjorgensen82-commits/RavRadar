@@ -98,8 +98,13 @@ const CURRENT_GUARD_FRAMES=[
     "  clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);\n"
   ],
   [
-    "post-target-identity",
-    "  // Fresh post-test transport, exactly two reads, irrespective of test duration.\n",
+    "post-target-pull",
+    "  const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);\n",
+    "  assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');\n"
+  ],
+  [
+    "post-target-repository-and-job",
+    "  assert.equal(freshPull.head?.repo?.full_name,current.repository);\n",
     "  assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);\n"
   ]
 ];
@@ -122,8 +127,10 @@ function assertCurrentProducerSafetyFrames(current,historical){
     assert(loop>=0 && source.indexOf('  const commandResults=[];',loop+1)<0,
       'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
     const completion=source.indexOf("      child.once('error',value=>{error=value;});");
-    const post=source.indexOf('  // Fresh post-test transport, exactly two reads, irrespective of test duration.\n');
-    assert(completion>loop && post>completion,'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
+    const post=source.indexOf("  const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);");
+    const head=source.indexOf('  assert.equal(freshPull.head?.sha,head);',post);
+    const repository=source.indexOf('  assert.equal(freshPull.head?.repo?.full_name,current.repository);',post);
+    assert(completion>loop && post>completion && head>post && repository>head,'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
   }
 }
 function rebuild(){

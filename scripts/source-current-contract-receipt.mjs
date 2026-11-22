@@ -339,15 +339,15 @@ export function readCurrentChangeReviewBaselineHint(pull,head){
   if(typeof pull?.body!=='string'||!pull.body.includes('RAVRADAR_CURRENT_CHANGE_REVIEW_V4'))return null;
   const review=currentChangeReviewMarker(pull);must(review.head===head,'CONTROL_REVIEW_MISMATCH');return review.baselineCommit;
 }
-export function readCurrentChangeReview(pull,expected){
-  must(arguments.length===2,'ARGUMENTS');
+export function readCurrentChangeReview(pull,expected,liveBaseCommit=null){
+  must(arguments.length===2||(arguments.length===3&&oid(liveBaseCommit)),'ARGUMENTS');
   keys(expected,['current','fullBaseline','changeBase','currentPlan','cumulativePlan']);
   const {current}=expected,{changeBase,impact,continuity}=currentChangeProjection(expected);
   if(!impact.controlQualificationRequired)return null;
   must(pull?.number===current.pullRequest&&pull.head?.sha===current.head
     &&pull.head?.repo?.full_name===current.repository&&pull.base?.ref==='main'
     &&pull.base?.repo?.full_name===current.repository
-    &&(pull.state==='closed'||(pull.state==='open'&&pull.base.sha===changeBase.pullBaseCommit))
+    &&(pull.state==='closed'||(pull.state==='open'&&liveBaseCommit===changeBase.pullBaseCommit))
     &&pull.user?.login===current.repository.split('/')[0],'CONTROL_REVIEW_PULL_IDENTITY');
   const review=currentChangeReviewMarker(pull);
   must(review.head===current.head&&review.changeBaseCommit===changeBase.commit
