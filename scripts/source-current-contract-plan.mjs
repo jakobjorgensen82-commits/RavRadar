@@ -73,6 +73,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST],
   assistantDiagnostic1712:['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'],
+  accountActivityHookRead:['node --test scripts/test-fixed-account-activity-hook.mjs'],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -261,6 +262,10 @@ const PATH_AREAS=freeze({
   assistantDiagnostic1712:['scripts/read-fixed-assistant-failure-log-20261121-1712.mjs',
     'scripts/test-fixed-assistant-failure-log-20261121-1712.mjs',
     '.github/workflows/deploy-trip-storage.yml'],
+  accountActivityHookRead:[
+    'scripts/read-fixed-account-activity-hook.mjs',
+    'scripts/test-fixed-account-activity-hook.mjs',
+  ],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'js/services/rav-assistant-public-help.js','scripts/test-assistant-ui-error-boundary.mjs',
@@ -486,7 +491,8 @@ const PATH_AREAS=freeze({
 const WEATHER_OPERATION_PATHS=new Set([...PATH_AREAS.waterSourceRouting,...PATH_AREAS.weatherUpdater,...PATH_AREAS.runtimeAudit]);
 const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
-const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure,...PATH_AREAS.privateStudy]);
+const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure,
+  ...PATH_AREAS.privateStudy,...PATH_AREAS.accountActivityHookRead]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
@@ -575,7 +581,6 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/verify-account-assistant-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-account-erasure-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-code-only-migration-plan.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
-  'scripts/read-fixed-account-activity-hook.mjs':['node --test scripts/test-fixed-account-activity-hook.mjs'],
   'supabase/functions/_shared/account-inactivity-notice.js':[TRIP_LOG_SOURCE_TEST],
   'supabase/functions/_shared/account-lifecycle.js':[TRIP_LOG_SOURCE_TEST,...COMMANDS.ownerErasure],
   'supabase/functions/_shared/inactivity-notice-mail.mjs':[TRIP_LOG_SOURCE_TEST],
@@ -1348,7 +1353,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('assistantDiagnostic')||areas.includes('assistantDiagnostic1712')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('assistantDiagnostic')||areas.includes('assistantDiagnostic1712')||areas.includes('accountActivityHookRead')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
