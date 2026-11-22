@@ -27,3 +27,7 @@ Headerens assistentknap starter deaktiveret og aktiveres umiddelbart efter monte
 ## 22. november 2026 – dagslysopfølgning med kendt UV-lampe
 
 En hel dagslysopfølgning efter assistentens allerede kendte UV-lampeemne genbruger den eksisterende lokale forklaring på dansk, tysk og engelsk. Svaret forklarer dagslysets kontrast og bevarer forbeholdet om, at andre materialer også kan lyse. Samtalens normale sprog-, kontekst- og nulstillingsgrænser gælder fortsat. Andre emner og blandede ekstra ønsker følger hele det normale spørgsmål. Den eksisterende udstyrsopfølgning bevarer sin eksterne rute. App, bootstrap og service-worker bruger en sammenhængende ny cacheadresse til den ændrede hjælper. Faktisk offentlig brugeraccept følger den normale kildekvalifikation og levering.
+
+## 22. november 2026 – UV-opfølgning mens prognosen indlæses
+
+Når det præcise bølgelængdespørgsmål har etableret ravlygteemnet, knyttes dagslysopfølgningen til sprog, søgemåde og zone-id. Den almindelige indlæsning må skifte vejr- og zoneobjekter, uden at samtalen mister ravlygten. Dialog- og formularnulstilling, sprogligt skift og egentlig ændring af zone eller søgemåde afgrænser stadig opfølgningen. Prognose- og øvrige emner bruger deres eksisterende rammer.

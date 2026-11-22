@@ -737,7 +737,12 @@ async function submitAssistantQuestion(question){
       if(topicQuestion!==clean&&assistantTopicForQuestion(topicQuestion)==='public-search:wind')topic='public-search:wind';
     }
     // Identifying a find depends on the conversation language, not on live map data.
-    const nextFrame=findTopic||findFollowup!==null?{language:frame.language}:frame;
+    let nextFrame=frame;
+    if(findTopic||findFollowup!==null)nextFrame={language:frame.language};
+    else if(topic==='public-knowledge:identification.uv-clue-not-proof'){
+      // Prognoseindlæsningen kan skifte dataobjekterne midt i en samtale om ravlygten.
+      nextFrame={language:frame.language,mode:frame.mode,zoneId:frame.zoneId};
+    }
     if(topic&&turn===assistantTurn&&sameAssistantTopicFrame(nextFrame,assistantTopicFrame())){
       assistantTopicState={topic,frame:nextFrame};
     }
