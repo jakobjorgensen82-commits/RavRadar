@@ -5,26 +5,17 @@ import {sourceCommandsForChangedPaths,buildSourceValidationPlan} from './validat
 import {isFixedAssistant1712WorkflowAddition,currentSourceTargets,currentWorkflowTargets,
   CURRENT_CONTRACT_COMMANDS} from './source-current-contract-plan.mjs';
 
-// Kun den faste tidsafgrænsning ændres; ingen hosted log, SQL-motor eller rigtig nøgle.
+// Offline fixtures. No hosted logs, SQL engine or real credentials.
 const readerPath = './read-fixed-assistant-failure-log-20261121-1712.mjs';
-const old = await fs.readFile(new URL('./read-fixed-assistant-failure-log-20261101.mjs', import.meta.url), 'utf8');
 const source = await fs.readFile(new URL(readerPath, import.meta.url), 'utf8');
-const edits = [
-  ['2026-11-01T00:27:03Z', '2026-11-21T17:12:11Z'],
-  ['2026-11-01T00:27:16Z', '2026-11-21T17:12:22Z'],
-  ['2026-11-01 00:27:03', '2026-11-21 17:12:11'],
-  ['2026-11-01 00:27:16', '2026-11-21 17:12:22'],
-  ['RAVRADAR_FIXED_ASSISTANT_FAILURE_LOG_READ_20261101_V1', 'RAVRADAR_FIXED_ASSISTANT_FAILURE_LOG_READ_20261121_1712_V1'],
-  ['readFixedAssistantFailureLog20261101', 'readFixedAssistantFailureLog20261121_1712'],
-];
-let expected = old;
-for (const [before, after] of edits) {
-  assert.equal(expected.split(before).length - 1, before.startsWith('readFixed') ? 2 : 1);
-  expected = expected.replaceAll(before, after);
-}
-assert.equal(source, expected, 'Kun de faste tids-/observationsidentiteter må ændres');
 const start = '2026-11-21T17:12:11Z', end = '2026-11-21T17:12:22Z';
+const outputStart = '2026-11-21T23:44:41Z', outputEnd = '2026-11-21T23:44:48Z';
+const outputStates = [
+  'CHAT_LENGTH', 'CHAT_STOP_TEXT', 'CHAT_STOP_EMPTY', 'RESPONSES_TOKEN_LIMIT',
+  'RESPONSES_COMPLETED_TEXT', 'RESPONSES_COMPLETED_NO_TEXT', 'UNKNOWN',
+];
 assert.equal(Date.parse(end) - Date.parse(start), 11_000);
+assert.equal(Date.parse(outputEnd) - Date.parse(outputStart), 7_000);
 const list = name => [...source.match(new RegExp('const ' + name + ' = Object.freeze\\(\\[([\\s\\S]*?)\\]\\);'))[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
 const stages = list('STAGES'), codes = list('REJECTION_CODES');
 
@@ -38,6 +29,8 @@ const archivedWorkflow=execFileSync('git',['-c','protocol.allow=never','cat-file
 });
 // Kendt additivt testeksemplar på autentisk arkivindgang. Det aktuelle workflow er ikke helfilslåst.
 const route="fixed-assistant-failure-log-read-20261121-1712";
+const outputRoute="fixed-assistant-failure-log-read-20261121-2344";
+const outputOption='--observed-de-2344';
 let knownAddition=archivedWorkflow;
 for(const [before,after]of [
   [
@@ -76,8 +69,11 @@ assert.equal(new Set(jobs.map(job=>job.id)).size,jobs.length);
 const selected=operation=>jobs.filter(job=>operationAllows(job.source,operation)).map(job=>job.id);
 assert.deepEqual(selected(route),['read-fixed-supabase-metadata']);
 assert.deepEqual(selected(route+'-unknown'),['reject-unknown-operation']);
+assert.deepEqual(selected(outputRoute),['read-fixed-supabase-metadata']);
+assert.deepEqual(selected(outputRoute+'-unknown'),['reject-unknown-operation']);
 assert.deepEqual(selected('fixed-assistant-failure-log-read-20261101'),['read-fixed-supabase-metadata']);
 assert.equal(workflow.split('          - '+route+'\n').length,2);
+assert.equal(workflow.split('          - '+outputRoute+'\n').length,2);
 const job=jobs.find(row=>row.id==='read-fixed-supabase-metadata').source;
 assert.ok(job.indexOf('test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar')<job.indexOf('uses: actions/checkout@v7'));
 for(const guard of ['test "$GITHUB_EVENT_NAME" = workflow_dispatch','test "$GITHUB_REF" = refs/heads/main',
@@ -100,6 +96,12 @@ const selectedCredentialSteps=credentialSteps.filter(source=>{
 });
 assert.equal(selectedCredentialSteps.length,1);
 assert.ok(selectedCredentialSteps[0].includes('run: node scripts/read-fixed-assistant-failure-log-20261121-1712.mjs'));
+const outputCredentialSteps=credentialSteps.filter(step=>step.includes("if: inputs.operation == '"+outputRoute+"'"));
+assert.equal(outputCredentialSteps.length,1);
+assert.ok(outputCredentialSteps[0].includes('        timeout-minutes: 1\n'
+  +'        run: node scripts/read-fixed-assistant-failure-log-20261121-1712.mjs '+outputOption+'\n'
+  +'        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n'));
+assert.ok(job.indexOf(outputCredentialSteps[0])>job.indexOf('check-fixed-supabase-account-read-idle.mjs'));
 assert.doesNotMatch(job,/--depth|--shallow|--deepen|continue-on-error|SUPABASE_DB_PASSWORD|SERVICE_ROLE|CLOUDFLARE_API|supabase db|functions deploy|wrangler|upload-artifact|cache\/save/);
 assert.deepEqual(workflow.match(/^permissions:\n(?:  [^\n]+\n)+/gm),[
   'permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n']);
@@ -141,7 +143,9 @@ assert.equal([...normalPlan.preflight,...normalPlan.remaining,normalPlan.gate]
 assert.equal(currentSourceTargets('scripts/read-fixed-assistant-failure-log-unknown.mjs'),null);
 assert.equal(Object.hasOwn(process.env,'SUPABASE_ACCESS_TOKEN'),false);
 let cliChecks=0;
-for(const [args,status]of [[[],'LOG_CREDENTIAL_UNAVAILABLE'],[['--help'],'LOG_ARGUMENTS_FORBIDDEN'],[['--sql','ANY'],'LOG_ARGUMENTS_FORBIDDEN']]){
+for(const [args,status]of [[[],'LOG_CREDENTIAL_UNAVAILABLE'],[[outputOption],'LOG_CREDENTIAL_UNAVAILABLE'],
+  [['--help'],'LOG_ARGUMENTS_FORBIDDEN'],[['--sql','ANY'],'LOG_ARGUMENTS_FORBIDDEN'],
+  [[outputOption,'--sql','ANY'],'LOG_ARGUMENTS_FORBIDDEN']]){
   const child=spawnSync(process.execPath,['scripts/read-fixed-assistant-failure-log-20261121-1712.mjs',...args],{
     cwd:new URL('../',import.meta.url),env:process.env,encoding:'utf8',timeout:5000,maxBuffer:32768,windowsHide:true,
   });
@@ -155,9 +159,11 @@ const originalFetch = globalThis.fetch;
 process.env.SUPABASE_ACCESS_TOKEN = 'synthetic-fixed-assistant-NOT-A-CREDENTIAL';
 const sample = { stage:'RESULT_VALIDATION', responseStatus:502, upstreamStatus:200, rejectionCode:'RESULT_EVIDENCE_UNKNOWN' };
 const valid = result => new Response(JSON.stringify({ result, error:null }), { status:200 });
-let requests = 0, cases = 0, sqlCaptured = null;
+let requests = 0, cases = 0, sqlCaptured = null, historicalSql = null, outputSql = null;
 
 function inspectSql(sql) {
+  assert.equal(sql, historicalSql.replace('2026-11-01 00:27:03','2026-11-21 17:12:11')
+    .replace('2026-11-01 00:27:16','2026-11-21 17:12:22'), 'The default call keeps the same fixed query.');
   if (sqlCaptured !== null) assert.equal(sql, sqlCaptured);
   sqlCaptured = sql;
   assert.match(sql, /^SELECT DISTINCT\n  CASE WHEN stage_raw IN /);
@@ -173,52 +179,84 @@ function inspectSql(sql) {
 }
 
 // Kontrol af de eksisterende faste regexstrenge; ingen påstand om ClickHouse-eksekvering.
-function fixedTextCategories(message) {
-  const patterns = [...sqlCaptured.matchAll(/extract\(event_message,\s*'([^']+)'\)/g)].map(m => m[1]);
-  const filters = [...sqlCaptured.matchAll(/match\(event_message,\s*'([^']+)'\)/g)].map(m => m[1]);
-  assert.equal(patterns.length, 4); assert.equal(filters.length, 2);
+function fixedTextCategories(message, sql = sqlCaptured, withOutput = false) {
+  const patterns = [...sql.matchAll(/extract\(event_message,\s*'([^']+)'\)/g)].map(m => m[1]);
+  const filters = [...sql.matchAll(/match\(event_message,\s*'([^']+)'\)/g)].map(m => m[1]);
+  assert.equal(patterns.length, withOutput ? 5 : 4); assert.equal(filters.length, 2);
   const regex = p => new RegExp(p.replaceAll('[[:space:]]', '\\s'));
   if (!message.startsWith('RAVRADAR_ASSISTANT_FAILURE') || !filters.every(p => regex(p).test(message))) return [];
   const values = patterns.map(p => regex(p).exec(message)?.[1] ?? '');
-  return [{ stage:stages.includes(values[0]) ? values[0] : 'UNKNOWN',
+  if (withOutput && values[1] !== '502') return [];
+  const category = { stage:stages.includes(values[0]) ? values[0] : 'UNKNOWN',
     responseStatus:!values[1] || values[1] === 'null' ? null : Number(values[1]),
     upstreamStatus:!values[2] || values[2] === 'null' ? null : Number(values[2]),
-    rejectionCode:values[3] || null }];
+    rejectionCode:values[3] || null };
+  if (withOutput) category.providerOutputState = values[4] || null;
+  return [category];
 }
 
-async function runCase(label, responseFactory, status, categories = null) {
+function inspectOutputSql(sql) {
+  if (outputSql !== null) assert.equal(sql, outputSql);
+  outputSql = sql;
+  const projection = ",\n  nullIf(output_raw, '') AS providerOutputState";
+  const extraction = ',\n    extract(event_message,\n'
+    + '      \'[{,][[:space:]]*"?providerOutputState"?[[:space:]]*:[[:space:]]*"('
+    + outputStates.join('|') + ')"[[:space:]]*[,}]\') AS output_raw';
+  const filter = "\nWHERE response_raw = '502'";
+  for(const addition of [projection,extraction,filter]) assert.equal(sql.split(addition).length,2);
+  assert.equal(sql.replace(projection,'').replace(extraction,'').replace(filter,'')
+    .replace(', providerOutputState\nLIMIT 8','\nLIMIT 8')
+    .replace('2026-11-21 23:44:41','2026-11-21 17:12:11')
+    .replace('2026-11-21 23:44:48','2026-11-21 17:12:22'), sqlCaptured);
+}
+
+async function runCase(label, responseFactory, status, categories = null, withOutput = false) {
   const module = await import(readerPath + '?offline_1712=' + label);
+  const read = withOutput ? module.readFixedAssistantFailureLog20261121_2344 : module.readFixedAssistantFailureLog20261121_1712;
+  const scope = {startInclusive:withOutput ? outputStart : start, endExclusive:withOutput ? outputEnd : end};
   let count = 0;
   globalThis.fetch = async (url, init) => {
     requests++; count++;
     assert.equal(url.origin, 'https://api.supabase.com');
     assert.equal(url.pathname, '/v1/projects/afqhhdrkjfjtpadntdzo/analytics/endpoints/logs');
     assert.deepEqual([...url.searchParams.keys()].sort(), ['iso_timestamp_end','iso_timestamp_start','sql']);
-    assert.equal(url.searchParams.get('iso_timestamp_start'), start);
-    assert.equal(url.searchParams.get('iso_timestamp_end'), end);
-    inspectSql(url.searchParams.get('sql'));
+    assert.equal(url.searchParams.get('iso_timestamp_start'), scope.startInclusive);
+    assert.equal(url.searchParams.get('iso_timestamp_end'), scope.endExclusive);
+    (withOutput ? inspectOutputSql : inspectSql)(url.searchParams.get('sql'));
     assert.equal(init.method, 'GET'); assert.equal(init.body, undefined);
     assert.equal(init.redirect, 'error'); assert.equal(init.cache, 'no-store'); assert.equal(init.credentials, 'omit');
     assert.equal(init.signal instanceof AbortSignal, true);
     return responseFactory();
   };
-  const result = await module.readFixedAssistantFailureLog20261121_1712();
+  const result = await read();
   cases++;
-  assert.equal(result.kind, 'RAVRADAR_FIXED_ASSISTANT_FAILURE_LOG_READ_20261121_1712_V1');
+  assert.equal(result.kind, 'RAVRADAR_FIXED_ASSISTANT_FAILURE_LOG_READ_20261121_' + (withOutput ? '2344' : '1712') + '_V1');
   assert.equal(result.requestStatus, status, label);
   assert.equal(result.recordedEventAbsenceProved, false);
   assert.equal(result.privatePayloadLogged, false);
   assert.equal(result.functionName, 'ravradar-assistant');
-  assert.deepEqual(result.scope, { startInclusive:start, endExclusive:end });
+  assert.deepEqual(result.scope, scope);
   assert.deepEqual(result.categories, categories, label);
   assert.equal(result.rowCount, categories === null ? null : categories.length);
   assert.doesNotMatch(JSON.stringify(result), /PRIVATE_RAW|NOT-A-CREDENTIAL|Bearer|requestId|execution_id|question|event_message/);
   assert.equal(count, 1);
-  assert.equal((await module.readFixedAssistantFailureLog20261121_1712()).requestStatus, 'LOG_READ_ALREADY_CONSUMED');
+  assert.equal((await read()).requestStatus, 'LOG_READ_ALREADY_CONSUMED');
+  const other = withOutput ? module.readFixedAssistantFailureLog20261121_1712 : module.readFixedAssistantFailureLog20261121_2344;
+  assert.equal((await other()).requestStatus, 'LOG_READ_ALREADY_CONSUMED');
   assert.equal(count, 1);
 }
 
 try {
+  const historical = await import('./read-fixed-assistant-failure-log-20261101.mjs?offline_1712=historical-query');
+  globalThis.fetch = async (url, init) => {
+    assert.equal(init.method,'GET');
+    assert.equal(url.searchParams.get('iso_timestamp_start'),'2026-11-01T00:27:03Z');
+    assert.equal(url.searchParams.get('iso_timestamp_end'),'2026-11-01T00:27:16Z');
+    assert.equal(historicalSql,null);
+    historicalSql = url.searchParams.get('sql');
+    return valid([sample]);
+  };
+  assert.deepEqual((await historical.readFixedAssistantFailureLog20261101()).categories,[sample]);
   for (const [label, row] of [
     ['validation', sample],
     ['extraction', { ...sample, stage:'RESULT_EXTRACTION', rejectionCode:'RESULT_NOT_OBJECT' }],
@@ -261,10 +299,30 @@ try {
     ['held-fetch', () => new Promise(() => {}), 'LOG_DEADLINE_EXCEEDED'],
     ['held-body', () => new Response(new ReadableStream({start(){}})), 'LOG_DEADLINE_EXCEEDED'],
   ]) await runCase(label, response, status);
+  const output = {...sample,stage:'RESULT_EXTRACTION',rejectionCode:'RESULT_NOT_OBJECT',providerOutputState:'CHAT_LENGTH'};
+  const accepted = outputStates.map(providerOutputState=>({...output,providerOutputState}));
+  await runCase('output-categories',()=>valid(accepted),'RECORDED_CATEGORIES',accepted,true);
+  for(const row of accepted) {
+    const message = 'RAVRADAR_ASSISTANT_FAILURE ' + JSON.stringify({schemaVersion:1,...row,question:'PRIVATE_RAW'});
+    assert.deepEqual(fixedTextCategories(message,outputSql,true),[row]);
+    assert.deepEqual(fixedTextCategories(message.replace('"responseStatus":502','"responseStatus":503'),outputSql,true),[]);
+    assert.deepEqual(fixedTextCategories('OTHER '+message,outputSql,true),[]);
+    assert.deepEqual(fixedTextCategories(message.replace('"schemaVersion":1','"schemaVersion":2'),outputSql,true),[]);
+  }
+  const validation = {...sample,providerOutputState:null};
+  await runCase('output-absent',()=>valid([validation]),'RECORDED_CATEGORIES',[validation],true);
+  for (const [label, row, status] of [
+    ['output-raw-field',{...output,event_message:'PRIVATE_RAW'},'LOG_ROW_SHAPE'],
+    ['output-missing-field',sample,'LOG_ROW_SHAPE'],
+    ['output-other-status',{...output,responseStatus:503},'LOG_RESPONSE_STATUS_NOT_ALLOWED'],
+    ['output-unrecognized',{...output,providerOutputState:'PRIVATE_RAW'},'LOG_PROVIDER_OUTPUT_STATE_NOT_ALLOWED'],
+    ['output-wrong-stage',{...output,stage:'RESULT_VALIDATION'},'LOG_PROVIDER_OUTPUT_STATE_NOT_ALLOWED'],
+  ]) await runCase(label,()=>valid([row]),status,null,true);
   const module = await import(readerPath + '?offline_1712=arguments');
   let extra = 0; globalThis.fetch = async () => {extra++; throw Error('MUST_NOT_RUN');};
   const forbidden = {get sql(){throw Error('PRIVATE_RAW');}};
   assert.equal((await module.readFixedAssistantFailureLog20261121_1712(forbidden)).requestStatus, 'LOG_ARGUMENTS_FORBIDDEN');
+  assert.equal((await module.readFixedAssistantFailureLog20261121_2344(forbidden)).requestStatus, 'LOG_ARGUMENTS_FORBIDDEN');
   delete process.env.SUPABASE_ACCESS_TOKEN;
   assert.equal((await module.readFixedAssistantFailureLog20261121_1712()).requestStatus, 'LOG_CREDENTIAL_UNAVAILABLE');
   assert.equal((await module.readFixedAssistantFailureLog20261121_1712()).requestStatus, 'LOG_READ_ALREADY_CONSUMED');
@@ -274,7 +332,8 @@ try {
   delete process.env.SUPABASE_ACCESS_TOKEN;
 }
 console.log(JSON.stringify({status:'PASS',cases,controlledGETs:requests,scopeSeconds:11,
-  readerUnchangedExceptFixedObservation:true,realNetwork:0,retries:0,deadlineMs:10000,
+  legacyQueryPreserved:true,outputScopeSeconds:7,outputStateEnumCount:outputStates.length,
+  realNetwork:0,retries:0,deadlineMs:10000,
   maximumResponseBytes:32768,rowCapRejectsAt:8,rawPayloadOutput:false,
   nativeClickHouse:'UNRUN',hostedConsoleFormat:'UNRUN',workflowWiring:'SOURCE_ONLY_TESTED_NOT_HOSTED',
   workflowChecks,cliChecks,currentWorkflowReadDirectly:true,historicalWorkflowUsedOnlyForBoundedDelta:true}));
