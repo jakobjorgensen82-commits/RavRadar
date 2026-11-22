@@ -880,7 +880,8 @@ test('B361 counts national public endpoint presence without publishing PART iden
 });
 
 for (const [episode, runId, headSha] of [[363, '44865684276', '8851651b5908f37a1db3486a98d50ffd1231ff9c'],
-  [365, '44903468590', '995c2359cada1708f0e67ca5b14fecc5dd9c573d']]) {
+  [365, '44903468590', '995c2359cada1708f0e67ca5b14fecc5dd9c573d'],
+  [368, '44966186686', '931157c353a652aa213c7e7be6af446e48374861']]) {
   test('B'+episode+' only admits its exact archived producer and fixed read-only job', async () => {
     const audit = await import('./audit-b358-water-level-trend.mjs');
     const label = 'B'+episode;
@@ -1005,6 +1006,50 @@ test('B365 projects only the fixed overlapping pairs and keeps the pre-acquisiti
   assert.equal(projectB365DmiEvidence(null).retainedScalarPlanQualification, 'UNKNOWN');
   assert.equal(projectB365DmiEvidence({ diagnostics: { qualifiedScalarAcquisitionPlan: { ...plan, sourceAdmission:true } } })
     .retainedScalarPlanQualification, 'UNKNOWN');
+});
+
+test('B368 projects the three exact leading endpoint pairs and keeps the pre-acquisition trend mask unknown', async () => {
+  const { createB368PublicEndpointEvidence, projectB368DmiEvidence } = await import('./audit-b358-water-level-trend.mjs');
+  const referenceAt = '2026-11-22T00:00:00.000Z';
+  const time = offset => new Date(Date.parse(referenceAt) + offset * 3_600_000).toISOString();
+  const inventory = new Map(Array.from({ length: 673 }, (_, index) => ['synthetic-part-' + index, 'zone-' + (index % 210)]));
+  const evidence = createB368PublicEndpointEvidence(inventory);
+  evidence.collect(6, null);
+  for (let offset = 0; offset <= 5; offset++) {
+    evidence.collect(offset, Object.fromEntries([...inventory].map(([id, zoneId], index) => [
+      id, { id, zoneId, current: { time: time(offset), weather: {
+        waterLevelCm: index === 0 && offset === 5 ? null : 0, waterLevelTrendCm3h: null,
+      } } },
+    ])));
+  }
+  const counts = evidence.finish();
+  assert.deepEqual(counts.map(row => [row.offset, row.withBothLevels, row.trendPresent, row.missingDespiteBoth]),
+    [[0, 673, 0, 673], [1, 673, 0, 673], [2, 672, 0, 672]]);
+  assert.doesNotMatch(JSON.stringify(counts), /synthetic-part/);
+  assert.throws(() => createB368PublicEndpointEvidence(inventory).finish(), /B368_PUBLIC_HOUR_UNBOUND/);
+
+  const collection = 'dkss_idw', modelRun = '2026-11-21T18:00:00.000Z';
+  const queue = {
+    available: true, collection, modelRun, productionReferenceAt: referenceAt, maintenance: false,
+    orderedHours: [
+      { rank: 3, validTime: time(2), missingComponentKinds: ['currentUpgrade'], retainedWaterTrendGap: false },
+      { rank: 50, validTime: time(5), missingComponentKinds: ['waterLevel'], retainedScalarPlanQualified: true },
+      { rank: 51, validTime: time(6), missingComponentKinds: ['waterLevel'] },
+    ],
+  };
+  const plan = { present: true, valid: true, sourceAdmission: false, scope: 'qualified-retained-value-gaps-before-native-takeover' };
+  const result = projectB368DmiEvidence({
+    diagnostics: { qualifiedScalarAcquisitionPlan: plan, currentAcquisitionPlan: { firstTurnOrder: { [collection]: queue } } },
+    runs: { [collection]: { referenceTime: modelRun, processedValidTimes: [time(2)] } },
+  });
+  assert.equal(result.retainedScalarPlanQualification, 'QUALIFIED_ADVISORY');
+  assert.equal(result.preAcquisitionWaterTrendGap, 'UNKNOWN_MASK_NOT_ARCHIVED');
+  assert.deepEqual(result.bulkOnsetQueue[collection].map(row => row.offset), [0, 1, 2, 3, 4, 5]);
+  assert.deepEqual([2, 5].map(index => {
+    const row = result.bulkOnsetQueue[collection][index];
+    return [row.firstQueueRank, row.waterLevelWasRequired, row.selectedRunProcessedTime];
+  }), [[3, false, true], [50, true, false]]);
+  assert.doesNotMatch(JSON.stringify(result), /retainedWaterTrendGap/);
 });
 
 test('B358 DKSS queue publishes only fixed onboarding hours and bounded reason fields', async () => {

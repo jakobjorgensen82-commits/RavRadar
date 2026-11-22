@@ -20,6 +20,8 @@ Den normale brugerklient fik HTTP 502 kl. 17.12 UTC. Én afgrænset kategorilæs
 
 Den gemte #358 viste, at kildevalget gav to vandstandstal uden en fælles modelkørsel, samling eller gitter i 208 af 220 undersøgte manglende trends. De øvrige 12 manglede en kvalificeret støttetime. I Sibirien viste de autentiske direkte rækker et skift mellem DMI-samlinger ved det første hul. #359 viste endnu et samtidigt bortfald på 329 kystdele på trods af tilgængelige vandstande ved begge tider. Årsagen er verificeret for #358. Den lokale køændring og virkningen i en ny almindelig kørsel følger DEC-0261.
 
+Den 22. november viste #368 ingen tretimersændring i nogen zonevisning kl. 00, 01 og 02 UTC, selv om begge vandstandsniveauer var til stede. På de samme tider viste #367 ændringen i henholdsvis 420, 420 og 236 af 420 zonevisninger. Den faste lokale audit af #368 følger de seks tilhørende timer i det autentificerede arkiv og afleverer kun optællinger af de valgte serier og den normale DMI-kø. Første arkivlæsning og årsagen til tilbagefaldet udestår.
+
 ## 19. november — cachekontrollen skjulte årsagen i #353
 
 Vejrkørsel #353 gendannede råcachen og planlagde de krævede historiktimer for 673 kystdele. Kontrollen stoppede ved overdragelsen til cacheoprydning. Loggen viste ét fælles afslag. De tre kopier blev bevaret, og leverandørhentningen startede aldrig. Oprydningsjobbet ventede på et bevis fra en allerede afsluttet kørsel.

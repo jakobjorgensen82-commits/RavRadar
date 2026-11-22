@@ -118,7 +118,7 @@ concurrency:
 
 jobs:
   audit:
-    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))
+    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))
     name: Authenticate existing packages and report only bounded aggregates
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
@@ -602,7 +602,7 @@ jobs:
           retention-days: 14
 
   component-summary:
-    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)
+    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)
     name: Read only the authenticated protected component summary
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -731,7 +731,7 @@ jobs:
           retention-days: 14
 
   voersaa-water-trace:
-    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)
+    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)
     name: Read two exact original B water traces privately
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -994,7 +994,7 @@ jobs:
           retention-days: 1
 
   water-level-basis-272:
-    if: inputs.water_level_basis_272_only == true && inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY'
+    if: inputs.water_level_basis_272_only == true && inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY'
     name: Read only the fixed authenticated B272 water-level metadata
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1231,5 +1231,85 @@ jobs:
         with:
           name: b365-water-level-trend-safe-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ravradar-b365-water-audit/water-level-trend-safe.json
+          if-no-files-found: error
+          retention-days: 1
+
+  water-level-trend-368:
+    if: inputs.confirmation == 'READ-B368-WATERLEVEL-TREND-ONLY'
+    name: Count endpoint causes from the fixed authenticated B368
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Require one exact B368 request on current main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALL_INPUTS: ${{ toJSON(inputs) }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const { confirmation, expected_main_head, progress_source_run_id, progress_source_attempt, ...inactive } =
+            JSON.parse(process.env.ALL_INPUTS);
+          const booleans = ['include_raw_manifest', 'include_raw_file_presence', 'include_selected_current_preflight',
+            'include_current_window_diagnostic', 'include_current586_endpoints', 'include_current586_cached_originals',
+            'wam_raw_manifest_245_only', 'component_summary_only', 'water_level_voersaa_trace_20261101', 'water_level_basis_272_only'];
+          const strings = ['raw_manifest_cache_key', 'progress_baseline_target_hour', 'raw_manifest_source',
+            'component_summary_dataset_id', 'component_summary_reference_at'];
+          assert.equal(confirmation, 'READ-B368-WATERLEVEL-TREND-ONLY');
+          assert.equal(progress_source_run_id, '44966186686');
+          assert.equal(progress_source_attempt, '1');
+          assert.match(expected_main_head, /^[a-f0-9]{40}$/);
+          assert.equal(expected_main_head, process.env.GITHUB_SHA);
+          assert(Object.entries(inactive).every(([key, value]) =>
+            (booleans.includes(key) && value === false) || (strings.includes(key) && value === '')), 'B368_MIXED_AUDIT_REQUEST');
+          NODE
+          test "$(git rev-parse --verify 'HEAD^{commit}')" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          git merge-base --is-ancestor 931157c353a652aa213c7e7be6af446e48374861 "$GITHUB_SHA"
+      - name: Verify live exact-content source proof for this read-only callback
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Require green source proof and materialize the archived producer
+        shell: bash
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REQUIRED" = false
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          umask 077
+          export GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0
+          mkdir "$RUNNER_TEMP/ravradar-b368-water-audit" "$RUNNER_TEMP/ravradar-b368-reader9311"
+          git -c protocol.allow=never archive 931157c353a652aa213c7e7be6af446e48374861 | tar -x -C "$RUNNER_TEMP/ravradar-b368-reader9311"
+      - name: Authenticate B368 and calculate private aggregate counts
+        id: b368
+        run: node scripts/audit-b358-water-level-trend.mjs --b368
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Keep only the bounded B368 metadata report
+        if: always() && (steps.b368.outcome == 'success' || steps.b368.outcome == 'failure')
+        uses: actions/upload-artifact@v7
+        with:
+          name: b368-water-level-trend-safe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-b368-water-audit/water-level-trend-safe.json
           if-no-files-found: error
           retention-days: 1

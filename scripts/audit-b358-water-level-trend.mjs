@@ -43,6 +43,15 @@ const B365_PAIRS = Object.freeze([0, 1, 3, 4]);
 const B365_HOURS = Object.freeze([0, 1, 3, 4, 6, 7]);
 const B365_PUBLIC_MANIFEST_SHA256 = 'ef4f40c9e3e26ca51985b2930685de66c1d8e72ff9073c349bb2837465411a98';
 const B365_SOURCE_DETAILS_SHA256 = '8894575776901c36313703fe7b5cacd9e47a23865f586c195bb0f3191b773759';
+const B368_TARGET = Object.freeze({
+  repository: TARGET.repository, runId: '44966186686', runAttempt: '1',
+  sourceHead: '931157c353a652aa213c7e7be6af446e48374861', datasetId: 'rr-20261122020536-210',
+  productionReferenceAt: '2026-11-22T00:00:00.000Z',
+});
+const B368_PAIRS = Object.freeze([0, 1, 2]);
+const B368_HOURS = Object.freeze([0, 1, 2, 3, 4, 5]);
+const B368_PUBLIC_MANIFEST_SHA256 = '042dc155197c0e1cb2c813e6bc7daaf7127ad2f33b619a720fa1b69cf592b60a';
+const B368_SOURCE_DETAILS_SHA256 = '919827e7599d1dffb8197343d526d73e067e74fe39a2858f1f1d8d41afe78213';
 const ZONE_IDS = Object.freeze(['DK-B02-06', 'DK-B02-11', 'DK-B05-16', 'DK-B05-17']);
 const FUR_ZONE = 'DK-B05-17';
 const FUR_PART = 'dk-b05-17-national-part-04';
@@ -401,7 +410,7 @@ export function projectDkssOnsetQueue(document, referenceAt, offsets = [6, 7, 9,
   return results;
 }
 
-export function projectB365DmiEvidence(document) {
+function projectFixedOnsetDmiEvidence(document, referenceAt, hours) {
   const plan = document?.diagnostics?.qualifiedScalarAcquisitionPlan;
   let qualification = 'UNKNOWN';
   if (plan?.present === true && plan.valid === true && plan.sourceAdmission === false
@@ -415,8 +424,16 @@ export function projectB365DmiEvidence(document) {
   return {
     retainedScalarPlanQualification: qualification,
     preAcquisitionWaterTrendGap: 'UNKNOWN_MASK_NOT_ARCHIVED',
-    bulkOnsetQueue: projectDkssOnsetQueue(document, B365_TARGET.productionReferenceAt, B365_HOURS, true, true),
+    bulkOnsetQueue: projectDkssOnsetQueue(document, referenceAt, hours, true, true),
   };
+}
+
+export function projectB365DmiEvidence(document) {
+  return projectFixedOnsetDmiEvidence(document, B365_TARGET.productionReferenceAt, B365_HOURS);
+}
+
+export function projectB368DmiEvidence(document) {
+  return projectFixedOnsetDmiEvidence(document, B368_TARGET.productionReferenceAt, B368_HOURS);
 }
 
 export function createB361PublicEndpointEvidence() {
@@ -431,6 +448,11 @@ export function createB363PublicEndpointEvidence(expectedParts) {
 export function createB365PublicEndpointEvidence(expectedParts) {
   if (!(expectedParts instanceof Map) || expectedParts.size !== 673) inputFailure('B365_PUBLIC_PART_INVENTORY');
   return createPublicEndpointEvidence(B365_TARGET, B365_PAIRS, 'B365', 0, expectedParts);
+}
+
+export function createB368PublicEndpointEvidence(expectedParts) {
+  if (!(expectedParts instanceof Map) || expectedParts.size !== 673) inputFailure('B368_PUBLIC_PART_INVENTORY');
+  return createPublicEndpointEvidence(B368_TARGET, B368_PAIRS, 'B368', 0, expectedParts);
 }
 
 function createPublicEndpointEvidence(target, offsets, label, expectedFirstTrend, expectedParts) {
@@ -481,9 +503,11 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
   const isB361 = target === B361_TARGET;
   const isB363 = target === B363_TARGET;
   const isB365 = target === B365_TARGET;
-  const fixedStart = isB363 || isB365;
-  const pairOffsets = isB365 ? B365_PAIRS : isB363 ? B363_PAIRS : isB361 ? B361_OFFSETS : undefined;
-  const sourceDetailsSha256 = isB365 ? B365_SOURCE_DETAILS_SHA256
+  const isB368 = target === B368_TARGET;
+  const fixedStart = isB363 || isB365 || isB368;
+  const pairOffsets = isB368 ? B368_PAIRS : isB365 ? B365_PAIRS : isB363 ? B363_PAIRS : isB361 ? B361_OFFSETS : undefined;
+  const endpointHours = isB368 ? B368_HOURS : isB365 ? B365_HOURS : isB363 ? B363_HOURS : undefined;
+  const sourceDetailsSha256 = isB368 ? B368_SOURCE_DETAILS_SHA256 : isB365 ? B365_SOURCE_DETAILS_SHA256
     : isB363 ? B363_SOURCE_DETAILS_SHA256 : isB361 ? B361_SOURCE_DETAILS_SHA256 : undefined;
   const publicEvidence = isB361 ? createB361PublicEndpointEvidence() : null;
   const [forecast, normal, policy, fur, publicHours, partRecovery, bulk] = await Promise.all([
@@ -531,11 +555,12 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
   if (targetParts.size < (fixedStart ? 2 : 4) || targetParts.size > 64 || targetParts.get(FUR_PART) !== FUR_ZONE
       || (fixedStart && targetParts.get(SIBIRIEN_PART) !== SIBIRIEN_ZONE)) inputFailure('PRIVATE_PART_SCOPE');
   const expectedParts = fixedStart ? new Map(knownParts.map(([id, part]) => [id, part.zoneId])) : null;
-  const exactEvidence = isB365 ? createB365PublicEndpointEvidence(expectedParts)
+  const exactEvidence = isB368 ? createB368PublicEndpointEvidence(expectedParts)
+    : isB365 ? createB365PublicEndpointEvidence(expectedParts)
     : isB363 ? createB363PublicEndpointEvidence(expectedParts) : publicEvidence;
   const partWeather = await readSelectedPublicPartWeather(publicHours, path.join(payload, '.cache/public-hour-delivery.pack'),
     conditions, targetParts, { target, publicEvidence: exactEvidence,
-      offsets: isB365 ? B365_HOURS : isB363 ? B363_HOURS : undefined, sourceDetailsSha256 });
+      offsets: endpointHours, sourceDetailsSha256 });
   const directArchive = await readSibirienDirectWater({ indexed, forecast, conditions,
     publicPart: partWeather.get(SIBIRIEN_PART), load, target, offsets: pairOffsets });
   // Exact archived direct bindings do not identify the final selected PART
@@ -587,18 +612,19 @@ async function readAuthenticatedProjection({ payload, root, load, target = TARGE
   }
   const queueOffsets = isB363 ? [0, 1, 2, 3, 6] : isB361
     ? [...new Set(B361_OFFSETS.flatMap(hour => [hour, hour + 3]))].sort((a, b) => a - b) : undefined;
+  const projectOnsetEvidence = isB368 ? projectB368DmiEvidence : isB365 ? projectB365DmiEvidence : null;
   const bulkProjection = await bulk.readDmiBulkDocument(path.join(payload, 'data/live/dmi-bulk-cache.json'), { expandSources: false })
-    .then(document => isB365 ? projectB365DmiEvidence(document)
+    .then(document => projectOnsetEvidence ? projectOnsetEvidence(document)
       : { bulkOnsetQueue: projectDkssOnsetQueue(document, target.productionReferenceAt, queueOffsets, isB363) })
-    .catch(() => isB365 ? projectB365DmiEvidence(null) : { bulkOnsetQueue: {} });
+    .catch(() => projectOnsetEvidence ? projectOnsetEvidence(null) : { bulkOnsetQueue: {} });
   const { bulkOnsetQueue } = bulkProjection;
   return { zoneEvidence: 'ARCHIVED_ZONE_ROUTING_SEPARATE_FROM_PUBLIC_WINNING_PART', lf7Evidence: lf7.reason,
     zones, parts, bulkOnsetQueue, sibirienDirectWater,
     ...(exactEvidence ? { nationalPublicEndpointPresence: exactEvidence.finish(), routedZoneOffsets,
-      publicManifestReceiptSha256: isB365 ? B365_PUBLIC_MANIFEST_SHA256
+      publicManifestReceiptSha256: isB368 ? B368_PUBLIC_MANIFEST_SHA256 : isB365 ? B365_PUBLIC_MANIFEST_SHA256
         : isB363 ? B363_PUBLIC_MANIFEST_SHA256 : B361_PUBLIC_MANIFEST_SHA256,
       sourceDetailsSha256 } : {}),
-    ...(isB365 ? {
+    ...(projectOnsetEvidence ? {
       retainedScalarPlanQualification: bulkProjection.retainedScalarPlanQualification,
       preAcquisitionWaterTrendGap: bulkProjection.preAcquisitionWaterTrendGap,
     } : {}),
@@ -642,6 +668,15 @@ export function createB365ArtifactFetch(fetchImpl) {
   return createFixedArtifactFetch(fetchImpl, B365_TARGET, B365_ARTIFACT, 'B365');
 }
 
+export const B368_ARTIFACT = Object.freeze({
+  id: 14737045530, bytes: 259729859,
+  digest: 'sha256:c60ae9c00f6753c41d4dece5f0307a12e580ff53c0064b79f7708068964d7b1f',
+});
+
+export function createB368ArtifactFetch(fetchImpl) {
+  return createFixedArtifactFetch(fetchImpl, B368_TARGET, B368_ARTIFACT, 'B368');
+}
+
 const FIXED_EPISODES = new Map([
   [TARGET, { label: 'B358', exactArtifact: B358_ARTIFACT, fixedTransport: createB358ArtifactFetch,
     readers: 'ravradar-b358-reader99eb', output: 'ravradar-b358-water-audit' }],
@@ -651,6 +686,8 @@ const FIXED_EPISODES = new Map([
     readers: 'ravradar-b363-reader8851', output: 'ravradar-b363-water-audit' }],
   [B365_TARGET, { label: 'B365', exactArtifact: B365_ARTIFACT, fixedTransport: createB365ArtifactFetch,
     readers: 'ravradar-b365-reader995c', output: 'ravradar-b365-water-audit' }],
+  [B368_TARGET, { label: 'B368', exactArtifact: B368_ARTIFACT, fixedTransport: createB368ArtifactFetch,
+    readers: 'ravradar-b368-reader9311', output: 'ravradar-b368-water-audit' }],
 ]);
 
 function isExactArtifact(artifact, expected) {
@@ -813,7 +850,7 @@ async function auditFixedWaterTrend({ runnerTemp, githubToken, masterSecret, tar
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const target = process.argv.length === 2 ? TARGET : process.argv.length === 3
-    ? { '--b361': B361_TARGET, '--b363': B363_TARGET, '--b365': B365_TARGET }[process.argv[2]] : null;
+    ? { '--b361': B361_TARGET, '--b363': B363_TARGET, '--b365': B365_TARGET, '--b368': B368_TARGET }[process.argv[2]] : null;
   try {
     if (!FIXED_EPISODES.has(target)) inputFailure('B358_FIXED_INPUT_ONLY');
     if (!await auditFixedWaterTrend({ runnerTemp: process.env.RUNNER_TEMP, githubToken: process.env.GH_TOKEN,
