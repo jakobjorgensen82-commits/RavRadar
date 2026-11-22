@@ -820,6 +820,7 @@ const POST_H0_FIXED_CLI_SOURCES=[
   'js/services/data-service.js',
   'js/services/forecast-share-contract.js',
   'js/services/forecast-share-trust-index.js',
+  'js/services/forecast-share-zone-bundle.js',
   'js/services/plain-map-hour.js',
   'js/services/zone-hour-preview.js',
   'js/services/zone-registry.js',
