@@ -216,11 +216,17 @@ export async function appendPrivateWeatherPublicationSummary(result, env = proce
   const summaryPath = env.GITHUB_STEP_SUMMARY;
   if (env.GITHUB_ACTIONS !== 'true' || !path.isAbsolute(summaryPath ?? '')) return;
 
-  const openingUsage = result.bucketUsageBeforeArchiveUpload;
+  const counts = value => {
+    const { usedBytes, objectCount } = value ?? {};
+    if (!Number.isSafeInteger(usedBytes) || usedBytes < 0
+      || !Number.isSafeInteger(objectCount) || objectCount < 0) return null;
+    return { usedBytes, objectCount };
+  };
+  const openingUsage = counts(result.bucketUsageBeforeArchiveUpload);
   const openingStock = openingUsage
     ? `R2 reported ${openingUsage.usedBytes} bytes before the first new archive object, following any retirement from earlier runs. The object count was ${openingUsage.objectCount}.`
     : 'R2 bucket usage before the first new archive object was not measured.';
-  const usage = result.bucketUsageBeforeRetirementMarker;
+  const usage = counts(result.bucketUsageBeforeRetirementMarker);
   const storage = usage
     ? `R2 reported ${usage.usedBytes} bytes after archive verification and before the retirement marker upload. The object count was ${usage.objectCount}.`
     : 'R2 bucket usage before the retirement marker upload was not measured.';
@@ -229,6 +235,11 @@ export async function appendPrivateWeatherPublicationSummary(result, env = proce
   if (cleanup === true) retirement = 'The retirement check completed.';
   if (cleanup === false) retirement = 'Retirement cleanup remains unresolved.';
   try {
+    const stock = {
+      bucketUsageBeforeArchiveUpload: openingUsage,
+      bucketUsageBeforeRetirementMarker: usage,
+    };
+    console.log('::notice title=RavRadar R2 archive stock::' + JSON.stringify(stock));
     await fs.appendFile(summaryPath, `\n### Private weather archive storage\n\n${openingStock}\n\n${storage}\n\n${retirement}\n`);
   } catch {
     console.warn('PRIVATE_WEATHER_PUBLICATION_SUMMARY_UNAVAILABLE');

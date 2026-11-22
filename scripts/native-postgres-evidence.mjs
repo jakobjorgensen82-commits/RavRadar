@@ -23,7 +23,7 @@ import {ASSISTANT_AFTER599_DATABASE_LEDGER} from './lib/assistant-later-h0-succe
 import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE,FROZEN599_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
   projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
-  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow}
+  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow,verifyTargetedSourceStepShape}
   from './lib/source-impact-workflow-review.mjs';
 
 export const ORIGIN = Object.freeze({
@@ -2284,9 +2284,35 @@ export async function decideAssistantAfter599Reuse(options){
     const inputs=new Map([[head,nativeInput]]);
     const inputFor=async ref=>{if(!inputs.has(ref))inputs.set(ref,await getInput({ref,readGit,physical:false}));return inputs.get(ref);};
     const sameInput=async ref=>JSON.stringify(await inputFor(ref))===JSON.stringify(nativeInput);
-    let selected=null;
+    const jobFor=(row,jobs)=>{
+      assert(complete(jobs,'jobs'));const job=one(jobs.jobs.filter(value=>value.name===JOB));
+      assert.equal(job.run_id,row.id);assert.equal(job.head_sha,row.head_sha);
+      assert.equal(job.run_attempt,1);assert.equal(job.status,'completed');return job;
+    };
+    const provedCurrentSkip=async(row,job)=>{
+      const pg=one(job.steps.filter(value=>value.name===STEP));
+      if(pg.conclusion!=='skipped')return false;
+      // Kun det komplette grønne CURRENT-forløb beviser legitimt uudført PG.
+      // Det bliver hverken en SQL-origin eller ny kilde-/produktionskvalifikation.
+      assert(successful(row));assert(successful(job));assert.equal(row.run_attempt,1);
+      const run=await get(base+'/runs/'+row.id);
+      for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(run[key],row[key]);
+      assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
+      assert.equal(run.repository?.full_name,ORIGIN.repository);assert.equal(run.head_repository?.full_name,ORIGIN.repository);
+      assert(Number.isSafeInteger(job.id)&&job.id>0);assert.match(run.head_sha,/^[a-f0-9]{40}$/);
+      assert(typeof run.head_branch==='string'&&run.head_branch.length>0);
+      const raw=readGit(['cat-file','blob',run.head_sha+':'+WORKFLOW]);
+      assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
+      const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
+      assert(hasDependencyOnlySourceSetup(workflow),'CURRENT_SOURCE_WORKFLOW_REQUIRED');
+      verifyTargetedSourceStepShape(job,workflow);return true;
+    };
+    let selected=null,selectedJobs=null;
     for(const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)){
-      if(await sameInput(row.head_sha)){selected=row;break;}
+      if(!await sameInput(row.head_sha))continue;
+      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
+      if(await provedCurrentSkip(row,jobFor(row,jobs)))continue;
+      selected=row;selectedJobs=jobs;break;
     }
     assert(selected,'No authentic matching phase');
     const originPr=async(run,number)=>{
@@ -2301,7 +2327,7 @@ export async function decideAssistantAfter599Reuse(options){
     const load=async expected=>{
       const run=await get(base+'/runs/'+expected.id);
       assert.equal(run.id,expected.id);assert.equal(run.head_sha,expected.head_sha);assert.equal(run.run_attempt,1);
-      const jobs=await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
+      const jobs=run.id===selected.id?selectedJobs:await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
       const phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const metadata=one(artifacts.artifacts.filter(row=>row.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
@@ -2339,9 +2365,9 @@ export async function decideAssistantAfter599Reuse(options){
       if(!await sameInput(row.head_sha))continue;
       assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
       assert.equal(row.status,'completed');assert.equal(row.repository?.full_name,ORIGIN.repository);
-      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');assert(complete(jobs,'jobs'));
-      const job=one(jobs.jobs.filter(value=>value.name===JOB));assert.equal(job.run_id,row.id);assert.equal(job.head_sha,row.head_sha);
-      assert.equal(job.run_attempt,1);assert.equal(job.status,'completed');
+      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
+      const job=jobFor(row,jobs);
+      if(await provedCurrentSkip(row,job))continue;
       assert(successful(one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'))));
       const pg=one(job.steps.filter(value=>value.name===STEP));assert(pg.conclusion==='skipped'||successful(pg));
     }
