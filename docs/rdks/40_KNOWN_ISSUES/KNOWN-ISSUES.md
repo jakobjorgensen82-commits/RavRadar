@@ -1,3 +1,9 @@
+## 22. november — offentliggjort Pages-mål kan afvente en delt statusadresse
+
+Pages kan vise det præcise forseglede mål, mens deploymentkalderen fortsat afventer en entydig API-status. En delt kilde-SHA kan også beskrive et ældre artifact; offentlig synlighed alene forklarer derfor ikke den konkrete ventetid.
+
+Den lokale rettelse læser højst hvert halve minut det normale offentlige manifest efter autentisk CREATE-kvittering, mens den delte statusadresse er uafklaret. Kun et hashmatch med det aktuelle forseglede mål kan forkorte ventetiden og sende det videre til den eksisterende fulde offentlige verifier. Det bliver ikke et bevis for terminal deployment, annullering eller nyt skriveforsøg. Oprettelses-, tids-, ejer- og leasekrav består. Præcis kildekvalifikation og faktisk normal virkning er fortsat åbne.
+
 ## 22. november — R2-plads ved vejrarkiver og databasebackup
 
 Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lageropslagene før den første nye arkivfil og før upload af rotationsmarkøren. Den normale backupplan rapporterer målt lagerplads, når den kan læse den. Det samme lageropslag bruges fortsat til hver adgangskontrol. Offentlig prognose, bevaringsregler, sletning og adgang er uændrede. Måling i almindelig drift og Free-budget over hele fakturaperioden afventer.

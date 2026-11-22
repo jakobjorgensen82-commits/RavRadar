@@ -102,6 +102,7 @@ async function main(env) {
     env, seal: expectedSeal, expectedBaseUrl: publicBase, deliveryOrdinal,
     waitMs: deliveryOrdinal === 1 ? firstPollMs : retryPollMs,
     cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,
+    readPublicTarget: readPublic,
     beforeCreate: async intent => {
       const pollMs = deliveryOrdinal === 1 ? firstPollMs : retryPollMs;
       if (!hasOrdinaryPagesWriteBudget(timeRemainingMs(), pollMs)) return false;

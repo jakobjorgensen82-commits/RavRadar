@@ -8,6 +8,7 @@ import {
 const api = 'https://api.github.com';
 const repo = 'jakobjorgensen82-commits/RavRadar';
 const intervalMs = 5_000;
+const publicObservationIntervalMs = 30_000;
 const maxWaitMs = 600_000;
 const hex40 = /^[a-f0-9]{40}$/;
 const secret = /^\S{1,8192}$/;
@@ -129,6 +130,7 @@ export async function runSealedPagesDeployment(options = {}) {
 async function executeSealedPagesDeployment({
   env, seal, expectedBaseUrl, deliveryOrdinal = 1,
   beforeCreate, fetchImpl = fetch, postImpl = postJsonOnce, cancelImpl = cancelPagesOnce, pause = wait, clock = Date.now,
+  readPublicTarget,
   waitMs = maxWaitMs, cancelAtDeadline = false, absoluteDeadlineMs, completionReserveMs,
 } = {}, markPostAttempted) {
   require(env?.GITHUB_REPOSITORY === repo && env.GITHUB_API_URL === api
@@ -143,6 +145,8 @@ async function executeSealedPagesDeployment({
   'PAGES_TRANSPORT_SEAL_SCOPE');
 
   require(typeof beforeCreate === 'function', 'PAGES_TRANSPORT_CREATE_ADMISSION_REQUIRED');
+  require(readPublicTarget === undefined || typeof readPublicTarget === 'function',
+    'PAGES_TRANSPORT_PUBLIC_OBSERVER_INVALID');
   require(Number.isSafeInteger(waitMs) && waitMs >= intervalMs && waitMs <= maxWaitMs
     && typeof cancelAtDeadline === 'boolean' && Number.isSafeInteger(absoluteDeadlineMs)
     && Number.isSafeInteger(completionReserveMs) && completionReserveMs >= 0, 'PAGES_TRANSPORT_TIME_BUDGET');
@@ -263,6 +267,7 @@ async function executeSealedPagesDeployment({
     return { response, decision };
   };
   const deadline = Math.min(clock() + waitMs, operationDeadline - cleanupReserveMs);
+  let nextPublicObservationMs = 0;
   try {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (clock() + requestTimeoutMs > deadline) break;
@@ -274,6 +279,16 @@ async function executeSealedPagesDeployment({
       if (decision.outcome === 'UNKNOWN' && decision.code !== 'STATUS_SHARED_ALIAS_UNPROVED'
         && !awaitingKnownStatus)
         return unknown(decision.code);
+      if (decision.code === 'STATUS_SHARED_ALIAS_UNPROVED' && readPublicTarget
+        && clock() >= nextPublicObservationMs && clock() + requestTimeoutMs <= deadline) {
+        nextPublicObservationMs = clock() + publicObservationIntervalMs;
+        try {
+          if (await readPublicTarget() === seal.targetPublicManifestSha256 && clock() <= deadline)
+            // Public visibility grants only an early handoff to the existing full
+            // verifier. It proves no terminal API state, CANCEL or retry authority.
+            return unknown('EXACT_PUBLIC_TARGET_OBSERVED');
+        } catch { /* An unavailable public read leaves the existing bounded poll intact. */ }
+      }
       if (['SUCCEEDED', 'FAILED'].includes(decision.outcome)) return terminal(decision, response);
       if (clock() + intervalMs + requestTimeoutMs > deadline || attempt + 1 >= maxAttempts) break;
       await pause(intervalMs);
