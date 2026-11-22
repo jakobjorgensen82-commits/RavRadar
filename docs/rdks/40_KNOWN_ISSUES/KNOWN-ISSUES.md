@@ -1,3 +1,9 @@
+## 22. november — tysk AI-svar afvist efter assistentudgivelsen
+
+Den offentligt leverede assistent gav validerede eksterne AI-svar i den danske og engelske prøve. Den tyske prøve fik HTTP 502 omkring kl. 00.44 dansk tid. Den allerede installerede logmarkør kan angive svarets form eller afkortning ved udtræksfejl.
+
+Den lokale læser er afgrænset til det observerede syvsekundersvindue og HTTP 502. Den bruger den eksisterende skrivefri arbejdsgang og udgiver kun faste fejlkategorier. Faktisk kategorilæsning og årsag står åbne. Flere kategorier i vinduet kan ikke entydigt tilskrives den tyske forespørgsel.
+
 ## 21. november — bølger mangler i prognosens sidste døgn
 
 Dækningen faldt fra #357 til #358 på samme kode. De 40 zoner med den vedvarende bølgemangel var allerede ramt i #359 før ændringen af køen for tre timers vandstand. Officielle bølgekataloger og gemte offentlige prognoser viser udbud og slutresultat. De forklarer endnu ikke, hvor de manglende timer falder ud i RavRadars behandling.
