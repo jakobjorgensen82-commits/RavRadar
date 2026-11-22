@@ -1,3 +1,9 @@
+## 23. november — særskilt inaktiv SQL80-installationsvej er lokal
+
+Den lokale kandidat tilkobler kun den eksakte receipt-append til den eksisterende finite backend-installationsworkflow. Valget er særskilt og default false, kræver aktuel kvalificeret FULL/native80 samt alle installerede forgængere og udelukker de øvrige opgraderinger. Før SQL kræves uændret OFF-katalog med de eksisterende CHECK-facit og deaktiveret Auth-hook. En frisk migrationsliste, dry-run og main-genbekræftelse begrænser skrivningen til denne ene append; allerede installeret SQL genlæses uden ny push. Den efterfølgende faste metadataaflæsning kræver den nye body/ACL, uarmeret receipt og fortsat UNKNOWN/OFF/HOLD. Normal efterfølger må kun genkende den samme allerede installerede append fra dens præcise kilde.
+
+Gamle79-SQL og OFF-verifikatoren bevares. De målrettede lokale protokolprøver består, men faktisk native80, kilde-PR-kvalifikation og hosted installation/genlæsning er ikke udført. Installationsvejen kalder hverken arm, Auth-enable, coverage-start, Edge-deploy, mail, varsel eller sletning. Hook-accept og senere dækningsstart kræver fortsat særskilt faktisk bevis og normal ejer.
+
 ## 23. november — normal App80-kvalifikation er lokalt tilkoblet
 
 Den lokale efterfølger skiller kvitteringens faste SQL/source-data fra HTTP-kontrolleren. Den normale PG-inputfortegnelse medtager det rene sourceblad sammen med den eksakte nye append; manglende eller delvis tilkobling afvises. En ændring af HTTP-kontrolleren alene bliver ikke numerisk PG-input.

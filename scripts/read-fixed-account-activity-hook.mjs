@@ -352,12 +352,13 @@ async function nativeReceiptQueryAndSource() {
   return { base, append, query, source: { ...source, bodies: { ...source.bodies, account_native_activity_token_hook: append.hookBodySha256 } } };
 }
 
-export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = globalThis.fetch }) {
+export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = globalThis.fetch, expectedCheckReference }) {
   if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const { base, append, query, source } = await nativeReceiptQueryAndSource();
+    if(expectedCheckReference!==undefined)base.verifyAccountInactivityCheckReference(expectedCheckReference);
     const response = await fetchImpl('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query', {
       method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
       headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -386,7 +387,7 @@ export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = 
     // Existing public API: supply the exact append-derived source, never replace
     // actual metadata/body hashes to make the old OFF oracle accept new code.
     delete metadata.tables.account_native_activity_receipt;
-    try { base.verifyAccountInactivityCatalogMetadata([{ metadata }], { source }); }
+    try { base.verifyAccountInactivityCatalogMetadata([{ metadata }], { source, expectedCheckReference }); }
     catch { return { status: 'NATIVE_RECEIPT_REFUSED' }; }
     if (metadata.functions.account_native_activity_token_hook.owner !== 'postgres') return { status: 'NATIVE_RECEIPT_REFUSED' };
     const values = rows[0].receipt;
@@ -410,12 +411,42 @@ export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = 
       coverageEpochSha256: receipt.coverageEpoch === null ? null : createHash('sha256').update(receipt.coverageEpoch,'utf8').digest('hex'),
       appendSha256: append.sha256, sourceBodyAndAclVerified: true, checkExpressionSemanticsVerified: false, nativeCaptureObserved: captured,
       authResponseObserved: false, activityEligibility: 'HOLD', coverageStartAuthority: false,
-      noticesEnabled: false, automaticDeletionEnabled: false };
+      noticesEnabled: false, automaticDeletionEnabled: false,
+      ...(expectedCheckReference===undefined?{}:{originalOffCheckExpressionSemanticsVerified:true}) };
   } catch {
     return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
   } finally {
     clearTimeout(timeout); controller.abort();
   }
+}
+
+// Installation readback only; no SQL write, arm, Auth PATCH or policy start.
+export async function verifyFixedNativeActivityReceiptInstallState({phase,accessToken,expectedManualCheckReference,expectedInactivityCheckReference,expectedAppendSha256,fetchImpl=globalThis.fetch}) {
+  if(!['before','installed'].includes(phase)||expectedAppendSha256!==readFixedNativeActivityReceiptSource().sha256)
+    throw new Error('NATIVE_RECEIPT_INSTALL_STATE_REQUIRED');
+  const base=await import('./verify-account-erasure-schema.mjs');
+  base.verifyAccountInactivityCheckReference(expectedInactivityCheckReference);
+  // The unchanged manual verifier validates its qualified CHECK reference before transport.
+  await base.verifyInstalledAccountErasureSchema({accessToken,expectedCheckReference:expectedManualCheckReference,fetchImpl});
+  const hook=await readFixedAccountActivityHookProjection({accessToken,fetchImpl});
+  if(hook.status!=='HOOK_DISABLED'||!['EMPTY','EXPECTED'].includes(hook.disabledHookUri))
+    throw new Error('NATIVE_RECEIPT_INSTALL_AUTH_DISABLED_REQUIRED');
+  if(phase==='before') {
+    const catalog=await readFixedAccountActivityHookCatalog({accessToken,fetchImpl});
+    if(catalog.status!=='HOOK_CATALOG_VERIFIED')throw new Error('NATIVE_RECEIPT_INSTALL_CATALOG_REQUIRED');
+    await base.verifyInstalledAccountInactivitySchema({accessToken,expectedCheckReference:expectedInactivityCheckReference,fetchImpl});
+  } else {
+    const receipt=await readFixedNativeActivityReceipt({accessToken,fetchImpl,expectedCheckReference:expectedInactivityCheckReference});
+    if(receipt.status!=='NATIVE_RECEIPT_UNARMED'||receipt.originalOffCheckExpressionSemanticsVerified!==true
+      ||receipt.appendSha256!==expectedAppendSha256||receipt.nativeCaptureObserved!==false
+      ||receipt.activityEligibility!=='HOLD'||receipt.coverageStartAuthority!==false
+      ||receipt.noticesEnabled!==false||receipt.automaticDeletionEnabled!==false)
+      throw new Error('NATIVE_RECEIPT_INSTALL_UNARMED_OFF_REQUIRED');
+  }
+  return {kind:'ACCOUNT_NATIVE_RECEIPT_INSTALL_READBACK',phase,appendSha256:expectedAppendSha256,
+    authHookStatus:'HOOK_DISABLED',originalOffCheckExpressionSemanticsVerified:true,
+    receiptCheckExpressionSemanticsVerified:false,receiptStatus:phase==='before'?'NOT_INSTALLED':'UNARMED',
+    activityEligibility:'HOLD',coverageStarted:false,noticesEnabled:false,automaticDeletionEnabled:false,activationAuthority:false};
 }
 
 export async function readFixedAccountActivityHook(options) {

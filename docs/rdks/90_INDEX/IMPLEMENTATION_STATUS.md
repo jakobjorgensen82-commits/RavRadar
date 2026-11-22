@@ -1,3 +1,9 @@
+## 23. november — lokal finite receipt80-installation med OFF-readback
+
+- [x] Klargør ét særskilt default-false valg i den eksisterende backend-installationsworkflow; kun den eksakte append må være pending efter alle installerede forgængere. Allerede installeret SQL genlæses uden push, og normale efterfølgere bevarer dens faktiske kilde.
+- [x] Bind source/native80-kvalifikation, gamle CHECK-facit, Auth-disabled førkontrol, frisk dry-run/main og uarmeret UNKNOWN/OFF/HOLD efterkontrol. De eksisterende lokale konto-/Auth-mål består; de gamle79-SQL, OFF-orakler og numeriske C/I/T er bevaret.
+- [ ] Faktisk native PostgreSQL80 og præcis source-PR-kvalifikation samt hosted installation/readback er stadig åbne. Ingen arm, Auth-enable, coverage-start, varsling, mail eller sletning er udført eller tilkoblet af denne installationsfølge.
+
 ## 23. november — current80-caller og direkte PG-afhængighed
 
 - [x] Flyt kun fast migrations-/source-/arm-data til ét fælles sourceblad og registrér det positivt som80-afhængighed. Historisk79-input ændres ikke.
