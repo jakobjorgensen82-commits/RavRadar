@@ -1,3 +1,7 @@
+## 22. november — bevist uudført PostgreSQL i grøn CURRENT-kontrol
+
+Den normale after599-genbrugslæser må passere et nyere, faktisk grønt CURRENT-forløb, når den fælles normale workflow-/stepformslæser beviser udført relevant kildekontrol samt legitimt sprunget PostgreSQL og native-upload. Det er ingen ny SQL-origin: den autentiske EXECUTED-fase, input, runtime, artifact og friske identiteter skal fortsat kvalificeres. Rød eller ukendt relevant source-/PostgreSQL-fase, blandet stepform og identitetsafvigelse giver fortsat faktisk SQL. Et senere grønt CURRENT-forløb ophæver ikke en sådan tidligere afvisning. Lokale syntetiske prøver er ikke hosted kvalifikation.
+
 ## Drift frem for brede historiske kontrolkrav
 
 Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.

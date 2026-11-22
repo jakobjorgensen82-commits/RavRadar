@@ -8,7 +8,7 @@ import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   scalar597LaterH0NativeClaims,ASSISTANT_AFTER597_SOURCE_COMMAND,inverseAssistantAfter597Package}
   from './national584-source-evidence.mjs';
 import {projectSourceImpactWorkflowFull,inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
-  readHistoricalSourceSetupWorkflow,verifyCurrentSourceWorkflow}
+  readHistoricalSourceSetupWorkflow,verifyCurrentSourceWorkflow,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}
   from './lib/source-impact-workflow-review.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
@@ -2870,17 +2870,34 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const currentRun={...copy(originRun),id:currentReuse.run,head_sha:actualHead,created_at:'2026-11-17T12:00:00Z',status:'in_progress',conclusion:null};
     const originalReceipt={...copy(receipt),current:{run:originRun.id,attempt:1,head:parentHead,pullRequest:947,branch:currentReuse.branch}};
     const originalBytes=JSON.stringify(originalReceipt);
-    const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false}={})=>{
+    const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false,skippedCurrent=false,skippedFault=null,sourceBlocked=false}={})=>{
       const zip=Buffer.from('bounded after599 synthetic ZIP'),calls=[],origin=copy(originRun),active=copy(currentRun);
-      const laterRun={...copy(origin),id:origin.id+1,head_sha:unrelatedLater?'c'.repeat(40):actualHead};
-      const jobsFor=r=>({total_count:1,jobs:[{id:r.id+1000,name:JOB,run_id:r.id,run_attempt:1,head_sha:r.head_sha,
+      const laterRun={...copy(origin),id:origin.id+(sourceBlocked?2:1),head_sha:unrelatedLater?'c'.repeat(40):actualHead};
+      const blockedRun={...copy(origin),id:origin.id+1,head_sha:actualHead};
+      const ordinaryJobsFor=r=>({total_count:1,jobs:[{id:r.id+1000,name:JOB,run_id:r.id,run_attempt:1,head_sha:r.head_sha,
         status:'completed',conclusion:'failure',steps:Array.from({length:17},(_,i)=>({number:i+1,
           name:i===14?'Validate source contracts and release governance':i===15?STEP:i===16?CURRENT586_PHASE_UPLOAD:'setup'+i,
           status:'completed',conclusion:'success',started_at:'2026-11-17T10:00:00Z',
           completed_at:i<15?'2026-11-17T10:00:00Z':'2026-11-17T10:02:00Z'}))}]});
+      const skippedJobs={total_count:1,jobs:[{id:laterRun.id+1000,name:JOB,run_id:laterRun.id,run_attempt:1,
+        head_sha:laterRun.head_sha,status:'completed',conclusion:'success',
+        steps:TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
+          conclusion:index>=9&&index<=22?'skipped':'success',
+          started_at:'2026-11-17T10:'+String(index).padStart(2,'0')+':00Z',
+          completed_at:'2026-11-17T10:'+String(index+1).padStart(2,'0')+':00Z'}))}]};
+      if(skippedCurrent){laterRun.conclusion='success';skippedFault?.({run:laterRun,job:skippedJobs.jobs[0],jobs:skippedJobs});}
+      const jobsFor=r=>{
+        if(skippedCurrent&&r.id===laterRun.id)return copy(skippedJobs);
+        const value=ordinaryJobsFor(r);
+        if(sourceBlocked&&r.id===blockedRun.id){
+          value.jobs[0].steps[14].conclusion='failure';
+          value.jobs[0].steps[15].conclusion='skipped';value.jobs[0].steps[16].conclusion='skipped';
+        }
+        return value;
+      };
       const metadata=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,size_in_bytes:zip.length,
         digest:'sha256:'+v2Hash(zip),created_at:'2026-11-17T10:01:00Z',workflow_run:{id:r.id,head_sha:r.head_sha}});
-      const rows=[active,...(locator||later||unrelatedLater?[laterRun]:[]),origin];let decoding=origin,pullReads=0;
+      const rows=[active,...(locator||later||unrelatedLater||skippedCurrent?[laterRun]:[]),...(sourceBlocked?[blockedRun]:[]),origin];let decoding=origin,pullReads=0;
       const proofFor=r=>({schemaVersion:r.id===laterRun.id&&locator?2:1,kind:r.id===laterRun.id&&locator?native.ASSISTANT_AFTER599_REUSE_KIND:native.ASSISTANT_AFTER599_PHASE_KIND,
         repository:ORIGIN.repository,headSha:r.head_sha,sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,
         nativePostgres:r.id===laterRun.id&&locator?{...copy(locator),current:{...currentReuse,run:r.id}}:copy(originalReceipt)});
@@ -2890,7 +2907,8 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
           head:{sha:mutate.prHead?'f'.repeat(40):mutate.originPrHead&&pullReads>1?normal.ORIGIN.head:actualHead,ref:currentReuse.branch,repo:{full_name:ORIGIN.repository}}};}
         if(route.includes('/workflows/'))return {total_count:rows.length,workflow_runs:copy(rows)};
         for(const r of rows){
-          if(route.endsWith('/runs/'+r.id))return {...copy(r),...(mutate.attempt&&r.id===origin.id?{run_attempt:2}:{})};
+          if(route.endsWith('/runs/'+r.id))return {...copy(r),...(mutate.attempt&&r.id===origin.id?{run_attempt:2}:{}),
+            ...(mutate.skippedFreshHead&&r.id===laterRun.id?{head_sha:'f'.repeat(40)}:{})};
           if(route.includes('/runs/'+r.id+'/attempts/1/jobs')){
             const value=jobsFor(r);if((mutate.pgFailure&&r.id===origin.id)||((later||unrelatedLater)&&!locator&&r.id===laterRun.id))value.jobs[0].steps[15].conclusion='failure';
             if(mutate.sourceFailure&&r.id===origin.id)value.jobs[0].steps[14].conclusion='failure';
@@ -2914,10 +2932,12 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
           if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return actualHead+'\n';
           if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
           if(args[0]==='status'||args[0]==='for-each-ref')return '';
+          if(mutate.skippedWorkflow&&args[0]==='cat-file'&&args[2]===actualHead+':'+WORKFLOW)
+            return Buffer.from(workflow.replace('  contents: read','  contents: write'));
           if(args[0]==='ls-tree'||args[0]==='cat-file'&&args[1]==='blob')return execFileSync('git',args);
           return execFileSync('git',args,{encoding:'utf8'});
         },decode:()=>{const proof=proofFor(decoding);if(mutate.receipt)mutate.receipt(proof.nativePostgres);return Buffer.from(JSON.stringify(proof));}};
-      return {options,calls};
+      return {options,calls,skippedRun:laterRun};
     };
     const positive=makeAfter599Fixture();
     const reused=await native.decideAssistantAfter599Reuse(positive.options);
@@ -2925,6 +2945,27 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     assert.equal(reused.kind,native.ASSISTANT_AFTER599_REUSE_KIND);assert.equal(reused.status,'REUSED');
     assert.equal(reused.executedInThisRun,false);assert.equal(reused.origin.run,originRun.id);assert.equal(reused.origin.head,parentHead);
     assert.equal(reused.eligibleForReuse,false);assert.equal(JSON.stringify(originalReceipt),originalBytes);
+    await t.test('after599 passerer kun fuldt grønt CURRENT med uudført PG',async()=>{
+      // Samme normale CURRENT-stepform: ingen ny PG-origin eller native-artifact.
+      const skipped=makeAfter599Fixture({skippedCurrent:true});
+      const skippedReceipt=await native.decideAssistantAfter599Reuse(skipped.options);
+      assert(skippedReceipt);assert.equal(skippedReceipt.origin.run,originRun.id);
+      assert.equal(skippedReceipt.executedInThisRun,false);assert.equal(JSON.stringify(originalReceipt),originalBytes);
+      assert(!skipped.calls.some(route=>route.includes('/runs/'+skipped.skippedRun.id+'/artifacts')));
+      for(const skippedFault of [
+        x=>{x.run.conclusion='failure';},x=>{x.job.conclusion='failure';},x=>{x.run.run_attempt=2;},
+        x=>{x.jobs.total_count=2;},x=>{x.job.steps.find(s=>s.name===STEP).conclusion='failure';},
+        x=>{Object.assign(x.job.steps.find(s=>s.name===STEP),{status:'in_progress',conclusion:null});},
+        x=>{x.job.steps.find(s=>s.name==='Build deterministic source-tree content identity').conclusion='failure';},
+        x=>{x.job.steps.find(s=>s.name==='Build deterministic source-tree content identity').conclusion=null;},
+        x=>{x.job.steps.find(s=>s.name===CURRENT586_PHASE_UPLOAD).conclusion='success';},
+        x=>{x.job.steps.find(s=>s.name==='Upload tree-content source validation proof').conclusion='skipped';},
+      ])assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({skippedCurrent:true,skippedFault}).options),null);
+      for(const key of ['skippedFreshHead','skippedWorkflow'])
+        assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({skippedCurrent:true,mutate:{[key]:true}}).options),null,key);
+      assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({skippedCurrent:true,sourceBlocked:true}).options),null,
+        'Et nyere grønt CURRENT-forløb ophæver ikke en relevant tidligere rød sourcefase med uudført PG');
+    });
     assert.equal(await native.verifyAssistantAfter599PhaseReceipt(reused,currentReuse),reused);
     const claims=await normal.assistantAfter599NativeClaims(reused,currentReuse);
     assert.equal(claims.currentAssistantAfter599Native.status,'REUSED');assert.equal(claims.currentAssistantAfter599Native.executedInThisRun,false);

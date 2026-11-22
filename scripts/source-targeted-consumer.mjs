@@ -15,7 +15,7 @@ import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentCon
   from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
 import {inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
-  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow,TARGETED_SOURCE_STEP_NAMES,
+  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow,verifyTargetedSourceStepShape,TARGETED_SOURCE_STEP_NAMES,
   TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}
   from './lib/source-impact-workflow-review.mjs';
 
@@ -28,11 +28,9 @@ const DOMAIN_TARGETED_SOURCE_KIND='RAVRADAR_SOURCE_TARGETED_DOMAINS_RECEIPT_V2';
 
 const LOCATOR_KEYS=['contractId','repository','headSha','producerHeadSha','sourceTreeSha256',
   'pullRequestNumber','runId','runAttempt','jobId','artifactId','artifactDigest','proofSha256'];
-export {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,
+export {verifyTargetedSourceStepShape,TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,
   TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}
   from './lib/source-impact-workflow-review.mjs';
-const DMI_PYTHON_WORKFLOW_SHA256='742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff';
-const DMI_REQUIREMENTS_WORKFLOW_SHA256='2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843';
 const verifiedMainFrontiers=new WeakMap();
 // Only a result actually accepted by this normal consumer carries this brand.
 export function verifiedMainSourceFrontier(result){
@@ -60,34 +58,6 @@ function locatorIdentity(record,env){
   assert.notEqual(record.runId,String(env.GITHUB_RUN_ID));
   for(const key of ['pullRequestNumber','runAttempt','jobId','artifactId'])assert(positive(record[key]));
   assert.equal(record.runAttempt,1);
-}
-
-export function verifyTargetedSourceStepShape(job,workflowText){
-  assert.equal(arguments.length,2);assert(Array.isArray(job.steps));
-  const modern=workflowText!==undefined;
-  const current=modern&&hasDependencyOnlySourceSetup(workflowText);
-  if(current)verifyCurrentSourceWorkflow(workflowText);
-  // Project only the already reviewed whole CURRENT registration before the
-  // independent owned-cache step shape; neither inverse grants source authority.
-  const workflow=modern&&!current?inverseSourceImpactFullCurrent(workflowText):null;
-  const previous=workflow===null?null:inverseOwnedCacheNativeWorkflow(workflow);
-  const ownedCacheNative=current||previous!==workflow;
-  const workflowHash=previous===null?null:sha(previous);
-  if(modern&&!current)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
-  if(ownedCacheNative&&!current)assert.equal(workflowHash,DMI_REQUIREMENTS_WORKFLOW_SHA256,'EXACT_OWNED_CACHE_NATIVE_PREDECESSOR_REQUIRED');
-  const names=ownedCacheNative?TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
-    :modern?(workflowHash===DMI_PYTHON_WORKFLOW_SHA256?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES):TARGETED_SOURCE_STEP_NAMES;
-  assert.deepEqual(job.steps.filter(value=>value.number<=names.length).map(value=>value.number),Array.from({length:names.length},(_,i)=>i+1));
-  for(let i=0;i<names.length;i++){
-    const step=one(job.steps.filter(value=>value.number===i+1));assert.equal(step.name,names[i]);assert.equal(step.status,'completed');
-    const oldIndex=ownedCacheNative?(i<3?i:i<5?-1:i-2):i;
-    assert.equal(step.conclusion,modern?(oldIndex>=7&&oldIndex<=20?'skipped':'success'):(i>=5&&i<=19?'skipped':'success'));
-  }
-  const offset=ownedCacheNative?2:0;
-  const selected=job.steps[(modern?6:4)+offset],unchanged=job.steps[(modern?21:20)+offset],uploaded=job.steps[(modern?22:21)+offset];
-  assert(time(selected.started_at)<=time(selected.completed_at));assert(time(selected.completed_at)<=time(unchanged.started_at));
-  assert(time(unchanged.started_at)<=time(unchanged.completed_at));assert(time(unchanged.completed_at)<=time(uploaded.started_at));assert(time(uploaded.started_at)<=time(uploaded.completed_at));
-  return {proofTime:time(selected.completed_at),earliestArtifact:time(selected.started_at),latestArtifact:time(uploaded.completed_at)};
 }
 
 function runIdentity(run,pull,jobs,record,workflowText){
