@@ -8508,3 +8508,7 @@ Kun optællinger og vandstandens gemte samlings-, modelkørsels- og tidsevidens 
 Der hentes ikke nyt vejr, genberegnes ikke scorer og skrives ikke til den aktive vejrpakke, database eller hjemmeside. Ingen rå vejrvektorer, punkter eller private dokumenter udgives. Dette er en undersøgelse af årsagen til huller i vandstandshalen, ikke en rettelse af huller eller en ny dækningsmåling. Det hidtidige kildevalg, de syv zoners afgrænsning og alle produktionsbindinger bevares.
 
 Den almindelige målprøve for den berørte diagnose består lokalt. Den komplette lokale prøve af kontrolplanlæggeren nåede sin tidsgrænse uden resultat og tæller ikke som bestået. De nye præcise læseflader følger den eksisterende relevante kontrolprofil med ukendte flader fortsat afvist. Der kræves den normale GitHub-kvalifikation, et ledigt skrivevindue og faktisk autentificeret læsning før en årsag kan fastslås.
+
+## 22. november 2026 – Prognoseindlæsning afbrød samtalen om ravlygten
+
+På den offentlige 4.0.602-udgivelse kunne det almindelige dagslysspørgsmål blive sendt til AI-tjenesten, hvis prognosen blev indlæst mellem bølgelængdesvaret og opfølgningen. En almindelig browser med forsinket offentlig prognose reproducerede forskellen. Den afgrænsede lokale kandidat bevarer ravlygteemnet under selve indlæsningen. Samme browserforløb og de målrettede prøver består lokalt. Den præcise kildekontrol, levering og efterfølgende offentlige afprøvning udestår.
