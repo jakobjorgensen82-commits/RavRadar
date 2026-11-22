@@ -42,8 +42,11 @@ async function fixture(t, overrides = {}) {
 
 test('CP runs first; OM receives only recomputed real holes, not aged-DMI challenges', async t => {
   const calls = [];
+  const planStages = [];
   const result = await prepareWeatherComponentRuntime(await fixture(t, {
     readVerifiedHourly: (_part, inputs) => {
+      planStages.push([Boolean(inputs.copernicusComponentIndex?.wave),
+        Boolean(inputs.openMeteoComponentIndex?.temperature)]);
       const values = rows();
       if (!inputs.copernicusComponentIndex?.wave) values[0].wavePeriodS = null;
       if (!inputs.openMeteoComponentIndex?.temperature) values[1].waterTemperatureC = null;
@@ -56,6 +59,7 @@ test('CP runs first; OM receives only recomputed real holes, not aged-DMI challe
         assert.deepEqual(options.needs.map(row => row.purpose), ['GAP', 'GAP', 'AGED_DMI_CHALLENGE']);
         return cp('d', { wave: true });
       }
+      assert.deepEqual(options.needs, []);
       return cp('c');
     },
     runOpenMeteo: async options => {
@@ -65,6 +69,7 @@ test('CP runs first; OM receives only recomputed real holes, not aged-DMI challe
     },
   }));
   assert.deepEqual(calls, [['cp', 0], ['cp', 1000], ['om', 1000]]);
+  assert.deepEqual(planStages, [[false, false], [true, false], [true, true]]);
   assert.equal(result.remainingNeeds.length, 1);
   assert.equal(result.remainingNeeds[0].purpose, 'AGED_DMI_CHALLENGE');
   assert.deepEqual(result.summary.failures, []);
@@ -106,16 +111,46 @@ test('bounded Copernicus upgrade pass overtakes admitted Open-Meteo wave and tem
 
 test('provider-free build does not enter a positive-budget acquisition; saved marker binds exact ledger bytes', async t => {
   const calls = [];
+  let planReads = 0;
   const result = await prepareWeatherComponentRuntime(await fixture(t, {
     copernicusBudgetMs: 0, openMeteoBudgetMs: 0,
+    readVerifiedHourly: () => { planReads += 1; return rows(); },
     runCopernicus: async options => { calls.push(options.budgetMs); return cp('c'); },
     runOpenMeteo: async options => { calls.push(options.budgetMs); return om('b'); },
   }));
   assert.deepEqual(calls, [0, 0]);
+  assert.equal(planReads, 2, 'a real offline OM checkpoint still requires a new plan');
   const marker = await persistWeatherComponentSelections(result);
   assert.equal(marker.openMeteoBankSha256, sha('b'), 'not the read-only in-memory generation');
   assert.equal(marker.selectedComponentsSha256, createHash('sha256')
     .update(await fs.readFile(result.historyPath)).digest('hex'));
+});
+
+test('failed initial OM load reuses the settled plan when both CP passes are skipped', async t => {
+  let planReads = 0;
+  const result = await prepareWeatherComponentRuntime(await fixture(t, {
+    copernicusBudgetMs: 0,
+    loadOpenMeteo: async () => { throw new Error('no retained snapshot'); },
+    runOpenMeteo: async () => { assert.fail('there was no verified OM starting bank'); },
+    readVerifiedHourly: () => {
+      planReads += 1;
+      const values = rows();
+      values[0].windSpeedMps = null;
+      values[1].waterLevelTrendCm3h = null;
+      return values;
+    },
+    runCopernicus: async options => {
+      assert.equal(options.budgetMs, 0);
+      assert.deepEqual(options.needs, []);
+      return { ...cp('c'), summary: { status: 'CANDIDATES_READY', remainingNeeds: 0 } };
+    },
+  }));
+  assert.equal(planReads, 1);
+  assert.deepEqual(result.summary.failures, ['OPEN_METEO_COMPONENT_CACHE_UNAVAILABLE']);
+  assert.deepEqual(result.summary.after, result.summary.before);
+  assert.equal(result.summary.copernicus.status, 'IN_PROGRESS');
+  assert.equal(result.summary.copernicus.remainingNeeds, 1);
+  assert.deepEqual(result.dmiOnlyNeeds.map(need => [need.component, need.gapReason]), [['waterLevel', 'TREND_GAP']]);
 });
 
 test('failed provider refresh rereads partial durable work offline and preserves sibling source', async t => {

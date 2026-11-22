@@ -55,17 +55,19 @@ function copernicusCombinedSummary(snapshot, passes, after) {
   for (const pass of attempted) {
     for (const [code, count] of Object.entries(pass.retryableReasons)) reasons[code] = (reasons[code] ?? 0) + count;
   }
+  const remainingNeeds = after.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)).length;
   // Candidate/record counts describe the final verified bank. Attempt totals
   // describe BOTH acquisitions, not merely the last (upgrade) invocation.
   // If an invocation could only be recovered offline, totals are known lower
   // bounds and attemptCountsComplete explicitly says so.
   return { ...snapshot,
+    status: snapshot ? (remainingNeeds ? 'IN_PROGRESS' : 'CANDIDATES_READY') : null,
     attempts: attempted.reduce((sum, pass) => sum + (pass.attempts ?? 0), 0),
     retryableAttempts: attempted.reduce((sum, pass) => sum + (pass.retryableAttempts ?? 0), 0),
     retryableReasons: Object.fromEntries(Object.entries(reasons).sort(([a], [b]) => a.localeCompare(b, 'en'))),
     transportFailure: attempted.find(pass => pass.transportFailure)?.transportFailure ?? null,
     attemptCountsComplete: attempted.every(pass => pass.attemptCountsComplete),
-    remainingNeeds: after.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)).length,
+    remainingNeeds,
     remainingUpgradeNeeds: after.copernicusUpgradeNeeds.length,
     passes,
   };
@@ -122,8 +124,8 @@ export async function prepareWeatherComponentRuntime({
       readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
   };
   try {
-    cp = await runCopernicus({ ...cpOptions,
-      needs: plan().needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)), budgetMs: 0 });
+    // Offline authority verifies and projects the whole retained original bank.
+    cp = await runCopernicus({ ...cpOptions, needs: [], budgetMs: 0 });
     inputs.copernicusComponentIndex = cp.index;
   } catch (error) {
     if (isWeatherTransportStopUnproved(error)) throw error;
@@ -164,20 +166,21 @@ export async function prepareWeatherComponentRuntime({
     }
   };
   const acquisitionNeeds = before.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component));
+  let afterCopernicus = before;
   if (copernicusBudgetMs > 0 && acquisitionNeeds.length) {
     await refreshCopernicus(acquisitionNeeds, copernicusBudgetMs,
       'COPERNICUS_COMPONENT_REFRESH_UNAVAILABLE', 'critical');
+    afterCopernicus = plan();
   }
   // Persistent physical gaps must not starve every lower-priority upgrade.
   // This separate bounded pass follows the actual gap/challenge pass.
-  const afterCriticalCopernicus = plan();
-  if (copernicusUpgradeBudgetMs > 0 && afterCriticalCopernicus.copernicusUpgradeNeeds.length) {
-    await refreshCopernicus(afterCriticalCopernicus.copernicusUpgradeNeeds,
+  if (copernicusUpgradeBudgetMs > 0 && afterCopernicus.copernicusUpgradeNeeds.length) {
+    await refreshCopernicus(afterCopernicus.copernicusUpgradeNeeds,
       copernicusUpgradeBudgetMs, 'COPERNICUS_COMPONENT_UPGRADE_UNAVAILABLE', 'upgrade');
+    afterCopernicus = plan();
   }
-  // Recompute after CP. OM must not fetch every pair just because its own bank
-  // is empty, or consume its budget challenging DMI without proved model age.
-  const afterCopernicus = plan();
+  // OM uses the plan after the last settled CP pass. Its own empty bank is
+  // no reason to fetch every pair or to challenge DMI without proved model age.
   if (!omLoadFailed) {
     try {
       om = await runOpenMeteo({ ...omOptions,
@@ -206,7 +209,7 @@ export async function prepareWeatherComponentRuntime({
       }
     }
   }
-  const after = plan();
+  const after = omLoadFailed ? afterCopernicus : plan();
   return { inputs, historyPath, sourceMarker: {
     schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
     openMeteoBankSha256: om?.bank?.bankSha256 ?? null,
