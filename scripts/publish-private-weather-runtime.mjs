@@ -87,11 +87,13 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
     await priorSettled;
   };
   const storage = createPrivateWeatherPublicationStorage(storageOptions, true);
+  let bucketUsageBeforeRetirementMarker;
   const validateMarkerCapacity = async bytes => {
-    const { usedBytes } = await storage.bucketUsage();
-    if (usedBytes + bytes + policy.reserveBytes > policy.bucketCeilingBytes) {
+    const usage = await storage.bucketUsage();
+    if (usage.usedBytes + bytes + policy.reserveBytes > policy.bucketCeilingBytes) {
       fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
     }
+    bucketUsageBeforeRetirementMarker = usage;
   };
   const createdPaths = new Set();
   const currentPaths = new Set();
@@ -144,11 +146,12 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
       },
     },
   });
+  const observed = { ...result, bucketUsageBeforeRetirementMarker };
   try {
     await retirement.settle(lastRead, freshPointer);
-    return result;
+    return observed;
   } catch {
-    return { ...result, retentionCleanupComplete: false, retentionCleanupFailureCount: 1 };
+    return { ...observed, retentionCleanupComplete: false, retentionCleanupFailureCount: 1 };
   }
 }
 
@@ -203,6 +206,25 @@ export async function checkCodeOnlyPrivateWeatherRebind(request, storageOptions,
   }
 }
 
+export async function appendPrivateWeatherPublicationSummary(result, env = process.env) {
+  const summaryPath = env.GITHUB_STEP_SUMMARY;
+  if (env.GITHUB_ACTIONS !== 'true' || !path.isAbsolute(summaryPath ?? '')) return;
+
+  const usage = result.bucketUsageBeforeRetirementMarker;
+  const storage = usage
+    ? `R2 reported ${usage.usedBytes} bytes after archive verification and before the retirement marker upload. The object count was ${usage.objectCount}.`
+    : 'R2 bucket usage before the retirement marker upload was not measured.';
+  const cleanup = result.retentionCleanupComplete;
+  let retirement = 'The publisher reported no retirement result.';
+  if (cleanup === true) retirement = 'The retirement check completed.';
+  if (cleanup === false) retirement = 'Retirement cleanup remains unresolved.';
+  try {
+    await fs.appendFile(summaryPath, `\n### Private weather archive storage\n\n${storage}\n\n${retirement}\n`);
+  } catch {
+    console.warn('PRIVATE_WEATHER_PUBLICATION_SUMMARY_UNAVAILABLE');
+  }
+}
+
 async function main() {
   assertPrivateWeatherPublicationPolicy();
   assertPrivateWeatherPublicationBackend();
@@ -226,6 +248,7 @@ async function main() {
     rollbackAvailable: result.rollbackAvailable, objectCount: result.objectCount,
     retentionCleanupComplete: result.retentionCleanupComplete,
     retentionCleanupFailureCount: result.retentionCleanupFailureCount, privatePayloadLogged: false }));
+  await appendPrivateWeatherPublicationSummary(result);
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(error => {
