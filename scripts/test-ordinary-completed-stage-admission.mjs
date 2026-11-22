@@ -206,9 +206,13 @@ export async function assertNormalStagePublication(t) {
   const beforeSuccessfulPublicationCalls = r2Calls.length;
   const publication = await publishChild();
   assert.equal(publication.published, true);
+  assert.deepEqual(publication.bucketUsageBeforeArchiveUpload, { usedBytes: virtualUsed, objectCount: 1 });
   assert.deepEqual(publication.bucketUsageBeforeRetirementMarker, { usedBytes: virtualUsed, objectCount: 1 });
   const successfulListPositions = r2ListPositions.filter(position => position >= beforeSuccessfulPublicationCalls);
   const successfulPuts = r2Calls.slice(beforeSuccessfulPublicationCalls).filter(method => method === 'PUT');
+  const firstArchivePut = r2Calls.indexOf('PUT', beforeSuccessfulPublicationCalls);
+  assert.equal(successfulListPositions[1], firstArchivePut - 1,
+    'The initial stock is sampled at the existing first archive PUT admission.');
   assert.equal(successfulListPositions.length, successfulPuts.length + 2,
     'The observation adds no R2 listing to archive or retirement marker admission.');
   assert.deepEqual(r2Calls.slice(successfulListPositions.at(-2), successfulListPositions.at(-1) + 2),
@@ -221,6 +225,8 @@ export async function assertNormalStagePublication(t) {
   const publicationSummary = await fs.readFile(summaryPath, 'utf8');
   assert.match(publicationSummary,
     /R2 reported 1734856529 bytes after archive verification and before the retirement marker upload\. The object count was 1\./);
+  assert.match(publicationSummary,
+    /R2 reported 1734856529 bytes before the first new archive object, following any retirement from earlier runs\. The object count was 1\./);
   assert.match(publicationSummary, /The retirement check completed\./);
   await assert.doesNotReject(() => appendPrivateWeatherPublicationSummary(publication,
     { ...summaryEnvironment, GITHUB_STEP_SUMMARY: path.join(own, 'missing', 'summary') }));
@@ -296,6 +302,7 @@ export async function assertNormalStagePublication(t) {
   const thirdResult = await publishPrivateWeatherRuntime({ ...thirdPublication, request: thirdRequest }, interrupted);
   assert.equal(thirdResult.published, true);
   assert.equal(thirdResult.retentionCleanupComplete, false);
+  assert.equal(thirdResult.bucketUsageBeforeArchiveUpload, undefined);
   assert.equal(thirdResult.bucketUsageBeforeRetirementMarker, undefined);
   assert.deepEqual(interruptedLists, [], 'Reusing the verified marker does not measure the bucket.');
   await appendPrivateWeatherPublicationSummary(thirdResult, summaryEnvironment);

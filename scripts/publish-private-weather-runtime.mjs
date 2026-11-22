@@ -33,7 +33,7 @@ export function assertPrivateWeatherPublicationBackend(value = process.env.RAVRA
   if (value !== 'r2') fail('PRIVATE_WEATHER_PUBLICATION_BACKEND_MISMATCH');
 }
 
-export function createPrivateWeatherPublicationStorage(options = {}, reserveRetirementMarker = false) {
+export function createPrivateWeatherPublicationStorage(options = {}, reserveRetirementMarker = false, observeInitialStock) {
   const policy = assertPrivateWeatherPublicationPolicy();
   const allowed = new Set(['storageBackend', 'accountId', 'accessKeyId', 'secretAccessKey', 'fetchImpl', 'now', 'delayImpl']);
   if (!options || Object.getPrototypeOf(options) !== Object.prototype
@@ -49,12 +49,13 @@ export function createPrivateWeatherPublicationStorage(options = {}, reserveReti
       // HEAD reuse never reaches it. A rejected admission is latched too, so
       // the existing adapter retry cannot cause another scan or any PUT.
       beforeFirstPut ??= (async () => {
-        const { usedBytes } = await storage.bucketUsage();
-        if (usedBytes > policy.bucketCeilingBytes - policy.reserveBytes
+        const usage = await storage.bucketUsage();
+        if (usage.usedBytes > policy.bucketCeilingBytes - policy.reserveBytes
           - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
           - (reserveRetirementMarker ? RETIREMENT_MARKER_BYTES : 0)) {
           fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
         }
+        observeInitialStock?.(usage);
       })();
       await beforeFirstPut;
     }
@@ -86,7 +87,10 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
     priorSettled ??= retirement.settle(before, freshPointer);
     await priorSettled;
   };
-  const storage = createPrivateWeatherPublicationStorage(storageOptions, true);
+  let bucketUsageBeforeArchiveUpload;
+  const storage = createPrivateWeatherPublicationStorage(storageOptions, true, usage => {
+    bucketUsageBeforeArchiveUpload = usage;
+  });
   let bucketUsageBeforeRetirementMarker;
   const validateMarkerCapacity = async bytes => {
     const usage = await storage.bucketUsage();
@@ -146,7 +150,7 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
       },
     },
   });
-  const observed = { ...result, bucketUsageBeforeRetirementMarker };
+  const observed = { ...result, bucketUsageBeforeArchiveUpload, bucketUsageBeforeRetirementMarker };
   try {
     await retirement.settle(lastRead, freshPointer);
     return observed;
@@ -210,6 +214,10 @@ export async function appendPrivateWeatherPublicationSummary(result, env = proce
   const summaryPath = env.GITHUB_STEP_SUMMARY;
   if (env.GITHUB_ACTIONS !== 'true' || !path.isAbsolute(summaryPath ?? '')) return;
 
+  const openingUsage = result.bucketUsageBeforeArchiveUpload;
+  const openingStock = openingUsage
+    ? `R2 reported ${openingUsage.usedBytes} bytes before the first new archive object, following any retirement from earlier runs. The object count was ${openingUsage.objectCount}.`
+    : 'R2 bucket usage before the first new archive object was not measured.';
   const usage = result.bucketUsageBeforeRetirementMarker;
   const storage = usage
     ? `R2 reported ${usage.usedBytes} bytes after archive verification and before the retirement marker upload. The object count was ${usage.objectCount}.`
@@ -219,7 +227,7 @@ export async function appendPrivateWeatherPublicationSummary(result, env = proce
   if (cleanup === true) retirement = 'The retirement check completed.';
   if (cleanup === false) retirement = 'Retirement cleanup remains unresolved.';
   try {
-    await fs.appendFile(summaryPath, `\n### Private weather archive storage\n\n${storage}\n\n${retirement}\n`);
+    await fs.appendFile(summaryPath, `\n### Private weather archive storage\n\n${openingStock}\n\n${storage}\n\n${retirement}\n`);
   } catch {
     console.warn('PRIVATE_WEATHER_PUBLICATION_SUMMARY_UNAVAILABLE');
   }
