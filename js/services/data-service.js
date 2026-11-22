@@ -1569,10 +1569,14 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
 export function loadCompactPublicForecastShareSelection(input, options = {}) {
   return loadBoundedForecastShareSelection(input, options, true);
 }
+const FORECAST_SHARE_MISSING_BUNDLE = Symbol();
+export function loadSingleZonePublicForecastShareSelection(input, options = {}) {
+  return loadBoundedForecastShareSelection(input, options, true, true);
+}
 export function loadLegacyCompactPublicForecastShareSelection(input, options = {}) {
   return loadBoundedForecastShareSelection(input, options, false);
 }
-async function loadBoundedForecastShareSelection(input, { fetchPublic } = {}, trustIndex) {
+async function loadBoundedForecastShareSelection(input, { fetchPublic } = {}, trustIndex, singleZone = false) {
   const selection = exactForecastShareSelection(input);
   if (!selection || typeof fetchPublic !== 'function') throw new Error('FORECAST_SHARE_READER_INVALID');
   // One deadline from manifest start, not a fresh15 seconds per fetch. This also
@@ -1585,10 +1589,15 @@ async function loadBoundedForecastShareSelection(input, { fetchPublic } = {}, tr
       controller.abort(); throw new Error('FORECAST_SHARE_DEADLINE_EXCEEDED');
     }
   };
-  async function read(path, { bytes = null, sha256 = null, limit = bytes ?? 512 * 1024, withText = false } = {}) {
+  async function read(path, { bytes = null, sha256 = null, limit = bytes ?? 512 * 1024,
+    withText = false, allowMissing = false } = {}) {
     budget();
     const response = await fetchPublic(path, { signal: controller.signal, cache: 'no-store' });
     budget();
+    if (allowMissing && response.status === 404) {
+      await response.body?.cancel().catch(() => {});
+      return FORECAST_SHARE_MISSING_BUNDLE;
+    }
     if (!response.ok || !response.body?.getReader) throw new Error('FORECAST_SHARE_READ_FAILED');
     const reader = response.body.getReader(), chunks = [];
     let size = 0;
@@ -1617,6 +1626,31 @@ async function loadBoundedForecastShareSelection(input, { fetchPublic } = {}, tr
     return withText ? { document: decoded.value, text } : decoded.value;
   }
   try {
+    if (singleZone) {
+      const { assertForecastShareZoneBundle, forecastShareZoneBundlePath, FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES } =
+        await import('./forecast-share-zone-bundle.js?v=4.0.602');
+      const path = './data/live/' + forecastShareZoneBundlePath(selection.zoneId);
+      const document = await read(path, {limit: FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES, allowMissing: true});
+      // A genuinely older, compatible Pages generation has no bundle. Use
+      // its established trusted reader only on an explicit 404.
+      if (document !== FORECAST_SHARE_MISSING_BUNDLE) {
+        const { index, projectionText } = assertForecastShareZoneBundle(document, selection.zoneId);
+        const [entry] = index.zones;
+        const metadata = assertManifestMetadata(index.publicMetadata);
+        const availability = selectPublicRuntimeAvailability(metadata, {modelBinding: ravScoreModelBinding()});
+        const hour = (Date.parse(selection.time) - Date.parse(index.axis.firstHour)) / index.axis.stepMs;
+        if (selection.time < availability.selectedReferenceAt
+          || !Number.isInteger(hour) || hour < 0 || hour >= index.axis.count) return null;
+        if (utf8Bytes(projectionText) !== entry.bytes || await sha256Text(projectionText) !== entry.sha256) {
+          throw new Error('FORECAST_SHARE_BINDING_INVALID');
+        }
+        budget();
+        const projection = assertForecastShareTrustedZone(JSON.parse(projectionText), index, entry);
+        const fresh = selectPublicRuntimeAvailability(metadata, {modelBinding: ravScoreModelBinding()});
+        if (selection.time < fresh.selectedReferenceAt) return null;
+        return forecastShareZoneProjectionSelection(projection, selection);
+      }
+    }
     if (trustIndex) {
       const index = assertForecastShareTrustIndex(await read(FORECAST_SHARE_TRUST_PATH, {limit: FORECAST_SHARE_INDEX_MAX_BYTES}));
       const metadata = assertManifestMetadata(index.publicMetadata);

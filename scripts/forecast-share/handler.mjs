@@ -1,7 +1,7 @@
 // INACTIVE HOST-NEUTRAL HANDLER. No Worker/Edge registration, credentials,
 // domain route, scheduled generation, database or image storage is provided.
 // Activation requires a separately reviewed public host and exact route binding.
-import { loadCompactPublicForecastShareSelection } from '../../js/services/data-service.js?v=4.0.587';
+import { loadSingleZonePublicForecastShareSelection } from '../../js/services/data-service.js?v=4.0.587';
 import { readForecastShare, forecastShareUrl, forecastShareCopy, forecastShareDate,
   forecastShareScoreText, initializeForecastShareDateFormatters, FORECAST_SHARE_BRAND_PATH } from '../../js/services/forecast-share-contract.js?v=4.0.587';
 
@@ -40,12 +40,13 @@ export async function handleForecastShare(request, { shareBaseUrl, fetchPublic =
   let verified = null;
   if (incoming.status === 'valid') {
     try {
-      verified = await loadCompactPublicForecastShareSelection(selection, {
+      verified = await loadSingleZonePublicForecastShareSelection(selection, {
         fetchPublic: (path, options) => {
           // Only source-owned fixed paths and manifest-owned hashes reach here.
           if (path !== './data/live/manifest.json' && path !== './data/live/forecast-share.json'
               && path !== './data/live/forecast-share-trust.json'
-              && !/^\.\/data\/live\/share\/[a-f0-9]{64}\.json$/.test(path)) throw new Error('PUBLIC_PATH_REJECTED');
+              && !/^\.\/data\/live\/share\/[a-f0-9]{64}\.json$/.test(path)
+              && !/^\.\/data\/live\/forecast-share-zones\/[a-zA-Z0-9_-]{1,80}\.json$/.test(path)) throw new Error('PUBLIC_PATH_REJECTED');
           return fetchPublic(new URL(path, PUBLIC_PAGE), {
             ...options, redirect: 'manual', credentials: 'omit', headers: { Accept: 'application/json' },
           });

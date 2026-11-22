@@ -2,6 +2,8 @@
 
 import crypto from 'node:crypto';
 import {assertForecastShareTrustParity} from '../js/services/forecast-share-trust-index.js';
+import {buildForecastShareZoneBundle, forecastShareZoneBundlePath, FORECAST_SHARE_ZONE_BUNDLE_MODULE,
+  FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES} from '../js/services/forecast-share-zone-bundle.js';
 import { assertForecastShareDescriptor, assembleForecastShareProjection, assertForecastShareProjectionParity, FORECAST_SHARE_INDEX_MAX_BYTES }
   from '../js/services/forecast-share-projection.js';
 import fs from 'node:fs/promises';
@@ -667,21 +669,33 @@ async function verifyOnce({
     // Historical594 has only the original projection module and keeps v1.
     // A new reader importing the actual trust helper must have its index;
     // absence is never treated as a legacy fallback for that implementation.
-    if (expectedPublicClosure.files.some(item => item.path === 'js/services/forecast-share-trust-index.js')) {
+    const verifyBundles = expectedPublicClosure.files.some(item => item.path === FORECAST_SHARE_ZONE_BUNDLE_MODULE);
+    let trustIndex;
+    if (verifyBundles || expectedPublicClosure.files.some(item => item.path === 'js/services/forecast-share-trust-index.js')) {
       const trustBytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl,
         'data/live/forecast-share-trust.json', sourceHead, observationNonce), 'forecast-share-trust.json', httpRetryBudget);
       if (trustBytes.length > FORECAST_SHARE_INDEX_MAX_BYTES) throw new Error('Deployed forecast sharing trust index is too large');
-      assertForecastShareTrustParity(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(trustBytes)),
+      trustIndex = assertForecastShareTrustParity(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(trustBytes)),
         manifest, descriptor, expectedBinding);
     }
+    const { readExactMapResponse } = await import('./lib/public-map-hour-pages.mjs');
+    const readShareFile = (name, size) => fetchBytes(fetchImpl, withCacheBuster(baseUrl, name, sourceHead, observationNonce),
+      name, httpRetryBudget, size === undefined ? null : response => readExactMapResponse(response, size));
     const payloads = [];
     for (const entry of descriptor.zones) {
       const relative = 'data/live/' + entry.path.slice(2);
-      const bytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
+      const bytes = await readShareFile(relative);
       if (bytes.length !== entry.bytes || sha256(bytes) !== entry.sha256) {
         throw new Error('Deployed forecast sharing projection digest mismatch');
       }
-      payloads.push(JSON.parse(bytes.toString('utf8')));
+      const projectionText = new TextDecoder('utf-8', {fatal:true}).decode(bytes);
+      payloads.push(JSON.parse(projectionText));
+      if (verifyBundles) {
+        const expected = Buffer.from(JSON.stringify(buildForecastShareZoneBundle(trustIndex, entry, projectionText)));
+        if (expected.length > FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES) throw new Error('Deployed forecast sharing bundle is too large');
+        const bundleBytes = await readShareFile('data/live/' + forecastShareZoneBundlePath(entry.id), expected.length);
+        if (!bundleBytes.equals(expected)) throw new Error('Deployed forecast sharing bundle differs from sealed source');
+      }
     }
     const projection = assembleForecastShareProjection(payloads, descriptor, manifest, expectedBinding);
     assertForecastShareProjectionParity({projection,descriptor,manifest,
