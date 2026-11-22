@@ -314,13 +314,27 @@ try{
   assert.equal(FORECAST_SHARE_BASE_URL,'https://del.ravradar.dk/');
   const {version}=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
   assert.match(version,/^4\.0\.\d+$/);
-  const bootstrapQuery='?v='+version+'&copy=footer-20261005&ui=zone-panels-20261027'
-    +'&assistant=forecast-followup-20261101&share=custom-domain-20261102'
-    +'&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261121';
+  const [indexSource,bootstrapSource]=await Promise.all([
+    fs.readFile(new URL('../index.html',import.meta.url),'utf8'),
+    fs.readFile(new URL('../bootstrap.js',import.meta.url),'utf8'),
+  ]);
+  const startupEntries=[
+    [indexSource,/<script\s+type="module"\s+src="((?:\.\/)?bootstrap\.js(?:\?[^"\s]*)?)"/g],
+    [bootstrapSource,/\bawait\s+import\(\s*["'](\.\/app\.js(?:\?[^"'\s]*)?)["']\s*\)/g],
+  ];
+  const startupUrls=startupEntries.map(([source,entry])=>{
+    const matches=[...source.matchAll(entry)];
+    assert.equal(matches.length,1,'The normal page must use one startup module per stage');
+    return new URL(matches[0][1],'https://ravradar.dk/');
+  });
+  assert.equal(startupUrls[0].search,startupUrls[1].search,'The startup modules must use the same cache query');
+  for(const url of startupUrls){
+    assert.equal(url.hash,'');
+    assert.deepEqual(url.searchParams.getAll('v'),[version]);
+    assert.deepEqual(url.searchParams.getAll('share'),['custom-domain-20261102']);
+  }
   const shareQuery='?v='+version+'&ui=forecast-share-20261024&share=custom-domain-20261102';
   for(const[file,needles]of[
-    ['../index.html',['bootstrap.js'+bootstrapQuery]],
-    ['../bootstrap.js',['./app.js'+bootstrapQuery]],
     ['../app.js',['./js/ui/forecast-share.js'+shareQuery,'./js/services/forecast-share-contract.js'+shareQuery]],
     ['../js/ui/forecast-share.js',['../services/forecast-share-contract.js'+shareQuery]],
   ]){
