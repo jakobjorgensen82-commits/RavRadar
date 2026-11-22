@@ -1483,7 +1483,7 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
       assert.equal(mapForecast.committed, null, 'The genuine unconfigured controller has no future frame.');
       let hold = false, release = null;
       const context = vm.createContext({ state, assistantDialog, mapForecast,
-        activeLandingView: null, runtimeGeneration: 0,
+        activeLandingView: null, runtimeGeneration: 0, coreViewReady: true,
         classifyRavQuestion: service.classifyRavQuestion,
         ensureFullEvidence: async () => state.conditions,
         getLanguage: () => browserLanguage,
@@ -1513,7 +1513,9 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
             classList: { remove() {} } }; },
         },
       });
-      vm.runInContext(mapScoresBlock + '\n' + shareLifecycleBlock + '\n' + mapFrameBlock + '\n' + appBlock + '\n' + zoneBlock + '\n' + modeLine, context, { filename: 'actual-app-assistant-and-lifecycle.js' });
+      const startupReadyBlock=appSource.slice(appSource.indexOf('let completeInitialDataReady;'),appSource.indexOf('let selectedZonePartsVisible='));
+      vm.runInContext(startupReadyBlock + '\n' + mapScoresBlock + '\n' + shareLifecycleBlock + '\n' + mapFrameBlock + '\n' + appBlock + '\n' + zoneBlock + '\n' + modeLine, context, { filename: 'actual-app-assistant-and-lifecycle.js' });
+      vm.runInContext('completeInitialDataReady(true)',context);
       assert.equal(vm.runInContext('mapFrame()', context), null, 'Use the whole actual app mapFrame, not a function stub.');
       return { state, display, context,
         submit: vm.runInContext('submitAssistantQuestion', context),
@@ -2414,7 +2416,7 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
     const messages = [];
     const ui = vm.createContext({
       assistantTopicState: null, assistantTurn: 0,
-      activeLandingView: null, runtimeGeneration: 0,
+      activeLandingView: null, runtimeGeneration: 0, coreViewReady: true,
       state: { selectedZone: null, mode: 'beach' },
       classifyRavQuestion: service.classifyRavQuestion,
       ensureFullEvidence: async () => context.conditions,
@@ -2433,7 +2435,9 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
         return { querySelector: () => p, classList: { remove() {} } };
       },
     });
-    vm.runInContext(appSource.slice(forecastStart, forecastEnd) + appSource.slice(start, end), ui);
+    const startupReadyBlock=appSource.slice(appSource.indexOf('let completeInitialDataReady;'),appSource.indexOf('let selectedZonePartsVisible='));
+    vm.runInContext(startupReadyBlock + appSource.slice(forecastStart, forecastEnd) + appSource.slice(start, end), ui);
+    vm.runInContext('completeInitialDataReady(true)',ui);
     const call = async question => {
       await ui.submitAssistantQuestion(question);
       return messages.at(-1).p.textContent;

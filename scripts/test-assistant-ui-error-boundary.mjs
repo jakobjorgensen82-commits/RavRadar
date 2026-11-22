@@ -34,14 +34,20 @@ const modeStart = app.indexOf('function setMode(mode,');
 const modeEnd = app.indexOf('\n', modeStart);
 assert.ok(modeStart >= 0 && modeEnd > modeStart);
 const actualUi = app.slice(modeStart, modeEnd) + '\n'
+  + app.slice(app.indexOf('let completeInitialDataReady;'), app.indexOf('let selectedZonePartsVisible='))
   + app.slice(mapFrameStart, mapFrameEnd) + app.slice(detailStart, detailEnd)
   + app.slice(assistantStart, assistantEnd);
+const readyStart=app.indexOf('  coreViewReady=true;');
+const readyEnd=app.indexOf('  openForecastShareSelection(',readyStart);
+const startupStart=app.indexOf('\ntry {\n  await consumeAuthCallback();');
+const startupEnd=app.indexOf('\n// Versionsmanifest',startupStart);
+assert.ok(readyStart>=0&&readyEnd>readyStart&&startupStart>=0&&startupEnd>startupStart);
 for (const definition of ['let assistantTurn = 0;', 'function resetAssistantTopic()',
   'function assistantTopicFrame()', 'function sameAssistantTopicFrame(', 'function assistantContext(){']) {
   assert.ok(actualUi.includes(definition), `Actual UI extraction must include its lexical dependency: ${definition}`);
 }
 
-function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {}) {
+function fixture(locale, { manifest, load = data.loadConditionDetails, now, startup = 'ready' } = {}) {
   language = locale;
   const messages = [];
   const listeners = new Map();
@@ -57,9 +63,10 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {
   const state = { selectedZone: null, conditions: { zones: {} }, zones: [], mode: 'waders', currentScores: new Map() };
   const context = vm.createContext({
     state, assistantDialog, activeManifest: manifest, runtimeGeneration: 0, conditionDetailsReady: false,
+    coreViewReady: startup === 'ready',
     mapScores: new Map(), localStorage: { setItem() {} },
     conditionDetailsPromise: null, pendingZoneDetails: new Map(),
-    activeLandingView: null, mapForecast: { committed: null },
+    activeLandingView: null, fullEvidencePending: null, mapForecast: { committed: null },
     document: {
       querySelectorAll(selector) { assert.equal(selector, '.mode-button'); return []; },
       querySelector(selector) {
@@ -95,6 +102,7 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {
     loadConditionDetails: (...args) => { detailCalls += 1; return load(...args); },
   });
   vm.runInContext(actualUi, context);
+  if(startup!=='pending')vm.runInContext(`completeInitialDataReady(${startup==='ready'})`,context);
   return {
     context, state,
     submit: question => vm.runInContext(`submitAssistantQuestion(${JSON.stringify(question)})`, context),
@@ -102,6 +110,8 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {
     loading: () => messages.some(item => item.className.includes('loading')),
     detailCalls: () => detailCalls,
     recover: () => { context.conditionDetailsReady = true; },
+    completeStartup: () => vm.runInContext(app.slice(readyStart,readyEnd),context),
+    runActualStartup: () => vm.runInContext(`(async()=>{${app.slice(startupStart,startupEnd)}})()`,context),
     topic: () => vm.runInContext('assistantTopicState?.topic ?? null', context),
     asked: () => asked,
     detailQuestions: () => detailQuestions,
@@ -388,6 +398,8 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
     assert.equal(url.searchParams.get('assistant-followup'), 'daylight-frame-20261122');
     assert.equal(url.searchParams.getAll('assistant-followup').length, 1);
+    assert.equal(url.searchParams.get('assistant-data'), 'ready-20261123');
+    assert.equal(url.searchParams.getAll('assistant-data').length, 1);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
   assert.equal(serviceImports.length, 1);
@@ -464,11 +476,11 @@ for (const locale of ['da', 'de', 'en']) {
 // Same actual UI/service seam as above, with a fixed clock and canonical
 // synthetic projections. The UI never computes a date, score or ranking.
 const forecastNow = Date.parse('2026-11-01T10:30:00.000Z');
-async function forecastFixture(locale = 'da', mode = 'waders') {
+async function forecastFixture(locale = 'da', mode = 'waders', options = {}) {
   const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
   const { ravScorePublicHorizonValidUntil } = await import('../js/core/ravscore-public-runtime-contract.js');
   const binding = ravScoreModelBinding();
-  const ui = fixture(locale, { now: forecastNow });
+  const ui = fixture(locale, { now: forecastNow, ...options });
   const dates = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'];
   const bounds = score => ({ lower: score, upper: score, rawLower: score, rawUpper: score, modelUncertaintyPoints: 0 });
   const row = (date, zoneId, score) => ({ zoneId, time: `${date}T12:00:00.000Z`, score,
@@ -504,6 +516,95 @@ const forecastForms = {
     third: 'what about Tuesday?', fullThird: 'Best place Tuesday', time: 'When is the best time tomorrow?',
     timeMonday: 'Best time on Monday', relative: ['and today?', 'what about tomorrow?', 'and day after tomorrow?'] },
 };
+
+async function pendingForecastFixture(locale='da',mode='waders'){
+  const ui=await forecastFixture(locale,mode,{startup:'pending',manifest:{detailDelivery:{mapHoursLandingSchema:1}}});
+  const full=ui.state.conditions,zones=ui.state.zones;
+  full.deliveryManifestIdentity='SYNTHETIC_INITIAL_GENERATION';
+  full.publicRuntimeAvailability.selectedReferenceAt=full.productionReferenceAt;
+  ui.state.conditions={available:false,zones:{}};ui.state.zones=null;ui.state.mode='waders';
+  let fullCalls=0;
+  ui.context.loadConditions=async()=>{fullCalls++;assert.equal(ui.context.coreViewReady,true);return full;};
+  ui.context.loadDataManifest=ui.context.loadPublicLandingView=()=>{throw Error('NO_SECOND_STARTUP_FETCH');};
+  return Object.assign(ui,{
+    fullCalls:()=>fullCalls,
+    hydrate(){
+      ui.state.zones=zones;
+      ui.context.activeLandingView={generation:full.deliveryManifestIdentity,time:full.productionReferenceAt,
+        compact:{untrusted:true,nationalForecast:'NEVER_ASSISTANT_EVIDENCE'}};
+      vm.runInContext(`setMode(${JSON.stringify(mode)},{render:false,initial:true})`,ui.context);
+      ui.completeStartup();
+    },
+  });
+}
+
+test('forecast questions reuse pending startup then the normal authoritative evidence reader in DA/DE/EN and both modes',async()=>{
+  for(const locale of ['da','de','en'])for(const mode of ['waders','beach']){
+    const ui=await pendingForecastFixture(locale,mode);
+    const pending=ui.submit(forecastForms[locale].first);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(ui.loading(),true);assert.equal(ui.fullCalls(),0);assert.equal(ui.asked().length,0);
+    ui.hydrate();await pending;
+    assert.equal(ui.fullCalls(),1);assert.equal(ui.state.mode,mode);
+    assert.equal(ui.answers().at(-1),await ui.fullAnswer(forecastForms[locale].first));
+    assert.match(ui.answers().at(-1),/Zone A|Zone B/);
+    assert.doesNotMatch(ui.answers().at(-1),/NEVER_ASSISTANT_EVIDENCE/);
+    assert.equal(ui.topic(),'forecast-best-place');assert.equal(ui.loading(),false);
+  }
+  for(const [locale,question]of [['da','Hvordan er vandstanden her?'],
+    ['de','Wie ist der Wasserstand hier?'],['en','What is the water level here?']]){
+    const ui=await pendingForecastFixture(locale,'beach'),zone={id:'zoneA'};
+    ui.state.selectedZone=zone;
+    assert.equal(assistant.classifyRavQuestion(question),'water');
+    const pending=ui.submit(question);await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(ui.loading(),true);assert.equal(ui.fullCalls(),0);
+    ui.hydrate();await pending;
+    assert.equal(ui.state.selectedZone,zone);assert.equal(ui.state.mode,'beach');
+    assert.equal(ui.fullCalls(),1);assert.equal(ui.answers().at(-1),await ui.fullAnswer(question));
+    assert.equal(ui.loading(),false);
+  }
+});
+
+test('pending startup keeps local answers immediate and cancels stale data turns before evidence loading',async()=>{
+  const local=await pendingForecastFixture();
+  await local.submit('Hvem har lavet RavRadar?');
+  assert.equal(local.answers().at(-1),publicRavAssistantHelp('Hvem har lavet RavRadar?','da').answer);
+  assert.equal(local.fullCalls(),0);assert.equal(local.loading(),false);
+  for(const interrupt of ['close','cancel','reset','mode','zone','language','new-turn']){
+    const ui=await pendingForecastFixture();const pending=ui.submit(forecastForms.da.first);
+    await new Promise(resolve=>setImmediate(resolve));
+    if(interrupt==='close'||interrupt==='cancel')ui.emit('dialog',interrupt);
+    if(interrupt==='reset')ui.emit('form','reset');
+    if(interrupt==='mode')vm.runInContext("setMode('beach',{render:false})",ui.context);
+    if(interrupt==='zone'){ui.state.selectedZone={id:'another-zone'};ui.emit('form','reset');}
+    if(interrupt==='language')ui.context.getLanguage=()=> 'de';
+    if(interrupt==='new-turn')await ui.submit('Hvem har lavet RavRadar?');
+    ui.hydrate();await pending;
+    assert.equal(ui.fullCalls(),0,interrupt);
+    assert.equal(ui.asked().includes(forecastForms.da.first),false,interrupt);
+    assert.equal(ui.topic(),null,interrupt);assert.equal(ui.loading(),false,interrupt);
+  }
+  const parallel=await pendingForecastFixture();
+  const first=parallel.submit(forecastForms.da.first),last=parallel.submit(forecastForms.da.first);
+  parallel.hydrate();await Promise.all([first,last]);
+  assert.equal(parallel.fullCalls(),1);assert.deepEqual(parallel.asked(),[forecastForms.da.first]);
+});
+
+test('an actual startup failure settles waiting and later data questions without a retry or hanging promise',async()=>{
+  const ui=await pendingForecastFixture();
+  ui.context.consumeAuthCallback=async()=>{throw Error('SYNTHETIC_INITIAL_STARTUP_FAILURE');};
+  ui.context.infoPanel={};ui.context.dataStatus={};ui.context.console={error(){}};
+  const pending=ui.submit(forecastForms.da.first);
+  await ui.runActualStartup();await pending;
+  assert.equal(ui.answers().at(-1),i18n.t('data.loadError',{},'da'));
+  assert.equal(ui.loading(),false);assert.equal(ui.fullCalls(),0);assert.equal(ui.asked().length,0);
+  await ui.submit(forecastForms.da.first);
+  assert.equal(ui.answers().at(-1),i18n.t('data.loadError',{},'da'));
+  assert.equal(ui.loading(),false);assert.equal(ui.fullCalls(),0);
+  await ui.submit('Hvem har lavet RavRadar?');
+  assert.equal(ui.answers().at(-1),publicRavAssistantHelp('Hvem har lavet RavRadar?','da').answer);
+  assert.equal(ui.loading(),false);assert.equal(fetchCalls,0);
+});
 
 test('forecast followups preserve the whole weekday intent and use the normal date/ranking route', async () => {
   for (const locale of ['da', 'de', 'en']) for (const mode of ['waders', 'beach']) {
