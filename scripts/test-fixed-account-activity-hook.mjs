@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { isFixedActivityHookReadOwner, readFixedAccountActivityHook } from './read-fixed-account-activity-hook.mjs';
+import {
+  isFixedActivityHookReadOwner,
+  readFixedAccountActivityHook,
+  readFixedAccountActivityHookProjection,
+} from './read-fixed-account-activity-hook.mjs';
 
 const expectedUri = 'pg-functions://postgres/public/account_native_activity_token_hook';
 const syntheticSecret = 'SYNTHETIC_PRIVATE_CONFIG_VALUE';
@@ -47,6 +51,34 @@ test('reports disabled, different, or unknown configuration without revealing a 
       smtp_pass: syntheticSecret,
     });
     assert.equal(await readFixedAccountActivityHook({ accessToken: 'test', fetchImpl }), expected);
+  }
+});
+
+test('classifies the disabled target using only the four fixed values', async () => {
+  for (const [uri, disabledHookUri] of [
+    [null, 'EMPTY'],
+    ['', 'EMPTY'],
+    [expectedUri, 'EXPECTED'],
+    [syntheticSecret, 'DIFFERENT'],
+    [expectedUri + ' ', 'DIFFERENT'],
+    [undefined, 'UNPROVED'],
+    [' ', 'UNPROVED'],
+    [{ secret: syntheticSecret }, 'UNPROVED'],
+  ]) {
+    let calls = 0;
+    const fetchImpl = async (url, request) => {
+      calls++;
+      assert.equal(request.method, 'GET');
+      return Response.json({
+        hook_custom_access_token_enabled: false,
+        hook_custom_access_token_uri: uri,
+        smtp_pass: syntheticSecret,
+      });
+    };
+    assert.deepEqual(await readFixedAccountActivityHookProjection({ accessToken: 'test', fetchImpl }), {
+      status: 'HOOK_DISABLED', disabledHookUri,
+    });
+    assert.equal(calls, 1);
   }
 });
 

@@ -36,8 +36,14 @@ async function readConfig(response) {
   return config;
 }
 
-export async function readFixedAccountActivityHook({ accessToken, fetchImpl = globalThis.fetch }) {
-  if (typeof accessToken !== 'string' || !accessToken.trim()) return 'CREDENTIAL_UNAVAILABLE';
+function classifyDisabledHookUri(uri) {
+  if (uri === null || uri === '') return 'EMPTY';
+  if (typeof uri !== 'string' || !uri.trim()) return 'UNPROVED';
+  return uri === ACTIVITY_HOOK_URI ? 'EXPECTED' : 'DIFFERENT';
+}
+
+export async function readFixedAccountActivityHookProjection({ accessToken, fetchImpl = globalThis.fetch }) {
+  if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -49,30 +55,35 @@ export async function readFixedAccountActivityHook({ accessToken, fetchImpl = gl
       cache: 'no-store',
       signal: controller.signal,
     });
-    if (response.redirected) return 'CONFIG_UNAVAILABLE';
-    if (response.status === 401 || response.status === 403) return 'PERMISSION_REFUSED';
-    if (response.status !== 200) return 'CONFIG_UNAVAILABLE';
+    if (response.redirected) return { status: 'CONFIG_UNAVAILABLE' };
+    if (response.status === 401 || response.status === 403) return { status: 'PERMISSION_REFUSED' };
+    if (response.status !== 200) return { status: 'CONFIG_UNAVAILABLE' };
 
     const config = await readConfig(response);
     const enabled = config?.hook_custom_access_token_enabled;
     const uri = config?.hook_custom_access_token_uri;
-    if (enabled === false) return 'HOOK_DISABLED';
-    if (enabled !== true || typeof uri !== 'string' || !uri.trim()) return 'CONFIG_UNAVAILABLE';
-    return uri === ACTIVITY_HOOK_URI ? 'HOOK_ENABLED_EXPECTED' : 'HOOK_ENABLED_DIFFERENT';
+    if (enabled === false) return { status: 'HOOK_DISABLED', disabledHookUri: classifyDisabledHookUri(uri) };
+    if (enabled !== true || typeof uri !== 'string' || !uri.trim()) return { status: 'CONFIG_UNAVAILABLE' };
+    return { status: uri === ACTIVITY_HOOK_URI ? 'HOOK_ENABLED_EXPECTED' : 'HOOK_ENABLED_DIFFERENT' };
   } catch {
     // Do not expose provider messages, the response, or the exception cause.
-    return 'CONFIG_UNAVAILABLE';
+    return { status: 'CONFIG_UNAVAILABLE' };
   } finally {
     clearTimeout(timeout);
     controller.abort();
   }
 }
 
+export async function readFixedAccountActivityHook(options) {
+  return (await readFixedAccountActivityHookProjection(options)).status;
+}
+
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const permitted = process.argv.length === 2 && isFixedActivityHookReadOwner(process.env);
-  const status = permitted
-    ? await readFixedAccountActivityHook({ accessToken: process.env.SUPABASE_ACCESS_TOKEN })
-    : 'OWNER_REQUIRED';
+  const { status, disabledHookUri } = permitted
+    ? await readFixedAccountActivityHookProjection({ accessToken: process.env.SUPABASE_ACCESS_TOKEN })
+    : { status: 'OWNER_REQUIRED' };
   console.log(JSON.stringify({ status }));
+  if (status === 'HOOK_DISABLED') console.log(JSON.stringify({ disabledHookUri }));
   if (!['HOOK_DISABLED', 'HOOK_ENABLED_EXPECTED', 'HOOK_ENABLED_DIFFERENT'].includes(status)) process.exitCode = 1;
 }
