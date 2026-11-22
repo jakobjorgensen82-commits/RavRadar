@@ -615,6 +615,13 @@ function parseJsonText(value) {
   }
 }
 
+export function assistantOutputNodeIsVisible(value) {
+  return value != null && typeof value === "object"
+    && (value.role === undefined || value.role === "assistant")
+    && (value.channel === undefined || value.channel === "final")
+    && value.type !== "reasoning" && value.type !== "reasoning_text";
+}
+
 function findStructuredResult(value, depth = 0) {
   if (depth > 8 || value == null) return null;
   if (typeof value === "string") {
@@ -627,10 +634,7 @@ function findStructuredResult(value, depth = 0) {
     }
     return null;
   }
-  if (typeof value !== "object") return null;
-  if ((value.role !== undefined && value.role !== "assistant")
-    || (value.channel !== undefined && value.channel !== "final")
-    || value.type === "reasoning" || value.type === "reasoning_text") return null;
+  if (!assistantOutputNodeIsVisible(value)) return null;
   if (value.schemaVersion && value.locale && value.disposition && typeof value.answer === "string" && Array.isArray(value.evidenceIds)) return value;
   for (const key of ["response", "output", "content", "text", "message", "result"]) {
     const found = findStructuredResult(value[key], depth + 1);
