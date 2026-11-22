@@ -1,3 +1,10 @@
+## 22. november — native receipt-append er ikke installeret
+
+- [x] Forbered én append med bounded engangskvittering og særskilt fast metadata-læser. De gamle SQL- og OFF-kontrakter er bevaret; normal klient-RPC, claims, capture/invalidation og manuelle slettebarrierer er uændrede.
+- [x] Kør syntaks på de tre ændrede JavaScript-moduler og det eksisterende Auth-mål med de seks nye kilde-/privacy-/afslagsgrene. Det er mock-/kildebevis, ikke udført SQL eller hosted Auth.
+- [ ] Kør de ni forberedte cases på den eksisterende ejede native PostgreSQL-vært. Ingen egnet lokal runtime var tilgængelig; intet er installeret eller startet. En faktisk GoTrue-/Auth-responseaccept er fortsat særskilt.
+- [ ] Tilknyt appendens egen normale migrations-/læsevej og faktiske native kvalifikation før installation og arm. Den hidtidige normale katalogmode bevarer sit gamle kildegrundlag og kan ikke bruges som accept af den nye body. Dækningsstart, automatisk kandidatvalg, varsel og sletning er ikke åbnet.
+
 ## 22. november — dækningsstart afventer autentisk Auth-accept
 
 - [x] Klargør særskilt fast, skrivefri policygenlæsning hos den eksisterende kontoaktivitetsejer. Den bevarer serverens datoer og epoch som metadata og giver fortsat HOLD uden aktiverings- eller sletteautoritet.

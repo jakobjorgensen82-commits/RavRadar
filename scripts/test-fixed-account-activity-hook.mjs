@@ -3,9 +3,13 @@ import fs from 'node:fs/promises';
 import { checkFixedSupabaseAccountReadIdle } from './check-fixed-supabase-account-read-idle.mjs';
 import { readAccountInactivitySource, accountInactivityCatalogQuery } from './verify-account-erasure-schema.mjs';
 import { test } from 'node:test';
+import { exerciseAccountNativeReceipt } from './lib/account-erasure-outbox-native-fixture.mjs';
 import {
   createFixedAccountActivityHookController,
   readFixedAccountActivityCoverage,
+  readFixedNativeActivityReceipt,
+  readFixedNativeActivityReceiptSource,
+  fixedNativeActivityReceiptArmQuery,
   fixedAccountActivityCoverageQuery,
   isFixedActivityHookWriteOwner,
   isFixedActivityHookCatalogReadOwner,
@@ -704,4 +708,131 @@ test('existing owner cannot manufacture coverage-start authority from a caller d
     fetchImpl: async () => { calls++; throw new Error('No transport is authorized'); } });
   assert.deepEqual(result, { status: 'OWNER_REQUIRED' });
   assert.equal(calls, 0);
+});
+
+
+function nativeReceiptRows(state = 'UNARMED') {
+  const rows = goodHookCatalog(), row = rows[0];
+  row.metadata.functions.account_native_activity_token_hook.bodySha256 = readFixedNativeActivityReceiptSource().hookBodySha256;
+  row.metadata.tables.account_native_activity_receipt = { ...structuredClone(row.metadata.tables.account_inactivity_policy),
+    columns:[['singleton','bool',true,true,0],['arm_epoch','uuid',true,true,0],['coverage_epoch','uuid',false,false,0],
+      ['armed_at','timestamptz',false,false,0],['native_started_at','timestamptz',false,false,0],['native_captured_at','timestamptz',false,false,0]],
+    checks:7,constraintCount:8 };
+  row.policyEpoch = '60000000-0000-4000-8000-000000000002';
+  row.observedAt = '2026-11-22T12:00:03.000000Z';
+  row.receipt = [{armEpoch:'60000000-0000-4000-8000-000000000003',
+    coverageEpoch:state === 'UNARMED' ? null : row.policyEpoch,
+    armedAt:state === 'UNARMED' ? null : '2026-11-22T12:00:00.000000Z',
+    nativeStartedAt:state === 'CAPTURED' ? '2026-11-22T12:00:01.000000Z' : null,
+    nativeCapturedAt:state === 'CAPTURED' ? '2026-11-22T12:00:02.000000Z' : null}];
+  return rows;
+}
+
+test('native receipt append preserves the whole original hook except the explicit optional observer', () => {
+  const old = readAccountInactivitySource().migrations[1].sql.match(/as \$token_hook\$\n([\s\S]*?)\n\$token_hook\$;/)[1];
+  const append = readFixedNativeActivityReceiptSource();
+  const body = append.sql.match(/as \$token_hook\$\n([\s\S]*?)\n\$token_hook\$;/)[1];
+  const start = body.indexOf('  capture_result := public.account_native_activity_capture(target);');
+  const end = body.indexOf("  return jsonb_build_object('claims',event->'claims');");
+  assert(start > 0 && end > start);
+  const inverse = (body.slice(0,start) + '  perform public.account_native_activity_capture(target);\n' + body.slice(end))
+    .replace('declare target uuid; native_started timestamptz := pg_catalog.clock_timestamp(); capture_result jsonb;', 'declare target uuid;');
+  assert.equal(inverse,old);
+  assert.equal((append.sql.match(/create or replace function/g)||[]).length,1);
+  assert.match(body,/if capture_result->'recorded' = 'true'::jsonb then/);
+  assert.match(body,/native_started >= r\.armed_at/);
+  assert.match(body,/for update nowait/);
+  assert(!/update public\.account_inactivity_policy|raise notice|raise log/i.test(append.sql));
+  const ddl = append.sql.slice(append.sql.indexOf('create table'),append.sql.indexOf('alter table'));
+  assert(!/user_id|token|claims|email/i.test(ddl));
+  assert(!/\$[0-9]|coverage_status\s*=\s*'CAPTURING'|gen_random_uuid|account_activity_journal/.test(fixedNativeActivityReceiptArmQuery));
+  assert.match(fixedNativeActivityReceiptArmQuery,/r\.armed_at is null/);
+  assert.match(fixedNativeActivityReceiptArmQuery,/armed_at = pg_catalog\.clock_timestamp\(\)/);
+});
+
+test('native receipt reader sends only the fixed read-only metadata query and never arms', async () => {
+  let calls = 0;
+  const result = await readFixedNativeActivityReceipt({ accessToken:'SYNTHETIC',fetchImpl:async(url,request)=>{
+    calls++;assert.equal(url,'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+    assert.equal(request.method,'POST');assert.equal(request.redirect,'error');assert.equal(request.credentials,'omit');
+    assert.equal(request.cache,'no-store');assert.equal(request.signal.aborted,false);
+    const payload=JSON.parse(request.body);assert.equal(payload.read_only,true);
+    assert.match(payload.query,/\('account_native_activity_receipt'\)/);
+    assert.match(payload.query,/from public\.account_native_activity_receipt/);
+    // Privilege-name literals in the reused catalog are not SQL writes. The
+    // fixed endpoint's read_only flag also enforces this independently.
+    assert(!/\b(?:update|insert into|delete from)\s+public\./i.test(payload.query));
+    assert(!payload.query.includes(fixedNativeActivityReceiptArmQuery));
+    return Response.json(nativeReceiptRows(),{status:201});
+  }});
+  assert.equal(calls,1);assert.equal(result.status,'NATIVE_RECEIPT_UNARMED');
+  assert.equal(result.nativeCaptureObserved,false);assert.equal(result.authResponseObserved,false);
+  assert.equal(result.coverageStartAuthority,false);assert.equal(result.activityEligibility,'HOLD');
+  assert.equal(result.noticesEnabled,false);assert.equal(result.automaticDeletionEnabled,false);
+});
+
+test('native-only receipt retains exact times and epoch hashes without claiming login response or policy authority', async () => {
+  for(const state of ['ARMED','CAPTURED']) {
+    const rows=nativeReceiptRows(state);
+    const result=await readFixedNativeActivityReceipt({accessToken:'SYNTHETIC',fetchImpl:async()=>Response.json(rows,{status:201})});
+    assert.equal(result.status,state==='CAPTURED'?'NATIVE_CAPTURE_OBSERVED':'NATIVE_RECEIPT_ARMED');
+    assert.equal(result.armedAt,rows[0].receipt[0].armedAt);assert.equal(result.nativeStartedAt,rows[0].receipt[0].nativeStartedAt);
+    assert.equal(result.nativeCapturedAt,rows[0].receipt[0].nativeCapturedAt);
+    assert.equal(result.sourceBodyAndAclVerified,true);assert.equal(result.nativeCaptureObserved,state==='CAPTURED');
+    assert.equal(result.checkExpressionSemanticsVerified,false);assert.equal(result.authResponseObserved,false);
+    assert.equal(result.coverageStartAuthority,false);assert.equal(result.automaticDeletionEnabled,false);
+    for(const uuid of [rows[0].receipt[0].armEpoch,rows[0].receipt[0].coverageEpoch])assert(!JSON.stringify(result).includes(uuid));
+    assert.match(result.armEpochSha256,/^[a-f0-9]{64}$/);assert.match(result.coverageEpochSha256,/^[a-f0-9]{64}$/);
+  }
+});
+
+test('native receipt refuses old or changed source, rights, epoch, chronology and wider metadata', async () => {
+  const base=nativeReceiptRows('CAPTURED');
+  for(const mutate of [
+    r=>r[0].metadata.functions.account_native_activity_token_hook.bodySha256=readAccountInactivitySource().bodies.account_native_activity_token_hook,
+    r=>r[0].metadata.functions.account_native_activity_token_hook.authAdminExecute=false,
+    r=>r[0].metadata.functions.account_native_activity_token_hook.serviceExecute=true,
+    r=>r[0].metadata.tables.account_native_activity_receipt.directAccess=true,
+    r=>r[0].metadata.tables.account_native_activity_receipt.unexpectedColumnAcl=true,
+    r=>r[0].metadata.tables.account_native_activity_receipt.forceRls=false,
+    r=>r[0].metadata.tables.account_native_activity_receipt.owner='rr_native_test',
+    r=>r[0].metadata.policy.coverageStatus='INVALID',
+    r=>r[0].authAdminPublicUsage=false,
+    r=>r[0].policyEpoch='60000000-0000-4000-8000-000000000009',
+    r=>r[0].receipt.push(structuredClone(r[0].receipt[0])),
+    r=>r[0].receipt[0].userId=syntheticSecret,
+    r=>r[0].receipt[0].armEpoch=null,
+    r=>r[0].receipt[0].coverageEpoch=null,
+    r=>r[0].receipt[0].nativeStartedAt='2026-11-22T11:59:59.999999Z',
+    r=>r[0].receipt[0].nativeCapturedAt='2026-11-22T12:00:00.500000Z',
+    r=>r[0].receipt[0].nativeCapturedAt=null,
+    r=>r[0].observedAt='2026-11-22T12:00:01.500000Z',
+  ]) {
+    const rows=structuredClone(base);mutate(rows);
+    assert.deepEqual(await readFixedNativeActivityReceipt({accessToken:'SYNTHETIC',fetchImpl:async()=>Response.json(rows,{status:201})}),{status:'NATIVE_RECEIPT_REFUSED'});
+  }
+});
+
+test('native receipt cannot turn missing credentials, denied access, abort or incomplete JSON into positive evidence', async () => {
+  let calls=0;
+  assert.deepEqual(await readFixedNativeActivityReceipt({accessToken:'',fetchImpl:async()=>{calls++;}}),{status:'CREDENTIAL_UNAVAILABLE'});
+  assert.equal(calls,0);
+  for(const status of [401,403,500]) {
+    let bodyRead=false;
+    const result=await readFixedNativeActivityReceipt({accessToken:'SYNTHETIC',fetchImpl:async()=>({status,get body(){bodyRead=true;throw Error(syntheticSecret);}})});
+    assert.equal(bodyRead,false);assert.deepEqual(result,{status:[401,403].includes(status)?'NATIVE_RECEIPT_PERMISSION_REFUSED':'NATIVE_RECEIPT_UNAVAILABLE'});
+  }
+  for(const fetchImpl of [
+    async()=>{throw new DOMException(syntheticSecret,'AbortError');},
+    async()=>new Response(syntheticSecret,{status:201}),
+    async()=>new Response('{}',{status:201,headers:{'content-length':'65537'}}),
+    async()=>({status:201,redirected:true}),
+  ])assert.deepEqual(await readFixedNativeActivityReceipt({accessToken:'SYNTHETIC',fetchImpl}),{status:'NATIVE_RECEIPT_UNAVAILABLE'});
+});
+
+test('proposed native receipt fixture refuses any non-owned server before creation or SQL changes', async () => {
+  let sqlCalls=0;
+  await assert.rejects(exerciseAccountNativeReceipt({repositoryRoot:new URL('..',import.meta.url),
+    psql:async()=>'*',runSql:async()=>{sqlCalls++;}}),/Existing owned native host only/);
+  assert.equal(sqlCalls,0);
 });

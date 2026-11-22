@@ -1,3 +1,9 @@
+## 22. november — særskilt native engangskvittering er en lokal kontrakt
+
+Den lokale uinstallerede app-append forbereder én privat, uaktiveret kvitteringsrække. En særskilt arm bindes til den eksisterende dæknings-epoch. Kun den eksklusive native token-hook kan efter positiv capture sætte de faste servertider én gang. En hook startet før armen afvises som vidne. Klientens normale aktivitets-RPC ændres ikke og kan ikke sætte kvitteringen. Ingen brugeridentitet, token, claims eller fritekst gemmes; nye login giver ikke nye kvitteringsrækker. Observeren venter ikke på en låst række og må ikke erstatte capturefunktionens eksisterende invaliderings-/rollbackværn.
+
+Den særskilte læser kontrollerer appendens præcise kilde-body, den oprindelige katalog-/ACL-kontrakt og den nye private tabel. Den returnerer kun faste tilstande, tider og epoch-digests. Den gamle OFF-verifikator og tidligere SQL bevares. Kvitteringen er hverken en observeret Auth-HTTP-response, per-konto-korrelation, komplet aktivitetsdækning eller aktiverings-/sletteautoritet. Lokale syntaks- og mockprøver består; de ni nye PostgreSQL-cases er forberedt, men ikke kørt. Native kvalifikation, normal migrations-/kaldertilkobling, installation, arm og faktisk Auth-accept forbliver åbne. Ingen policy, varsel eller sletning er aktiveret.
+
 ## 22. november — fast genlæsning af aktivitetsdækning
 
 Den lokale kontoaktivitetslæser kan særskilt observere den ene dækningspolicys tilstand, faste epoch og serverens start-/aflæsningstid. Den læser ingen konti eller journalrækker og ændrer ingen data. Observationen kvalificerer ikke Auth-accept, fuldstændig aktivitet, varsling eller sletning. Den oprindelige OFF-installationsverifikator beholder sit uændrede facit.

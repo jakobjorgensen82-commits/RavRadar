@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptArmQuery } from '../read-fixed-account-activity-hook.mjs';
 import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata,
  readAccountInactivitySource,accountInactivityCatalogQuery,verifyAccountInactivityCatalogMetadata}
  from '../verify-account-erasure-schema.mjs';
@@ -346,4 +347,117 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
   if(databaseCreated){const cleanup=await runSql('drop database '+DB+';',15000);if(cleanup.code!==0&&!firstError)firstError=new Error('ACCOUNT_ERASURE_NATIVE_OWNED_DATABASE_CLEANUP_FAILED');}
  }
  if(firstError)throw firstError;return result;
+}
+
+// Separate proposed current append on the SAME owned native PG host. The old
+// 49/17 cases and their original SQL/default meaning remain unchanged.
+export async function exerciseAccountNativeReceipt({ psql, runSql, repositoryRoot }) {
+ assert.equal(await psql("select current_setting('listen_addresses');"), '', 'Existing owned native host only');
+ assert.equal(await psql('select current_user;'), 'rr_native_test', 'Existing native fixture owner only');
+ assert.equal(fs.realpathSync(repositoryRoot), fs.realpathSync(new URL('../..', import.meta.url)), 'Current source root only');
+ const database = 'rr_account_native_receipt_fixture';
+ const append = readFixedNativeActivityReceiptSource(), original = readAccountInactivitySource(repositoryRoot);
+ const pg = text => psql('\\connect ' + database + '\n' + text);
+ const pending = [];
+ const raw = text => { const promise = runSql('\\connect ' + database + '\n' + text, 15000); pending.push(promise); return promise; };
+ const receipt = () => pg('select row_to_json(r) from public.account_native_activity_receipt r;');
+ const hook = user => auth(user, 'supabase_auth_admin') + "select public.account_native_activity_token_hook('" + JSON.stringify({user_id:user,claims:{sub:user}}) + "'::jsonb);";
+ const target = id(800), missing = id(801);
+ let created = false, firstError = null, cases = 0;
+ try {
+  assert.equal(await psql("select exists(select 1 from pg_roles where rolname='supabase_auth_admin');"), 't', 'Existing normal native grantee required');
+  await psql('create database ' + database + ';'); created = true;
+  await pg(accountErasureNativeFixtureSql(repositoryRoot));
+  await pg(readAccountErasureSource(repositoryRoot).sql);
+  for (const migration of original.migrations) await pg(migration.sql);
+  const before = JSON.parse(await pg(accountInactivityCatalogQuery));
+  verifyAccountInactivityCatalogMetadata([{metadata:before}], {source:original});
+  await pg(append.sql);
+  const current = JSON.parse(await pg(accountInactivityCatalogQuery));
+  assert.throws(() => verifyAccountInactivityCatalogMetadata([{metadata:current}], {source:original}));
+  verifyAccountInactivityCatalogMetadata([{metadata:current}], {source:{...original,bodies:{...original.bodies,account_native_activity_token_hook:append.hookBodySha256}}}); cases++;
+  await pg("insert into auth.users values('" + target + "');insert into public.profiles(id,email,role) values('" + target + "','native-synthetic@example.invalid','expert');");
+  const policy = await pg('select row_to_json(p) from public.account_inactivity_policy p;');
+  const unarmed = JSON.parse(await receipt());
+  assert.equal(unarmed.armed_at, null); assert.equal(unarmed.native_captured_at, null);
+  assert.deepEqual(jsonLast(await pg(hook(target))).claims, {sub:target});
+  assert.deepEqual(JSON.parse(await receipt()), unarmed); cases++;
+  for (const role of ['anon','authenticated','service_role','supabase_auth_admin']) {
+   const denied = await raw('set role ' + role + ';select * from public.account_native_activity_receipt;');
+   assert.equal(denied.code,3); assert.equal(denied.sqlState,'42501');
+   const writeDenied = await raw('set role ' + role + ';update public.account_native_activity_receipt set armed_at=clock_timestamp();');
+   assert.equal(writeDenied.code,3); assert.equal(writeDenied.sqlState,'42501');
+  }
+  for (const role of ['anon','authenticated','service_role']) {
+   const denied = await raw(auth(target,role) + "select public.account_native_activity_token_hook('" + JSON.stringify({user_id:target,claims:{sub:target}}) + "'::jsonb);");
+   assert.equal(denied.code,3); assert.equal(denied.sqlState,'42501');
+  } cases++;
+  // Fixture-only gate lets the real unchanged capture wait without a timer race.
+  // Arm is committed while the native hook is already inside its journal write.
+  await pg(`create table public.rr_native_receipt_gate(released boolean not null);insert into public.rr_native_receipt_gate values(false);
+create function public.rr_native_receipt_gate_wait() returns trigger language plpgsql as $gate$
+declare until_at timestamptz := clock_timestamp()+interval '5 seconds';
+begin
+ perform set_config('application_name','rr_native_receipt_prearm',true);
+ while not (select released from public.rr_native_receipt_gate) loop
+  if clock_timestamp()>until_at then raise exception 'NATIVE_RECEIPT_FIXTURE_GATE_EXPIRED';end if;
+  perform pg_sleep(0.01);
+ end loop;
+ return new;
+end;
+$gate$;
+create trigger rr_native_receipt_gate before insert or update on public.account_activity_journal
+ for each row execute function public.rr_native_receipt_gate_wait();`);
+  const prearm = raw('begin isolation level read committed;' + hook(target) + 'commit;');
+  let entered = false;
+  try {
+   for(let i=0;i<80;i++) {
+    if(await pg("select exists(select 1 from pg_stat_activity where datname='"+database+"' and application_name='rr_native_receipt_prearm' and wait_event='PgSleep');")==='t'){entered=true;break;}
+    await new Promise(resolve=>setTimeout(resolve,25));
+   }
+   assert(entered,'Actual native hook must enter capture before arm');
+   await pg(fixedNativeActivityReceiptArmQuery);
+  } finally { await pg('update public.rr_native_receipt_gate set released=true;'); }
+  const prearmResult=await prearm;assert.equal(prearmResult.code,0);
+  assert.deepEqual(jsonLast(prearmResult.stdout).claims,{sub:target});
+  await pg('drop trigger rr_native_receipt_gate on public.account_activity_journal;drop function public.rr_native_receipt_gate_wait();drop table public.rr_native_receipt_gate;');
+  const armed = await receipt(); const armedRow = JSON.parse(armed);
+  assert.equal(armedRow.native_captured_at,null,'Earlier in-flight native capture must not consume the later arm');
+  assert.equal(armedRow.arm_epoch, unarmed.arm_epoch); assert(armedRow.armed_at);
+  assert.equal(armedRow.coverage_epoch, JSON.parse(policy).coverage_epoch);
+  await pg(fixedNativeActivityReceiptArmQuery); assert.equal(await receipt(),armed); cases++;
+  const rpc = jsonLast(await pg(auth(target) + 'select public.record_account_lifecycle_activity();'));
+  assert.equal(rpc.recorded,true); assert.equal(await receipt(),armed); cases++;
+  await pg('begin;' + hook(target) + 'rollback;'); assert.equal(await receipt(),armed); cases++;
+  await pg('begin;' + hook(missing) + 'rollback;'); assert.equal(await receipt(),armed);
+  assert.equal(await pg('select row_to_json(p) from public.account_inactivity_policy p;'),policy); cases++;
+  const lock = raw("begin;set application_name='rr_native_receipt_owned_lock';select 1 from public.account_native_activity_receipt for update;select pg_sleep(10);rollback;");
+  let ready = false;
+  for (let i=0;i<80;i++) {
+   if (await pg("select exists(select 1 from pg_stat_activity where datname='"+database+"' and application_name='rr_native_receipt_owned_lock' and wait_event='PgSleep');") === 't') {ready=true;break;}
+   await new Promise(resolve=>setTimeout(resolve,25));
+  }
+  assert(ready,'Owned receipt lock must be observed');
+  try { assert.deepEqual(jsonLast(await pg(hook(target))).claims,{sub:target}); }
+  finally { await pg("select pg_cancel_backend(pid) from pg_stat_activity where datname='"+database+"' and application_name='rr_native_receipt_owned_lock';"); }
+  const cancelled = await lock; assert.equal(cancelled.code,3); assert.equal(cancelled.sqlState,'57014');
+  assert.equal(await receipt(),armed); cases++;
+  assert.deepEqual(jsonLast(await pg(hook(target))).claims,{sub:target});
+  const captured = await receipt(); const capturedRow = JSON.parse(captured);
+  assert.equal(capturedRow.arm_epoch,armedRow.arm_epoch); assert.equal(capturedRow.coverage_epoch,armedRow.coverage_epoch);
+  assert(capturedRow.native_started_at >= capturedRow.armed_at);
+  assert(capturedRow.native_captured_at >= capturedRow.native_started_at);
+  await pg(hook(target)); assert.equal(await receipt(),captured);
+  assert.equal(await pg('select count(*) from public.account_native_activity_receipt;'),'1');
+  assert.equal(await pg('select row_to_json(p) from public.account_inactivity_policy p;'),policy); cases++;
+  assert.equal(cases,9,'Whole small native receipt inventory must execute');
+ } catch(error) { firstError=error; }
+ finally {
+  await Promise.allSettled(pending);
+  if(created) { const cleanup=await runSql('drop database '+database+';',15000); if(cleanup.code!==0&&!firstError)firstError=new Error('NATIVE_RECEIPT_OWNED_DATABASE_CLEANUP_FAILED'); }
+ }
+ if(firstError)throw firstError;
+ return {cases,appendSha256:append.sha256,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,realAuthResponse:false,
+  exclusiveHookOnly:true,browserRpcCannotWitness:true,outerTransactionRollback:true,oneReceipt:true,
+  policyActivated:false,notices:false,deletion:false,userDataReported:false};
 }

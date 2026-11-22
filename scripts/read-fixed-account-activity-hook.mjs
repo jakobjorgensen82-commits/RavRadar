@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { lstatSync, readFileSync } from 'node:fs';
 
 const AUTH_CONFIG_URL = 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/config/auth';
 const ACTIVITY_HOOK_URI = 'pg-functions://postgres/public/account_native_activity_token_hook';
@@ -324,6 +325,124 @@ export async function readFixedAccountActivityCoverage({ accessToken, fetchImpl 
   } finally {
     clearTimeout(timeout);
     controller.abort();
+  }
+}
+
+
+// Unissued native-receipt append. No CLI, activation or arbitrary SQL path.
+export const fixedNativeActivityReceiptMigration = '20261122200000_account_native_activity_receipt_off.sql';
+export function readFixedNativeActivityReceiptSource() {
+  const file = new URL('../supabase/migrations/' + fixedNativeActivityReceiptMigration, import.meta.url);
+  const stat = lstatSync(file);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size <= 0 || stat.size > 65536) throw new Error('NATIVE_RECEIPT_SOURCE_REQUIRED');
+  const bytes = readFileSync(file);
+  if (bytes.length !== stat.size) throw new Error('NATIVE_RECEIPT_SOURCE_REQUIRED');
+  const sql = new TextDecoder('utf-8', { fatal: true }).decode(bytes).replaceAll('\r\n', '\n');
+  const bodies = [...sql.matchAll(/create or replace function public\.(\w+)\([^;]*?\bas \$(\w+)\$\n([\s\S]*?)\n\$\2\$;/g)];
+  if (bodies.length !== 1 || bodies[0][1] !== 'account_native_activity_token_hook') throw new Error('NATIVE_RECEIPT_SOURCE_REQUIRED');
+  return { sql, sha256: createHash('sha256').update(sql, 'utf8').digest('hex'),
+    hookBodySha256: createHash('sha256').update(bodies[0][3].trim(), 'utf8').digest('hex') };
+}
+
+// Parameterless, one-time arm contract for the later admitted fixed owner. It
+// changes no policy/activity. Repeating it cannot reset the first time or epoch.
+export const fixedNativeActivityReceiptArmQuery = `begin;
+set local lock_timeout = '250ms';
+set local statement_timeout = '5s';
+update public.account_native_activity_receipt r
+set coverage_epoch = p.coverage_epoch, armed_at = pg_catalog.clock_timestamp()
+from public.account_inactivity_policy p
+where r.singleton and p.singleton and r.armed_at is null and r.coverage_epoch is null
+  and r.native_started_at is null and r.native_captured_at is null
+  and p.coverage_status = 'UNKNOWN' and p.coverage_started_at is null
+  and not p.notices_enabled and not p.delivery_qualified;
+commit;`;
+
+async function nativeReceiptQueryAndSource() {
+  const base = await import('./verify-account-erasure-schema.mjs');
+  const append = readFixedNativeActivityReceiptSource();
+  const source = base.readAccountInactivitySource();
+  const targets = "targets(name) as (values ('account_inactivity_policy'),('account_lifecycle_activity'),('account_inactivity_notices'))";
+  if (base.accountInactivityCatalogQuery.split(targets).length !== 2) throw new Error('NATIVE_RECEIPT_QUERY_REQUIRED');
+  const extended = base.accountInactivityCatalogQuery.replace(targets,
+    targets.slice(0, -1) + ",('account_native_activity_receipt'))").trim().replace(/;$/, '');
+  const query = `select saved.metadata,
+    pg_catalog.has_schema_privilege('supabase_auth_admin','public','USAGE') as "authAdminPublicUsage",
+    (select coverage_epoch::text from public.account_inactivity_policy where singleton) as "policyEpoch",
+    pg_catalog.to_char(pg_catalog.clock_timestamp() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "observedAt",
+    (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+      'armEpoch', arm_epoch::text, 'coverageEpoch', coverage_epoch::text,
+      'armedAt', case when armed_at is null then null else pg_catalog.to_char(armed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end,
+      'nativeStartedAt', case when native_started_at is null then null else pg_catalog.to_char(native_started_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end,
+      'nativeCapturedAt', case when native_captured_at is null then null else pg_catalog.to_char(native_captured_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end))
+      from public.account_native_activity_receipt) as "receipt"
+    from (` + extended + ') as saved;';
+  return { base, append, query, source: { ...source, bodies: { ...source.bodies, account_native_activity_token_hook: append.hookBodySha256 } } };
+}
+
+export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = globalThis.fetch }) {
+  if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const { base, append, query, source } = await nativeReceiptQueryAndSource();
+    const response = await fetchImpl('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query', {
+      method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+      headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, read_only: true }),
+    });
+    if (response.redirected) return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
+    if (response.status === 401 || response.status === 403) return { status: 'NATIVE_RECEIPT_PERMISSION_REFUSED' };
+    if (response.status !== 201) return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
+    const value = await readBoundedJson(response);
+    if (value === null) return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
+    const rows = Array.isArray(value) ? value : onlyKeys(value, ['result']) ? value.result : onlyKeys(value, ['data']) ? value.data : null;
+    if (!Array.isArray(rows) || rows.length !== 1 || !onlyKeys(rows[0], ['metadata', 'authAdminPublicUsage', 'policyEpoch', 'observedAt', 'receipt'])
+      || rows[0].authAdminPublicUsage !== true || !coverageTime(rows[0].observedAt)) return { status: 'NATIVE_RECEIPT_REFUSED' };
+    const metadata = structuredClone(rows[0].metadata);
+    const table = metadata?.tables?.account_native_activity_receipt;
+    const oldTable = metadata?.tables?.account_inactivity_policy;
+    const expectedColumns = [['singleton','bool',true,true,0],['arm_epoch','uuid',true,true,0],['coverage_epoch','uuid',false,false,0],
+      ['armed_at','timestamptz',false,false,0],['native_started_at','timestamptz',false,false,0],['native_captured_at','timestamptz',false,false,0]];
+    if (!table || !oldTable || Object.keys(table).sort().join('\n') !== Object.keys(oldTable).sort().join('\n')
+      || table.present !== true || table.regular !== true || table.rls !== true || table.forceRls !== true
+      || table.owner !== 'postgres' || table.ownerBypassesRls !== true
+      || JSON.stringify(table.columns) !== JSON.stringify(expectedColumns) || table.foreignKeys !== null
+      || table.checks !== 7 || table.constraintCount !== 8 || table.primaryKey !== 1
+      || table.policies !== 0 || table.userTriggers !== 0 || table.unexpectedAcl !== false
+      || table.unexpectedColumnAcl !== false || table.directAccess !== false) return { status: 'NATIVE_RECEIPT_REFUSED' };
+    // Existing public API: supply the exact append-derived source, never replace
+    // actual metadata/body hashes to make the old OFF oracle accept new code.
+    delete metadata.tables.account_native_activity_receipt;
+    try { base.verifyAccountInactivityCatalogMetadata([{ metadata }], { source }); }
+    catch { return { status: 'NATIVE_RECEIPT_REFUSED' }; }
+    if (metadata.functions.account_native_activity_token_hook.owner !== 'postgres') return { status: 'NATIVE_RECEIPT_REFUSED' };
+    const values = rows[0].receipt;
+    if (!Array.isArray(values) || values.length !== 1 || !onlyKeys(values[0], ['armEpoch','coverageEpoch','armedAt','nativeStartedAt','nativeCapturedAt']))
+      return { status: 'NATIVE_RECEIPT_REFUSED' };
+    const receipt = values[0], uuid = v => typeof v === 'string'
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v) && v !== '00000000-0000-0000-0000-000000000000';
+    if (!uuid(rows[0].policyEpoch) || !uuid(receipt.armEpoch) || !(receipt.coverageEpoch === null || uuid(receipt.coverageEpoch))
+      || receipt.coverageEpoch !== null && receipt.coverageEpoch !== rows[0].policyEpoch
+      || [receipt.armedAt,receipt.nativeStartedAt,receipt.nativeCapturedAt].some(v => v !== null && !coverageTime(v))
+      || (receipt.armedAt === null) !== (receipt.coverageEpoch === null)
+      || (receipt.nativeStartedAt === null) !== (receipt.nativeCapturedAt === null)
+      || receipt.armedAt !== null && receipt.armedAt > rows[0].observedAt
+      || receipt.nativeCapturedAt !== null && (receipt.armedAt === null || receipt.nativeStartedAt < receipt.armedAt
+        || receipt.nativeCapturedAt < receipt.nativeStartedAt || receipt.nativeCapturedAt > rows[0].observedAt))
+      return { status: 'NATIVE_RECEIPT_REFUSED' };
+    const captured = receipt.nativeCapturedAt !== null;
+    return { status: captured ? 'NATIVE_CAPTURE_OBSERVED' : receipt.armedAt === null ? 'NATIVE_RECEIPT_UNARMED' : 'NATIVE_RECEIPT_ARMED',
+      observedAt: rows[0].observedAt, armedAt: receipt.armedAt, nativeStartedAt: receipt.nativeStartedAt, nativeCapturedAt: receipt.nativeCapturedAt,
+      armEpochSha256: createHash('sha256').update(receipt.armEpoch,'utf8').digest('hex'),
+      coverageEpochSha256: receipt.coverageEpoch === null ? null : createHash('sha256').update(receipt.coverageEpoch,'utf8').digest('hex'),
+      appendSha256: append.sha256, sourceBodyAndAclVerified: true, checkExpressionSemanticsVerified: false, nativeCaptureObserved: captured,
+      authResponseObserved: false, activityEligibility: 'HOLD', coverageStartAuthority: false,
+      noticesEnabled: false, automaticDeletionEnabled: false };
+  } catch {
+    return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
+  } finally {
+    clearTimeout(timeout); controller.abort();
   }
 }
 
