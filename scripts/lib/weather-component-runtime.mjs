@@ -102,6 +102,9 @@ export async function prepareWeatherComponentRuntime({
     { parts, retentionStartAt, retentionEndAt });
   const inputs = { productionReferenceAt, componentSelectionHistory: history,
     openMeteoComponentIndex: null, copernicusComponentIndex: null };
+  // Caller-local wall times only; never part of source authority or persistence.
+  const buildTimingMs = { retainedOpenMeteo: null, retainedCopernicus: null,
+    needsPlanning: 0, copernicusCritical: null, copernicusUpgrade: null, openMeteoRefresh: null };
   const failures = [];
   const copernicusPasses = { critical: null, upgrade: null };
   const common = { privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt };
@@ -112,17 +115,23 @@ export async function prepareWeatherComponentRuntime({
   let om = null, cp = null;
   let omLoadFailed = false;
   // Load both retained sources before deciding where acquisition is needed.
+  const retainedOmStartedAt = Date.now();
   try { om = await loadOpenMeteo(omOptions); inputs.openMeteoComponentIndex = om.index; }
   catch (error) {
     if (isWeatherTransportStopUnproved(error)) throw error;
     assertWeatherTransportSettlement();
     omLoadFailed = true; failures.push('OPEN_METEO_COMPONENT_CACHE_UNAVAILABLE');
   }
+  buildTimingMs.retainedOpenMeteo = Date.now() - retainedOmStartedAt;
   const plan = () => {
     assertWeatherTransportSettlement();
-    return buildWeatherComponentNeeds({ parts, productionReferenceAt,
+    const startedAt = Date.now();
+    const result = buildWeatherComponentNeeds({ parts, productionReferenceAt,
       readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
+    buildTimingMs.needsPlanning += Date.now() - startedAt;
+    return result;
   };
+  const retainedCpStartedAt = Date.now();
   try {
     // Offline authority verifies and projects the whole retained original bank.
     cp = await runCopernicus({ ...cpOptions, needs: [], budgetMs: 0 });
@@ -132,11 +141,13 @@ export async function prepareWeatherComponentRuntime({
     assertWeatherTransportSettlement();
     failures.push('COPERNICUS_COMPONENT_CACHE_UNAVAILABLE');
   }
+  buildTimingMs.retainedCopernicus = Date.now() - retainedCpStartedAt;
   const before = plan();
   // Report every necessary missing component, but do not repeatedly spend
   // acquisition budget on fields whose source policy excludes reserves.
   // Water level and its T+3 support are DMI-only, not pending datum admission.
   const refreshCopernicus = async (needs, budgetMs, failureCode, pass) => {
+    const startedAt = Date.now();
     try {
       cp = await runCopernicus({ ...cpOptions, needs, budgetMs,
         requestTimeoutMs: Math.min(copernicusRequestTimeoutMs, budgetMs),
@@ -164,6 +175,7 @@ export async function prepareWeatherComponentRuntime({
         failures.push('COPERNICUS_COMPONENT_DURABLE_SNAPSHOT_UNAVAILABLE');
       }
     }
+    buildTimingMs[pass === 'critical' ? 'copernicusCritical' : 'copernicusUpgrade'] = Date.now() - startedAt;
   };
   const acquisitionNeeds = before.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component));
   let afterCopernicus = before;
@@ -182,6 +194,7 @@ export async function prepareWeatherComponentRuntime({
   // OM uses the plan after the last settled CP pass. Its own empty bank is
   // no reason to fetch every pair or to challenge DMI without proved model age.
   if (!omLoadFailed) {
+    const startedAt = Date.now();
     try {
       om = await runOpenMeteo({ ...omOptions,
         requiredPairs: openMeteoGapPairsFromWeatherNeeds(afterCopernicus)
@@ -208,9 +221,10 @@ export async function prepareWeatherComponentRuntime({
         failures.push('OPEN_METEO_COMPONENT_DURABLE_SNAPSHOT_UNAVAILABLE');
       }
     }
+    buildTimingMs.openMeteoRefresh = Date.now() - startedAt;
   }
   const after = omLoadFailed ? afterCopernicus : plan();
-  return { inputs, historyPath, sourceMarker: {
+  return { inputs, historyPath, buildTimingMs, sourceMarker: {
     schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
     openMeteoBankSha256: om?.bank?.bankSha256 ?? null,
     copernicusBankSha256: cp?.bankSha256 ?? null,

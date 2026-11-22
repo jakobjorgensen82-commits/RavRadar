@@ -79,7 +79,7 @@ import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurren
 import { readDmiLegacyCurrentOriginals } from './lib/dmi-legacy-current-originals.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
-import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, summarizeLf7WaterRouting } from './lib/water-source-forecast-routing.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, summarizeLf7WaterRouting, summarizeRomoWaterT3 } from './lib/water-source-forecast-routing.mjs';
 import { buildFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
@@ -2005,6 +2005,7 @@ function scoreCoastalPartsRuntime(
   archivedWeatherRestartView = null,
   protectedCompanionContexts = [],
 ) {
+  const buildTimingMs = { nativePartRecord: 0, nativePartProof: 0, partHourlyRouting: 0 };
   if (!Array.isArray(protectedCompanionContexts) || protectedCompanionContexts.length > 2) {
     throw new Error('DMI_PART_NATIVE_ORIGINAL_COMPANION_BOUND');
   }
@@ -2284,6 +2285,7 @@ function scoreCoastalPartsRuntime(
       const nativeOriginalContexts = (initialSelection.source === 'POINT_ACTIVATION'
         ? [bulkCache] : [bulkCache, deployedBulkCache, historicalDmiBulkCache,
           ...protectedCompanionContexts]).filter(Boolean);
+      const nativePartRecordStartedAt = Date.now();
       const dmiRecord = buildPartDmiForecastWithProtectedRetention(feature, bulkCache,
         initialSelection.source === 'POINT_ACTIVATION' ? null : deployedBulkCache,
         generatedAt, {
@@ -2298,6 +2300,7 @@ function scoreCoastalPartsRuntime(
         historicalBulkCache: initialSelection.source === 'POINT_ACTIVATION'
           ? null : historicalDmiBulkCache,
       });
+      const nativePartRecordMs = Date.now() - nativePartRecordStartedAt;
       if (!dmiRecord) {
         throw new Error('COASTAL_PART_HORIZON_MATERIALIZATION_INVARIANT');
       }
@@ -2307,9 +2310,11 @@ function scoreCoastalPartsRuntime(
             expectedIdentity: partDmiIdentity });
       }
       selectedDmiPartRecords.set(part.partId, dmiRecord);
+      const nativePartProofStartedAt = Date.now();
       const selectedDmiPartNativeBank = buildSelectedDmiPartNativeProofBank(
         { ...part, zoneId }, dmiRecord, nativeOriginalContexts, persistedNativeOriginals?.bank ?? null,
       );
+      const nativePartProofMs = Date.now() - nativePartProofStartedAt;
       selectedDmiPartNativeProofs.set(part.partId, selectedDmiPartNativeBank);
       const operationalDmiRecord = applyFeggesundOperationalWaveProxy(
         dmiRecord,
@@ -2327,6 +2332,7 @@ function scoreCoastalPartsRuntime(
           partDmiIdentity,
         )),
       });
+      const partHourlyRoutingStartedAt = Date.now();
       const verifiedHourly = verifiedIntegratedPartHourly(
         record, bulkCache, bulkId, { ...part, zoneId },
         { ...componentInputs, requireNativeGridSampling: false, liveCurrentPilot },
@@ -2337,6 +2343,7 @@ function scoreCoastalPartsRuntime(
           hourly: verifiedHourly, ...waterSourceRoutingContext,
         }) : { hourly: verifiedHourly, diagnostic: null };
       const hourly = routedWater.hourly;
+      const partHourlyRoutingMs = Date.now() - partHourlyRoutingStartedAt;
       // Only public current enters scoring here. Keep all T+3 scalar support
       // rows for trend/continuity; replay and native holds have their own gates.
       const publicCurrentStartMs = Date.parse(partForecastStartAt);
@@ -2903,9 +2910,13 @@ function scoreCoastalPartsRuntime(
           candidateGRollbackScores,
           record: { ...record, hourly },
           waterRoutingObservation: routedWater.waterRoutingObservation ?? null,
+          romoWaterTrendObservation: routedWater.romoWaterTrendObservation ?? null,
           scores
         });
       }
+      buildTimingMs.nativePartRecord += nativePartRecordMs;
+      buildTimingMs.nativePartProof += nativePartProofMs;
+      buildTimingMs.partHourlyRouting += partHourlyRoutingMs;
     }
   }
 
@@ -3031,6 +3042,7 @@ function scoreCoastalPartsRuntime(
     candidateGRollbackRuntime,
   );
   return {
+    buildTimingMs,
     integratedRuntime,
     selectedDmiPartRecords,
     selectedDmiPartNativeProofs,
@@ -3038,6 +3050,7 @@ function scoreCoastalPartsRuntime(
     currentSourceDomainTransitions,
     furWaterRoutingTrace,
     waterRoutingAudit: summarizeLf7WaterRouting(partRows, contract, partForecastStartAt),
+    romoWaterTrendAudit: summarizeRomoWaterT3(partRows, contract, partForecastStartAt),
     weatherSourceAge,
     currentInputTrace: RAVSCORE_CURRENT_TRACE_PART_IDS.size > 0 ? {
       schemaVersion: 1,
@@ -4572,6 +4585,7 @@ if (coastalPartsContract.enabled) {
   const parentById = new Map(features.map(feature => [feature.properties?.id, feature]));
   const sourcesByTime = feggesundNeighborSourcesByTime(nextDmiForecastStore, generatedAt);
   const planningRecords = new Map();
+  const partPlanningStartedAt = Date.now();
   for (const part of parts) {
     const parent = parentById.get(part.zoneId);
     if (!parent) throw new Error('COASTAL_PART_PARENT_DOMAIN_INVALID');
@@ -4590,6 +4604,9 @@ if (coastalPartsContract.enabled) {
     // handled by its existing independently verified closure, not this plan.
     planningRecords.set(part.partId, applyFeggesundOperationalWaveProxy(dmiRecord, part, sourcesByTime));
   }
+  reportWeatherBuildStage('part-planning-records-ready', {
+    workSeconds: { partPlanningRecords: (Date.now() - partPlanningStartedAt) / 1000 },
+  });
   weatherComponents = await prepareWeatherComponentRuntime({
     privateCacheRoot: path.resolve('.cache'), parts, productionReferenceAt: generatedAt,
     retentionStartAt: new Date(Date.parse(generatedAt) - RESEARCH_HISTORY_HOURS * 3_600_000).toISOString(),
@@ -4623,6 +4640,8 @@ if (coastalPartsContract.enabled) {
   console.log(JSON.stringify(safeWeatherComponentSummary(weatherComponents.summary)));
   reportWeatherBuildStage('component-runtime-ready', {
     remainingNeedCount: weatherComponents.summary?.remainingNeedCount ?? null,
+    workSeconds: Object.fromEntries(Object.entries(weatherComponents.buildTimingMs ?? {})
+      .map(([key, value]) => [key, value === null ? null : Math.round(value) / 1000])),
   });
 }
 // Authenticate the installed immutable B/S and its working H0 pair before
@@ -4639,6 +4658,7 @@ if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
 const protectedNativeCurrentCompanionContexts = coastalPartsContract.enabled
   && coldInputs === null && stateEpochView === null
   ? await readCurrentPrivateRuntimeCompanions(generatedAt) : [];
+reportWeatherBuildStage('native-current-contexts-ready');
 let coastalPartScoreBuild;
 try {
 coastalPartScoreBuild = coastalPartsContract.enabled
@@ -4677,6 +4697,10 @@ coastalPartScoreBuild = coastalPartsContract.enabled
   }
   throw error;
 }
+reportWeatherBuildStage('coastal-score-computed', {
+  workSeconds: Object.fromEntries(Object.entries(coastalPartScoreBuild?.buildTimingMs ?? {})
+    .map(([key, value]) => [key, Math.round(value) / 1000])),
+});
 if (coastalPartScoreBuild) {
   nextDmiForecastStore.partContinuity = await packDmiPartContinuity(
     coastalPartScoreBuild.selectedDmiPartRecords,
@@ -4780,6 +4804,7 @@ if (establishedNativeCurrentOrigin !== null) {
 // Retained output projections and the completed attestation no longer need
 // the full per-part production/recovery working owner.
 const lf7WaterRoutingAudit = coastalPartScoreBuild?.waterRoutingAudit ?? null;
+const romoWaterTrendAudit = coastalPartScoreBuild?.romoWaterTrendAudit ?? null;
 coastalPartScoreBuild = null;
 reportWeatherBuildStage('current-origin-ready');
 // Byg først de offentlige, begrænsede timefiler fra den komplette beregning i
@@ -4797,6 +4822,11 @@ let privateHourlyMetrics;
 let privatePairInstalled = false;
 try {
   const publicRuntime = await writePublicRuntimeFromFull(output);
+  if (romoWaterTrendAudit) console.log('ROMO_H0_T3_SELECTION_OBSERVATION ' + JSON.stringify({
+    ...romoWaterTrendAudit, datasetId: publicRuntime.manifest.datasetId,
+    generatedAt: publicRuntime.manifest.generatedAt,
+    productionReferenceAt: publicRuntime.manifest.productionReferenceAt,
+  }));
   reportWeatherBuildStage('public-runtime-ready');
   publicHourPack = await buildPrivatePublicHourDeliveryPack({
     liveDirectory: path.dirname('data/live/manifest.json'),

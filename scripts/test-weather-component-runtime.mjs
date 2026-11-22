@@ -44,6 +44,7 @@ test('CP runs first; OM receives only recomputed real holes, not aged-DMI challe
   const calls = [];
   const planStages = [];
   const result = await prepareWeatherComponentRuntime(await fixture(t, {
+    loadOpenMeteo: async () => { calls.push(['load-om', 0]); return om('a'); },
     readVerifiedHourly: (_part, inputs) => {
       planStages.push([Boolean(inputs.copernicusComponentIndex?.wave),
         Boolean(inputs.openMeteoComponentIndex?.temperature)]);
@@ -68,11 +69,22 @@ test('CP runs first; OM receives only recomputed real holes, not aged-DMI challe
       return om('b', { temperature: true });
     },
   }));
-  assert.deepEqual(calls, [['cp', 0], ['cp', 1000], ['om', 1000]]);
+  assert.deepEqual(calls, [['load-om', 0], ['cp', 0], ['cp', 1000], ['om', 1000]]);
   assert.deepEqual(planStages, [[false, false], [true, false], [true, true]]);
   assert.equal(result.remainingNeeds.length, 1);
   assert.equal(result.remainingNeeds[0].purpose, 'AGED_DMI_CHALLENGE');
   assert.deepEqual(result.summary.failures, []);
+  assert.deepEqual(Object.keys(result.buildTimingMs), ['retainedOpenMeteo', 'retainedCopernicus',
+    'needsPlanning', 'copernicusCritical', 'copernicusUpgrade', 'openMeteoRefresh']);
+  assert.equal(result.buildTimingMs.copernicusUpgrade, null, 'an unexecuted pass has no measured duration');
+  for (const [key, value] of Object.entries(result.buildTimingMs)) {
+    if (key !== 'copernicusUpgrade') assert.ok(Number.isFinite(value) && value >= 0, key);
+  }
+  assert.deepEqual(result.sourceMarker, { schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS',
+    sourceSelectionApplied: true, openMeteoBankSha256: sha('b'), copernicusBankSha256: `sha256:${sha('d')}` });
+  for (const value of [result.inputs, result.summary, result.sourceMarker]) {
+    assert.equal(Object.hasOwn(value, 'buildTimingMs'), false, 'timing is separate from weather and authority');
+  }
 });
 
 test('bounded Copernicus upgrade pass overtakes admitted Open-Meteo wave and temperature', async t => {
