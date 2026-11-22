@@ -739,15 +739,34 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
     for(const command of commands)assert.equal(selected.commands.filter(row=>row===command).length,1);
   };
   try{
+    const registeredCommands={
+      'scripts/weather-source-gate.mjs':[commands[6]],
+      'scripts/test-weather-source-gate.mjs':[commands[6]],
+      'scripts/test-weather-cadence-watchdog.mjs':[commands[7]],
+      'scripts/native-postgres-evidence.mjs':[commands[4]],
+      'scripts/test-native-postgres-evidence.mjs':[commands[4]],
+      'scripts/source-impact-full-baseline.mjs':[commands[5]],
+      'scripts/test-source-impact-full-baseline.mjs':[commands[5]],
+    };
     for(const file of files){
-      const selected=select(file,[file]);positive(selected);
-      assert.deepEqual(Object.keys(selected.areas),file===files[0]?['core','sourceControls','actionVersions']:['core','sourceControls']);
-      assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands,
-        ...(file===files[0]?CURRENT_CONTRACT_COMMANDS.actionVersions:[])]);
+      const owners=[{area:'sourceControls',commands:registeredCommands[file]??commands}];
+      if(file===files[0])owners.push({area:'actionVersions',commands:CURRENT_CONTRACT_COMMANDS.actionVersions});
+      assert.deepEqual(currentSourceTargets(file),{path:file,owners});
     }
+    assert.deepEqual(currentWorkflowTargets(files[0]),currentSourceTargets(files[0]));
+    const singleton=select(files[1],[files[1]]);
+    positive(singleton);
+    assert.deepEqual(Object.keys(singleton.areas),['core','sourceControls']);
+    assert.deepEqual(singleton.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands]);
+    assert.deepEqual(singleton.areas.sourceControls.changedPaths,[files[1]]);
+    const selectorFiles=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
     const all=select('all-controller-owners-with-selector-and-docs',[...files,
-      'scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs','docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
+      ...selectorFiles,'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
     positive(all);assert.deepEqual(Object.keys(all.areas),['core','documentation','sourceControls','actionVersions']);
+    assert.deepEqual(all.areas.sourceControls.changedPaths,[...files,...selectorFiles].sort());
+    assert.deepEqual(all.areas.actionVersions.changedPaths,[files[0]]);
+    assert.deepEqual(all.commands,[...new Set([
+      ...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.documentation,...commands,...CURRENT_CONTRACT_COMMANDS.actionVersions])]);
     for(const file of ['scripts/lib/unclassified-weather-source.mjs','scripts/test-weather-source-extra.mjs',
       'scripts/native-postgres-evidence-extra.mjs','scripts/test-source-impact-full-baseline-extra.mjs',
       '.github/workflows/unclassified-source-renewal.yml']){
@@ -2542,14 +2561,20 @@ function collect(file){
       const changes=files.map(file=>[file,Buffer.concat([bytes.get(file)??fixtureControlBytes(file),Buffer.from('\n// Synthetic permanent weather owner delta\n')])]);
       const child=commit(rewrite(seedTree,[...changes,...extra]),[seed],label);return run(seed,child);
     };
+    const scalarPaths=Object.entries(ownerAreas).filter(([,areas])=>areas.includes('weatherScalarPlanning')).map(([file])=>file);
+    const scalarSingletons=new Set(['scripts/lib/weather-component-runtime.mjs','scripts/test-weather-component-runtime.mjs']);
+    for(const file of scalarPaths)assert.deepEqual(currentSourceTargets(file),
+      {path:file,owners:[{area:'weatherScalarPlanning',commands:expectedScalar}]});
     for(const [file,areas]of Object.entries(ownerAreas)){
+      if(areas.includes('weatherScalarPlanning')&&!scalarSingletons.has(file))continue;
       positive(select([file],'synthetic single natural weather owner'),areas,null,
         !areas.includes('weatherScalarPlanning')||file.startsWith('scripts/test-'));
     }
     const sharedPlan=select(paths,'synthetic combined natural weather owners');
     positive(sharedPlan,['weatherScalarPlanning','waterSourceRouting','weatherUpdater','runtimeAudit']);
-    const scalarPaths=Object.entries(ownerAreas).filter(([,areas])=>areas.includes('weatherScalarPlanning')).map(([file])=>file);
-    positive(select(scalarPaths,'synthetic scalar-only followup'),['weatherScalarPlanning']);
+    const scalarPlan=select(scalarPaths,'synthetic scalar-only followup');
+    positive(scalarPlan,['weatherScalarPlanning']);
+    assert.deepEqual(scalarPlan.areas.weatherScalarPlanning.changedPaths,[...scalarPaths].sort());
     for(const file of ['scripts/test-weather-component-normal-wireup.mjs','scripts/test-weather-component-runtime.mjs',
       'scripts/test-open-meteo-part-bank.mjs','scripts/test-open-meteo-part-runtime.mjs',
       'scripts/test-open-meteo-normal-component-chain.mjs','scripts/test-copernicus-component-index.mjs'])
