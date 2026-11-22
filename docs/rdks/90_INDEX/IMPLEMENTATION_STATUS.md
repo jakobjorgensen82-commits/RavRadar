@@ -1,3 +1,9 @@
+## 22. november — dækningsstart afventer autentisk Auth-accept
+
+- [x] Klargør særskilt fast, skrivefri policygenlæsning hos den eksisterende kontoaktivitetsejer. Den bevarer serverens datoer og epoch som metadata og giver fortsat HOLD uden aktiverings- eller sletteautoritet.
+- [x] Afprøv læserens normale syntetiske mål og bevar den eksisterende OFF-installationsprøve. De lokale mål består; det er ikke en hosted policyaflæsning.
+- [ ] Bind den senere parameterløse, fremadrettede dækningsstart til faktisk tidsstemplet Auth-accept og den samme lukkede epoch; der er endnu ingen normal acceptkvittering eller start-dispatch. Automatisk kandidatvalg, varsel, leveringsaccept og sikker fristudløbsbehandling er fortsat separate åbne led.
+
 ## 22. november — holdt skrivelås ved fejlworkerens frist
 
 - [x] Genskab forsinket låse-I/O før upload og efter bevist fysisk ophør. Den lokale kandidat afslutter terminalhandlingen med fejl inden for den fælles frist uden en positiv uploadkvittering. En afsendt fjernelse af låsefilen regnes som uafklaret.

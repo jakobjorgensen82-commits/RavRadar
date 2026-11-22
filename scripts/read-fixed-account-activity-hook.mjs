@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const AUTH_CONFIG_URL = 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/config/auth';
 const ACTIVITY_HOOK_URI = 'pg-functions://postgres/public/account_native_activity_token_hook';
@@ -255,6 +256,75 @@ export async function runFixedAccountActivityHookOperation({ operation, env, acc
   // Disabling must remain available if capture conservatively invalidated the
   // policy or the database is unavailable. Its exact own-URI read is mandatory.
   return createFixedAccountActivityHookController({ accessToken, fetchImpl })[operation]();
+}
+
+
+// Operational metadata readback only. The installed OFF verifier keeps its exact
+// UNKNOWN/OFF oracle; this projection never qualifies Auth acceptance or starts
+// coverage. All dates come from this fixed database query, not caller arguments.
+export const fixedAccountActivityCoverageQuery = `select
+  pg_catalog.to_char(pg_catalog.clock_timestamp() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "observedAt",
+  (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+    'coverageStatus', coverage_status,
+    'coverageEpoch', coverage_epoch::text,
+    'coverageStartedAt', case when coverage_started_at is null then null else
+      pg_catalog.to_char(coverage_started_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end,
+    'noticesEnabled', notices_enabled,
+    'deliveryQualified', delivery_qualified))
+   from public.account_inactivity_policy) as "policy";`;
+
+function coverageTime(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(value)) return false;
+  const milliseconds = value.slice(0, 23) + 'Z';
+  const parsed = Date.parse(milliseconds);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === milliseconds;
+}
+
+export async function readFixedAccountActivityCoverage({ accessToken, fetchImpl = globalThis.fetch }) {
+  if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetchImpl('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query', {
+      method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+      headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: fixedAccountActivityCoverageQuery, read_only: true }),
+    });
+    if (response.redirected) return { status: 'COVERAGE_UNAVAILABLE' };
+    if (response.status === 401 || response.status === 403) return { status: 'COVERAGE_PERMISSION_REFUSED' };
+    if (response.status !== 201) return { status: 'COVERAGE_UNAVAILABLE' };
+    const value = await readBoundedJson(response);
+    if (value === null) return { status: 'COVERAGE_UNAVAILABLE' };
+    const rows = Array.isArray(value) ? value : onlyKeys(value, ['result']) ? value.result : onlyKeys(value, ['data']) ? value.data : null;
+    if (!Array.isArray(rows) || rows.length !== 1 || !onlyKeys(rows[0], ['observedAt', 'policy'])
+      || !coverageTime(rows[0].observedAt) || !Array.isArray(rows[0].policy) || rows[0].policy.length !== 1)
+      return { status: 'COVERAGE_STATE_REFUSED' };
+    const policy = rows[0].policy[0];
+    if (!onlyKeys(policy, ['coverageStatus', 'coverageEpoch', 'coverageStartedAt', 'noticesEnabled', 'deliveryQualified'])
+      || typeof policy.coverageEpoch !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(policy.coverageEpoch)
+      || policy.coverageEpoch === '00000000-0000-0000-0000-000000000000'
+      || policy.noticesEnabled !== false || policy.deliveryQualified !== false
+      || !['UNKNOWN', 'CAPTURING', 'INVALID'].includes(policy.coverageStatus)
+      || !(policy.coverageStartedAt === null || coverageTime(policy.coverageStartedAt))
+      || policy.coverageStartedAt !== null && policy.coverageStartedAt > rows[0].observedAt
+      || policy.coverageStatus === 'UNKNOWN' && policy.coverageStartedAt !== null
+      || policy.coverageStatus === 'CAPTURING' && policy.coverageStartedAt === null)
+      return { status: 'COVERAGE_STATE_REFUSED' };
+    return {
+      status: policy.coverageStatus === 'CAPTURING' ? 'COVERAGE_CAPTURING_OBSERVED'
+        : policy.coverageStatus === 'INVALID' ? 'COVERAGE_INVALID_OBSERVED' : 'COVERAGE_UNKNOWN_OBSERVED',
+      observedAt: rows[0].observedAt,
+      coverageStartedAt: policy.coverageStartedAt,
+      coverageEpochSha256: createHash('sha256').update(policy.coverageEpoch, 'utf8').digest('hex'),
+      activityEligibility: 'HOLD', noticesEnabled: false, deliveryQualified: false,
+      automaticDeletionEnabled: false, authAcceptanceProved: false, activationAuthority: false,
+    };
+  } catch {
+    return { status: 'COVERAGE_UNAVAILABLE' };
+  } finally {
+    clearTimeout(timeout);
+    controller.abort();
+  }
 }
 
 export async function readFixedAccountActivityHook(options) {

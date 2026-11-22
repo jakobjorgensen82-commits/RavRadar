@@ -1,3 +1,9 @@
+## 22. november — fast genlæsning af aktivitetsdækning
+
+Den lokale kontoaktivitetslæser kan særskilt observere den ene dækningspolicys tilstand, faste epoch og serverens start-/aflæsningstid. Den læser ingen konti eller journalrækker og ændrer ingen data. Observationen kvalificerer ikke Auth-accept, fuldstændig aktivitet, varsling eller sletning. Den oprindelige OFF-installationsverifikator beholder sit uændrede facit.
+
+En hosted dækningsstart er fortsat afgrænset fra hook-konfiguration og kræver et faktisk tidsstemplet Auth-acceptforløb. Der findes endnu ingen normal maskinbundet acceptkvittering i den faste ejer. En caller-dato eller et positivt flag må ikke erstatte den. Dækning må ikke tilbagedateres, gammel aktivitet må ikke hævdes, og ukendt aktivitet forbliver HOLD. Ingen startoperation, automatisk varsel eller automatisk sletning følger af den lokale læser.
+
 ## 21. november — lokalt svar om UV-fluorescens og dagslys
 
 Et tydeligt, todelt spørgsmål om hvorfor rav lyser under UV, og hvordan dagslys påvirker testen, fik et offentligt HTTP 502-afslag. Den lokale app kan nu besvare hele hensigten på dansk, tysk og engelsk med den godkendte forklaring af fluorescens og det eksisterende råd om kontrast i dagslys. Spørgsmål med andre ønsker, ukendte detaljer eller private tilføjelser følger den almindelige vej med hele teksten. Den lokale prøve er uden ekstern AI. Frontsiden, startmodulet og hjælpemodulet har nye cacheadresser, så en normal navigation kan hente den nye tekst, også med forrige filer i cachen. Præcis GitHub-kvalifikation og offentlig levering udestår.

@@ -5,6 +5,8 @@ import { readAccountInactivitySource, accountInactivityCatalogQuery } from './ve
 import { test } from 'node:test';
 import {
   createFixedAccountActivityHookController,
+  readFixedAccountActivityCoverage,
+  fixedAccountActivityCoverageQuery,
   isFixedActivityHookWriteOwner,
   isFixedActivityHookCatalogReadOwner,
   readFixedAccountActivityHookCatalog,
@@ -581,4 +583,125 @@ test('a queued ordinary weather request or another real writer still refuses Aut
     }), /FIXED_READ_MAIN_NOT_IDLE/);
     assert.equal(calls, blocked === 'queued' ? 2 : 1);
   }
+});
+
+
+function coverageRows(state = 'UNKNOWN', startedAt = null) {
+  return [{ observedAt: '2026-11-22T12:00:00.123456Z', policy: [{
+    coverageStatus: state, coverageEpoch: '60000000-0000-4000-8000-000000000001',
+    coverageStartedAt: startedAt, noticesEnabled: false, deliveryQualified: false,
+  }] }];
+}
+
+test('coverage readback uses one fixed metadata-only read and cannot start coverage', async () => {
+  let calls = 0;
+  const rows = coverageRows();
+  const result = await readFixedAccountActivityCoverage({
+    accessToken: 'SYNTHETIC', fetchImpl: async (url, request) => {
+      calls++;
+      assert.equal(url, 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+      assert.equal(request.method, 'POST');
+      assert.equal(request.redirect, 'error');
+      assert.equal(request.credentials, 'omit');
+      assert.equal(request.cache, 'no-store');
+      assert.equal(request.signal.aborted, false);
+      assert.deepEqual(JSON.parse(request.body), { query: fixedAccountActivityCoverageQuery, read_only: true });
+      assert(!/\b(?:insert|update|delete|call|do|alter|create)\b/i.test(fixedAccountActivityCoverageQuery));
+      assert(!/\bfrom\s+(?:public\.(?:profiles|account_activity_journal|account_lifecycle_activity|account_inactivity_notices)|auth\.)/i.test(fixedAccountActivityCoverageQuery));
+      return Response.json(rows, { status: 201 });
+    },
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.status, 'COVERAGE_UNKNOWN_OBSERVED');
+  assert.equal(result.observedAt, rows[0].observedAt);
+  assert.equal(result.coverageStartedAt, null);
+  assert.match(result.coverageEpochSha256, /^[a-f0-9]{64}$/);
+  assert.equal(JSON.stringify(result).includes(rows[0].policy[0].coverageEpoch), false);
+  assert.equal(result.activityEligibility, 'HOLD');
+  for (const key of ['noticesEnabled', 'deliveryQualified', 'automaticDeletionEnabled', 'authAcceptanceProved', 'activationAuthority'])
+    assert.equal(result[key], false);
+});
+
+test('coverage readback preserves the closed epoch/start and keeps unknown or invalid activity on HOLD', async () => {
+  const started = '2026-11-22T11:59:59.999999Z';
+  let first;
+  for (const wrapper of [rows => rows, rows => ({ result: rows }), rows => ({ data: rows })]) {
+    const result = await readFixedAccountActivityCoverage({ accessToken: 'SYNTHETIC',
+      fetchImpl: async () => Response.json(wrapper(coverageRows('CAPTURING', started)), { status: 201 }) });
+    assert.equal(result.status, 'COVERAGE_CAPTURING_OBSERVED');
+    assert.equal(result.coverageStartedAt, started);
+    assert.equal(result.activityEligibility, 'HOLD');
+    assert.equal(result.authAcceptanceProved, false);
+    if (first) assert.deepEqual(result, first);
+    first = result;
+  }
+  for (const startedAt of [null, started]) {
+    const invalid = await readFixedAccountActivityCoverage({ accessToken: 'SYNTHETIC',
+      fetchImpl: async () => Response.json(coverageRows('INVALID', startedAt), { status: 201 }) });
+    assert.equal(invalid.status, 'COVERAGE_INVALID_OBSERVED');
+    assert.equal(invalid.activityEligibility, 'HOLD');
+    assert.equal(invalid.automaticDeletionEnabled, false);
+  }
+});
+
+test('coverage readback refuses ambiguous, future, incomplete or wider policy metadata', async () => {
+  const base = coverageRows('CAPTURING', '2026-11-22T11:00:00.000000Z');
+  for (const mutate of [
+    rows => rows.length = 0,
+    rows => rows.push(structuredClone(rows[0])),
+    rows => rows[0].extra = syntheticSecret,
+    rows => rows[0].policy = null,
+    rows => rows[0].policy.length = 0,
+    rows => rows[0].policy.push(structuredClone(rows[0].policy[0])),
+    rows => rows[0].policy[0].extra = syntheticSecret,
+    rows => rows[0].policy[0].coverageEpoch = null,
+    rows => rows[0].policy[0].coverageEpoch = '00000000-0000-0000-0000-000000000000',
+    rows => rows[0].policy[0].noticesEnabled = true,
+    rows => rows[0].policy[0].deliveryQualified = true,
+    rows => rows[0].policy[0].coverageStatus = 'UNKNOWN',
+    rows => rows[0].policy[0].coverageStatus = 'OTHER',
+    rows => rows[0].policy[0].coverageStartedAt = null,
+    rows => rows[0].policy[0].coverageStartedAt = '2026-11-22T12:00:00.123457Z',
+    rows => rows[0].policy[0].coverageStartedAt = '2026-02-31T00:00:00.000000Z',
+    rows => rows[0].observedAt = 'infinity',
+    rows => rows[0].observedAt = '2026-11-22T12:00:00Z',
+  ]) {
+    const rows = structuredClone(base); mutate(rows);
+    assert.deepEqual(await readFixedAccountActivityCoverage({ accessToken: 'SYNTHETIC',
+      fetchImpl: async () => Response.json(rows, { status: 201 }) }), { status: 'COVERAGE_STATE_REFUSED' });
+  }
+});
+
+test('coverage transport keeps permission, abort, size and malformed outcomes private and write-free', async () => {
+  let calls = 0;
+  assert.deepEqual(await readFixedAccountActivityCoverage({ accessToken: '', fetchImpl: async () => { calls++; } }),
+    { status: 'CREDENTIAL_UNAVAILABLE' });
+  assert.equal(calls, 0);
+  for (const status of [401, 403, 500, 200]) {
+    let read = false;
+    const result = await readFixedAccountActivityCoverage({ accessToken: 'SYNTHETIC', fetchImpl: async () => ({
+      status, get body() { read = true; throw new Error(syntheticSecret); },
+    }) });
+    assert.equal(read, false);
+    assert.deepEqual(result, { status: [401, 403].includes(status) ? 'COVERAGE_PERMISSION_REFUSED' : 'COVERAGE_UNAVAILABLE' });
+  }
+  for (const fetchImpl of [
+    async () => { throw new DOMException(syntheticSecret, 'AbortError'); },
+    async () => new Response(syntheticSecret, { status: 201 }),
+    async () => new Response('{}', { status: 201, headers: { 'content-length': '65537' } }),
+    async () => new Response(new Uint8Array([0xff]), { status: 201 }),
+    async () => ({ status: 201, redirected: true }),
+  ]) assert.deepEqual(await readFixedAccountActivityCoverage({ accessToken: 'SYNTHETIC', fetchImpl }), { status: 'COVERAGE_UNAVAILABLE' });
+});
+
+test('existing owner cannot manufacture coverage-start authority from a caller date or acceptance flag', async () => {
+  let calls = 0;
+  const env = { ...hostedHookOwner('enable'), RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: 'coverage-start',
+    RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION: 'START-ACCOUNT-ACTIVITY-COVERAGE',
+    RAVRADAR_AUTH_ACCEPTED: 'true', RAVRADAR_AUTH_ACCEPTED_AT: '2020-01-01T00:00:00Z' };
+  assert.equal(isFixedActivityHookWriteOwner(env, 'coverage-start'), false);
+  const result = await runFixedAccountActivityHookOperation({ operation: 'coverage-start', env, accessToken: 'SYNTHETIC',
+    fetchImpl: async () => { calls++; throw new Error('No transport is authorized'); } });
+  assert.deepEqual(result, { status: 'OWNER_REQUIRED' });
+  assert.equal(calls, 0);
 });
