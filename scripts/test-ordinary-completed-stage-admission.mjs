@@ -336,6 +336,7 @@ export async function assertNormalStagePublication(t) {
   })]);
   assert.match(await fs.readFile(summaryPath, 'utf8'),
     /was not measured\.\n\nRetirement cleanup remains unresolved\./);
+  stockNotice.mock.restore();
   assert.deepEqual(new Set(transport.objects.keys()), afterPrepared, 'The same immutable intent was reused.');
   const thirdRow = transport.documents.get(pointerKey);
   assert.equal(thirdRow.version, 3);
