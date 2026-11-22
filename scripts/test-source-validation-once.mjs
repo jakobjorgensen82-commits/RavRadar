@@ -53,6 +53,9 @@ assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-assistant-fa
   ['node scripts/test-fixed-assistant-failure-log-20261101.mjs']);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-assistant-failure-log-20261121-1712.mjs']),
   ['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs']);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-account-activity-hook.mjs',
+  'scripts/test-fixed-account-activity-hook.mjs']),
+  ['node --test scripts/test-fixed-account-activity-hook.mjs']);
 assert.deepEqual(sourceCommandsForChangedPaths(['.github/workflows/deploy-trip-storage.yml']),
   ['node scripts/test-fixed-assistant-failure-log-20261101.mjs',
     'node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs']);
