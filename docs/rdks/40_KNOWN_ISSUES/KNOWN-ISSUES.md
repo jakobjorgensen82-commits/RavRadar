@@ -12,7 +12,9 @@ Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lagero
 
 Den offentligt leverede assistent gav validerede eksterne AI-svar i den danske og engelske prøve. Den tyske prøve fik HTTP 502 omkring kl. 00.44 dansk tid. Den allerede installerede logmarkør kan angive svarets form eller afkortning ved udtræksfejl.
 
-Den lokale læser er afgrænset til det observerede syvsekundersvindue og HTTP 502. Den bruger den eksisterende skrivefri arbejdsgang og udgiver kun faste fejlkategorier. Faktisk kategorilæsning og årsag står åbne. Flere kategorier i vinduet kan ikke entydigt tilskrives den tyske forespørgsel.
+Den afgrænsede kategorilæsning viste HTTP 200 fra Cloudflare og et afsluttet assistentsvar uden synlig svartekst. Det er én hændelse. Udbyderens interne årsag og hyppigheden er ukendt. [Kørsel #58](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/44979891433)
+
+Den lokale rettelse kan gøre ét ekstra forsøg ved præcis denne svarform, når der er mindst to sekunder tilbage af de faste syv sekunder, også efter at det ekstra kald er godkendt af den samme kvote. Afvisninger og værktøjskald udløser ingen gentagelse. Det ekstra svar skal indeholde synlig sluttekst, der består den almindelige validering. Kildekvalifikation, levering og virkning i drift afventer.
 
 ## 21. november — bølger mangler i prognosens sidste døgn
 

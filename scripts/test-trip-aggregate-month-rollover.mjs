@@ -656,6 +656,57 @@ test('validated reported outcomes and effort survive direct and READY_INPUT orig
     }
   }finally{fixtures.forEach(f=>f.close());globalThis.fetch=oldFetch;}
 });
+test('normal aggregate resumes past an incomplete forecast without changing its stored trip', async () => {
+  const { createSyntheticTripPayload } = await import('./aggregate-private-fixture.mjs');
+  const { prepareTripWeatherAggregate, prepareReadyTripWeatherAggregate } =
+    await import('../cloudflare/trip-gateway/trip-aggregate.js');
+  const { startTripWeatherAggregateJob: start, readTripWeatherAggregateJob: read } =
+    await import('../cloudflare/trip-gateway/trip-aggregate-job.js');
+  const secondOwner = await externalOwnerSubject({ userId: uuid(9001),
+    secret: 'synthetic-input-scan-pseudonym-secret-only-00000000' });
+  const entries = [];
+  for (const [n, subject, features] of [
+    [800, owner, {}], [801, secondOwner, { waterLevelTrendM3h: null }], [802, secondOwner, {}],
+  ]) {
+    const payload = createSyntheticTripPayload(n, { observation_origin: 'self-reported', featureInput: features });
+    entries.push([0, { ...await externalTripRecord({ owner: subject, payload, source: 'live' }),
+      created_at: new Date(now - 60000).toISOString() }]);
+  }
+  const f = fixture(entries);
+  try {
+    const request = { schemaVersion: 1, period, modelBinding: binding, preferenceSnapshot: {
+      schemaVersion: 2, snapshotAt: new Date(now).toISOString(),
+      accounts: [owner.subject, secondOwner.subject].sort()
+        .map(ownerSubject => ({ ownerSubject, enabled: true, revision: '0', source: 'default' })),
+    } };
+    const originals = f.originals();
+    await start(f.d1, request);
+    const first = await advance(f.d1, request);
+    assert.equal(f.header().after_id, uuid(800), 'a normal accepted winner already created the scan cursor');
+    assert.deepEqual(await read(f.d1, request), first);
+    let next = await advance(f.d1, request);
+    const skipped = f.header();
+    assert.equal(skipped.after_id, uuid(801), 'acknowledge the original row even when it cannot contribute');
+    assert.equal(skipped.ineligible_count, 1);
+    assert.equal(skipped.winner_count, 1);
+    assert.equal(skipped.step_claims, 0, 'a successful skip ends the lease through normal batch commit');
+    for (let step = 0; next.phase !== 'READY_INPUT' && step < 12; step++) {
+      next = await advance(f.d1, request);
+    }
+    assert.equal(next.phase, 'READY_INPUT');
+    assert.equal(f.header().winner_count, 2, 'the later complete trip from the same account contributes');
+    const direct = await prepareTripWeatherAggregate(f.d1, request);
+    const resumed = await prepareReadyTripWeatherAggregate(f.d1, request);
+    assert.equal(direct.compatibleReportedContributors, 2);
+    assert.deepEqual(resumed.cells, direct.cells);
+    assert(direct.cells.every(cell => cell.cell.endsWith(':find') && cell.count === 2));
+    assert.deepEqual(f.originals(), originals);
+    assert.deepEqual(f.accounting(), [0, 0]);
+  } finally {
+    f.close();
+  }
+});
+
 function dayForPeriod(period,day){return period.start.slice(0,8)+String(day).padStart(2,'0');}
 
 test('categorical report preserves global ledger and owner delivery without legacy retagging',async()=>{

@@ -3250,7 +3250,9 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
       { payload: { result: { text: secret } }, outputState: 'UNKNOWN' },
       { payload: { result: { choices: [{ finish_reason: 'length', message: { role: 'assistant', content: secret } }] } }, outputState: 'CHAT_LENGTH' },
       { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: secret } }] } }, outputState: 'CHAT_STOP_TEXT' },
-      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, reasoning_content: secret } }] } }, outputState: 'CHAT_STOP_EMPTY' },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, reasoning_content: secret } }] } }, outputState: 'CHAT_STOP_EMPTY', retries: true },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, refusal: secret } }] } }, outputState: 'CHAT_STOP_EMPTY' },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, tool_calls: [{ id: secret }] } }] } }, outputState: 'CHAT_STOP_EMPTY' },
       { payload: { result: { choices: [{ finish_reason: secret, message: { role: 'assistant', content: null } }] } }, outputState: 'UNKNOWN' },
       { payload: { result: { object: 'response', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' } } }, outputState: 'RESPONSES_TOKEN_LIMIT' },
       { payload: { result: { object: 'response', status: 'completed', output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: secret }] }] } }, outputState: 'RESPONSES_COMPLETED_TEXT' },
@@ -3277,7 +3279,9 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
         assert.equal(await askRavRadar(question, context, { language: 'da' }), t('assistant.remoteUnavailable', {}, 'da'));
         assertRemote(question, 'da', 502);
         assert.deepEqual(exchanges[0].result, { error: row.publicCode ?? 'ASSISTANT_RESPONSE_REJECTED' });
-        assert.equal(controlledProviderCalls - providersBefore, 1); assert.equal(controlledQuotaCalls - quotaBefore, 3);
+        const attempts = row.retries ? 2 : 1;
+        assert.equal(controlledProviderCalls - providersBefore, attempts);
+        assert.equal(controlledQuotaCalls - quotaBefore, attempts * 3);
         assert.equal(logs.length, 1);
         const {quotaCompletedElapsedMs,quotaCompletedRemainingMs,providerStartElapsedMs,providerStartRemainingMs,providerFetchCalled,deadlineCause,...categories}=logs[0][1];
         assert.deepEqual([logs[0][0],categories], ['RAVRADAR_ASSISTANT_FAILURE', { schemaVersion: 1,

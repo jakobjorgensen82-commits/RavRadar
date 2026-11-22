@@ -410,6 +410,7 @@ const PATH_AREAS=freeze({
       ".github/workflows/private-trip-weather-study.yml",
       "scripts/publish-private-trip-weather-study.mjs",
       "scripts/deploy-private-trip-study.mjs",
+      "cloudflare/trip-gateway/trip-aggregate-row.js",
       "scripts/test-trip-aggregate-month-rollover.mjs",
       "scripts/test-private-trip-study-categorical-controller.mjs",
       "scripts/test-account-statistics-assistant-callers.mjs"

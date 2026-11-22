@@ -1039,6 +1039,8 @@ try {
     assert.deepEqual(row,{schemaVersion:1,stage,responseStatus:504,upstreamStatus:null,rejectionCode:null,...expected});
   };
   const validProvider={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale:'da',disposition:'answer',answer:'Public identification.',evidenceIds:identificationIds})}};
+  const chatReply=content=>({result:{choices:[{finish_reason:'stop',message:{role:'assistant',content}}]}});
+  const emptyChatReply=chatReply(null);
   const normalRequest=()=>new Request('https://edge.invalid/ravradar-assistant',{method:'POST',headers:{origin:'https://ravradar.dk','content-type':'application/json'},body:JSON.stringify({question:identificationQuestions[0][1],locale:'da',context:{modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING}})});
   try{
     Object.defineProperty(globalThis,'performance',{configurable:true,value:{now:()=>clock}});
@@ -1067,6 +1069,89 @@ try {
     assert(response.headers.get('access-control-expose-headers').includes(RAV_ASSISTANT_SUCCESS_PROVENANCE.header));
     assert.deepEqual(Object.keys(await response.json()),['answer']);
     assert.equal(failureRows.length,0,'Successful provider responses must not gain diagnostics or altered public headers/body');
+    resetDeadlineCase();
+    const posted=[];
+    providerFactory=async request=>{
+      posted.push(await request.json());
+      return Response.json(providerCalls===1 ? emptyChatReply : chatReply(validProvider.result.response));
+    };
+    response=await edgeHandler(normalRequest());
+    assert.equal(response.status,200);
+    assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),RAV_ASSISTANT_SUCCESS_PROVENANCE.value);
+    assert.equal(providerCalls,2);assert.equal(quotaCalls,6);
+    assert.equal(posted[0].seed,827);assert.deepEqual(posted[1],{...posted[0],seed:828});
+    assert.equal(posted[1].store,false);assert.equal(failureRows.length,0);
+
+    resetDeadlineCase();
+    const reasoningOnly=chatReply(null);
+    reasoningOnly.result.choices[0].message.reasoning_content=validProvider.result.response;
+    providerFactory=()=>Response.json(providerCalls===1 ? emptyChatReply : reasoningOnly);
+    response=await edgeHandler(normalRequest());
+    assert.equal(response.status,502);assert.equal(providerCalls,2);assert.equal(quotaCalls,6);
+    assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    assert(!JSON.stringify(failureRows).includes('Public identification.'));
+
+    for (const hiddenLevel of ['result', 'choice', 'message']) {
+      resetDeadlineCase();
+      const hiddenReply = chatReply(validProvider.result.response);
+      const choice = hiddenReply.result.choices[0];
+      if (hiddenLevel === 'result') hiddenReply.result.channel = 'analysis';
+      if (hiddenLevel === 'choice') choice.type = 'reasoning';
+      if (hiddenLevel === 'message') choice.message.channel = 'analysis';
+      providerFactory = () => Response.json(providerCalls === 1 ? emptyChatReply : hiddenReply);
+      response = await edgeHandler(normalRequest());
+      assert.equal(response.status, 502, hiddenLevel);
+      assert.equal(providerCalls, 2);
+      assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header), null);
+    }
+
+    resetDeadlineCase();
+    const hiddenEmptyReply = chatReply(null);
+    hiddenEmptyReply.result.choices[0].message.type = 'reasoning_text';
+    providerFactory = () => Response.json(hiddenEmptyReply);
+    response = await edgeHandler(normalRequest());
+    assert.equal(response.status, 502);
+    assert.equal(providerCalls, 1);
+    assert.equal(quotaCalls, 3);
+
+    for(const stop of ['remaining-before-quota','remaining-after-quota','quota-refused']){
+      resetDeadlineCase();
+      providerFactory=()=>{if(stop==='remaining-before-quota')clock=5001;return Response.json(emptyChatReply);};
+      quotaFactory=()=>{
+        if(stop==='remaining-after-quota'&&quotaCalls===6)clock=5001;
+        return Response.json(stop!=='quota-refused'||quotaCalls<=3);
+      };
+      response=await edgeHandler(normalRequest());
+      assert.equal(response.status,502);assert.equal(providerCalls,1);
+      assert.equal(quotaCalls,stop==='remaining-before-quota'?3:6);
+      assert.deepEqual(await response.json(),{error:'ASSISTANT_RESPONSE_REJECTED'});
+      assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    }
+
+    resetDeadlineCase();
+    const retryCaller=new AbortController();
+    const retryQuotaReleases=[];
+    providerFactory=()=>Response.json(emptyChatReply);
+    quotaFactory=()=>quotaCalls<=3?Response.json(true):new Promise(resolve=>retryQuotaReleases.push(()=>resolve(Response.json(true))));
+    const cancelledRetry=edgeHandler(new Request(normalRequest(),{signal:retryCaller.signal}));
+    await until(()=>retryQuotaReleases.length===3);
+    retryCaller.abort();
+    response=await cancelledRetry;
+    assert.equal(response.status,504);assert.equal(providerCalls,1);
+    for(const release of retryQuotaReleases)release();
+    await pause();await pause();assert.equal(providerCalls,1,'Late retry quota must never start an aborted provider request.');
+    assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+
+    resetDeadlineCase();
+    providerFactory=request=>providerCalls===1?Response.json(emptyChatReply):new Promise((_resolve,reject)=>
+      request.signal.addEventListener('abort',()=>reject(new Error('SYNTHETIC_RETRY_ABORT')),{once:true}));
+    const timedOutRetry=edgeHandler(normalRequest());
+    await until(()=>providerCalls===2);await tick(7001);
+    response=await timedOutRetry;
+    assert.equal(response.status,504);assert.equal(lastProviderSignal.aborted,true);
+    assert.equal(failureRows.length, 1);
+    assert.equal(failureRows[0][1].upstreamStatus, null);
+    assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
     // Preserve the old JSON parser behaviour: content type was not an added gate.
     resetDeadlineCase();const plain=normalRequest();const plainHeaders=new Headers(plain.headers);plainHeaders.set('content-type','text/plain');
     response=await edgeHandler(new Request(plain,{headers:plainHeaders}));assert.equal(response.status,200);

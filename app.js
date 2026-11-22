@@ -744,7 +744,11 @@ async function submitAssistantQuestion(question){
     pending.querySelector("p").textContent=t('data.loadError');pending.classList.remove("loading");
   }
 }
-const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions().map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>{resetAssistantTopic();assistantDialog.showModal();});document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
+const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions().map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));
+const assistantButton = document.querySelector("#assistantButton");
+assistantButton.addEventListener("click",()=>{resetAssistantTopic();assistantDialog.showModal();});
+assistantButton.disabled = false;
+document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
 document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>{noteForecastShareUserIntent();setMode(button.dataset.mode);}));
 document.querySelector("#accountButton").addEventListener("click",async()=>{if(!activeLandingView)await ensureConditionDetails().catch(()=>{});openAccountDialog(accountDialog,userDataContext());});
