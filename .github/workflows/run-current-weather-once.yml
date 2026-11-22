@@ -1327,7 +1327,7 @@ jobs:
 
   notify-owner-failure:
     name: Hand off one bot-started ordinary failure to the existing owner alert
-    needs: [terminal-outcome, retire-dmi-raw-archives]
+    needs: terminal-outcome
     if: >-
       always() && !cancelled() &&
       github.repository == 'jakobjorgensen82-commits/RavRadar' &&

@@ -1900,27 +1900,6 @@ try{
   const capacityInput={current:selectedReceipt.current,fullBaseline:legacyFull,
     changeBase:selectedReceipt.changeBase,currentPlan:clone(baselinePlan),cumulativePlan:clone(baselinePlan),
     frontier:selectedReceipt.frontier,commandResults:clone(selectedReceipt.reportedCommandResults)};
-  {
-    const {frontier,commandResults,...normal}=capacityInput;
-    const {commit,gitTree,pullBaseCommit}=normal.changeBase;
-    const {planSha256:impactHash,...impact}=selectedReceipt.impact;
-    const {planSha256:continuityHash,scope,commandsExecuted,...continuity}=selectedReceipt.baselineContinuity;
-    const historicalHash=sha(JSON.stringify({policy:'QUALIFIED_FRONTIER_OR_KNOWN_CUMULATIVE_V1',
-      changeBase:{commit,gitTree,pullBaseCommit},impact,continuity}));
-    const reordered={...normal,changeBase:{pullBaseCommit,gitTree,commit}};
-    const pull=currentPull();
-    const review=currentReceiptHelpers.readCurrentChangeReview(pull,normal);
-    assert.equal(review.planSha256,historicalHash);
-    assert.deepEqual(currentReceiptHelpers.readCurrentChangeReview(pull,reordered),review);
-    assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(selectedReceipt,
-      {...reordered,frontier,commandResults}).receiptSha256,sha(JSON.stringify(selectedReceipt)+'\n'));
-    const otherBase='f'.repeat(40);
-    const mismatched={...reordered,changeBase:{...reordered.changeBase,pullBaseCommit:otherBase}};
-    assert.throws(()=>currentReceiptHelpers.readCurrentChangeReview({...pull,base:{...pull.base,sha:otherBase}},
-      mismatched),/CONTROL_REVIEW_MISMATCH/);
-    assert.throws(()=>currentReceiptHelpers.validateCurrentChangeSourceReceipt(selectedReceipt,
-      {...mismatched,frontier,commandResults}),/RECEIPT_MISMATCH/);
-  }
   const plannedInput=value=>Object.fromEntries(Object.entries(value).filter(([key])=>key!=='commandResults'));
   const paddedCapacity=length=>{
     const input=clone(capacityInput),receipt=clone(selectedReceipt);

@@ -1,7 +1,3 @@
-## 22. november — fast feltrækkefølge i V4-kildebeviset
-
-V4-kildebeviset skriver de tre validerede felter for ændringens base i den rækkefølge, den normale producent altid har brugt. #1608 og #1609 afviste ellers den samme base, når felterne kom i en anden rækkefølge. De sædvanlige kvitteringsbytes og review-hashen er bevaret. Forkert commit, træ eller PR-base afvises fortsat. Den præcise rettelse afventer GitHub-kvalifikation.
-
 ## 22. november – test af planlægning af vejrfelter
 
 Den eksisterende weatherScalarPlanning-ejer omfatter runtimeprøven og Copernicus-prøven af det byteverificerede indeks. Den separate hele wireup-prøve bevarer sin normale Copernicus-klargøring. Området deler updaterens eksisterende fire-fils runtimekommando og kører hele indeksprøven. Den fælles kommandoliste kører hver berørt prøve én gang.

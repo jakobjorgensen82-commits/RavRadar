@@ -671,19 +671,10 @@ test('Bot-started ordinary failure explicitly dispatches the existing alert, wit
   const alarm = await fs.readFile('.github/workflows/notify-weather-failure.yml', 'utf8');
   const tail = caller.slice(caller.indexOf('\n  notify-owner-failure:'));
   assert.ok(caller.includes('\n  notify-owner-failure:'), 'A workflow_run event alone is not a bot-started failure handoff.');
-  const dependencies = tail.match(/^    needs: (.+)$/m)?.[1].replace(/^\[|\]$/g, '').split(', ');
-  assert.ok(dependencies?.includes('terminal-outcome'));
-  const completed = new Set(['terminal-outcome']);
-  const pending = () => dependencies.filter(job => !completed.has(job));
-  assert.deepEqual(pending(), ['retire-dmi-raw-archives'],
-    'The alert cannot dispatch after the failed outcome while the parallel archive job is still running, as in ordinary run 353.');
-  completed.add('retire-dmi-raw-archives');
-  assert.deepEqual(pending(), []);
+  assert.match(tail, /needs: terminal-outcome/);
   assert.match(tail, /always\(\).*?!cancelled\(\)/s);
   assert.match(tail, /github\.actor == 'github-actions\[bot\]'/);
   assert.match(tail, /needs\.terminal-outcome\.result == 'failure'/);
-  assert.doesNotMatch(tail, /needs\.retire-dmi-raw-archives/,
-    'A failed or skipped archive job must not suppress the failed outcome alert.');
   assert.match(tail, /github\.repository == 'jakobjorgensen82-commits\/RavRadar'/);
   assert.match(tail, /github\.ref == 'refs\/heads\/main'/);
   assert.match(tail, /timeout-minutes: 2/);
