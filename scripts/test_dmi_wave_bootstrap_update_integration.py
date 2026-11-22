@@ -752,6 +752,28 @@ class OperationalWaveClosureTests(unittest.TestCase):
     def test_ordinary_wave_report_exposes_only_bounded_acquisition_metadata(self):
         private = "synthetic-private-data-must-not-leave-the-runner"
         dw = "wam_dw"
+        reference = parse_utc_hour(TARGET)
+        gap, after = utc_offset(TARGET, 1), utc_offset(TARGET, 2)
+        evidence = {
+            "targetPairKeys": {
+                (part, hour)
+                for part in (private, private + "-second", "PROXY_SOURCE::" + private)
+                for hour in (TARGET, gap, after)
+            } | {(private, utc_offset(TARGET, -1))},
+            "verifiedPairKeys": {
+                (private, TARGET), (private, after), (private + "-second", TARGET),
+                ("PROXY_SOURCE::" + private, TARGET), ("PROXY_SOURCE::" + private, after),
+            },
+        }
+        requested = producer.isolated_operational_wave_gap_times(evidence, reference)
+        self.assertEqual(requested, {gap})
+        summary = producer.ordinary_wave_first_turn_gap_summary(
+            evidence, reference, requested, TARGET, [
+                {"modelRun": TARGET, "valid": gap, "operationalWavePhaseRank": 0, "id": private},
+                {"modelRun": OLD_RUN, "valid": after, "operationalWavePhaseRank": 1, "id": private},
+            ],
+        )
+        self.assertIsNone(producer.ordinary_wave_first_turn_gap_summary({}, reference, set(), None, []))
         result = {
             "runs": {dw: {"referenceTime": OLD_RUN, "source": private}},
             "diagnostics": {
@@ -787,7 +809,9 @@ class OperationalWaveClosureTests(unittest.TestCase):
             with patch.dict(producer.os.environ, {
                 "DMI_BULK_REQUIRE_ORDINARY_CLOSURE": "true", "GITHUB_OUTPUT": str(outputs),
             }):
-                ready = producer.write_ordinary_wave_acquisition_report(result, parse_utc_hour(TARGET))
+                ready = producer.write_ordinary_wave_acquisition_report(
+                    result, reference, first_turn_gaps={dw: summary},
+                )
                 self.assertTrue(ready)
                 producer.write_github_outputs("ok", wave_acquisition_report_ready=ready)
                 with patch.object(producer, "FINALIZE_ONLY", True):
@@ -808,7 +832,24 @@ class OperationalWaveClosureTests(unittest.TestCase):
         self.assertEqual(wave["remainingPairCount"], 5500)
         self.assertEqual(wave["stopCodes"], ["RUNTIME_BUDGET_REACHED"])
         self.assertEqual(wave["phases"][0]["lastPromotionDecision"], "INCOMPLETE_QUALITY_REFRESH")
+        self.assertEqual(wave["firstTurnNativeGaps"], {
+            "publicAxisHourCount": len(producer.operational_current_valid_times(reference)),
+            "primaryModelRun": TARGET,
+            "hours": [
+                {
+                    "validAt": gap, "missingNativePartCount": 2, "isolatedNativePartCount": 1,
+                    "isolatedRepairRequested": True, "primaryExactAssetSelected": True,
+                    "isolatedRepairSelected": False,
+                },
+                {
+                    "validAt": after, "missingNativePartCount": 1, "isolatedNativePartCount": 0,
+                    "isolatedRepairRequested": False, "primaryExactAssetSelected": False,
+                    "isolatedRepairSelected": False,
+                },
+            ],
+        })
         self.assertIsNone(report["collections"]["wam_nsb"]["catalogueResolvesAxis"])
+        self.assertIsNone(report["collections"]["wam_nsb"]["firstTurnNativeGaps"])
         self.assertFalse(report["collections"]["wam_nsb"]["attempted"])
 
     @staticmethod
@@ -1360,6 +1401,21 @@ class OperationalWaveClosureTests(unittest.TestCase):
         self.assertEqual(run, selected_run)
         self.assertEqual(repair_run, run)
         self.assertEqual(full_assets, original)
+        selected_gap = producer.ordinary_wave_first_turn_gap_summary(
+            active_evidence, parse_utc_hour(reference), gaps, repair_run, assets,
+        )
+        space_limited_gap = producer.ordinary_wave_first_turn_gap_summary(
+            active_evidence, parse_utc_hour(reference), gaps, repair_run, full_assets,
+        )
+        self.assertEqual(selected_gap["hours"], [{
+            "validAt": missing, "missingNativePartCount": 1, "isolatedNativePartCount": 1,
+            "isolatedRepairRequested": True, "primaryExactAssetSelected": True,
+            "isolatedRepairSelected": True,
+        }])
+        self.assertEqual(space_limited_gap["hours"], [{
+            **selected_gap["hours"][0],
+            "primaryExactAssetSelected": False, "isolatedRepairSelected": False,
+        }])
         additions = [row for row in assets if row.get("operationalWaveIsolatedRepair")]
         self.assertEqual([(row["valid"], row["modelRun"]) for row in additions], [(missing, run)])
         self.assertEqual([row for row in assets if row not in additions], original)
