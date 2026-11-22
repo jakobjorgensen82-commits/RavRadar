@@ -2997,7 +2997,7 @@ jobs:
           path: |
             data/diagnostics/weather-acquisition-plan-before-dmi.json
             data/diagnostics/dmi-restored-raw-observation.json
-            ${{ steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.wave_acquisition_report_ready == 'true' && 'data/diagnostics/dmi-wave-acquisition-safe.json' || '' }}
+            ${{ steps['dmi-bulk'].outputs.wave_acquisition_report_ready == 'true' && (steps['dmi-bulk'].outcome == 'success' || (steps['dmi-bulk'].outcome == 'failure' && steps['dmi-bulk'].outputs.status == 'failed' && steps['dmi-bulk'].outputs.strict_current_anchor_ready == 'false' && steps['dmi-producer-closure'].outcome == 'success' && steps['dmi-raw-save'].outputs.saved == 'true')) && 'data/diagnostics/dmi-wave-acquisition-safe.json' || '' }}
             data/diagnostics/weather-acquisition-plan-before-copernicus.json
             data/diagnostics/copernicus-current-source-stage-safe.env
             data/diagnostics/open-meteo-current-fetch.json

@@ -4,6 +4,8 @@ Dækningen faldt fra #357 til #358 på samme kode. De 40 zoner med den vedvarend
 
 Den lokale ændring føjer en afgrænset DMI-oversigt til den eksisterende diagnostik med syv døgns opbevaring. Den viser valgt modelkørsel, hvor mange filer behandlingen nåede og kunne godkende, første uløste time og faste stop- og godkendelsesårsager. Oversigten følger kun et almindeligt DMI-trin, når kørslen selv har skrevet en ny rapport og afsluttet trinnet. En ren gendannelse fra checkpoint leverer ingen ny oversigt. Kildekontrol og første faktisk rapport i GitHub afventer.
 
+De efterfølgende autentificerede planrapporter fra #358 og #367 viser også færdiggjort, anvendelig DMI-dækning, hvor den strenge strømopgørelse var afvist. Den lokale rettelse bevarer bølgeoversigten i den eksisterende diagnostik for dette udfald, når producenten har skrevet oversigten, processtoppet er bekræftet og RAW er færdiggemt. Det giver ingen tilladelse til at bruge en fil som vejr- eller udgivelsesbevis. Det private rapportindhold og den normale vejrhentning ændres ikke. Den faktiske rapport fra en ordinær delvis kørsel udestår.
+
 ## 21. november — eksternt AI-afslag ved UV-spørgsmål
 
 Den normale brugerklient fik HTTP 502 kl. 17.12 UTC. Én afgrænset kategorilæsning fandt HTTP 200 fra udbyderen efterfulgt af RESULT_EXTRACTION og RESULT_NOT_OBJECT. Det konkrete svar kunne ikke læses som den forventede femfeltsprotokol. Hvorfor udtrækket mislykkedes, står stadig åbent. Den lokale Edge-kandidat kan give én fast kategori ved en ny hændelse. Læsevejen skal fortsat kun give tilladte kategorier. [Kørsel #57](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/44940083465)

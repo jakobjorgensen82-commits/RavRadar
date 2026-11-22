@@ -485,6 +485,34 @@ assert.match(safe, /actions\/upload-artifact@v7/);
 assert.match(safe, /retention-days: 7/);
 assert.doesNotMatch(safe, /currentUMps|currentVMps|donor-bank|shadow\.json/);
 
+test('ordinary WAM diagnostics survive a finalized partial DMI result only after closure and RAW save', () => {
+  const stepName = 'Preserve safe weather acquisition diagnostics before terminal gates';
+  const actual = step(actualNormalWorkflow, stepName);
+  const report = 'data/diagnostics/dmi-wave-acquisition-safe.json';
+  const reportExpression = actual.split('\n').find(line => line.includes(report))?.trim();
+  assert.ok(reportExpression?.startsWith('${{') && reportExpression.endsWith('}}'));
+  const expression = reportExpression.slice(3, -2).trim();
+  const ready = {wave_acquisition_report_ready: 'true', status: 'failed', strict_current_anchor_ready: 'false'};
+  const selects = ({outcome = 'failure', outputs = ready, closed = 'success', saved = 'true'} = {}) =>
+    runInNewContext(expression, {
+      steps: {
+        'dmi-bulk': {outcome, outputs},
+        'dmi-producer-closure': {outcome: closed},
+        'dmi-raw-save': {outputs: {saved}},
+      },
+    }, {timeout: 250});
+
+  assert.equal(selects(), report);
+  assert.equal(selects({outcome: 'success', closed: 'skipped', saved: ''}), report);
+  assert.equal(selects({outputs: {...ready, wave_acquisition_report_ready: 'false'}}), '');
+  assert.equal(selects({outputs: {...ready, status: 'ok'}}), '');
+  assert.equal(selects({outputs: {...ready, strict_current_anchor_ready: 'true'}}), '');
+  assert.equal(selects({closed: 'failure'}), '');
+  assert.equal(selects({saved: ''}), '');
+  assert.equal(selects({outcome: 'cancelled'}), '');
+  assert.equal(selects({outcome: 'skipped'}), '');
+});
+
 const retiredPostBuild = orchestrator.slice(
   orchestrator.indexOf('\n  copernicus-post-build-refresh:'),
   orchestrator.indexOf('\n  deploy-pages:'),
