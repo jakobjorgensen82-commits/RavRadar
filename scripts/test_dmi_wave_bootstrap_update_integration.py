@@ -1307,6 +1307,120 @@ class OperationalWaveClosureTests(unittest.TestCase):
         self.assertEqual(closure["missingPairCount"], 0)
         self.assertEqual(missing, ())
 
+    def test_selected_native_asset_closes_isolated_interior_wave_hour(self) -> None:
+        _registry, part, zone = self._one_part_wave_fixture()
+        reference = "2026-11-22T08:00:00Z"
+        missing = "2026-11-26T11:00:00Z"
+        selected_run = "2026-11-22T00:00:00Z"
+        older_run = utc_offset(selected_run, -6)
+        end = utc_offset(reference, 117)
+        hours = producer.operational_current_valid_times(parse_utc_hour(reference))
+        active = {
+            "generatedAt": reference,
+            "zones": {part.cache_key: {"hourly": {
+                valid: wave_native_hour(
+                    part, valid, older_run if valid < missing else selected_run,
+                    collection="wam_dw",
+                )
+                for valid in hours if valid != missing
+            }}},
+        }
+        active_evidence = producer.operational_wave_collection_evidence(
+            active, [zone], parse_utc_hour(reference), "wam_dw",
+            exact_required_times={reference},
+        )
+        self.assertEqual(active_evidence["missingValidTimes"], (missing,))
+        gaps = producer.isolated_operational_wave_gap_times(
+            active_evidence, parse_utc_hour(reference),
+        )
+        self.assertEqual(gaps, {missing})
+        catalog = feature_collection([
+            official_stac_item(utc_offset(run, lead), run, f"{label}-{lead}")
+            for run, label in [(older_run, "older"), (selected_run, "selected")]
+            for lead in range(133)
+        ])
+        settings = dict(
+            minimum_valid_time=reference,
+            required_valid_times={reference},
+            required_horizon_end_time=end,
+            include_operational_wave_fallback_phases=True,
+        )
+        with (
+            patch.object(producer, "request_json", return_value=catalog),
+            patch.object(producer.time, "time", return_value=producer.epoch(reference)),
+        ):
+            run, original, original_stats = producer.list_latest_assets("wam_dw", **settings)
+            repair_run, assets, stats = producer.list_latest_assets(
+                "wam_dw", **settings, isolated_wave_gap_times=gaps,
+            )
+            with patch.object(producer, "MAX_ASSETS_PER_COLLECTION", len(original)):
+                _, full_assets, _ = producer.list_latest_assets(
+                    "wam_dw", **settings, isolated_wave_gap_times=gaps,
+                )
+        self.assertEqual(run, selected_run)
+        self.assertEqual(repair_run, run)
+        self.assertEqual(full_assets, original)
+        additions = [row for row in assets if row.get("operationalWaveIsolatedRepair")]
+        self.assertEqual([(row["valid"], row["modelRun"]) for row in additions], [(missing, run)])
+        self.assertEqual([row for row in assets if row not in additions], original)
+        self.assertEqual(stats["requiredExactValidTimeCount"], original_stats["requiredExactValidTimeCount"])
+        self.assertEqual(
+            stats["operationalWaveFallbackPhaseAssetCounts"],
+            original_stats["operationalWaveFallbackPhaseAssetCounts"],
+        )
+        prioritized = producer.prioritize_operational_wave_assets(
+            assets, active_evidence["missingValidTimes"], set(),
+        )
+        self.assertEqual(prioritized[0], additions[0])
+        self.assertEqual(
+            producer.prioritize_operational_wave_assets(
+                assets, (*active_evidence["missingValidTimes"], end), set(),
+            )[0]["valid"],
+            end,
+        )
+        candidate = producer.build_operational_wave_collection_candidate(active)
+        repair_asset = prioritized[0]
+        candidate["zones"][part.cache_key]["hourly"][repair_asset["valid"]] = wave_native_hour(
+            part, repair_asset["valid"], repair_asset["modelRun"], collection="wam_dw",
+        )
+        candidate_evidence = producer.operational_wave_collection_evidence(
+            candidate, [zone], parse_utc_hour(reference), "wam_dw",
+            exact_required_times={reference},
+        )
+        decision = producer.operational_wave_phase_promotion_decision(
+            active_evidence, candidate_evidence, fallback_phase=False, candidate_changed=True,
+        )
+        self.assertTrue(decision["promote"], decision)
+        self.assertTrue(decision["resolvedPairSuperset"], decision)
+        self.assertEqual(decision["pairImprovementCount"], 1)
+        self.assertEqual(candidate_evidence["missingValidTimes"], ())
+
+    def test_optional_gap_does_not_pin_an_older_wave_model(self) -> None:
+        missing = utc_offset(TARGET, 59)
+        older_run = utc_offset(TARGET, -6)
+        features = [
+            official_stac_item(valid, run, f"{label}-{hour}")
+            for run, label in [(older_run, "older"), (TARGET, "selected")]
+            for hour in range(118)
+            if (valid := utc_offset(TARGET, hour)) != missing or run == older_run
+        ]
+        settings = dict(
+            minimum_valid_time=TARGET,
+            required_valid_times={TARGET},
+            required_horizon_end_time=utc_offset(TARGET, 117),
+            include_operational_wave_fallback_phases=True,
+        )
+        with (
+            patch.object(producer, "request_json", return_value=feature_collection(features)),
+            patch.object(producer.time, "time", return_value=producer.epoch(TARGET)),
+        ):
+            baseline = producer.list_latest_assets("wam_dw", **settings)
+            with_repair = producer.list_latest_assets(
+                "wam_dw", **settings, isolated_wave_gap_times={missing},
+            )
+        self.assertEqual(baseline[0], TARGET)
+        self.assertEqual(with_repair, baseline)
+
     def test_fallback_requires_strict_pair_improvement(self) -> None:
         target = frozenset({("A", TARGET), ("A", utc_offset(TARGET, 1))})
         evidence = {
@@ -1423,6 +1537,21 @@ class OperationalWaveClosureTests(unittest.TestCase):
             stop_code="RUNTIME_BUDGET_REACHED",
             active_evidence=residual,
         ))
+
+    def test_failed_optional_wave_repair_does_not_block_qualified_fallback(self) -> None:
+        for proven, stop, expected in (
+            ({"primary"}, None, True),
+            ({"repair"}, None, False),
+            ({"primary"}, "CRITICAL_COLLECTION_RUNTIME_RESERVED", False),
+        ):
+            args = dict(
+                selected_asset_count=2, proven_asset_keys=proven, stop_code=stop,
+                native_closure_stopped=False,
+            )
+            self.assertFalse(producer.operational_wave_phase_fully_traversed(**args))
+            self.assertEqual(producer.operational_wave_phase_fully_traversed(
+                **args, optional_asset_keys={"repair"},
+            ), expected)
 
     def test_unpromoted_completed_stage_cannot_mask_active_residual(
         self,
@@ -1747,7 +1876,7 @@ class OperationalWaveClosureTests(unittest.TestCase):
         )
         self.assertTrue(producer.operational_wave_phase_fully_traversed(
             selected_asset_count=2,
-            proven_asset_count=2,
+            proven_asset_keys={"first", "second"},
             stop_code=None,
             native_closure_stopped=False,
         ))
@@ -1758,7 +1887,7 @@ class OperationalWaveClosureTests(unittest.TestCase):
         ):
             fully_traversed = producer.operational_wave_phase_fully_traversed(
                 selected_asset_count=2,
-                proven_asset_count=proven,
+                proven_asset_keys=set(["first", "second"][:proven]),
                 stop_code=stop_code,
                 native_closure_stopped=stopped,
             )

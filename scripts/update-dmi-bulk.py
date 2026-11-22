@@ -264,6 +264,7 @@ MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
 MAX_OPERATIONAL_WAM_FALLBACK_RUNS = 1
+MAX_OPERATIONAL_WAM_ISOLATED_REPAIR_ASSETS = 2
 CHECKPOINT_MAX_ASSETS = max(1, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_ASSETS", "8")))
 CHECKPOINT_MAX_SECONDS = max(10, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_SECONDS", "60")))
 STAC_PAGE_LIMIT = max(1, min(1000, int(os.getenv("DMI_STAC_PAGE_LIMIT", "1000"))))
@@ -3522,6 +3523,7 @@ def list_latest_assets(
     allow_documented_required_gaps: bool = False,
     retain_preferred_native_run: bool = False,
     include_operational_wave_fallback_phases: bool = False,
+    isolated_wave_gap_times: set[str] | None = None,
     private_component_support_end_time: str | None = None,
     inventory_end_time: str | None = None,
 ) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
@@ -3933,6 +3935,15 @@ def list_latest_assets(
         )
     stats["officialRequiredGapCount"] = max(0, len(required) - len(selected_official_required))
     stats["officialNativeCadenceHours"] = 1 if collection in MARINE_COLLECTIONS else None
+    # An isolated gap can use an extra exact native asset from the chosen
+    # primary run. It cannot qualify a run or change the required axis.
+    wave_repair_times = {
+        value for raw in (isolated_wave_gap_times or set())
+        if (value := iso(raw)) and epoch(inventory_start) < epoch(value) < epoch(required_horizon_end)
+    } if wam_target_window else set()
+    wave_repair_rows: dict[str, dict[str, Any]] = {}
+    ambiguous_wave_repair_times: set[str] = set()
+
     def selected_rows_for_run(
         candidate_run: str,
         *,
@@ -3965,12 +3976,18 @@ def list_latest_assets(
                 private_support_end and required
                 and max(epoch(value) for value in required) < epoch(row["valid"]) <= epoch(private_support_end)
             )
+            is_wave_repair = False
             if row["valid"] not in required and not private_support and not stride_selected(
                 row["valid"], candidate_run,
             ):
-                continue
-            if row["valid"] in unique:
-                if phase_rank == 0:
+                if phase_rank != 0 or row["valid"] not in wave_repair_times:
+                    continue
+                is_wave_repair = True
+            destination = wave_repair_rows if is_wave_repair else unique
+            if row["valid"] in destination:
+                if is_wave_repair:
+                    ambiguous_wave_repair_times.add(row["valid"])
+                elif phase_rank == 0:
                     stats["duplicateValidTimes"] += 1
                     stats["catalogInventoryComplete"] = False
                     stats["catalogInventoryFailureCodes"] = sorted({
@@ -3978,10 +3995,11 @@ def list_latest_assets(
                         "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
                     })
                 continue
-            unique[row["valid"]] = {
+            destination[row["valid"]] = {
                 **row,
                 "collection": collection,
                 **({"privateComponentSupport": True} if private_support else {}),
+                **({"operationalWaveIsolatedRepair": True} if is_wave_repair else {}),
                 "modelRun": candidate_run,
                 "operationalWavePhaseRank": phase_rank,
                 "observedRunCadenceHours": cadence_hours,
@@ -4042,6 +4060,18 @@ def list_latest_assets(
             continue
         selected_rows.extend(fallback_rows)
         fallback_phase_counts.append(len(fallback_rows))
+    # Reserve the original primary list and each complete fallback phase
+    # before filling otherwise free collection slots.
+    repair_capacity = min(
+        MAX_OPERATIONAL_WAM_ISOLATED_REPAIR_ASSETS,
+        MAX_ASSETS_PER_COLLECTION - len(selected_rows),
+    )
+    repair_rows = [
+        wave_repair_rows[valid] for valid in sorted(wave_repair_rows, key=epoch)
+        if valid not in ambiguous_wave_repair_times
+    ][:repair_capacity]
+    primary_end = min(len(primary_rows), MAX_ASSETS_PER_COLLECTION)
+    selected_rows[primary_end:primary_end] = repair_rows
     if wam_target_window:
         stats.update({
             "operationalWaveRunPhaseCount": 1 + len(fallback_phase_counts),
@@ -7836,18 +7866,17 @@ def operational_wave_terminal_quality_promotion_allowed(
 def operational_wave_phase_fully_traversed(
     *,
     selected_asset_count: int,
-    proven_asset_count: int,
+    proven_asset_keys: set[str],
     stop_code: str | None,
     native_closure_stopped: bool,
+    optional_asset_keys: set[str] | None = None,
 ) -> bool:
-    """Require an EOF/admission proof for every selected asset in the phase."""
-    return bool(
-        isinstance(selected_asset_count, int)
-        and not isinstance(selected_asset_count, bool)
-        and selected_asset_count > 0
-        and isinstance(proven_asset_count, int)
-        and not isinstance(proven_asset_count, bool)
-        and proven_asset_count == selected_asset_count
+    """Verify the phase, with optional repairs excluded only for fallback."""
+    optional = optional_asset_keys or set()
+    return (
+        type(selected_asset_count) is int
+        and selected_asset_count > len(optional)
+        and len(proven_asset_keys - optional) == selected_asset_count - len(optional)
         and stop_code is None
         and not native_closure_stopped
     )
@@ -7955,6 +7984,24 @@ def operational_wave_residual_by_collection(
     return residual
 
 
+def isolated_operational_wave_gap_times(
+    evidence: dict[str, Any],
+    reference: datetime,
+) -> set[str]:
+    """Find individual missing hours bounded by verified hours for the same part."""
+    hours = operational_current_valid_times(reference)
+    neighbors = {
+        current: (before, after)
+        for before, current, after in zip(hours, hours[1:], hours[2:])
+    }
+    verified = evidence["verifiedPairKeys"]
+    return {
+        valid for part, valid in evidence["targetPairKeys"] - verified
+        if valid in neighbors
+        and all((part, neighbor) in verified for neighbor in neighbors[valid])
+    }
+
+
 def prioritize_operational_wave_assets(
     assets: list[dict[str, Any]],
     missing_valid_times: tuple[str, ...],
@@ -7982,6 +8029,7 @@ def prioritize_operational_wave_assets(
         return (
             phase_rank,
             category,
+            bool(asset.get("operationalWaveIsolatedRepair")),
             distance,
             valid_epoch,
             str(asset.get("id") or ""),
@@ -16412,9 +16460,24 @@ def main() -> int:
                 if collection_is_maintenance or collection_is_horizon
                 else (previous.get("runs") or {}).get(collection)
             ) or {}
+            bootstrap_operational_wam = collection in WAVE_BOOTSTRAP_COLLECTIONS
+            wave_missing_valid_times: tuple[str, ...] = ()
             if collection in prefetched_marine:
                 run, assets, stac_stats = prefetched_marine[collection]
-            elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
+            elif bootstrap_operational_wam:
+                active_wave_evidence = operational_wave_collection_evidence(
+                    result,
+                    active_zones_config,
+                    locked_production_reference,
+                    collection,
+                    exact_required_times=operational_wave_exact_required_times,
+                )
+                wave_missing_valid_times = active_wave_evidence["missingValidTimes"]
+                isolated_wave_gap_times = isolated_operational_wave_gap_times(
+                    active_wave_evidence,
+                    locked_production_reference,
+                )
+                del active_wave_evidence
                 run, assets, stac_stats = list_latest_assets(
                     collection,
                     None,
@@ -16429,6 +16492,7 @@ def main() -> int:
                         + timedelta(hours=HOURS - 1)
                     ),
                     include_operational_wave_fallback_phases=True,
+                    isolated_wave_gap_times=isolated_wave_gap_times,
                 )
             elif collection_is_critical_atmosphere or collection_is_horizon:
                 run, assets, stac_stats = list_atmosphere_turn_assets(
@@ -16464,9 +16528,6 @@ def main() -> int:
                 assets = rotate_native_refresh_assets(
                     assets, state.get("windHorizonCursorValidTime"),
                 )
-            bootstrap_operational_wam = (
-                collection in WAVE_BOOTSTRAP_COLLECTIONS
-            )
             collection_operational_wave_zones = (
                 [
                     *native_operational_wave_zones(
@@ -16809,19 +16870,7 @@ def main() -> int:
                 if bootstrap_operational_wam
                 else set(previously_processed)
             )
-            wave_missing_valid_times: tuple[str, ...] = ()
             if bootstrap_operational_wam:
-                _wave_closure_before_assets, wave_missing_valid_times = (
-                    operational_wave_collection_closure(
-                        result,
-                        active_zones_config,
-                        locked_production_reference,
-                        collection,
-                        exact_required_times=(
-                            operational_wave_exact_required_times
-                        ),
-                    )
-                )
                 assets = prioritize_operational_wave_assets(
                     assets,
                     wave_missing_valid_times,
@@ -16841,6 +16890,13 @@ def main() -> int:
                     for asset in assets
                 }
             } if bootstrap_operational_wam else {0: len(assets)}
+
+            optional_wave_asset_keys = {
+                supervised_asset_identity_key(supervised_asset_identity(
+                    collection, asset["modelRun"], asset,
+                ))
+                for asset in assets if asset.get("operationalWaveIsolatedRepair")
+            }
 
             def new_collection_run_info(
                 reference_time: str,
@@ -17102,6 +17158,21 @@ def main() -> int:
                     force_checkpoint=True,
                 )
 
+            def wave_phase_fully_traversed(*, for_fallback: bool = False) -> bool:
+                # A failed optional repair must not block an otherwise
+                # qualified fallback. The phase report still includes it.
+                optional = (
+                    optional_wave_asset_keys
+                    if for_fallback and wave_phase_rank == 0 else set()
+                )
+                return operational_wave_phase_fully_traversed(
+                    selected_asset_count=wave_phase_asset_counts.get(wave_phase_rank, 0),
+                    proven_asset_keys=wave_phase_proven_asset_keys,
+                    stop_code=budget_stop_code,
+                    native_closure_stopped=stop_for_native_wave_closure,
+                    optional_asset_keys=optional,
+                )
+
             for asset_number, asset in enumerate(assets, start=1):
                 bounded_primary_refresh = False
                 asset_phase_rank = int(
@@ -17140,20 +17211,7 @@ def main() -> int:
                             "quality proof"
                         )
                         budget_stop_code = "RUNTIME_BUDGET_REACHED"
-                    previous_fully_traversed = (
-                        operational_wave_phase_fully_traversed(
-                            selected_asset_count=wave_phase_asset_counts.get(
-                                wave_phase_rank, 0,
-                            ),
-                            proven_asset_count=len(
-                                wave_phase_proven_asset_keys
-                            ),
-                            stop_code=budget_stop_code,
-                            native_closure_stopped=(
-                                stop_for_native_wave_closure
-                            ),
-                        )
-                    )
+                    previous_fully_traversed = wave_phase_fully_traversed()
                     finish_wave_phase(
                         fully_traversed=previous_fully_traversed,
                     )
@@ -17163,9 +17221,7 @@ def main() -> int:
                     if not operational_wave_fallback_phase_allowed(
                         previous_phase_rank=wave_phase_rank,
                         next_phase_rank=asset_phase_rank,
-                        previous_phase_fully_traversed=(
-                            previous_fully_traversed
-                        ),
+                        previous_phase_fully_traversed=wave_phase_fully_traversed(for_fallback=True),
                         stop_code=budget_stop_code,
                         active_evidence=wave_active_evidence,
                     ):
@@ -17219,12 +17275,7 @@ def main() -> int:
                     asset_model_run,
                     asset,
                 )
-                supervised_identity_key = json.dumps(
-                    supervised_identity,
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                )
+                supervised_identity_key = supervised_asset_identity_key(supervised_identity)
                 if supervised_identity_key in supervisor_skipped_assets:
                     run_info["assetsSkippedBySupervisor"] += 1
                     result["diagnostics"].setdefault(
@@ -18503,20 +18554,7 @@ def main() -> int:
                         "quality proof"
                     )
                     budget_stop_code = "RUNTIME_BUDGET_REACHED"
-                final_phase_fully_traversed = (
-                    operational_wave_phase_fully_traversed(
-                        selected_asset_count=wave_phase_asset_counts.get(
-                            wave_phase_rank, 0,
-                        ),
-                        proven_asset_count=len(
-                            wave_phase_proven_asset_keys
-                        ),
-                        stop_code=budget_stop_code,
-                        native_closure_stopped=(
-                            stop_for_native_wave_closure
-                        ),
-                    )
-                )
+                final_phase_fully_traversed = wave_phase_fully_traversed()
                 finish_wave_phase(
                     fully_traversed=final_phase_fully_traversed,
                 )
