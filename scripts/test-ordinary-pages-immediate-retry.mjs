@@ -48,7 +48,7 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
   oidcHttp = 200, artifactListHttp = 200, cancellationWaitMs = 30_000,
   perReadMs = 0, perPostMs = 0, perCancelMs = 0, terminalAfterMs = null,
   frozenPauseClock = false, finalWaitOvershootMs = 0, postClockError = null,
-  localSeal = seal, statusSequence = null } = {}) {
+  localSeal = seal, statusSequence = null, readPublicTarget = undefined, publicReadMs = 0 } = {}) {
   const currentEnv = { ...env, GITHUB_RUN_ID: String(localSeal.runId), GITHUB_RUN_ATTEMPT: String(localSeal.runAttempt), GITHUB_SHA: localSeal.headSha };
   const currentArtifact = { ...artifact, id: localSeal.artifactId, name: localSeal.artifactName,
     digest: 'sha256:' + localSeal.artifactDigestSha256, size_in_bytes: localSeal.artifactSizeBytes,
@@ -122,6 +122,11 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
     waitMs: deliveryOrdinal === 1 ? 600_000 : 360_000,
     absoluteDeadlineMs: deadlineMs, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,
     beforeCreate: async intent => { intents.push(intent); clock += admitDelayMs; return admitCreate(intent); },
+    ...(readPublicTarget === undefined ? {} : { readPublicTarget: async () => {
+      assert.equal(posts.length, 1, 'public observation requires this acknowledged CREATE');
+      clock += publicReadMs;
+      return readPublicTarget();
+    } }),
     pause: async ms => {
       pauses.push(ms);
       if (!frozenPauseClock) clock += ms;
@@ -694,6 +699,79 @@ test('a shared terminal SHA alias never grants publication closure or retry for 
     revalidateWriter: async () => true, timeRemainingMs: () => MINIMUM_RECOVERY_WINDOW_MS, pause: async () => {} });
   assert.equal(result.kind, 'VERIFY_PUBLIC'); assert.equal(result.delivery.outcome, 'UNKNOWN');
   assert.equal(visible.posts.length, 1);
+});
+
+test('an independently visible exact target ends acknowledged alias waiting without terminal or retry authority', async () => {
+  let observations = 0, finalPublicReads = 0, delivery;
+  const server = fakeService({ priorStatus: 'succeed', immediateFirst: true,
+    readPublicTarget: async () => ++observations < 3 ? old : seal.targetPublicManifestSha256 });
+  const result = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
+    submit: async (_seal, ordinal) => delivery = await server.deploy(ordinal),
+    readPublic: async () => { finalPublicReads++; return seal.targetPublicManifestSha256; },
+    revalidateWriter: async () => true, timeRemainingMs: () => MINIMUM_RECOVERY_WINDOW_MS,
+    pause: async () => {} });
+  assert.equal(result.kind, 'VERIFY_PUBLIC'); assert.equal(finalPublicReads, 1);
+  assert.equal(delivery.outcome, 'UNKNOWN'); assert.equal(delivery.code, 'EXACT_PUBLIC_TARGET_OBSERVED');
+  assert.equal(delivery.receipt.deploymentId, seal.headSha);
+  assert.equal(hasSealedPagesTerminalEvidence(delivery), false);
+  assert.equal(hasSealedPagesRetryEvidence(delivery), false);
+  assert.equal(hasSealedPagesNoPostEvidence(delivery), false);
+  assert.equal(server.posts.length, 1); assert.equal(server.cancels.length, 0);
+  assert.equal(observations, 3); assert.equal(server.now(), 60_000);
+
+  // The transport observation alone cannot replace the publisher's fresh read.
+  const moved = fakeService({ priorStatus: 'succeed', immediateFirst: true,
+    readPublicTarget: async () => seal.targetPublicManifestSha256 });
+  const held = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
+    submit: (_seal, ordinal) => moved.deploy(ordinal), readPublic: async () => old,
+    revalidateWriter: async () => true, timeRemainingMs: () => MINIMUM_RECOVERY_WINDOW_MS,
+    pause: async () => {} });
+  assert.equal(held.kind, 'HOLD'); assert.equal(moved.posts.length, 1); assert.equal(moved.cancels.length, 0);
+});
+
+test('older same-SHA public artifacts and unavailable observations preserve bounded alias HOLD', async () => {
+  const newerSeal = { ...seal, artifactId: seal.artifactId + 1, targetPublicManifestSha256: '9'.repeat(64) };
+  for (const observation of [seal.targetPublicManifestSha256, true, null, 'throws']) {
+    let observations = 0;
+    const server = fakeService({ localSeal: newerSeal, priorStatus: 'succeed', immediateFirst: true,
+      readPublicTarget: async () => {
+        observations++;
+        if (observation === 'throws') throw new Error('PRIVATE_PUBLIC_READ_FAILURE');
+        return observation;
+      } });
+    const delivery = await server.deploy(1);
+    assert.equal(delivery.outcome, 'UNKNOWN'); assert.equal(delivery.code, 'STATUS_SHARED_ALIAS_UNPROVED');
+    assert.equal(server.posts[0].artifactId, newerSeal.artifactId);
+    assert.equal(server.posts.length, 1); assert.equal(server.cancels.length, 0);
+    assert.equal(hasSealedPagesTerminalEvidence(delivery), false);
+    assert.equal(hasSealedPagesRetryEvidence(delivery), false);
+    assert(observations > 1 && observations <= 21);
+  }
+});
+
+test('the public observer cannot bypass missing CREATE acknowledgement or conflicting status identity', async () => {
+  for (const problem of [{ priorStatus: 'deployment_in_progress' }, { createThrows: true },
+    { createHttp: 404 }, { replayOldStatus: true }, { statusReplyExtra: { artifact_id: seal.artifactId + 1 } }]) {
+    let observations = 0;
+    const server = fakeService({ immediateFirst: true, ...problem,
+      readPublicTarget: async () => { observations++; return seal.targetPublicManifestSha256; } });
+    const delivery = await server.deploy(1);
+    assert.equal(observations, 0); assert.notEqual(delivery.outcome, 'SUCCEEDED');
+    assert.equal(hasSealedPagesTerminalEvidence(delivery), false);
+    assert.equal(hasSealedPagesRetryEvidence(delivery), false);
+    assert(server.posts.length <= 1); assert.equal(server.cancels.length, 0);
+  }
+});
+
+test('a public target observed after the original polling deadline grants no early handoff', async () => {
+  let observations = 0;
+  const server = fakeService({ priorStatus: 'succeed', immediateFirst: true, publicReadMs: 600_001,
+    readPublicTarget: async () => { observations++; return seal.targetPublicManifestSha256; } });
+  const delivery = await server.deploy(1);
+  assert.equal(delivery.outcome, 'UNKNOWN'); assert.equal(delivery.code, 'STATUS_SHARED_ALIAS_UNPROVED');
+  assert.equal(observations, 1); assert.equal(server.posts.length, 1); assert.equal(server.cancels.length, 0);
+  assert.equal(hasSealedPagesTerminalEvidence(delivery), false);
+  assert.equal(hasSealedPagesRetryEvidence(delivery), false);
 });
 
 test('bounded shared-alias reads can outlive an old terminal response and observe the new deployment', async () => {
