@@ -519,7 +519,7 @@ test('actual workflow preserves old operations and gates the fixed job with weat
   assert.ok(start > 0 && workflow.indexOf('\n  configure-fixed-account-activity-hook:\n', start + 1) < 0);
   const next = workflow.slice(start + 1).search(/\n  [a-zA-Z0-9_-]+:\n/);
   const job = next < 0 ? workflow.slice(start) : workflow.slice(start, start + next + 1);
-  assert.ok(job.includes("    if: inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable'\n"));
+  assert.ok(job.includes("    if: ${{ inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' }}\n"));
   assert.match(job, /concurrency:\n      group: ravradar-trip-storage-production\n      queue: max\n      cancel-in-progress: false/);
   const positions = [
     'Require the exact hook purpose before any credential', 'actions/checkout@v7',

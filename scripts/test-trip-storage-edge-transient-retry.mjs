@@ -2604,7 +2604,10 @@ test('erasure schema acknowledgment: ten actual SQLite readbacks stay schema-onl
 test('erasure workflow: the actual named source program runs plan/apply/check once, never maintenance/drain/deploy/owner-delete', async () => {
   const { assertOwnerErasureSchemaAcknowledgment }=await import('./prepare-cloudflare-trip-storage.mjs');
   const workflow=fs.readFileSync('.github/workflows/deploy-trip-storage.yml','utf8').replaceAll('\r\n','\n');
-  assert.match(workflow,/default: full-install/); assert.match(workflow,/group: ravradar-trip-storage-production\n  cancel-in-progress: false/);
+  assert.match(workflow,/default: full-install/);
+  const outer=/^concurrency:\n([\s\S]*?)\njobs:\n/m.exec(workflow)?.[1];
+  assert.equal(outer,"  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}\n  queue: max\n  cancel-in-progress: false\n",
+    'Only the two fixed Auth writes select weather outer; erasure and all old operations retain trip outer with the reviewed queue');
   const title='      - name: Install and physically attest only the named owner-erasure INSERT guards\n';
   const at=workflow.indexOf(title),end=workflow.indexOf('\n      - name:',at+title.length);
   assert(at>0&&end>at); assert.equal(workflow.indexOf(title,at+title.length),-1);

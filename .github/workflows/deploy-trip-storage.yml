@@ -1133,7 +1133,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-account-activity-hook-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-account-activity-hook-read' && inputs.operation != 'fixed-account-activity-hook-catalog-read' && inputs.operation != 'fixed-account-activity-hook-enable' && inputs.operation != 'fixed-account-activity-hook-disable' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1
@@ -1656,7 +1656,7 @@ jobs:
           REPAIR_NODE
 
   configure-fixed-account-activity-hook:
-    if: inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable'
+    if: ${{ inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' }}
     name: Configure only the fixed account activity token hook
     runs-on: ubuntu-24.04
     timeout-minutes: 5
