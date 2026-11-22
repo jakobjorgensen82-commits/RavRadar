@@ -240,7 +240,10 @@ function currentChangeProjection(input){
   must(impact.candidateTree===continuity.candidateTree,'CHANGE_TREE_MISMATCH');
   for(const family of ['postgres','C','I','T'])must(impact.inputDigests[family+'After']
     ===continuity.inputDigests[family+'After'],'CHANGE_INPUT_MISMATCH');
-  return {reference,changeBase:structuredClone(changeBase),impact,continuity};
+  // Keep the established producer order in the V4 receipt and review hash.
+  return {reference,
+    changeBase:{commit:changeBase.commit,gitTree:changeBase.gitTree,pullBaseCommit:changeBase.pullBaseCommit},
+    impact,continuity};
 }
 export function currentChangePlanSha256(input){
   must(arguments.length===1,'ARGUMENTS');keys(input,['current','fullBaseline','changeBase','currentPlan','cumulativePlan']);
