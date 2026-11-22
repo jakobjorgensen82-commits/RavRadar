@@ -48,6 +48,8 @@ const LOCAL_RESTORE_INVENTORY_DISPATCH=[
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
 const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs scripts/test-committed-raw-current-capture-union.mjs';
 
+const WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND='node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs';
+
 export const CURRENT_CONTRACT_COMMANDS=freeze({
   core:[
     'node scripts/validate-release-version.mjs',
@@ -135,6 +137,8 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   weatherScalarPlanning:[
     'node --test scripts/test-weather-component-normal-wireup.mjs',
+    WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND,
+    'node scripts/test-copernicus-component-index.mjs',
   ],
   sharing:[
     'node scripts/test-map-forecast-timeline.mjs',
@@ -174,7 +178,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     "node scripts/test-ravscore-production-adapters.mjs",
     "node scripts/test-runtime-diagnostics-envelope-4.0.234.mjs",
     "node scripts/test-admin-config-production-contract-4.0.94.mjs",
-    "node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs"
+    WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND
   ],
   runtimeAudit:[
     "node scripts/test-ravscore-public-runtime-contract.mjs",
@@ -403,6 +407,8 @@ const PATH_AREAS=freeze({
   weatherScalarPlanning:[
     'scripts/lib/weather-component-runtime.mjs',
     'scripts/test-weather-component-normal-wireup.mjs',
+    'scripts/test-weather-component-runtime.mjs',
+    'scripts/test-copernicus-component-index.mjs',
   ],
   sharing:[
     'scripts/forecast-share/handler.mjs',
