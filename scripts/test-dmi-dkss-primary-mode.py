@@ -1771,6 +1771,12 @@ def check_b365_earlier_new_cycle_protects_both_leading_pairs():
         )
         return [row["id"] for row in planned]
 
+    def assert_only_support(actual, baseline, support):
+        assert actual[:4] == [2, 0, 1, support]
+        assert [hour for hour in actual if hour != support] == [
+            hour for hour in baseline if hour != support
+        ]
+
     original = order(offered=None)
     assert original[:3] == [2, 0, 1]
     assert (original.index(3) + 1, original.index(4) + 1) == (113, 114)
@@ -1808,24 +1814,26 @@ def check_b365_earlier_new_cycle_protects_both_leading_pairs():
 
     # The older single onset exception keeps its exact original time order.
     old = {**early_companion, at(0): {**early_companion[at(0)],
-           "retainedWaterTrendGap": True, "retainedWaterLevelDemand": False}}
+           "retainedWaterTrendGap": True, "retainedWaterLevelDemand": False},
+           at(1): {**early_companion[at(1)], "retainedWaterLevelDemand": False}}
     assert order(rows=old) == order(rows=old, offered=None)
     assert order(pair=False) == original
-    for wrong in [{"modelRun": retained}, {"modelRun": None}, {"collection": "dkss_nsbs"}]:
-        assert order(work=[{**row, **wrong} if row["id"] == 4 else row
-                           for row in assets]) == original
-    for hour in (0, 1):
+    for invalid, eligible in ((3, 4), (4, 3)):
+        for wrong in ({"modelRun": retained}, {"modelRun": None}, {"collection": "dkss_nsbs"}):
+            mixed = [{**row, **wrong} if row["id"] == invalid else row for row in assets]
+            assert_only_support(order(work=mixed), original, eligible)
+    for hour, eligible in ((0, 4), (1, 3)):
         nonwater = {**requirements, at(hour): {**requirements[at(hour)], "retainedWaterLevelDemand": False}}
-        assert order(rows=nonwater) == original
+        assert_only_support(order(rows=nonwater), original, eligible)
 
-    # Conservative, unqualified and genuinely missing work retains its
-    # existing ordering; a large value gap stays before the promoted group.
+    # Unqualified and weaker work retains its order relative to all other
+    # nonpromoted work. A large genuine gap stays before eligible support.
     for hour in (1, 4):
         unqualified = {**requirements, at(hour): {key: value for key, value in
             requirements[at(hour)].items() if not key.startswith("retained")}}
-        assert order(rows=unqualified) == order(rows=unqualified, offered=None)
+        assert_only_support(order(rows=unqualified), order(rows=unqualified, offered=None), 3)
     weaker = {**requirements, at(4): {**requirements[at(4)], "criticalPriority": 1}}
-    assert order(rows=weaker) == order(rows=weaker, offered=None)
+    assert_only_support(order(rows=weaker), order(rows=weaker, offered=None), 3)
     strong = {**requirements, at(5): {**requirements[at(5)], "retainedScalarValueGapPairCount": 1}}
     for protected in [
         order(rows=strong),
@@ -1907,14 +1915,17 @@ def check_b368_leading_water_pairs_do_not_share_their_weakest_guard():
     # The two inputs project to the same archived #368 report. It only
     # recorded a water need, not the retained-only water predicate or whether
     # a component gap was an independent missing scalar value.
-    def order(*, retained_h4=True, self_contained_gaps=(), work=assets, leading_run=selected):
+    def order(*, retained_h4=True, retained_h5=True, self_contained_gaps=(), work=assets,
+              leading_run=selected):
         requirements = {
             at(hour): {
                 "critical": True, "criticalPriority": 0, "retainedScalarPlanQualified": True,
                 "criticalGapPairCount": gap_count(hour),
                 "retainedScalarValueGapPairCount": int(hour in self_contained_gaps),
                 "retainedWaterTrendGap": hour == 3,
-                "retainedWaterLevelDemand": hour <= 6 and (hour != 4 or retained_h4),
+                "retainedWaterLevelDemand": (
+                    hour <= 6 and (hour != 4 or retained_h4) and (hour != 5 or retained_h5)
+                ),
                 "currentMissingPairCount": 0,
             }
             for hour in hours
@@ -1935,6 +1946,11 @@ def check_b368_leading_water_pairs_do_not_share_their_weakest_guard():
     protected_h4 = order(self_contained_gaps=(90,))
     assert ranks(missing_retained_h4) == [2, 3, 1, 4, 110, 5]
     assert ranks(protected_h4) == [2, 3, 1, 4, 91, 5]
+    single_h3 = order(retained_h4=False, retained_h5=False)
+    assert ranks(single_h3) == [2, 3, 1, 4, 110, 73]
+    assert [hour for hour in single_h3 if hour != 3] == [hour for hour in original if hour != 3]
+    absent_h5 = [asset for asset in assets if asset["id"] != 5]
+    assert order(retained_h4=False, work=absent_h5) == [hour for hour in single_h3 if hour != 5]
     assert protected_h4.index(90) < protected_h4.index(4)
     for scheduled in (missing_retained_h4, protected_h4):
         assert scheduled[:3] == original[:3]
@@ -1945,9 +1961,11 @@ def check_b368_leading_water_pairs_do_not_share_their_weakest_guard():
     # Trend-only work must remain behind a stronger genuine value hole.
     protected_h3_and_h5 = order(self_contained_gaps=(8, 90))
     assert protected_h3_and_h5.index(8) < protected_h3_and_h5.index(3) < protected_h3_and_h5.index(5)
+    protected_single_h3 = order(retained_h4=False, retained_h5=False, self_contained_gaps=(8,))
+    assert protected_single_h3.index(8) < protected_single_h3.index(3)
     for change in ({"modelRun": at(-12)}, {"modelRun": None}, {"collection": "dkss_lf"}):
         wrong_support = [{**asset, **change} if asset["id"] == 5 else asset for asset in assets]
-        assert order(retained_h4=False, work=wrong_support) == original
+        assert order(retained_h4=False, work=wrong_support) == single_h3
 
     # The new support does not displace the previously admitted H3/H4/H6.
     assert order()[:7] == [2, 0, 1, 3, 4, 6, 5]

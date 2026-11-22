@@ -2463,12 +2463,11 @@ def prioritize_leading_water_support(
         legacy = advance(ordered, qualified_support((onset,), (3, 6)))
         if legacy is not ordered:
             return legacy
-    if not third:
+    if not direct:
         return ordered
 
-    # The three leading hours can have different needs. Protect the
-    # established order of the eligible supports, without letting H4's
-    # qualification or unrelated work block the independent H3/H5 pairs.
+    # Each leading pair must qualify on its own. Keep the existing order of
+    # eligible supports and the precedence of independent work.
     independent = third
     for offset, start in enumerate(starts[:2], start=3):
         if start in qualified_water_times:

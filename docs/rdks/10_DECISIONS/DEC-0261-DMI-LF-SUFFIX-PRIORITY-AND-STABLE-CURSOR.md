@@ -1,3 +1,9 @@
+## 22. november — H0 og H1 kan få støtte uden et kvalificeret H2-par
+
+En lokal prøve gennem den normale DMI-planlægger viste, at manglende støtte til H2 kunne holde H3 tilbage, selv om både H0 og H3 havde kvalificeret vandstandsarbejde i samme direkte DKSS-serie. Med rettelsen rykker H3 fra plads 71 til 4 i prøven. H1/H4 kan også vurderes selvstændigt. De øvrige aktivers indbyrdes rækkefølge og forrangen for stærkere selvstændige behov bevares. De eksisterende tidsgrænser og krav til kilde, modelkørsel og grid gælder fortsat.
+
+Vejrkørsel #370 viste ingen tretimersændring i de første tre timer. De gemte oplysninger rækker ikke til at fastslå, at kørslen ramte denne gren. Den faktiske virkning skal måles i en almindelig kørsel. De fire nye ydertimers manglende absolutte vandstand i #370 er et særskilt spørgsmål om katalogets udgivelsestidspunkt.
+
 ## 22. november — uafhængig støtte til de første tre tretimerspar
 
 Den autentificerede audit af #368 fandt gyldige vandstande i begge ender af alle tre første par i alle 673 kystdele. Ingen havde en tretimersændring. IDW behandlede starttimerne i rækkefølgen H2, H0, H1. Støttepunkterne H3, H4 og H5 stod som nr. 71, 110 og 73 og blev ikke behandlet. H0 og H1 havde tilsvarende gyldige ændringer i det foregående offentlige datasæt. De fire undersøgte kilder skiftede model mellem de valgte endepunkter. Den arkiverede kø viser det samlede arbejde pr. time. Det præcise vagtafslag for H3/H4 er ukendt.
