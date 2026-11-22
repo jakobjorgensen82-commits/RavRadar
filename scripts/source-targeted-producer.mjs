@@ -141,6 +141,11 @@ function currentJob(result,current){
   assert(positive(job.id));assert.equal(job.run_id,current.runId);assert.equal(job.run_attempt,current.runAttempt);
   assert.equal(job.head_sha,current.head);assert.equal(job.status,'in_progress');return job.id;
 }
+function mainRefCommit(ref){
+  assert(ref?.ref==='refs/heads/main'&&ref.object?.type==='commit'&&oid(ref.object.sha),
+    'SOURCE_TARGETED_MAIN_REF_UNPROVED');
+  return ref.object.sha;
+}
 function freshPostTargetReader(){
   let category='REQUEST_NOT_STARTED',httpStatus=0;
   const fetchImpl=globalThis.fetch;
@@ -173,7 +178,7 @@ function freshPostTargetReader(){
 export async function coordinateTargetedSourceProducer(){
   assert.equal(arguments.length,0,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');
   const env=process.env,head=env.SOURCE_GATE_HEAD_SHA;
-  let current,content,impactPlan,cumulativeImpactPlan,changeBase,baseline,get,jobRoute,pullRoute,pull,frontierDiscovery,frontierAccess;
+  let current,content,impactPlan,cumulativeImpactPlan,changeBase,baseline,get,jobRoute,pullRoute,mainRoute,pull,frontierDiscovery,frontierAccess;
   try{
     assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
     assert(oid(head));clean(head);
@@ -185,9 +190,14 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(pull.number,pullRequest);assert.equal(pull.state,'open');
     assert.equal(pull.head?.sha,head);assert.equal(pull.head?.repo?.full_name,env.GITHUB_REPOSITORY);
     assert.equal(pull.base?.ref,'main');assert.equal(pull.base?.repo?.full_name,env.GITHUB_REPOSITORY);
-    assert(oid(pull.base.sha));
-    const mergeBase=text(['merge-base','--all',pull.base.sha,head]);assert(oid(mergeBase));
-    changeBase={commit:mergeBase,gitTree:text(['rev-parse',mergeBase+'^{tree}']),pullBaseCommit:pull.base.sha};
+    // The PR's displayed base can lag behind the live destination branch.
+    mainRoute=repo+'/git/ref/heads/main';
+    let pullBaseCommit,mergeBase;
+    try{
+      pullBaseCommit=mainRefCommit(await get(mainRoute));
+      mergeBase=text(['merge-base','--all',pullBaseCommit,head]);assert(oid(mergeBase));
+    }catch{throw frontierRefused('LIVE_MAIN_UNPROVED');}
+    changeBase={commit:mergeBase,gitTree:text(['rev-parse',mergeBase+'^{tree}']),pullBaseCommit};
     impactPlan=await selectImpactPlan(mergeBase,head);
     if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
     let baselineHint=null;
@@ -323,7 +333,7 @@ export async function coordinateTargetedSourceProducer(){
   // A missing ROOT review is a precise CONTROL refusal, never an expensive
   // automatic FULL rerun or an unreviewed short qualification.
   const reviewInput=()=>({current,fullBaseline:baseline,changeBase,currentPlan:impactPlan.plan,cumulativePlan:cumulativeImpactPlan.plan});
-  const controlReview=readCurrentChangeReview(pull,reviewInput());
+  const controlReview=readCurrentChangeReview(pull,reviewInput(),changeBase.pullBaseCommit);
   assertCurrentChangeReceiptCapacity({...reviewInput(),frontier});
   clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands);
   const ownedCacheNative=prepareSelectedOwnedCacheNativeSourceTarget(executionPlan.commands);
@@ -354,15 +364,17 @@ export async function coordinateTargetedSourceProducer(){
   const finalContinuity=await selectImpactPlan(baseline.mergeCommit,head);
   assert(isDeepStrictEqual(finalPlan,impactPlan)&&isDeepStrictEqual(finalContinuity,cumulativeImpactPlan),
     'SOURCE_TARGETED_PRODUCER_DIFF_MOVED');
-  // Fresh post-test transport, exactly two reads, irrespective of test duration.
+  // Recheck the PR, job and live destination with fresh post-test transport.
   const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);
   assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');
-  assert.equal(freshPull.head?.sha,head);assert.equal(freshPull.base?.sha,pull.base.sha);
+  assert.equal(freshPull.head?.sha,head);
   assert.equal(freshPull.head?.repo?.full_name,current.repository);
   assert.equal(freshPull.base?.repo?.full_name,current.repository);assert.equal(freshPull.base?.ref,'main');
   assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);
+  const freshBaseCommit=mainRefCommit(await finalGet('MAIN',mainRoute));
+  assert.equal(freshBaseCommit,changeBase.pullBaseCommit,'SOURCE_TARGETED_MAIN_REF_MOVED');
   assert(isDeepStrictEqual(controlReview,
-    readCurrentChangeReview(freshPull,reviewInput())),
+    readCurrentChangeReview(freshPull,reviewInput(),freshBaseCommit)),
     'SOURCE_TARGETED_CONTROL_REVIEW_MOVED');
   const frontierFresh=sourceImpactEvidenceAccess();
   const negative=await inspectLaterMainEvidence({env:baseContext,

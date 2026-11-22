@@ -2863,6 +2863,8 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const parentHead=execFileSync('git',['rev-parse','HEAD^'],{encoding:'utf8'}).trim();
     const actualInput=await native.captureAssistantAfter599PgInput();
     assert.equal(actualInput.sqlFiles,79);assert.equal(actualInput.complete,true);
+    const frozenHeads=actualInput.frozenGitTrees.map(row=>row.head);
+    assert.deepEqual(frozenHeads,[...frozenHeads].sort(),'Frozen Git IDs use the same order on every host');
     const currentReuse={run:ORIGIN.run+900,attempt:1,head:actualHead,pullRequest:947,branch:'synthetic-after599-same-pr'};
     const originRun={...copy(run),id:ORIGIN.run+800,run_attempt:1,head_sha:parentHead,head_branch:currentReuse.branch,
       repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},pull_requests:[{number:947}],
