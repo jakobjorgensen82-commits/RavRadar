@@ -4,8 +4,9 @@ The original process cases use an explicitly synthetic @actions/cache package.
 The additional SDK cases use the installed, locked official 6.1.0 distribution
 unchanged: only its HTTP service is a test-owned loopback protocol fixture.
 Product sources and the claim module are copied byte-for-byte into an own
-temporary checkout. No hosted cache, real credentials, preload or process
-interceptor is used. CI must supply an actual Node24 executable with
+temporary checkout. There is no hosted cache or real credential. Only the
+terminal lease cases preload a delay in the actual claim file operation, only
+in the fixture action process. CI must supply an actual Node24 executable with
 --node24-path; missing Linux/Node24/tools is failure, never a passing skip.
 The distribution cases run the actual runtime npm against only the fixed own
 offline cache; a missing warm cache is a prerequisite failure, never a skip.
@@ -43,6 +44,50 @@ NODE24 = None
 BODY_SECONDS = 8.0  # Own fixture observer, not a new product deadline.
 CLEANUP_SECONDS = 3.0
 TERMINAL_NEAR_EXPIRY_MS = 6_500
+# Leave 12 seconds after simulated elapsed work so the normal seal and SDK
+# upload can reach the held lease on a slow runner. The file wait lasts 15 s.
+TERMINAL_LEASE_FIXTURE_ELAPSED_MS = 228_000
+TERMINAL_LEASE_FIXTURE_OBSERVER_SECONDS = 14.0
+
+TERMINAL_LEASE_WAIT = r'''
+const fs = require('node:fs');
+const promises = require('node:fs/promises');
+if (process.argv.length !== 2 || process.argv[1] !== fixture.entry || process.cwd() !== fixture.root) {
+  throw new Error('OWN_TERMINAL_LEASE_FIXTURE_SCOPE');
+}
+// The actual Python cohort and Node SDK worker never load this fixture.
+delete process.env.NODE_OPTIONS;
+// The stage initially validates real BOOTTIME. Advance only the action
+// observer once its real file operation is held. The SDK uses the real clock.
+const read = fs.readFileSync;
+let held = false;
+fs.readFileSync = (file, ...args) => {
+  const value = read(file, ...args);
+  if (!held || file !== '/proc/uptime' || args[0] !== 'ascii') return value;
+  return value.replace(/^[0-9]+/, seconds => String(Number(seconds) + fixture.elapsedSeconds));
+};
+async function waitForFixture() {
+  held = true;
+  fs.writeFileSync(fixture.marker, 'waiting\n', { flag: 'wx' });
+  await new Promise(resolve => setTimeout(resolve, 15_000));
+  fs.appendFileSync(fixture.marker, 'continued\n');
+}
+if (fixture.mode === 'acquire') {
+  const open = promises.open;
+  promises.open = async (file, ...args) => {
+    const handle = await open(file, ...args);
+    if (file === fixture.claim) await waitForFixture();
+    return handle;
+  };
+} else {
+  const unlink = promises.unlink;
+  promises.unlink = async file => {
+    if (file === fixture.claim && fixture.mode === 'release') await waitForFixture();
+    await unlink(file);
+    if (file === fixture.claim && fixture.mode === 'after-unlink') await waitForFixture();
+  };
+}
+'''
 
 SYNTHETIC_CACHE = r'''
 import fs from 'node:fs';
@@ -686,6 +731,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_staged_cipher_restores_in_normal_workspace(self):
         self.official_chain(finalize_ok=True, ciphertext=True, staged_roundtrip=True)
 
+    def test_terminal_lease_wait_exits_before_or_after_claim_removal(self):
+        for lease_wait in ('acquire', 'release', 'after-unlink'):
+            with self.subTest(lease_wait=lease_wait):
+                self.official_chain(finalize_ok=True, ciphertext=True, staged_roundtrip=True,
+                                    lease_wait=lease_wait)
+
     def terminal_deadline_evidence(self):
         self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
         self.assertGreaterEqual(time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000,
@@ -698,7 +749,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
 
     def official_chain(self, *, finalize_ok, ciphertext=False, archive_limit=None,
                        archive_refusal=None, archive_capacity_skipped=False, staged_roundtrip=False,
-                       staged_hold_cohort=False):
+                       staged_hold_cohort=False, lease_wait=None):
         import hashlib
         import random
         import resource
@@ -709,6 +760,9 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         if staged_roundtrip:
             self.assertTrue(ciphertext and getattr(self, '_cipher_sdk_parent_loss', None) is None)
         self.assertFalse(staged_hold_cohort and (not staged_roundtrip or finalize_ok))
+        if lease_wait is not None:
+            self.assertIn(lease_wait, ('acquire', 'release', 'after-unlink'))
+            self.assertTrue(staged_roundtrip and finalize_ok and not staged_hold_cohort)
         for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
             self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_REQUIRED:{name}')
         self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
@@ -1146,10 +1200,24 @@ console.log(result.sha256);
                     'stageDevice': str(root_stat.st_dev), 'stageInode': str(root_stat.st_ino),
                     'cacheDevice': str(cache_stat.st_dev), 'cacheInode': str(cache_stat.st_ino),
                 })
+            if lease_wait is not None:
+                lease_marker = root / 'lease-waiting'
+                fixture = {'root': str(root), 'entry': str(root / ENTRY), 'claim': str(root / CLAIM),
+                           'marker': str(lease_marker), 'mode': lease_wait,
+                           'elapsedSeconds': TERMINAL_LEASE_FIXTURE_ELAPSED_MS // 1_000}
+                preload = root / 'fixture-lease-wait.cjs'
+                preload.write_text('const fixture = ' + json.dumps(fixture) + '\n' + TERMINAL_LEASE_WAIT,
+                                   encoding='ascii')
+                environment['NODE_OPTIONS'] = '--require=' + json.dumps(str(preload))
+                # Widen only this fixture's watchdog after setup. The actual
+                # bounded pidfd wait below still uses the shared stage deadline.
+                signal.setitimer(signal.ITIMER_REAL, TERMINAL_LEASE_FIXTURE_OBSERVER_SECONDS)
             parent = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
             while not finished:
+                if lease_wait == 'acquire' and lease_marker.exists():
+                    break
                 if exited(fds['action']):
                     self.assertTrue(archive_capacity_skipped or archive_refusal is not None,
                                     'Official SDK exited before complete protocol')
@@ -1179,6 +1247,40 @@ console.log(result.sha256);
                 self.assertFalse(any((root / 'sdk-temp').glob('rr-dmi-raw-archive-*')))
                 self.assertEqual(raw.read_bytes(), own_raw)
                 no_children()
+                return
+            if lease_wait is not None:
+                remaining = (terminal_deadline - TERMINAL_LEASE_FIXTURE_ELAPSED_MS
+                             - time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000) / 1_000
+                self.assertGreater(remaining, 0)
+                self.assertTrue(exited(fds['action'], remaining),
+                                'Held lease I/O kept the actual terminal action alive past its deadline')
+                self.assertEqual(parent.wait(timeout=1.0), 1)
+                self.assertEqual(small(lease_marker), b'waiting\n')
+                self.assertEqual(small(output), b'')
+                self.assertEqual(small(root / 'stderr'), b'')
+                if lease_wait == 'acquire':
+                    server.handle_request()
+                    if server_failure:
+                        raise server_failure[0]
+                    self.assertEqual(calls, [])
+                    self.assertEqual(connections, 0)
+                    self.assertEqual(set(fds), {'action'})
+                    no_children()
+                else:
+                    self.assertEqual(calls, ['create', 'put', 'finalize'])
+                    for role in ('cohort', 'worker'):
+                        self.assertTrue(exited(fds[role]), f'{role} actual exit required')
+                    with self.assertRaises(ProcessLookupError):
+                        os.killpg(observed['worker']['pid'], 0)
+                self.assertEqual((root / CLAIM).exists(), lease_wait != 'after-unlink')
+                if lease_wait != 'after-unlink':
+                    self.assertEqual(small(root / CLAIM), b'')
+                    if claim_identity is not None:
+                        current_claim = (root / CLAIM).lstat()
+                        self.assertEqual((current_claim.st_dev, current_claim.st_ino), claim_identity)
+                self.assertEqual((root / cipher_path).read_bytes(), own_cipher)
+                self.assertEqual((stage_root / cipher_path).read_bytes(), staged_cipher)
+                self.assertEqual(raw.read_bytes(), own_raw)
                 return
             if staged_roundtrip:
                 self.assertEqual(parent.wait(timeout=2.0), 0 if finalize_ok else 1,
