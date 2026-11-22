@@ -1,3 +1,9 @@
+## 22. november — verificering af kontoaktivitet før inaktivitetsvarsling
+
+Den eksisterende GitHub-arbejdsgang har en afgrænset læsning af Supabases indstilling for registrering af kontoaktivitet. Læsningen kræver verificeret hovedgren og en ledig kø. Den rapporterer kun en fast status om den forventede binding. Appen må fortsat ikke bruge manglende aktivitetsregistrering som bevis for inaktivitet.
+
+Kildekontrol, aflæsning af den faktiske indstilling og bekræftelse af aktivitetsregistrering ved almindeligt login udestår. Automatisk varsling og sletning forbliver deaktiveret.
+
 ## 22. november — R2-plads ved vejrarkiver og databasebackup
 
 Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lageropslagene før den første nye arkivfil og før upload af rotationsmarkøren. Den normale backupplan rapporterer målt lagerplads, når den kan læse den. Det samme lageropslag bruges fortsat til hver adgangskontrol. Offentlig prognose, bevaringsregler, sletning og adgang er uændrede. Måling i almindelig drift og Free-budget over hele fakturaperioden afventer.
