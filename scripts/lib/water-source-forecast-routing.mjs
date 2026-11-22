@@ -347,6 +347,81 @@ function verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId) {
     && sourceRowsAllowedForZone(futureRows, zoneId);
 }
 
+const ROMO_WATER_T3_ZONES = new Set(['DK-B04-07', 'DK-B04-08']);
+const ROMO_WATER_T3_FIELDS = ['partId', 'zoneId', 'referenceAt', 'supportAt', 'selectedPath',
+  'h0LevelPresent', 'h0T3FieldPresent', 'directInputH3LevelPresent', 'selectedSourceT3Qualified',
+  'seriesMatch', 'comparisonUsed', 'decision'];
+const present = value => value !== null && value !== undefined;
+function romoWaterT3Observation(part, zoneId, hourly, referenceAt) {
+  if (!ROMO_WATER_T3_ZONES.has(zoneId) || !exactHour(referenceAt)
+    || typeof part?.partId !== 'string' || !/^[A-Za-z0-9_.:-]{1,96}$/.test(part.partId)) return null;
+  const supportAt = new Date(Date.parse(referenceAt) + 3 * 3_600_000).toISOString();
+  const before = hourly.find(row => row?.time === referenceAt);
+  const future = hourly.find(row => row?.time === supportAt);
+  return { partId: part.partId, zoneId, referenceAt, supportAt,
+    selectedPath: before ? 'DIRECT_PART' : 'UNKNOWN',
+    h0LevelPresent: before ? present(before.waterLevelCm) : null,
+    h0T3FieldPresent: before ? present(before.waterLevelTrendCm3h) : null,
+    directInputH3LevelPresent: future ? present(future.waterLevelCm) : null,
+    selectedSourceT3Qualified: null, seriesMatch: null,
+    comparisonUsed: null,
+    decision: before && present(before.waterLevelTrendCm3h) ? 'DIRECT_FIELD_AVAILABLE' : 'UNKNOWN' };
+}
+// Read the predicate just used by this caller. Never compare water values or
+// replace a missing selected SOURCE with the independently available PART.
+function observeRomoSourceDecision(observation, time, sourceRows, futureRows, trendKnown) {
+  if (!observation || observation.referenceAt !== time) return;
+  observation.selectedPath = 'ROUTED_SOURCE';
+  observation.h0LevelPresent = true;
+  observation.h0T3FieldPresent = trendKnown;
+  observation.comparisonUsed = trendKnown;
+  try {
+    const complete = sourceRows.length > 0 && sourceRows.length === futureRows.length
+      && futureRows.every(Boolean);
+    observation.selectedSourceT3Qualified = complete;
+    if (trendKnown) {
+      observation.seriesMatch = true;
+      observation.decision = 'SOURCE_COMPARABLE';
+    } else if (!complete) {
+      observation.decision = 'SOURCE_QUALIFIED_T3_MISSING';
+    } else {
+      observation.seriesMatch = sourceRows.every((row, i) => sameVerifiedDmiSourceSeries(row, futureRows[i]));
+      // The selected maps already qualified their finite rows. Preserve the
+      // original combined rejection without inventing an unrecorded policy cause.
+      observation.decision = 'SOURCE_SERIES_OR_POLICY_REFUSED';
+    }
+  } catch { observation.decision = 'UNKNOWN'; }
+}
+export function summarizeRomoWaterT3(partRows, contract, referenceAt) {
+  if (!exactHour(referenceAt)) return null;
+  try {
+    const expected = [...ROMO_WATER_T3_ZONES].flatMap(zoneId =>
+      (contract?.zones?.[zoneId] ?? []).map(part => ({ ...part, zoneId })));
+    if (!expected.length) return null;
+    if (expected.length > 16) return { kind: 'ROMO_H0_T3_SELECTION_OBSERVATION_V1',
+      referenceAt, status: 'UNKNOWN', parts: [], rawValuesIncluded: false, sourceIdentitiesIncluded: false };
+    const parts = expected.map(part => {
+      const unknown = romoWaterT3Observation(part, part.zoneId, [], referenceAt);
+      const matches = partRows.filter(row => row?.partId === part.partId && row?.zoneId === part.zoneId);
+      const value = matches.length === 1 ? matches[0].romoWaterTrendObservation : null;
+      if (!unknown || !exactKeys(value, ROMO_WATER_T3_FIELDS)
+        || value.partId !== part.partId || value.zoneId !== part.zoneId
+        || value.referenceAt !== referenceAt || value.supportAt !== unknown.supportAt
+        || !['DIRECT_PART', 'ROUTED_SOURCE', 'UNKNOWN'].includes(value.selectedPath)
+        || !['UNKNOWN', 'DIRECT_FIELD_AVAILABLE', 'SOURCE_COMPARABLE', 'SOURCE_QUALIFIED_T3_MISSING',
+          'SOURCE_SERIES_OR_POLICY_REFUSED'].includes(value.decision)
+        || ['h0LevelPresent', 'h0T3FieldPresent', 'directInputH3LevelPresent', 'selectedSourceT3Qualified',
+          'seriesMatch', 'comparisonUsed'].some(key => value[key] !== null && typeof value[key] !== 'boolean')) return unknown;
+      return Object.fromEntries(ROMO_WATER_T3_FIELDS.map(key => [key, value[key]]));
+    }).filter(Boolean).sort((a, b) => a.partId.localeCompare(b.partId));
+    return { kind: 'ROMO_H0_T3_SELECTION_OBSERVATION_V1', referenceAt,
+      status: parts.length === expected.length && parts.every(row => row.decision !== 'UNKNOWN')
+        ? 'OBSERVED' : 'PARTIALLY_UNKNOWN',
+      parts, rawValuesIncluded: false, sourceIdentitiesIncluded: false };
+  } catch { return { kind: 'ROMO_H0_T3_SELECTION_OBSERVATION_V1', referenceAt,
+    status: 'UNKNOWN', parts: [], rawValuesIncluded: false, sourceIdentitiesIncluded: false }; }
+}
+
 
 // Read-only observations of the normal caller; never source/score authority.
 export const LF7_WATER_ROUTING_COUNTERS = Object.freeze([
@@ -488,6 +563,7 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     onshoreDirectionDeg: parentFeature.properties?.onshoreDirectionDeg,
     sources, index, routing, haversineKm });
   const sourceMaps = rows.map(source => verifiedDmiSourceRows(index.get(sourceKey(source))));
+  const romoWaterTrendObservation = romoWaterT3Observation(part, zoneId, hourly, diagnosticReferenceAt);
   const diagnostic = routedHourly => part.partId === FUR_WATER_ROUTING_PART_ID
     ? captureFurWaterRoutingDiagnostic({
       part, parentFeature, directHourly: hourly, routedHourly, sources, rows,
@@ -503,7 +579,7 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
   const observation = routedHourly => observeLf7Routing({ part, zoneId, hourly, routedHourly,
     rows, method, routing, referenceAt: diagnosticReferenceAt, decisions });
   if (!rows.length) return { hourly, appliedHours: 0, diagnostic: diagnostic(hourly),
-    waterRoutingObservation: observation(hourly) };
+    waterRoutingObservation: observation(hourly), romoWaterTrendObservation };
   let appliedHours = 0;
   const routedHourly = hourly.map(hour => {
     const timeMs = Date.parse(hour?.time ?? '');
@@ -516,6 +592,7 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     const futureTime = new Date(timeMs + 3 * 3_600_000).toISOString();
     const futureRows = sourceMaps.map(map => map.get(futureTime));
     const trendKnown = verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId);
+    observeRomoSourceDecision(romoWaterTrendObservation, hour.time, sourceRows, futureRows, trendKnown);
     // Record the predicate actually used above, without calculating another trend.
     if (lf7WaterOnlyZone(zoneId)) decisions.set(hour.time, { trendKnown,
       lfWater: sourceRows.some(row => row.sources.waterLevel.collection === 'dkss_lf') });
@@ -539,7 +616,7 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     };
   });
   return { hourly: routedHourly, appliedHours, diagnostic: diagnostic(routedHourly),
-    waterRoutingObservation: observation(routedHourly) };
+    waterRoutingObservation: observation(routedHourly), romoWaterTrendObservation };
 }
 
 export function applyWaterSourceRouting({features,output,forecastStore,sources,index,routing,haversineKm,generatedAt}){

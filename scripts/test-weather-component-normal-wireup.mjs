@@ -50,6 +50,7 @@ test('normal PART production plans on current central identity and passes the pr
   let planned = false, scored = false, originRead = false, companionsRead = false;
   const emptyCompanions = [];
   const safeLogs = [];
+  const stages = [];
   const output = { weatherEngine: {} };
   const waterSourceRoutingContext = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
   const context = vm.createContext({ path, process: ordinaryProcess, output, generatedAt: reference,
@@ -77,7 +78,7 @@ test('normal PART production plans on current central identity and passes the pr
     assertDmiPartHourlyGridSamplingApplicable,
     RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121, OPEN_METEO_NATIVE_NEAREST_POLICIES,
     COMPONENT_COPERNICUS_BUDGET_MS: 0, COMPONENT_OPEN_METEO_BUDGET_MS: 0,
-    reportWeatherBuildStage: () => {},
+    reportWeatherBuildStage: (stage, details = {}) => stages.push({ stage, details }),
     feggesundNeighborSourcesByTime: () => new Map(),
     dmiExpectedIdentityForPart: target => {
       assert.equal(target.zoneId, 'CURRENT');
@@ -110,7 +111,9 @@ test('normal PART production plans on current central identity and passes the pr
       assert.equal(options.openMeteoSpatialPolicies, OPEN_METEO_NATIVE_NEAREST_POLICIES);
       assert.equal(options.copernicusBudgetMs, 0); assert.equal(options.openMeteoBudgetMs, 0);
       assert.equal(options.readVerifiedHourly(options.parts[0], verifiedInputs)[0].time, reference);
-      return { inputs: verifiedInputs, summary: { prepared: true } };
+      return { inputs: verifiedInputs, summary: { prepared: true },
+        buildTimingMs: { retainedOpenMeteo: 125, retainedCopernicus: 250,
+          needsPlanning: 375, copernicusCritical: null, copernicusUpgrade: null, openMeteoRefresh: 0 } };
     },
     scoreCoastalPartsRuntime: (...args) => {
       assert.equal(safeLogs.length, 1, 'supplier evidence is emitted before replay can fail');
@@ -125,7 +128,8 @@ test('normal PART production plans on current central identity and passes the pr
       assert.equal(args[16], context.historicalDmiBulkCache);
       assert.equal(companionsRead, true);
       assert.equal(args[22], emptyCompanions, 'only the reader result reaches normal scoring');
-      scored = true; return { completeLocalBuild: true };
+      scored = true; return { completeLocalBuild: true,
+        buildTimingMs: { nativePartRecord: 125, nativePartProof: 250, partHourlyRouting: 375 } };
     },
     packDmiPartContinuity: async (_selected, selectedParts, at) => {
       assert.equal(selectedParts, context.activeParts);
@@ -137,6 +141,18 @@ test('normal PART production plans on current central identity and passes the pr
   await vm.runInContext(`(async () => { ${source.slice(start, end)} })()`, context);
   assert.equal(scored, true);
   assert.equal(output.weatherEngine.componentFallback.prepared, true);
+  assert.deepEqual(stages.map(value => value.stage), ['part-planning-records-ready',
+    'component-runtime-ready', 'native-current-contexts-ready', 'coastal-score-computed', 'coastal-score-runtime-ready']);
+  assert.ok(Number.isFinite(stages[0].details.workSeconds.partPlanningRecords)
+    && stages[0].details.workSeconds.partPlanningRecords >= 0);
+  assert.deepEqual(JSON.parse(JSON.stringify(stages[1].details.workSeconds)), {
+    retainedOpenMeteo: 0.125, retainedCopernicus: 0.25, needsPlanning: 0.375,
+    copernicusCritical: null, copernicusUpgrade: null, openMeteoRefresh: 0 });
+  assert.deepEqual(JSON.parse(JSON.stringify(stages[3].details.workSeconds)), {
+    nativePartRecord: 0.125, nativePartProof: 0.25, partHourlyRouting: 0.375 });
+  assert.equal(JSON.stringify(stages).includes('fromPrivateAuthority'), false);
+  assert.equal(JSON.stringify(stages).includes('PART::P1'), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(output)), { weatherEngine: { componentFallback: { prepared: true } } });
   assert.equal(safeLogs[0].prepared, undefined, 'raw summary fields do not reach logs');
 });
 

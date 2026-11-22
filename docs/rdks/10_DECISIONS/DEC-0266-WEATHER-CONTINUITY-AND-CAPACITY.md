@@ -1,3 +1,17 @@
+## 22. november – observeret H0 til H3 ved Rømø
+
+En lokal kildekandidat registrerer den faktisk valgte vandstandsgren for delene i DK-B04-07 og DK-B04-08 ved prognosens første time. Ved routet SOURCE bruges den normale kalders allerede beregnede sammenligningsbeslutning og dens allerede kvalificerede støtterækker. Sporet skelner manglende kvalificeret H+3 fra afvist serie eller policy og fra positiv sammenligning. Et bevaret direkte PART-input får kun oplysning om feltets tilstedeværelse. En ukendt årsag forbliver ukendt.
+
+Én samlet fast joblog bindes til den normalt byggede generations identitet. Den indeholder kun offentlige del- og zonekoder, tider, kategorier og tilstedeværelsesflag. Vandstandstal, kildeidentiteter og koordinater udelades. Loggen ændrer ingen vejrdata, score, modelbinding, geodata eller offentlig kontrakt og er ikke i sig selv bevis for offentlig levering. Den tidligere generation372 får ingen efterfølgende opfundet årsag. Faktisk kildekvalifikation og observation i en ny normal kørsel udestår.
+
+## 22. november — afgrænset måling af central beregning
+
+Den normale producent opdeler sine eksisterende `weather-build-stage`-hændelser ved første PART-opbygning, de autentificerede strømkontekster og afsluttet scoreberegning før kontinuitetspakning. Samme hændelser kan vise samlet behandlingstid for native PART, originalbevis og timekvalifikation samt komponenternes gemte input, behovsplanlægning og CP-/OM-forløb. Kun faste fasenavne og varigheder tilføjes. En ikke udført komponentfase har ingen målt varighed.
+
+Tiderne følger den eksisterende lokale vægklokke og giver ingen kilde-, budget- eller leveringsautoritet. Vejrdata, kildevalg, score, rækkefølge og kontroller bevares. Den lokale prøve beviser kald og dataadskillelse. Først en almindelig kørsel på den kvalificerede kilde kan vise, hvor meget arbejde hver fase faktisk tager. Målingen er ikke en dokumenteret tidsbesparelse.
+
+GitHub-kørslen 45081775511 med den nye vejrmåling nåede gennem den landsdækkende prøve og LF7-ruteprøven. Den samlede prøve ramte femminuttersgrænsen under kontrollen af gemte timefiler. De to lokale fejlsituationer for Feggesund kontrolleres med samme audit og alle 118 timer for hver af Feggesunds tre kystdele. Begge landsdækkende gennemløb med 210 zoner og 673 kystdele, kontrollen af gemte timefiler og femminuttersgrænsen består.
+
 ## 21. november — lokal kandidat til afgrænset fejlgemning
 
 Kun en terminalt fejlet almindelig `integrated`-vejrhentning kan bruge den nye forseglingsvej. Den kræver den normale autentificerede gendannelse og allerede bekræftet fysisk lukning af de forsøgte leverandørkald. En kørsel, der fortsætter gennem normal fallback, bruger den hidtidige gemning.
