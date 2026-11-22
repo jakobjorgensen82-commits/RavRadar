@@ -219,9 +219,19 @@ export async function assertNormalStagePublication(t) {
     ['GET', 'HEAD', 'GET', 'PUT'], 'The sampled listing stays before the retirement marker upload.');
   const summaryPath = path.join(own, 'weather-r2-summary');
   const summaryEnvironment = { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summaryPath };
+  const stockNotice = t.mock.method(console, 'log', () => {});
+  const noticePrefix = '::notice title=RavRadar R2 archive stock::';
   await appendPrivateWeatherPublicationSummary(publication, { GITHUB_STEP_SUMMARY: summaryPath });
   await assert.rejects(fs.stat(summaryPath), { code: 'ENOENT' });
-  await appendPrivateWeatherPublicationSummary(publication, summaryEnvironment);
+  assert.equal(stockNotice.mock.callCount(), 0);
+  await appendPrivateWeatherPublicationSummary({
+    ...publication,
+    bucketUsageBeforeArchiveUpload: { ...publication.bucketUsageBeforeArchiveUpload, extra: 'private' },
+  }, summaryEnvironment);
+  assert.deepEqual(stockNotice.mock.calls.at(-1).arguments, [noticePrefix + JSON.stringify({
+    bucketUsageBeforeArchiveUpload: { usedBytes: virtualUsed, objectCount: 1 },
+    bucketUsageBeforeRetirementMarker: { usedBytes: virtualUsed, objectCount: 1 },
+  })]);
   const publicationSummary = await fs.readFile(summaryPath, 'utf8');
   assert.match(publicationSummary,
     /R2 reported 1734856529 bytes after archive verification and before the retirement marker upload\. The object count was 1\./);
@@ -320,6 +330,10 @@ export async function assertNormalStagePublication(t) {
   assert.equal(thirdResult.bucketUsageBeforeRetirementMarker, undefined);
   assert.deepEqual(interruptedLists, [], 'Reusing the verified marker does not measure the bucket.');
   await appendPrivateWeatherPublicationSummary(thirdResult, summaryEnvironment);
+  assert.deepEqual(stockNotice.mock.calls.at(-1).arguments, [noticePrefix + JSON.stringify({
+    bucketUsageBeforeArchiveUpload: null,
+    bucketUsageBeforeRetirementMarker: null,
+  })]);
   assert.match(await fs.readFile(summaryPath, 'utf8'),
     /was not measured\.\n\nRetirement cleanup remains unresolved\./);
   assert.deepEqual(new Set(transport.objects.keys()), afterPrepared, 'The same immutable intent was reused.');

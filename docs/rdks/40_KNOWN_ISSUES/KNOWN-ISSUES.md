@@ -6,6 +6,8 @@ Den lokale rettelse læser højst hvert halve minut det normale offentlige manif
 
 ## 22. november — R2-plads ved vejrarkiver og databasebackup
 
+GitHubs kørselsannotation viser de samme to lageroptællinger som joboversigten. Den udgiver tal for byte og objekter, eller en tom værdi for en fase uden måling. Den bruger de allerede læste tal fra både almindelig udgivelse og genoptagelse. Den første faktiske aflæsning af annotationen udestår.
+
 Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lageropslagene før den første nye arkivfil og før upload af rotationsmarkøren. Den normale backupplan rapporterer målt lagerplads, når den kan læse den. Det samme lageropslag bruges fortsat til hver adgangskontrol. Offentlig prognose, bevaringsregler, sletning og adgang er uændrede. Måling i almindelig drift og Free-budget over hele fakturaperioden afventer.
 
 ## 22. november — tysk AI-svar afvist efter assistentudgivelsen
