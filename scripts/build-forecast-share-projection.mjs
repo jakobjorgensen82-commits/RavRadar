@@ -9,6 +9,8 @@ import { buildForecastShareProjection, buildForecastShareZoneProjection, assembl
   assertForecastShareProjectionParity, FORECAST_SHARE_DESCRIPTOR_SCHEMA, FORECAST_SHARE_ZONE_MAX_BYTES,
   FORECAST_SHARE_INDEX_MAX_BYTES } from '../js/services/forecast-share-projection.js';
 import {buildForecastShareTrustIndex, assertForecastShareTrustParity} from '../js/services/forecast-share-trust-index.js';
+import {buildForecastShareZoneBundle, forecastShareZoneBundlePath, FORECAST_SHARE_ZONE_BUNDLE_DIRECTORY,
+  FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES} from '../js/services/forecast-share-zone-bundle.js';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const parse=bytes=>JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
@@ -55,7 +57,24 @@ export function serializeForecastShareProjection({projection,manifest,manifestSh
   const trustIndex = buildForecastShareTrustIndex(manifest, descriptor);
   const trustBytes = Buffer.from(JSON.stringify(trustIndex)+'\n');
   need(trustBytes.length <= FORECAST_SHARE_INDEX_MAX_BYTES, 'FORECAST_SHARE_INDEX_TOO_LARGE');
-  return {descriptor,descriptorBytes,zoneFiles,trustIndex,trustBytes};
+  const bundleFiles=zoneFiles.map(file=>serializeZoneBundle(trustIndex,file));
+  return {descriptor,descriptorBytes,zoneFiles,trustIndex,trustBytes,bundleFiles};
+}
+function serializeZoneBundle(trustIndex,file) {
+  const relative=forecastShareZoneBundlePath(file.entry.id);
+  const bytes=Buffer.from(JSON.stringify(buildForecastShareZoneBundle(trustIndex,file.entry,file.bytes.toString('utf8'))));
+  need(bytes.length<=FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES,'FORECAST_SHARE_BUNDLE_TOO_LARGE');
+  return {relative,bytes};
+}
+async function checkZoneBundleDirectory(liveDirectory,required) {
+  try {
+    const stat=await fs.lstat(path.join(liveDirectory,FORECAST_SHARE_ZONE_BUNDLE_DIRECTORY));
+    need(stat.isDirectory()&&!stat.isSymbolicLink(),'FORECAST_SHARE_BUNDLE_DIRECTORY');
+    return true;
+  } catch(error) {
+    if(error.code==='ENOENT'&&!required)return false;
+    throw error;
+  }
 }
 // Only the direct return of the normal in-process public producer belongs on
 // this branch. It is not public input or independent artifact authenticity.
@@ -103,45 +122,63 @@ export async function writeForecastShareProjection({repository=ROOT,producerResu
   const files=serializeForecastShareProjection({projection,manifest,manifestSha256:hash(manifestBytes)});
   const parity=assertForecastShareProjectionParity({projection,descriptor:files.descriptor,manifest,details,registry});
   for(const file of files.zoneFiles)await writeContent(path.join(live,file.entry.path.slice(2)),file.bytes);
+  await fs.mkdir(path.join(live,FORECAST_SHARE_ZONE_BUNDLE_DIRECTORY),{recursive:true});
+  await checkZoneBundleDirectory(live,true);
+  for(const file of files.bundleFiles)await writeDescriptor(path.join(live,file.relative),file.bytes);
   need((await regular(path.join(live,'manifest.json'),{limit:1024*1024})).equals(manifestBytes),'FORECAST_SHARE_SOURCE_MOVED');
   await writeDescriptor(path.join(live,'forecast-share.json'),files.descriptorBytes);
   await writeDescriptor(path.join(live,'forecast-share-trust.json'),files.trustBytes);
-  return Object.freeze({descriptor:files.descriptor,files:files.zoneFiles.length+2,comparisons:parity.comparisons,manifestUnchanged:true});
+  return Object.freeze({descriptor:files.descriptor,files:files.zoneFiles.length+files.bundleFiles.length+2,comparisons:parity.comparisons,manifestUnchanged:true});
 }
-export async function readForecastShareProjectionFiles({liveDirectory,manifestText,required=false}={}) {
+export async function readForecastShareProjectionFiles({liveDirectory,manifestText,required=false,bundlesRequired=false}={}) {
   let descriptorBytes;
   try{descriptorBytes=await regular(path.join(liveDirectory,'forecast-share.json'),{limit:FORECAST_SHARE_INDEX_MAX_BYTES});}
-  catch(error){if(error.code==='ENOENT'&&!required)return null;throw error;}
+  catch(error){if(error.code==='ENOENT'&&!required&&!bundlesRequired)return null;throw error;}
   const manifestBytes=Buffer.from(manifestText);
   const manifest=parse(manifestBytes),descriptor=parse(descriptorBytes);
   assertPublicForecastShareSourceManifest(manifest);
   assertForecastShareDescriptor(descriptor,manifest,hash(manifestBytes));
   const trustBytes = await regular(path.join(liveDirectory,'forecast-share-trust.json'), {limit:FORECAST_SHARE_INDEX_MAX_BYTES});
   const trustIndex = assertForecastShareTrustParity(parse(trustBytes),manifest,descriptor);
-  const zoneFiles=[];
+  const bundled=await checkZoneBundleDirectory(liveDirectory,bundlesRequired);
+  const zoneFiles=[],bundleFiles=[];
   for(const entry of descriptor.zones){
     const bytes=await regular(path.join(liveDirectory,entry.path.slice(2)),entry);
     const payload=assertForecastShareZoneProjection(parse(bytes),descriptor,manifest,entry);
-    zoneFiles.push({entry,bytes,payload});
+    const file={entry,bytes,payload};
+    zoneFiles.push(file);
+    if(bundled) {
+      const expected=serializeZoneBundle(trustIndex,file);
+      const actual=await regular(path.join(liveDirectory,expected.relative),{
+        bytes:expected.bytes.length,limit:FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES,
+      });
+      need(actual.equals(expected.bytes),'FORECAST_SHARE_BUNDLE_SOURCE_PARITY');
+      bundleFiles.push(expected);
+    }
   }
   const projection=assembleForecastShareProjection(zoneFiles.map(file=>file.payload),descriptor,manifest);
-  return {descriptor,descriptorBytes,projection,zoneFiles,trustIndex,trustBytes};
+  return {descriptor,descriptorBytes,projection,zoneFiles,trustIndex,trustBytes,bundleFiles};
 }
 export async function copyForecastShareProjection({source,target}={}) {
   const manifestText=(await regular(path.join(source,'manifest.json'),{limit:1024*1024})).toString('utf8');
   const files=await readForecastShareProjectionFiles({liveDirectory:source,manifestText});
   if(!files)return {files:0};
   for(const file of files.zoneFiles)await writeContent(path.join(target,file.entry.path.slice(2)),file.bytes);
+  if(files.bundleFiles.length) {
+    await fs.mkdir(path.join(target,FORECAST_SHARE_ZONE_BUNDLE_DIRECTORY),{recursive:true});
+    await checkZoneBundleDirectory(target,true);
+    for(const file of files.bundleFiles)await writeDescriptor(path.join(target,file.relative),file.bytes);
+  }
   await fs.writeFile(path.join(target,'forecast-share.json'),files.descriptorBytes);
   await fs.writeFile(path.join(target,'forecast-share-trust.json'),files.trustBytes);
-  return {files:files.zoneFiles.length+2};
+  return {files:files.zoneFiles.length+files.bundleFiles.length+2};
 }
-export async function auditForecastShareProjectionFiles({liveDirectory,manifestText,details,registry,required=false}={}) {
-  const files=await readForecastShareProjectionFiles({liveDirectory,manifestText,required});
+export async function auditForecastShareProjectionFiles({liveDirectory,manifestText,details,registry,required=false,bundlesRequired=false}={}) {
+  const files=await readForecastShareProjectionFiles({liveDirectory,manifestText,required,bundlesRequired});
   if(!files)return null;
   const parity=assertForecastShareProjectionParity({projection:files.projection,descriptor:files.descriptor,
     manifest:JSON.parse(manifestText),details,registry});
-  return {files:files.zoneFiles.length+2,comparisons:parity.comparisons,descriptor:files.descriptor};
+  return {files:files.zoneFiles.length+files.bundleFiles.length+2,comparisons:parity.comparisons,descriptor:files.descriptor};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   console.log(JSON.stringify(await writeForecastShareProjection()));

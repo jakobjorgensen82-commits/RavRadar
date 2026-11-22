@@ -3,6 +3,12 @@
 **Dato:** 2026-10-29
 **Status:** Ejerens valg er godkendt; privat funktionel kandidat, samlet kvalifikation og offentlig levering er åbne.
 
+### Samlet zonelæsning i det eksisterende delingsforløb
+
+Den lokale ændring samler udgivelsens metadata og de nøjagtige zonebytes i én offentlig fil pr. zone. Den normale vejrbygning og kodebygning genbruger den allerede kontrollerede delingsprojektion. Kopi, privatlivskontrol og offentlig genlæsning binder hver ny fil til den samme forseglede prognose. Tidligere udgivelser har deres oprindelige indeks og zonefiler. Den nye Function kan bruge den eksisterende læsevej, hvis en ældre udgivelse svarer 404 på den nye zonefil. En uoverensstemmelse i en leveret zonefil giver ingen score.
+
+En normal offentlig vejrudgivelse med de nye filer skal være verificeret, før Function opdateres via det eksisterende Pages-projekt. Delingsprøven skal holde den samme time, zone, søgemåde, kilde og score. Hosted måling af CPU og Free-råderum er en selvstændig restopgave.
+
 ## Beslutning og autoritet
 
 Opret kun ét særskilt Cloudflare Pages/Functions-projekt: `ravradar-del` på den eksisterende konto. Først kvalificeres `ravradar-del.pages.dev`. Senere tilknyttes kun `del.ravradar.dk` med én ny CNAME hos Simply. Ingen NS-flytning, ændring af apex/www eller mailposter. Den tidligere undersøgte navneserverflytning og venten på ejerens DNS-valg er dateret historik på dette punkt.

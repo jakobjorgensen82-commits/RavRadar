@@ -25,6 +25,10 @@ const ASSISTANT_SUCCESSOR_TESTS=new Set([
 ]);
 const FIXED_ASSISTANT_LOG_TEST='scripts/test-fixed-assistant-failure-log-20261101.mjs';
 const SHARE_PROJECTION_SOURCE_TEST='node scripts/test-forecast-share-projection.mjs';
+const SHARE_ZONE_BUNDLE_MODULE='js/services/forecast-share-zone-bundle.js';
+const PAGES_DEPLOYMENT_COMMAND='node scripts/test-ravscore-operational-pages-deployment.mjs';
+const PAGES_PUBLIC_VERIFICATION_COMMAND=PAGES_DEPLOYMENT_COMMAND+' --public-verification-only';
+const PAGES_OWNER_COMPLETION_COMMAND=PAGES_DEPLOYMENT_COMMAND+' --owner-completion-only';
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
 const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
@@ -60,7 +64,8 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node --test scripts/test-ordinary-pages-immediate-retry.mjs',
     'node scripts/test-pages-generation-and-reentry.mjs',
     'node scripts/test-ravscore-operational-pages-recovery.mjs',
-    'node scripts/test-ravscore-operational-pages-deployment.mjs',
+    PAGES_PUBLIC_VERIFICATION_COMMAND,
+    PAGES_OWNER_COMPLETION_COMMAND,
     'node --test scripts/test-protected-operational-reentry-evidence.mjs',
   ],
   workflowSupport:[
@@ -272,6 +277,7 @@ const PATH_AREAS=freeze({
   ],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
+    'js/services/data-service.js',
     'js/services/rav-assistant-public-help.js','scripts/test-assistant-ui-error-boundary.mjs',
     'scripts/test-ravscore-public-data-service-binding.mjs',
     'scripts/test-ravscore-public-browser-closure.mjs',
@@ -411,6 +417,8 @@ const PATH_AREAS=freeze({
     'scripts/test-copernicus-component-index.mjs',
   ],
   sharing:[
+    SHARE_ZONE_BUNDLE_MODULE,'js/services/data-service.js','js/services/forecast-share-trust-index.js',
+    'scripts/build-forecast-share-projection.mjs','scripts/audit-pages-artifact-privacy.mjs',
     'scripts/forecast-share/handler.mjs',
     'scripts/test-forecast-share-projection.mjs',
     '.github/workflows/deploy-forecast-share-pages.yml',
@@ -568,7 +576,7 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/lib/merge-protected-handbook.mjs':PROTECTED_HANDBOOK_SOURCE_TESTS,
   'scripts/sync-protected-admin-assets.mjs':PROTECTED_HANDBOOK_SOURCE_TESTS,
   'scripts/release-gate.mjs':['node --test scripts/test-release-gate-error-aggregation.mjs'],
-  'scripts/verify-ravscore-operational-pages-deployment.mjs':[SHARE_PROJECTION_SOURCE_TEST],
+  'scripts/verify-ravscore-operational-pages-deployment.mjs':[PAGES_PUBLIC_VERIFICATION_COMMAND,SHARE_PROJECTION_SOURCE_TEST],
   [WEATHER_BUILD]:[...COMMANDS.pages,...COMMANDS.pagesArtifact,RAW_CACHE_ROTATION_SOURCE_COMMAND],
   'scripts/run-copernicus-current-pilot-with-retry.py':COMMANDS.dmiCollectionRecovery,
   'scripts/run-dmi-bulk-supervised.py':[...COMMANDS.dmiBudget,...COMMANDS.dmiCollectionRecovery],
@@ -643,11 +651,9 @@ export function currentSourceTargets(relative){
     return {area,commands};
   })});
 }
-const PAGES_DEPLOYMENT_COMMAND='node scripts/test-ravscore-operational-pages-deployment.mjs';
-const PAGES_OWNER_COMPLETION_COMMAND=PAGES_DEPLOYMENT_COMMAND+' --owner-completion-only';
 const PAGES_OWNER_HELPERS=new Set(['scripts/github-pages-attempt-evidence.mjs',
   'scripts/protected-operational-reentry-evidence.mjs']);
-const PAGES_FULLY_EXECUTED_TESTS=new Set(COMMANDS.pages.filter(command=>command!==PAGES_DEPLOYMENT_COMMAND)
+const PAGES_FULLY_EXECUTED_TESTS=new Set(COMMANDS.pages.filter(command=>!command.startsWith(PAGES_DEPLOYMENT_COMMAND))
   .flatMap(command=>command.split(' ').filter(file=>file.endsWith('.mjs'))));
 const PAGES_SCOPE_CONTROLS=new Set(['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs']);
 const PAGES_TRANSPORT_INPUTS=new Set(['scripts/lib/run-sealed-pages-deployment.mjs',
@@ -689,7 +695,7 @@ export function pagesContractCommandsForChangedInputs(changes){
       &&!row.path.endsWith('.mjs'))||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(row.path);
     if(changes.every(row=>regular(row)&&(transport(row)
       ||PAGES_SCOPE_CONTROLS.has(row.path)||documentation(row))))
-      return freeze(COMMANDS.pages.filter(command=>command!==PAGES_DEPLOYMENT_COMMAND));
+      return freeze(COMMANDS.pages.filter(command=>!command.startsWith(PAGES_DEPLOYMENT_COMMAND)));
     return COMMANDS.pages;
   }
   if(!changes.some(row=>PAGES_OWNER_HELPERS.has(row.path)&&regular(row)))return COMMANDS.pages;
@@ -699,7 +705,7 @@ export function pagesContractCommandsForChangedInputs(changes){
     }else if(!(pathAreas.get(row.path)?.every(area=>area==='documentation')
       ||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(row.path)))return COMMANDS.pages;
   }
-  return freeze(COMMANDS.pages.map(command=>command===PAGES_DEPLOYMENT_COMMAND?PAGES_OWNER_COMPLETION_COMMAND:command));
+  return freeze(COMMANDS.pages.filter(command=>command!==PAGES_PUBLIC_VERIFICATION_COMMAND));
 }
 
 // Kun de eksisterende planner-/CURRENT-prøveinput kan vælge de fire hele mål.
@@ -1327,7 +1333,9 @@ export function planSourceCurrentContractsFromGit(input){
       if(WEATHER_PROGRESS_RECOVERY_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE');
-      if(SMALL_USER_CONTRACT_PATHS.has(file)
+      const addsShareZoneBundle=file===SHARE_ZONE_BUNDLE_MODULE
+        &&row.status==='A'&&row.beforeMode==='000000'&&row.afterMode==='100644';
+      if(SMALL_USER_CONTRACT_PATHS.has(file)&&!addsShareZoneBundle
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(DMI_BUDGET_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
@@ -1400,7 +1408,7 @@ export function planSourceCurrentContractsFromGit(input){
         :area==='historicalUpdaterOracles'?historicalUpdaterCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
       changedPaths:[...new Set(selected.get(area))].sort()};
     out.commands=[...new Set(Object.values(out.areas).flatMap(area=>area.commands))];
-    assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||command===OWNED_CACHE_NATIVE_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
+    assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||command===PAGES_PUBLIC_VERIFICATION_COMMAND||command===OWNED_CACHE_NATIVE_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
     out.reasonCodes=['CURRENT_SCOPES_CLASSIFIED','UNCHANGED_ACTUAL_POSTGRES_AND_MODELS'];
     if(out.controlQualificationRequired)out.reasonCodes.push('INDEPENDENT_CONTROL_REVIEW_REQUIRED');
     return freeze(out);

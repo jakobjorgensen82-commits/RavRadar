@@ -3,6 +3,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { readForecastShareProjectionFiles, auditForecastShareProjectionFiles } from './build-forecast-share-projection.mjs';
+import { FORECAST_SHARE_ZONE_BUNDLE_DIRECTORY, FORECAST_SHARE_ZONE_BUNDLE_MODULE } from '../js/services/forecast-share-zone-bundle.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROFILE_BINDING } from '../js/jordrav/profile-examples.js';
@@ -642,13 +643,15 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   const mapFiles = new Map(mapEntries.map(entry => [`data/live/${entry.path.slice(2)}`, entry]));
   // The deployed, closure-bound compact reader requires the index and all210 zone files.
   const shareRequired = files.some(file => file.relative === 'js/services/forecast-share-projection.js');
+  const bundlesRequired = files.some(file => file.relative === FORECAST_SHARE_ZONE_BUNDLE_MODULE);
   let shareFiles = null;
   try {
     shareFiles = await readForecastShareProjectionFiles({ liveDirectory: path.join(root, 'data/live'),
-      manifestText: await fs.readFile(path.join(root, 'data/live/manifest.json'), 'utf8'), required: shareRequired });
+      manifestText: await fs.readFile(path.join(root, 'data/live/manifest.json'), 'utf8'), required: shareRequired, bundlesRequired });
   } catch { issues.push('invalid or missing public forecast sharing projection'); }
   const sharePaths = shareFiles ? ['data/live/forecast-share.json', 'data/live/forecast-share-trust.json',
-    ...shareFiles.descriptor.zones.map(file => 'data/live/' + file.path.slice(2))] : [];
+    ...shareFiles.descriptor.zones.map(file => 'data/live/' + file.path.slice(2)),
+    ...shareFiles.bundleFiles.map(file => 'data/live/' + file.relative)] : [];
   const expectedFiles = new Set([...EXPECTED_LIVE_FILES, ...deliveryFiles.keys(), ...mapFiles.keys(), ...sharePaths]);
   const bulkLogicalPath = 'data/live/public-condition-details.json';
   const bulkPhysicalPath = bulkArchive ? 'data/live/' + bulkArchive.path.slice(2) : null;
@@ -670,7 +673,9 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     }
     if (key.startsWith('data/live/') && !expectedFiles.has(entry.relative)
       && !(entry.relative === 'data/live/forecast' && entry.kind === 'directory' && deliveryFiles.size > 0)
-      && !(entry.relative === 'data/live/share' && entry.kind === 'directory' && shareFiles !== null)) {
+      && !(entry.relative === 'data/live/share' && entry.kind === 'directory' && shareFiles !== null)
+      && !(entry.relative === 'data/live/' + FORECAST_SHARE_ZONE_BUNDLE_DIRECTORY
+        && entry.kind === 'directory' && shareFiles?.bundleFiles.length > 0)) {
       issues.push(`unexpected live artifact at ${safePath(entry.relative)}`);
     }
   }
@@ -781,7 +786,7 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
       await auditForecastShareProjectionFiles({ liveDirectory: path.join(root, 'data/live'),
         manifestText: texts.get('data/live/manifest.json'),
         details: parsed.get('data/live/public-condition-details.json'),
-        registry: parsed.get(ZONE_REGISTRY_FILE), required: true });
+        registry: parsed.get(ZONE_REGISTRY_FILE), required: true, bundlesRequired });
     } catch { issues.push('public forecast sharing results differ from normal public results'); }
   }
   if (issues.length) throw new PagesArtifactPrivacyError(issues);
