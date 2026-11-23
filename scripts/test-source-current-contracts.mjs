@@ -1578,6 +1578,11 @@ try{
         commandResults};
       const receipt=await receiptHelpers.buildCurrentChangeSourceReceipt(input);
       assert.equal(receiptHelpers.validateCurrentChangeSourceReceipt(receipt,input).validStructure,true);
+      const currentFull={...input,fullBaseline:{...input.fullBaseline,historicalNationalScope:'NOT_EXECUTED'}};
+      const currentReceipt=await receiptHelpers.buildCurrentChangeSourceReceipt(currentFull);
+      assert.equal(currentReceipt.baselineScope.historicalNationalScope,'NOT_EXECUTED');
+      assert.equal(receiptHelpers.validateCurrentChangeSourceReceipt(currentReceipt,currentFull).validStructure,true);
+      assert.throws(()=>receiptHelpers.validateCurrentChangeSourceReceipt(currentReceipt,input),/RECEIPT_MISMATCH/);
       assert.deepEqual(receipt.reportedCommandResults,commandResults);
       assert(receipt.execution.commands.includes(OWNED_CACHE_NATIVE_COMMAND));
       assert.equal(receipt.postgres.executedInThisRun,false);assert.equal(receipt.fullSourceValidationClaimed,false);

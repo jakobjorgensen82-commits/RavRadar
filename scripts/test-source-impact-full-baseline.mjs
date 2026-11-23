@@ -168,9 +168,9 @@ test('normal FULL qualifier binds the new raw native layout to the actual produc
   const current=await fs.readFile(new URL('../'+PULL_REQUEST_SOURCE_WORKFLOW,import.meta.url),'utf8');
   const historical=readHistoricalSourceSetupWorkflow();
   assert.notEqual(current,historical);
-  for(const [workflow,invalid] of [
-    [current,current.replace('  contents: read','  contents: write')],
-    [historical,historical+'\n'],
+  for(const [workflow,invalid,historicalNationalOmitted] of [
+    [current,current.replace('  contents: read','  contents: write'),true],
+    [historical,historical+'\n',false],
   ]){
     assert.notEqual(workflow,invalid);
     const f=fixture({v2:true}),steps=f.job.steps;
@@ -180,7 +180,16 @@ test('normal FULL qualifier binds the new raw native layout to the actual produc
     steps[5].name='Build deterministic source-tree content identity';steps.splice(5,0,dmi);
     const environment=OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.map((name,index)=>({...steps[3],name,number:4+index}));
     for(const value of steps.slice(3))value.number+=2;
-    steps.splice(3,0,...environment);f.rebuild();
+    steps.splice(3,0,...environment);
+    const historicalProof=f.full.historical584National;
+    if(historicalNationalOmitted){
+      const nationalIndex=steps.findIndex(value=>value.name===NATIONAL_STEP);
+      assert(nationalIndex>=0);
+      steps.splice(nationalIndex,1);
+      for(const value of steps.slice(nationalIndex))value.number--;
+      delete f.full.historical584National;
+    }
+    f.rebuild();
     const originalReadGit=f.dependencies.readGit,reads=[];
     let workflowBlob=workflow;
     f.dependencies.readGit=(args,options)=>{
@@ -191,8 +200,27 @@ test('normal FULL qualifier binds the new raw native layout to the actual produc
     };
     const result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
     assert.equal(result.scope,'FULL_SOURCE');assert.equal(result.providerOrProductionProof,false);
+    assert.equal(result.historicalNationalScope,historicalNationalOmitted?'NOT_EXECUTED':'HISTORICAL_584_NATIONAL_ONLY');
     assert.equal(f.phase.nativePostgres.schemaVersion,2);assert.equal(reads.length,1);
     assert.equal(f.zipCalls.length,2);
+    if(historicalNationalOmitted){
+      for(const name of [PULL_REQUEST_SOURCE_STEPS[2],PULL_REQUEST_SOURCE_STEPS[4],
+        'Validate durable Copernicus current-reference baseline on artificial data only',
+        'Validate download-inclusive DMI capacity on artificial data only']){
+        const required=steps.find(value=>value.name===name);
+        required.conclusion='skipped';
+        assert.equal((await f.qualify()).status,'REFUSED');
+        required.conclusion='success';
+      }
+      f.full.historical584National=historicalProof;
+    }else delete f.full.historical584National;
+    f.rebuild();
+    assert.equal((await f.qualify()).status,'REFUSED');
+    if(historicalNationalOmitted)delete f.full.historical584National;
+    else f.full.historical584National=historicalProof;
+    f.rebuild();
+    workflowBlob=historicalNationalOmitted?historical:current;
+    assert.equal((await f.qualify()).status,'REFUSED');
     workflowBlob=invalid;
     const refused=await f.qualify();assert.equal(refused.status,'REFUSED');assert.equal(refused.cheapPlanAvailable,false);
   }

@@ -32,7 +32,7 @@ function fullBaseline(value,current){
     must(positive(value[key]),'FULL_BASELINE_IDENTITY');
   must(digest(value.finalArtifactDigest)&&digest(value.nativeArtifactDigest)
     &&typeof value.finalProofSha256==='string'&&/^[a-f0-9]{64}$/.test(value.finalProofSha256),'FULL_BASELINE_DIGEST');
-  must(value.historicalNationalScope==='HISTORICAL_584_NATIONAL_ONLY'
+  must(['HISTORICAL_584_NATIONAL_ONLY','NOT_EXECUTED'].includes(value.historicalNationalScope)
     &&value.providerOrProductionProof===false,'FULL_BASELINE_SCOPE');
   must(value.runId!==current.runId,'BASELINE_CANNOT_BE_CURRENT_PARTIAL_RUN');
   // These are ROOT's externally qualified reference DATA. This module neither
@@ -120,7 +120,7 @@ function constructCurrentContractReceipt(input){
   const receipt={schemaVersion:3,contractId:CURRENT_CONTRACT_SOURCE_CONTRACT,kind:CURRENT_CONTRACT_SOURCE_KIND,
     scope:'CURRENT_CONTRACT_RESULTS_ONLY',current:structuredClone(current),baselineReference:reference,
     baselineScope:{source:'FULL_SOURCE',gitTree:input.fullBaseline.gitTree,
-      historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false},
+      historicalNationalScope:input.fullBaseline.historicalNationalScope,providerOrProductionProof:false},
     impact:{...impact,planSha256:sha(JSON.stringify(impact))},reportedCommandResults:structuredClone(commandResults),
     postgres:{status:'UNCHANGED_AUTHENTIC_BASELINE_INPUT',executedInThisRun:false,
       baselineInputDigest:impact.inputDigests.postgresBefore,candidateInputDigest:impact.inputDigests.postgresAfter},
@@ -253,7 +253,7 @@ function currentChangeReceiptValue(input,projection,frontier,commandResults){
   return {schemaVersion:4,contractId:CURRENT_CHANGE_SOURCE_CONTRACT,kind:CURRENT_CHANGE_SOURCE_KIND,
     scope:'CURRENT_CHANGE_CONTRACT_RESULTS_ONLY',current:structuredClone(current),changeBase,frontier,
     baselineReference:reference,baselineScope:{source:'FULL_SOURCE',gitTree:input.fullBaseline.gitTree,
-      historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false},
+      historicalNationalScope:input.fullBaseline.historicalNationalScope,providerOrProductionProof:false},
     impact:{...impact,planSha256:sha(JSON.stringify(impact))},
     execution:{...execution,planSha256:sha(JSON.stringify(execution))},
     baselineContinuity:{...continuity,planSha256:sha(JSON.stringify(continuity)),

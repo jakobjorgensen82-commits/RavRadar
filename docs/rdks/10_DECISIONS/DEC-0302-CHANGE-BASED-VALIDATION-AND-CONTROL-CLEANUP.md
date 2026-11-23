@@ -1,3 +1,9 @@
+## 23. november – historisk nationalprøve ud af den almindelige kildekontrol
+
+Den fastfrosne nationalprøve for 584 køres særskilt, når den præcise historiske undersøgelse kræver den. Den almindelige fulde PR-kontrol bevarer den aktuelle kildekontrol, den native PostgreSQL-prøve og de nuværende Copernicus- og DMI-mål. Kildelæseren binder den faktisk kørte workflowform til GitHubs job og de to artefakter. Gamle kvitteringer beholder deres historiske status. Nye kvitteringer viser, at den historiske prøve er udeladt.
+
+Bekræft den nye vej gennem én almindelig fuld GitHub-kontrol og efterfølgende genbrug i en egnet målrettet rettelse. Prøven af den aktuelle prognose sker ved almindelig produktion.
+
 ## 23. november – den selvstændige kontoskemaprøve
 
 En ændring i den eksisterende kontoskemaprøve vælger prøvens egen Node-kommando i den normale kildeplan. Den skal være en ændring af en eksisterende almindelig fil og indgår fortsat i kontrolgennemgangen. Ændringer i de faktiske PostgreSQL-input, herunder katalogverifikatoren, følger fortsat PostgreSQL-kontrollen. Den lokale plan er et valg af prøver. Tidsbesparelsen kræver en faktisk målrettet GitHub-kørsel.

@@ -1087,7 +1087,8 @@ const prGateOrder = [
   'name: Validate source contracts and release governance',
   'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
   'name: Upload independently completed native586 PostgreSQL phase',
-  'name: Validate isolated restart and two ordinary national followers',
+  'name: Validate durable Copernicus current-reference baseline on artificial data only',
+  'name: Validate download-inclusive DMI capacity on artificial data only',
   'name: Require validated source tree to remain unchanged',
   'name: Upload tree-content source validation proof',
 ].map(marker => actualPullRequestValidation.indexOf(marker));
