@@ -1291,6 +1291,17 @@ test('B374 matches exact metadata, repository identity, and expiry', () => {
   ]) assert.throws(() => checkArtifactMetadata(changed, pin, currentTime), /^Error: B374_PUBLIC_ARTIFACT_IDENTITY$/);
 });
 
+test('B374 calls the genuine Pages extractor in the fixed archived source', async () => {
+  const reader = await fs.promises.readFile(new URL('./audit-b358-water-level-trend.mjs', import.meta.url), 'utf8');
+  const extractor = reader.match(/path\.join\(source374, '(scripts\/extract-code-only-public-[^']+\.py)'\)/)?.[1];
+  assert.equal(extractor, 'scripts/extract-code-only-public-source.py');
+  const { sourceHead } = ordinaryStageIdentity(45088278207);
+  const archive = spawnSync('git', ['-c', 'protocol.allow=never', 'cat-file', '-t', `${sourceHead}:${extractor}`],
+    { encoding: 'utf8', timeout: 5000, env: { ...process.env, GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1' } });
+  assert.equal(archive.status, 0);
+  assert.equal(archive.stdout.trim(), 'blob');
+});
+
 test('B374 permits only signed storage-host redirects with no userinfo or fragment', () => {
   assert.equal(artifactRedirectUrl(302, 'https://fixture.blob.core.windows.net/archive?read=fixture').hostname,
     'fixture.blob.core.windows.net');

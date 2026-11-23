@@ -1278,7 +1278,7 @@ async function b374BoundPublicFiles(source374, work, token) {
     const zipPath = path.join(work, mode + '.zip');
     const output = path.join(work, mode);
     await b374DownloadPublic(pin, zipPath, token, signal);
-    const args = ['-I', '-B', path.join(source374, 'scripts/extract-code-only-public-B374_STAGE_IDENTITY.py'),
+    const args = ['-I', '-B', path.join(source374, 'scripts/extract-code-only-public-source.py'),
       '--mode', mode, '--archive', zipPath, '--expected-zip-bytes', String(pin.bytes),
       '--expected-zip-sha256', pin.sha256, '--output-directory', output,
       '--deadline-epoch-ms', String(deadline)];
