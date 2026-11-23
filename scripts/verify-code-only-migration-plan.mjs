@@ -76,6 +76,7 @@ async function qualifyCurrentAccountErasureChecks(receiptMode=false){
 const appProofMode=process.argv[2];
 const receiptProofModes=['--qualify-account-native-receipt-source','--read-account-native-receipt-before','--read-account-native-receipt-installed'];
 if(receiptProofModes.includes(appProofMode)){
+  let readbackPhase;
   try{
     assert.equal(process.argv.length,3);const checks=await qualifyCurrentAccountErasureChecks(true);
     if(appProofMode==='--qualify-account-native-receipt-source')console.log(JSON.stringify({kind:'QUALIFIED_ACCOUNT_NATIVE_RECEIPT_SOURCE',
@@ -83,12 +84,29 @@ if(receiptProofModes.includes(appProofMode)){
       execution:checks.receipt.execution.status,executedInThisRun:checks.receipt.execution.executedInThisRun,activationAuthority:false}));
     else {
       const {verifyFixedNativeActivityReceiptInstallState}=await import('./read-fixed-account-activity-hook.mjs');
+      readbackPhase=appProofMode==='--read-account-native-receipt-before'?'before':'installed';
       console.log(JSON.stringify(await verifyFixedNativeActivityReceiptInstallState({
-        phase:appProofMode==='--read-account-native-receipt-before'?'before':'installed',
-        accessToken:process.env.SUPABASE_ACCESS_TOKEN,expectedManualCheckReference:checks.manual,
-        expectedInactivityCheckReference:checks.inactivity,expectedAppendSha256:checks.receipt.receipt.migrationSQLSha256})));
+        phase:readbackPhase,accessToken:process.env.SUPABASE_ACCESS_TOKEN,
+        expectedManualCheckReference:checks.manual,expectedInactivityCheckReference:checks.inactivity,
+        expectedAppendSha256:checks.receipt.receipt.migrationSQLSha256})));
     }
-  }catch{console.error('ACCOUNT_NATIVE_RECEIPT_QUALIFIED_INSTALL_EVIDENCE_REQUIRED');process.exitCode=1;}
+  }catch(error){
+    console.error('ACCOUNT_NATIVE_RECEIPT_QUALIFIED_INSTALL_EVIDENCE_REQUIRED');
+    if(readbackPhase){
+      // Log only known validator categories. Responses, catalog definitions,
+      // error details and authentication settings must stay out of the run log.
+      const knownReasons=new Set([
+        'ACCOUNT_ERASURE_CATALOG_MISMATCH','ACCOUNT_ERASURE_CATALOG_DEADLINE',
+        'ACCOUNT_ERASURE_CHECK_SEMANTICS_MISMATCH','ACCOUNT_INACTIVITY_CATALOG_MISMATCH',
+        'ACCOUNT_INACTIVITY_CATALOG_DEADLINE','ACCOUNT_INACTIVITY_CHECK_SEMANTICS_MISMATCH',
+        'NATIVE_RECEIPT_INSTALL_STATE_REQUIRED','NATIVE_RECEIPT_INSTALL_AUTH_DISABLED_REQUIRED',
+        'NATIVE_RECEIPT_INSTALL_CATALOG_REQUIRED','NATIVE_RECEIPT_INSTALL_UNARMED_OFF_REQUIRED',
+      ]);
+      const reason=knownReasons.has(error?.message)?error.message:'READBACK_UNCLASSIFIED';
+      console.error(JSON.stringify({kind:'ACCOUNT_NATIVE_RECEIPT_INSTALL_READBACK_REFUSED',phase:readbackPhase,reason}));
+    }
+    process.exitCode=1;
+  }
 }else if(['--qualify-account-erasure-source','--read-account-erasure-installed'].includes(appProofMode)){
   try{
     assert.equal(process.argv.length,3);const checks=await qualifyCurrentAccountErasureChecks();
