@@ -1417,7 +1417,7 @@ test('native FULL metadata verifies the actual and historical owned-cache enviro
     requests.push(args);assert.deepEqual(args,['cat-file','blob',fixture.origin.head_sha+':'+WORKFLOW]);
     return Buffer.from(value);
   };
-  assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,readWorkflow),expected);
+  assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,readWorkflow),{...expected,historicalNationalOmitted:true});
   assert.equal(requests.length,1);
   const historical=readHistoricalSourceSetupWorkflow();
   assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,args=>readWorkflow(args,historical)),expected);
@@ -2901,8 +2901,9 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
           completed_at:i<15?'2026-11-17T10:00:00Z':'2026-11-17T10:02:00Z'}))}]});
       const skippedJobs={total_count:1,jobs:[{id:laterRun.id+1000,name:JOB,run_id:laterRun.id,run_attempt:1,
         head_sha:laterRun.head_sha,status:'completed',conclusion:'success',
-        steps:TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
-          conclusion:index>=9&&index<=22?'skipped':'success',
+        steps:TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.filter(name=>name!==normal.STEP)
+          .map((name,index)=>({name,number:index+1,status:'completed',
+          conclusion:index>=9&&index<=21?'skipped':'success',
           started_at:'2026-11-17T10:'+String(index).padStart(2,'0')+':00Z',
           completed_at:'2026-11-17T10:'+String(index+1).padStart(2,'0')+':00Z'}))}]};
       if(skippedCurrent){laterRun.conclusion='success';skippedFault?.({run:laterRun,job:skippedJobs.jobs[0],jobs:skippedJobs});}

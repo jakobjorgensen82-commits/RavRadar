@@ -1032,7 +1032,7 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
   const earlyDmi = job.steps.filter(row=>row.name==='Install declared DMI dependencies before source planning');
   assert(earlyDmi.length<=1);
   const earlyNode24=job.steps.filter(row=>OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.includes(row.name));
-  let node24Offset=0;
+  let node24Offset=0,historicalNationalOmitted=false;
   if(earlyNode24.length){
     // Only this exact whole workflow permits two extra environment steps. Raw
     // job metadata and old receipt/command meanings remain unchanged.
@@ -1041,7 +1041,7 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
     const raw=readGit(['cat-file','blob',run.head_sha+':'+WORKFLOW]);
     assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
     const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
-    if(hasDependencyOnlySourceSetup(workflow))verifyCurrentSourceWorkflow(workflow);
+    if(hasDependencyOnlySourceSetup(workflow))historicalNationalOmitted=!verifyCurrentSourceWorkflow(workflow).historicalNational;
     else{
       assert.notEqual(inverseOwnedCacheNativeWorkflow(workflow),workflow,'EXACT_OWNED_CACHE_NATIVE_WORKFLOW_REQUIRED');
       assert.equal(sha(projectSourceImpactWorkflowFull(workflow)),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
@@ -1063,7 +1063,8 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
   assert(prefix.every(successful));
   assert(Date.parse(source.completed_at)<=Date.parse(pg.started_at)&&Date.parse(pg.started_at)<=Date.parse(pg.completed_at)
     &&Date.parse(pg.completed_at)<=Date.parse(upload.completed_at));
-  return {job:job.id,pgStartedAt:pg.started_at,uploadedAt:upload.completed_at};
+  return {job:job.id,pgStartedAt:pg.started_at,uploadedAt:upload.completed_at,
+    ...(historicalNationalOmitted?{historicalNationalOmitted:true}:{})};
 }
 export function verifyAssistantPublic591ArtifactMetadata(metadata,run,phase){
   assert.equal(metadata.expired,false);assert.equal(metadata.workflow_run?.id,run.id);

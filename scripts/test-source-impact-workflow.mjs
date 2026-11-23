@@ -18,7 +18,9 @@ import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 
 // Read-only normal caller/contract target. No source suite, SQL, API or provider.
 const liveSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-verifyCurrentSourceWorkflow(liveSource);
+assert.equal(verifyCurrentSourceWorkflow(liveSource).historicalNational,false);
+assert.ok(!liveSource.includes('node scripts/national584-source-evidence.mjs'),
+  'The normal PR job no longer runs the frozen national proof');
 verifyWorkflow(liveSource);
 let liveCases=1;
 for (const [before,after] of [

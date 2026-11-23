@@ -46,6 +46,7 @@ export const OWNED_CACHE_NATIVE_EARLY_STEP_NAMES=Object.freeze([
   'Set up Node24 for selected owned-cache native contracts',
   'Retain actual Node24 executable for selected native contracts',
 ]);
+const HISTORICAL_NATIONAL_STEP='Validate isolated restart and two ordinary national followers';
 export const TARGETED_SOURCE_STEP_NAMES=Object.freeze(['Set up job','Run actions/checkout@v7','Require exact pull-request source head',
   'Run actions/setup-node@v7','Build deterministic source-tree content identity',
   'Diagnose normal pack-reader closure on artificial data only','Run actions/setup-python@v7',
@@ -54,7 +55,7 @@ export const TARGETED_SOURCE_STEP_NAMES=Object.freeze(['Set up job','Run actions
   'Validate isolated acquisition ownership and raw-save cohort','Restore Node22 for existing source validation',
   'Validate bounded native current diagnosis on artificial data only','Validate source contracts and release governance',
   'Validate native PostgreSQL checkpoint CAS on artificial data only','Upload independently completed native586 PostgreSQL phase',
-  'Validate isolated restart and two ordinary national followers',
+  HISTORICAL_NATIONAL_STEP,
   'Validate durable Copernicus current-reference baseline on artificial data only',
   'Validate download-inclusive DMI capacity on artificial data only','Require validated source tree to remain unchanged',
   'Upload tree-content source validation proof']);
@@ -69,6 +70,10 @@ export const TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES=Object.freeze([
   ...TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.slice(3),
 ]);
 
+const CURRENT_SOURCE_STEP_NAMES=Object.freeze(TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
+  .filter(name=>name!==HISTORICAL_NATIONAL_STEP));
+const CURRENT_FULL_ONLY_STEPS=new Set(TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.slice(9,23));
+
 const DMI_PYTHON_WORKFLOW_SHA256='742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff';
 const DMI_REQUIREMENTS_WORKFLOW_SHA256='2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843';
 
@@ -79,7 +84,7 @@ export function verifyTargetedSourceStepShape(job,workflowText){
   const time=value=>{const n=Date.parse(value);assert(Number.isFinite(n));return n;};
   const modern=workflowText!==undefined;
   const current=modern&&hasDependencyOnlySourceSetup(workflowText);
-  if(current)verifyCurrentSourceWorkflow(workflowText);
+  const currentReview=current?verifyCurrentSourceWorkflow(workflowText):null;
   // Project only the already reviewed whole CURRENT registration before the
   // independent owned-cache step shape; neither inverse grants source authority.
   const workflow=modern&&!current?inverseSourceImpactFullCurrent(workflowText):null;
@@ -88,16 +93,19 @@ export function verifyTargetedSourceStepShape(job,workflowText){
   const workflowHash=previous===null?null:sha(previous);
   if(modern&&!current)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
   if(ownedCacheNative&&!current)assert.equal(workflowHash,DMI_REQUIREMENTS_WORKFLOW_SHA256,'EXACT_OWNED_CACHE_NATIVE_PREDECESSOR_REQUIRED');
-  const names=ownedCacheNative?TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
+  const names=currentReview?currentReview.stepNames:ownedCacheNative?TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
     :modern?(workflowHash===DMI_PYTHON_WORKFLOW_SHA256?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES):TARGETED_SOURCE_STEP_NAMES;
   assert.deepEqual(job.steps.filter(value=>value.number<=names.length).map(value=>value.number),Array.from({length:names.length},(_,i)=>i+1));
   for(let i=0;i<names.length;i++){
     const step=one(job.steps.filter(value=>value.number===i+1));assert.equal(step.name,names[i]);assert.equal(step.status,'completed');
     const oldIndex=ownedCacheNative?(i<3?i:i<5?-1:i-2):i;
-    assert.equal(step.conclusion,modern?(oldIndex>=7&&oldIndex<=20?'skipped':'success'):(i>=5&&i<=19?'skipped':'success'));
+    const skipped=currentReview?CURRENT_FULL_ONLY_STEPS.has(step.name)
+      :modern?oldIndex>=7&&oldIndex<=20:i>=5&&i<=19;
+    assert.equal(step.conclusion,skipped?'skipped':'success');
   }
-  const offset=ownedCacheNative?2:0;
-  const selected=job.steps[(modern?6:4)+offset],unchanged=job.steps[(modern?21:20)+offset],uploaded=job.steps[(modern?22:21)+offset];
+  const selected=one(job.steps.filter(step=>step.name==='Build deterministic source-tree content identity'));
+  const unchanged=one(job.steps.filter(step=>step.name==='Require validated source tree to remain unchanged'));
+  const uploaded=one(job.steps.filter(step=>step.name==='Upload tree-content source validation proof'));
   assert(time(selected.started_at)<=time(selected.completed_at));assert(time(selected.completed_at)<=time(unchanged.started_at));
   assert(time(unchanged.started_at)<=time(unchanged.completed_at));assert(time(unchanged.completed_at)<=time(uploaded.started_at));assert(time(uploaded.started_at)<=time(uploaded.completed_at));
   return {proofTime:time(selected.completed_at),earliestArtifact:time(selected.started_at),latestArtifact:time(uploaded.completed_at)};
@@ -144,7 +152,9 @@ export function verifyCurrentSourceWorkflow(value){
   const rows=[...source.matchAll(/^      - (name|uses):([^\n]+)\n/gm)];
   const blocks=rows.map((row,index)=>source.slice(row.index,rows[index+1]?.index??source.length));
   const names=rows.map(row=>(row[1]==='uses'?'Run ':'')+row[2].trim());
-  assert.deepEqual(names,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.slice(1));
+  const historicalNational=names.includes(HISTORICAL_NATIONAL_STEP);
+  const stepNames=historicalNational?TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES:CURRENT_SOURCE_STEP_NAMES;
+  assert.deepEqual(names,stepNames.slice(1));
   assert.deepEqual(source.match(/^ {6}- .+$/gm),rows.map(row=>row[0].trimEnd()));
   const block=name=>blocks[names.indexOf(name)];
   const run=name=>{
@@ -154,9 +164,9 @@ export function verifyCurrentSourceWorkflow(value){
     return value.slice(match.index+match[0].length).split('\n')
       .filter(line=>line.startsWith('          ')).map(line=>line.trim()).join(' ');
   };
-  for(let index=0;index<blocks.length;index++){
-    const conditions=blocks[index].match(/^ +if: .*\n/gm)??[];
-    assert.deepEqual(conditions,index>=8&&index<=21?[SOURCE_IMPACT_FULL_STEP_CONDITION]:[],'CURRENT_SOURCE_STEP_CONDITION');
+  for(const name of names){
+    const conditions=block(name).match(/^ +if: .*\n/gm)??[];
+    assert.deepEqual(conditions,CURRENT_FULL_ONLY_STEPS.has(name)?[SOURCE_IMPACT_FULL_STEP_CONDITION]:[],'CURRENT_SOURCE_STEP_CONDITION');
   }
   assert.deepEqual(source.match(/^        id: .+$/gm),['        id: source-content']);
   const proofEnvironment=[
@@ -164,9 +174,10 @@ export function verifyCurrentSourceWorkflow(value){
     '          SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}',
     '          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}',
   ];
-  for(const name of ['Build deterministic source-tree content identity',
-    'Validate native PostgreSQL checkpoint CAS on artificial data only',
-    'Validate isolated restart and two ordinary national followers']){
+  const proofSteps=['Build deterministic source-tree content identity',
+    'Validate native PostgreSQL checkpoint CAS on artificial data only'];
+  if(historicalNational)proofSteps.push(HISTORICAL_NATIONAL_STEP);
+  for(const name of proofSteps){
     assert.deepEqual(block(name).match(/^          [A-Z][A-Z0-9_]*: .+$/gm),proofEnvironment);
   }
   assert(block('Run actions/checkout@v7').includes('fetch-depth: 0')
@@ -182,7 +193,7 @@ export function verifyCurrentSourceWorkflow(value){
     'npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs');
   assert.equal(run('Validate native PostgreSQL checkpoint CAS on artificial data only'),
     'set -euo pipefail node --test scripts/test-native-postgres-evidence.mjs node scripts/native-postgres-evidence.mjs');
-  assert.equal(run('Validate isolated restart and two ordinary national followers'),'node scripts/national584-source-evidence.mjs');
+  if(historicalNational)assert.equal(run(HISTORICAL_NATIONAL_STEP),'node scripts/national584-source-evidence.mjs');
   for(const [name,markers] of [
     ['Upload independently completed native586 PostgreSQL phase',[
       'uses: actions/upload-artifact@v7','name: native586-phase-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha }}',
@@ -195,7 +206,7 @@ export function verifyCurrentSourceWorkflow(value){
   ])for(const marker of markers)assert(block(name).includes(marker),'CURRENT_SOURCE_CRITICAL_FRAME: '+marker);
   assert.doesNotMatch(source,/\b(?:curl|wget|supabase|wrangler)\s|DMI_API_KEY|COPERNICUSMARINE_SERVICE_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
   return {scope:'CURRENT_SOURCE_WORKFLOW',dependencySetupOnly:true,
-    historicalBlanketExecuted:false,sourceBeforeNative:true,nativeUploadNumber:20};
+    historicalBlanketExecuted:false,sourceBeforeNative:true,nativeUploadNumber:20,stepNames,historicalNational};
 }
 
 // Exact test-only outer inverse: the hour-lock target is selected before SDK

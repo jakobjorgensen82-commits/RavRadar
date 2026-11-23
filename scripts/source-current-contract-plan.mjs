@@ -24,6 +24,8 @@ const ASSISTANT_SUCCESSOR_TESTS=new Set([
   'scripts/test-assistant-after597-sync-binding.mjs',
 ]);
 const FIXED_ASSISTANT_LOG_TEST='scripts/test-fixed-assistant-failure-log-20261101.mjs';
+const ACCOUNT_SCHEMA_FIXTURE='scripts/test-account-erasure-outbox.mjs';
+const ACCOUNT_SCHEMA_SOURCE_TEST='node --test '+ACCOUNT_SCHEMA_FIXTURE;
 const SHARE_PROJECTION_SOURCE_TEST='node scripts/test-forecast-share-projection.mjs';
 const SHARE_ZONE_BUNDLE_MODULE='js/services/forecast-share-zone-bundle.js';
 const PAGES_DEPLOYMENT_COMMAND='node scripts/test-ravscore-operational-pages-deployment.mjs';
@@ -81,6 +83,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST],
   assistantDiagnostic1712:['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'],
   accountActivityHookRead:['node --test scripts/test-fixed-account-activity-hook.mjs'],
+  accountSchemaFixture:[ACCOUNT_SCHEMA_SOURCE_TEST],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -276,6 +279,7 @@ const PATH_AREAS=freeze({
     'scripts/read-fixed-account-activity-hook.mjs',
     'scripts/test-fixed-account-activity-hook.mjs',
   ],
+  accountSchemaFixture:[ACCOUNT_SCHEMA_FIXTURE],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'js/services/data-service.js',
@@ -507,7 +511,7 @@ const WEATHER_OPERATION_PATHS=new Set([...PATH_AREAS.waterSourceRouting,...PATH_
 const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
 const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure,
-  ...PATH_AREAS.privateStudy,...PATH_AREAS.accountActivityHookRead]);
+  ...PATH_AREAS.privateStudy,...PATH_AREAS.accountActivityHookRead,...PATH_AREAS.accountSchemaFixture]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
@@ -553,7 +557,6 @@ export function currentWorkflowTargets(relative){
 }
 // Existing whole callers for precise app and Pages inputs. This lookup
 // selects test commands without adding short-path qualification authority.
-const ACCOUNT_SCHEMA_SOURCE_TEST='node --test scripts/test-account-erasure-outbox.mjs';
 const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
 const PROTECTED_HANDBOOK_SOURCE_TESTS=[
   'node scripts/test-protected-handbook-merge-4.0.270.mjs',

@@ -251,20 +251,34 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     const run=seen.get(runRoute),jobs=seen.get(jobsRoute);assert(run&&jobs);
     assert.equal(run.path,PULL_REQUEST_SOURCE_WORKFLOW);
     const job=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));assert.equal(job.id,reference.jobId);
-    const names=[...PULL_REQUEST_SOURCE_STEPS,NATIVE_UPLOAD,NATIONAL_STEP,
-      'Validate durable Copernicus current-reference baseline on artificial data only',
-      'Validate download-inclusive DMI capacity on artificial data only'];
-    for(const name of names)assert(success(one(job.steps.filter(value=>value.name===name))));
     const phase=verifyAssistantPublic591Metadata(run,jobs,git);
-    const nativeUpload=one(job.steps.filter(value=>value.name===NATIVE_UPLOAD));
-    const nationalStep=one(job.steps.filter(value=>value.name===NATIONAL_STEP));
-    assert.equal(nationalStep.number,nativeUpload.number+1);
-    const unchanged=one(job.steps.filter(value=>value.name===SOURCE_UNCHANGED));
-    assert.equal(unchanged.number,nationalStep.number+3);
-    const final=one(job.steps.filter(value=>value.name===FINAL_UPLOAD));
+    const fullStep=name=>{
+      const step=one(job.steps.filter(value=>value.name===name));
+      assert(success(step));
+      return step;
+    };
+    for(const name of PULL_REQUEST_SOURCE_STEPS)fullStep(name);
+    const nativeUpload=fullStep(NATIVE_UPLOAD),unchanged=fullStep(SOURCE_UNCHANGED),final=fullStep(FINAL_UPLOAD);
+    const copernicus=fullStep('Validate durable Copernicus current-reference baseline on artificial data only');
+    const dmi=fullStep('Validate download-inclusive DMI capacity on artificial data only');
+    const national=job.steps.filter(value=>value.name===NATIONAL_STEP);
+    if(phase.historicalNationalOmitted){
+      assert.equal(national.length,0);
+      assert.equal(copernicus.number,nativeUpload.number+1);
+      assert.equal(dmi.number,copernicus.number+1);
+      assert.equal(unchanged.number,dmi.number+1);
+      assert(time(phase.uploadedAt)<=time(copernicus.started_at));
+      assert(time(copernicus.completed_at)<=time(dmi.started_at));
+      assert(time(dmi.completed_at)<=time(unchanged.started_at));
+    }else{
+      const nationalStep=one(national);
+      assert(success(nationalStep));
+      assert.equal(nationalStep.number,nativeUpload.number+1);
+      assert.equal(unchanged.number,nationalStep.number+3);
+      assert(time(phase.uploadedAt)<=time(nationalStep.started_at));
+      assert(time(nationalStep.completed_at)<=time(unchanged.started_at));
+    }
     assert.equal(final.number,unchanged.number+1);
-    assert(time(phase.uploadedAt)<=time(nationalStep.started_at));
-    assert(time(nationalStep.completed_at)<=time(unchanged.started_at));
     assert(time(unchanged.completed_at)<=time(final.started_at));
     Object.assign(phase,{finalStartedAt:final.started_at,finalCompletedAt:final.completed_at});
     const metadata={},raw={};
@@ -296,13 +310,14 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       assert.equal(metadata.releaseContract.modelBindings.integrated.modelBundleSha256,native.binding.I);
       assert.equal(metadata.releaseContract.modelBindings.candidateGRollback.modelBundleSha256,native.binding.C);
     }
-    await historicalNational(full,current,native,git);
+    if(phase.historicalNationalOmitted)assert(!Object.hasOwn(full,'historical584National'));
+    else await historicalNational(full,current,native,git);
     assert.deepEqual(await json(runRoute),run);
     for(const kind of ['native','final'])assert.deepEqual(await json(base+'/artifacts/'+metadata[kind].id),metadata[kind]);
     assertHead();
     remainingBudget();
     const result={schemaVersion:1,kind:SOURCE_IMPACT_FULL_BASELINE_KIND,scope:'FULL_SOURCE',...reference,gitTree,
-      historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
+      historicalNationalScope:phase.historicalNationalOmitted?'NOT_EXECUTED':'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
     if([ASSISTANT_AFTER598_PHASE_KIND,ASSISTANT_AFTER599_PHASE_KIND,ASSISTANT_AFTER599_REUSE_KIND].includes(phaseProof.kind)&&native.report.accountErasure?.checkReference){
       qualifiedAccountErasureChecksByResult.set(result,{candidateCommit:input.candidateCommit,reference,
         migrationSQLSha256:native.report.accountErasure.migrationSQLSha256,

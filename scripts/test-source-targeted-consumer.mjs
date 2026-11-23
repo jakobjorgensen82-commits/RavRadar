@@ -198,12 +198,19 @@ try{
   const updated=about.replace("'about.header':'Om projektet'","'about.header':'Om RavRadar'");assert.notEqual(updated,about);
   write('js/ui/about-i18n.js',updated);producer=commit('reviewed text only');content=sourceTreeContentSha256(producer,{git});
   const {planSourceImpactFromGit}=await import(pathToFileURL(path.join(root,'scripts/source-impact-git-diff.mjs')).href);
-  const {buildTargetedSourceReceipt,domainTargetedSourceArtifactName}=await import(pathToFileURL(path.join(root,'scripts/source-targeted-receipt.mjs')).href);
+  const {buildTargetedSourceReceipt,validateTargetedSourceReceipt,domainTargetedSourceArtifactName}=await import(pathToFileURL(path.join(root,'scripts/source-targeted-receipt.mjs')).href);
   const gitPlan=planSourceImpactFromGit({baselineCommit:base,candidateCommit:producer,expectedHead:producer});
   assert.equal(gitPlan.plan.selection,'TARGETED');
-  receipt=copy(buildTargetedSourceReceipt({current:{repository:ORIGIN.repository,head:producer,sourceTreeSha256:content,
+  const input={current:{repository:ORIGIN.repository,head:producer,sourceTreeSha256:content,
     pullRequest:selectedPr,runId:selectedRun,runAttempt:1,jobId:selectedJob},fullBaseline:fullReference,gitPlan,
-    commandResults:gitPlan.plan.commands.map(command=>({phase:'targeted',command,elapsedMs:1,outcome:'PASS'}))}));
+    commandResults:gitPlan.plan.commands.map(command=>({phase:'targeted',command,elapsedMs:1,outcome:'PASS'}))};
+  receipt=copy(buildTargetedSourceReceipt(input));
+  const currentFull={...input,fullBaseline:{...fullReference,historicalNationalScope:'NOT_EXECUTED'}};
+  const currentReceipt=buildTargetedSourceReceipt(currentFull);
+  assert.equal(currentReceipt.baselineScope.historicalNationalScope,'NOT_EXECUTED');
+  assert.equal(validateTargetedSourceReceipt(currentReceipt,currentFull).validStructure,true);
+  assert.throws(()=>validateTargetedSourceReceipt(currentReceipt,input),/RECEIPT_MISMATCH/);
+  assert.throws(()=>validateTargetedSourceReceipt(receipt,currentFull),/RECEIPT_MISMATCH/);cases++;
   const artifactCurrent={pullRequest:selectedPr,head:producer,sourceTreeSha256:content};
   absentArtifactNames=[currentChangeSourceArtifactName(artifactCurrent),currentContractSourceArtifactName(artifactCurrent),
     domainTargetedSourceArtifactName(artifactCurrent)];
@@ -225,9 +232,13 @@ try{
   const nativeSteps=TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
     conclusion:index>=9&&index<=22?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}));
   assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},nativeWorkflow).proofTime,Date.parse(stamp(9)));cases++;
-  assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},liveWorkflow).proofTime,Date.parse(stamp(9)));cases++;
-  const skippedSource=copy(nativeSteps);
-  skippedSource.find(step=>step.number===25).conclusion='skipped';
+  const liveSteps=nativeSteps.filter(step=>step.name!=='Validate isolated restart and two ordinary national followers')
+    .map((step,index)=>({...step,number:index+1}));
+  assert.equal(verifyTargetedSourceStepShape({steps:liveSteps},liveWorkflow).proofTime,Date.parse(stamp(9)));cases++;
+  assert.throws(()=>verifyTargetedSourceStepShape({steps:nativeSteps},liveWorkflow));cases++;
+  assert.throws(()=>verifyTargetedSourceStepShape({steps:liveSteps},nativeWorkflow));cases++;
+  const skippedSource=copy(liveSteps);
+  skippedSource.find(step=>step.name==='Upload tree-content source validation proof').conclusion='skipped';
   assert.throws(()=>verifyTargetedSourceStepShape({steps:skippedSource},liveWorkflow));cases++;
   for(const edit of [x=>x[3].conclusion='skipped',x=>x[4].conclusion='skipped',x=>x[8].conclusion='skipped',
     x=>x[9].conclusion='success',x=>x.splice(4,1),x=>x.push(copy(x[4]))]){
