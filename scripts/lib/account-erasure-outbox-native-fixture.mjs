@@ -115,6 +115,11 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
   await pg(source.sql);
   await pg("insert into auth.users values('"+actor+"'); insert into public.profiles values('"+actor+"','owner-synthetic@example.invalid','owner',true);");
   const metadata=JSON.parse(await pg(accountErasureCatalogQuery));
+  const ownerChecks=JSON.parse(await pg('select public.account_erasure_check_metadata();'));
+  assert.deepEqual(metadata.checks,ownerChecks,'Catalog projection preserves the canonical CHECK definitions');
+  const restrictedCatalog=jsonLast(await pg('begin;grant usage on schema extensions to service_role;'
+   +'set local role service_role;'+accountErasureCatalogQuery+'rollback;'));
+  assert.deepEqual(restrictedCatalog,metadata,'Read-only catalog query works with the private function still denied');
   const checkReference=verifyAccountErasureCatalogMetadata([{metadata}],{source}).checkReference;checked++;
   const checkName=checkReference.definitions[0][0];assert(/^account_erasure_operations_[a-z0-9_]+$/.test(checkName));
   const checkDrift=JSON.parse(await pg('begin;alter table public.account_erasure_operations drop constraint "'+checkName+'";alter table public.account_erasure_operations add constraint "'+checkName+'" check(true);'+accountErasureCatalogQuery+'rollback;'));
