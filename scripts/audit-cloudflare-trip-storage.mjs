@@ -62,3 +62,25 @@ const summary = {
 console.log(`D1-kapacitet: ${JSON.stringify(summary)}`);
 if (status === 'warning') console.warn('D1-lageret har passeret 70 %. Planlæg kapacitetsudvidelse før 85 %.');
 if (status === 'critical') throw new Error('D1-lageret har passeret 85 %. Nye writes må ikke risikeres uden kapacitetsplan.');
+
+// Fixed read-only point availability, not a restore or cross-shard snapshot.
+// One shared UTC target; all optional requests retain the normal 15-second bound.
+const recoveryTimestamp = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
+const recoveryPoints = await Promise.all(shards.map(async shard => {
+  try {
+    if (typeof shard.uuid !== 'string'
+      || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(shard.uuid)) return false;
+    const body = await cloudflareGet(`/d1/database/${shard.uuid}/time_travel/bookmark?timestamp=${encodeURIComponent(recoveryTimestamp)}`);
+    const bookmark = body.result?.bookmark;
+    return typeof bookmark === 'string' && bookmark.length > 0 && bookmark.length <= 1024
+      && bookmark.trim() === bookmark;
+  } catch {
+    // Permission, timeout and malformed responses are UNKNOWN. Capacity remains independent.
+    return false;
+  }
+}));
+const availableRecoveryPoints = recoveryPoints.filter(Boolean).length;
+console.log('D1-gendannelsespunkter: ' + JSON.stringify({
+  available: availableRecoveryPoints,
+  unknown: SHARD_COUNT - availableRecoveryPoints,
+}));
