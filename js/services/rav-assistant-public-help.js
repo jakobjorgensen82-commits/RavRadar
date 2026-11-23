@@ -2,6 +2,7 @@
 // existing whole-question path.
 import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.602';
 import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.602';
+import {t} from '../i18n.js?v=4.0.602';
 
 const PUBLIC_ABOUT='https://ravradar.dk/about.html';
 const PUBLIC_GROUP='https://www.facebook.com/groups/1849354103138911/';
@@ -51,7 +52,12 @@ const FORMS={
   creator:{da:/^(?:hvem (?:har )?(?:lavet|udviklet|skabt) ravradar|hvem står bag ravradar)$/iu,de:/^(?:wer (?:hat ravradar (?:entwickelt|gemacht|erstellt)|steht hinter ravradar))$/iu,en:/^(?:who (?:created|made|developed) ravradar|who is behind ravradar)$/iu},
   group:{da:/^(?:har ravradar en facebook[- ]?gruppe|har ravradar en gruppe på facebook|hvor finder (?:jeg|vi) ravradars facebook[- ]?gruppe)$/iu,de:/^(?:hat ravradar eine facebook[- ]?gruppe|gibt es eine facebook[- ]?gruppe für ravradar|wo finde ich die facebook[- ]?gruppe von ravradar)$/iu,en:/^(?:does ravradar have a facebook group|is there a facebook group for ravradar|where can i find ravradar(?:’s|'s) facebook group)$/iu},
   project:{da:/^hvad er ravradar$/iu,de:/^was ist ravradar$/iu,en:/^what is ravradar$/iu},
-  beginner:{da:/^hvad (?:skal|bør|behøver) (?:jeg|vi|man) (?:at )?vide om (?:ravjagt|at finde rav|at lede efter rav)$/iu,de:/^was (?:sollte|muss) (?:ich|man) über (?:die )?bernsteinsuche wissen$/iu,en:/^what (?:do i need to|should i|must i) know about (?:amber hunting|looking for amber|finding amber)$/iu}
+  beginner:{da:/^hvad (?:skal|bør|behøver) (?:jeg|vi|man) (?:at )?vide om (?:ravjagt|at finde rav|at lede efter rav)$/iu,de:/^was (?:sollte|muss) (?:ich|man) über (?:die )?bernsteinsuche wissen$/iu,en:/^what (?:do i need to|should i|must i) know about (?:amber hunting|looking for amber|finding amber)$/iu},
+  'origin-age':{
+    da:/^hvor kommer rav(?:et)? fra(?:,? og |[?.] (?:og )?)kan (?:jeg|vi|man) (?:se|bestemme) alderen på et (?:rav)?fund$/iu,
+    de:/^woher kommt bernstein(?:,? und |[?.] (?:und )?)kann (?:ich|man) das alter eines (?:bernstein)?fund(?:es|s) bestimmen$/iu,
+    en:/^where does amber come from(?:,? and |[?.] (?:and )?)can (?:i|we|one) (?:tell|determine) the age of (?:a find|an amber find|a piece of amber)$/iu,
+  },
 };
 const WATER={
   da:/^(?:(?:er det bedst(?: til ravjagt)? (?:med|ved)|hvad er bedst(?: til ravjagt)?,?) (?:(?:højvande|højt vand)(?: eller (?:lavvande|lavt vand|lav))?|(?:lavvande|lavt vand)(?: eller (?:højvande|højt vand|høj))?)|er (?:højvande eller lavvande|lavvande eller højvande) bedst(?: til ravjagt)?)$/iu,
@@ -97,10 +103,18 @@ const GENERAL_PRECAUTIONS={
   de:/^(?:worauf (?:sollte|sollten|muss|müssen) (?:ich|man|wir) achten|was (?:sollte|sollten|muss|müssen) (?:ich|man|wir) (?:beachten|vermeiden))$/iu,
   en:/^what (?:should|must) (?:i|we|one) (?:watch (?:out )?for|look (?:out )?for|keep in mind|avoid)$/iu
 };
-function practicalBeachEquipmentHelp(text,language){
+const BEACH_NET_REFERENTS={
+  da:{pronoun:/\bden\b/iu,name:'en ravkese'},
+  de:{pronoun:/\bihn\b/iu,name:'einen Bernsteinkescher'},
+  en:{pronoun:/\bit\b/iu,name:'an amber net'},
+};
+function practicalBeachEquipmentHelp(text,language,referent=null){
   const parts=text.split(/,?\s+(?:og|und|and)\s+(?=(?:hvad|worauf|was|what)\b)|[?!.]\s+(?=(?:hvad|worauf|was|what)\b)/iu);
-  if(parts.length>2||!BEACH_EQUIPMENT_USE[language].test(parts[0])
-    ||(parts.length===2&&!GENERAL_PRECAUTIONS[language].test(parts[1])))return null;
+  const [use,precautions]=parts;
+  const explicitUse=referent?use.replace(referent.pronoun,referent.name):use;
+  if(parts.length>2||(referent&&(!precautions||explicitUse===use))
+    ||!BEACH_EQUIPMENT_USE[language].test(explicitUse)
+    ||(parts.length===2&&!GENERAL_PRECAUTIONS[language].test(precautions)))return null;
   const units=[localRavKnowledgeAnswer('Hvad er en kesse til ravjagt?',language),
     localRavKnowledgeAnswer('Hvordan leder jeg systematisk på stranden?',language)];
   if(units.some(unit=>typeof unit!=='string'||!unit))return null;
@@ -112,6 +126,13 @@ function publicHelpText(question, language) {
   if (!raw || raw.length > 600 || !['da', 'de', 'en'].includes(language)
     || routeRavQuestion(raw) === 'fixed-refusal') return null;
   return raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?!.]{1,3}$/u, '');
+}
+
+export function publicRavAssistantEquipmentFollowup(question,topic,language) {
+  if(topic!=='public-knowledge:equipment.amber-net')return null;
+  const text=publicHelpText(question,language);
+  if(!text)return null;
+  return practicalBeachEquipmentHelp(text,language,BEACH_NET_REFERENTS[language])?.answer??null;
 }
 
 const AMBER_BUBBLE_FORMS = {
@@ -203,5 +224,6 @@ export function publicRavAssistantHelp(question,language){
   const term=COMPOUND[language].exec(text)?.[1];
   if(!id&&term&&!KNOWN_COMPOUNDS.test(term)&&classifyRavQuestion(raw)==='origin')id='compound';
   if(!id)return null;
-  return {kind:'local-public-help',id,answer:ANSWERS[id][language]};
+  const answer=id==='origin-age'?t('assistant.local.origin',{},language):ANSWERS[id][language];
+  return {kind:'local-public-help',id,answer};
 }

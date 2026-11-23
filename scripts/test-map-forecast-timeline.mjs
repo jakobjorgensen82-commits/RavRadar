@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
-import {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup} from '../js/services/rav-assistant-public-help.js';
+import {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup} from '../js/services/rav-assistant-public-help.js';
 import os from 'node:os';
 import path from 'node:path';
 import {createMapHourWriter} from './lib/public-map-hour-projection.mjs';
@@ -726,7 +726,7 @@ try{
       emergencySnapshotReferenceAt:()=>null,assertRavScoreModelBinding:binding=>assert.equal(binding,full.ravScoreRuntime.modelBinding),
       zoneCondition:()=>({}),
       assistantTopicFrame:()=>({}),sameAssistantTopicFrame:()=>false,assistantForecastQuestion:()=>null,
-      publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup,
+      publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup,
       assistantLocalFollowupAnswer:()=>null,assistantTopicForQuestion:()=>null,assistantPublicFollowupQuestion:()=>null,
       addAssistantMessage:()=>({querySelector:()=>({}),classList:{remove(){}}}),
       ravQuestionNeedsConditionDetails:q=>q==='bedste tidspunkt',
