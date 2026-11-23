@@ -719,7 +719,7 @@ try{
     const observations=[],activity=[];
     let active=null,weatherReads=0,zoneReads=0,finishFull;
     const ctx=vm.createContext({
-      state,activeManifest:{detailDelivery:{mapHoursLandingSchema:1}},activeLandingView:{generation:'g1',time,
+      state,coreViewReady:true,activeManifest:{detailDelivery:{mapHoursLandingSchema:1}},activeLandingView:{generation:'g1',time,
         compact:{untrusted:true}},fullEvidencePending:null,runtimeGeneration:1,assistantTurn:0,assistantTopicState:null,
       t:key=>key,getLanguage:()=> 'da',getLocale:()=> 'da-DK',currentAppVersion:()=> '4.0.594',
       localZoneScore:()=>state.conditions===full?{available:true,score:73,localPart:true,localPartId:'P1',localWeather:{waterLevelCm:25},time}:null,
@@ -741,6 +741,7 @@ try{
       updateTripUi:()=>{},
     });
     vm.runInContext([
+      fragment('let completeInitialDataReady;','let selectedZonePartsVisible='),
       fragment('function currentDisplayFor(zone)','function resultFor(zone)'),
       fragment('function currentScoreFor(zone)','function nationalRankingRow(row)'),
       fragment('function ensureFullEvidence()','function ensureConditionDetails('),
@@ -749,6 +750,7 @@ try{
       fragment('function staticPublicCoastalParts()','function userDataContext()'),
       fragment("tripButton.addEventListener('click'",'let logoTaps='),
     ].join('\n'),ctx,{filename:'actual-app-evidence-calls.js'});
+    vm.runInContext('completeInitialDataReady(true)',ctx);
 
     await ctx.submitAssistantQuestion('kese');
     assert.equal(weatherReads,0);

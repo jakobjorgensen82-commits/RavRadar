@@ -71,6 +71,8 @@ let activeLandingView=null,fullEvidencePending=null;
 const pendingZoneDetails=new Map();
 let compactZoneDetail=null,compactZoneFailure=null;
 let coreViewReady=false,conditionDetailsReady=false;
+let completeInitialDataReady;
+const initialDataReady=new Promise(resolve=>{completeInitialDataReady=resolve;});
 let selectedZonePartsVisible=false;
 const mapScores=new Map();
 const mapForecast=createMapForecastController({
@@ -710,8 +712,14 @@ async function submitAssistantQuestion(question){
       (daylightFollowup??findFollowup??assistantLocalFollowupAnswer(clean,previous,frame.language));
     const assistantIntent=classifyRavQuestion(routedQuestion);
     const needsDetails=ravQuestionNeedsConditionDetails(routedQuestion,assistantContext());
+    const zoneDataIntent=['current','waves','water','model','limitations'].includes(assistantIntent);
+    if(followup===null&&!coreViewReady&&(forecast||needsDetails||(state.selectedZone&&zoneDataIntent))){
+      const ready=await initialDataReady;
+      if(!ready||turn!==assistantTurn||frame.language!==getLanguage())throw new Error(t('data.loadError'));
+      frame=assistantTopicFrame();
+    }
     const usesCurrentZone=activeLandingView&&state.selectedZone
-      &&['current','waves','water','model','limitations'].includes(assistantIntent);
+      &&zoneDataIntent;
     if(followup===null&&(needsDetails||usesCurrentZone)){
       const requestZone=state.selectedZone,requestMode=state.mode,requestGeneration=runtimeGeneration;
       const needsZone=activeLandingView&&requestZone&&needsDetails&&assistantIntent!=='best-place';
@@ -818,6 +826,7 @@ try {
   await yieldToBrowser();
   performance.mark?.('ravradar:ready');
   coreViewReady=true;
+  completeInitialDataReady(true);
   openForecastShareSelection({incoming:incomingForecastShare,controller:mapForecast,zones:state.zones,
     setMode,openZone,notice:showForecastShareNotice,language:getLanguage(),
     isStillRequested:()=>forecastShareUserIntent===0&&!state.selectedZone});
@@ -866,6 +875,7 @@ try {
   updatePublicDataStatus(conditions);
   syncPendingObservations().catch(()=>{});updateTripUi();
 } catch(error){console.error(error);infoPanel.hidden=false;infoPanel.innerHTML=`<div class="notice">${t('data.couldNotLoad')}</div>`;dataStatus.textContent=t('data.loadError');}
+finally{completeInitialDataReady(coreViewReady);}
 
 // Versionsmanifest + sikker service-worker-opdatering.
 function currentAppVersion() {

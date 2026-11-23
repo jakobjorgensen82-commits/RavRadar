@@ -1,3 +1,9 @@
+## 23. november — assistenten afventer den normale datastart
+
+Et prognosespørgsmål under den første indlæsning kunne blive afvist, selv om de almindelige filer senere kom korrekt ind. Den lokale rettelse lader kun datakrævende spørgsmål afvente det allerede aktive startsignal. Derefter bruges den sædvanlige autoritative evidenslæser. Kortets visningsview gives ikke til assistenten, og der startes ingen ekstra indlæsning.
+
+Lokale hjælpesvar er fortsat straks tilgængelige. Fejl i starten afslutter ventetiden med det eksisterende afslag. Dialogreset, sprog og nyere spørgsmål beskytter mod forsinkede svar, mens den normale indlæsning kan sætte den gemte jagtform. De eksisterende lokale UI- og startprøver dækker forsinket start, afslag og cacheadresser uden ekstern AI. Præcis kildekvalifikation og offentlig efterprøve udestår. Appversion, model, SQL og providerforløb bevares.
+
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.
