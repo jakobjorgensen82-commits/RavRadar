@@ -103,7 +103,11 @@ select jsonb_build_object('table',(
   from pg_catalog.pg_index i where i.indexrelid=pg_catalog.to_regclass('public.account_erasure_one_active_target')))
  from target c),
  'functions',(select jsonb_object_agg(name,metadata) from functions),
- 'checks',public.account_erasure_check_metadata(),
+ 'checks',(select pg_catalog.jsonb_build_object('format','PG_CONSTRAINTDEF_V1',
+   'postgresMajor',pg_catalog.current_setting('server_version_num')::integer / 10000,
+   'definitions',pg_catalog.jsonb_agg(pg_catalog.jsonb_build_array(k.conname,pg_catalog.pg_get_constraintdef(k.oid,false))
+     order by k.conname::text collate pg_catalog."C"))
+   from pg_catalog.pg_constraint k where k.conrelid=(select oid from target) and k.contype='c'),
  'triggers',(select jsonb_object_agg(w.name,jsonb_build_object('present',t.oid is not null,'sameNameCount',
   (select count(*) from pg_catalog.pg_trigger where tgname=w.name),'relation',t.tgrelid::regclass::text,
   'events',t.tgtype,'enabled',t.tgenabled,'internal',t.tgisinternal,'arguments',t.tgnargs,
