@@ -793,12 +793,12 @@ test('native receipt append preserves the whole original hook except the explici
 });
 
 test('native receipt reader sends only the fixed read-only metadata query and never arms', async () => {
-  let calls = 0;
+  let calls = 0, actualQuery;
   const result = await readFixedNativeActivityReceipt({ accessToken:'SYNTHETIC',fetchImpl:async(url,request)=>{
     calls++;assert.equal(url,'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
     assert.equal(request.method,'POST');assert.equal(request.redirect,'error');assert.equal(request.credentials,'omit');
     assert.equal(request.cache,'no-store');assert.equal(request.signal.aborted,false);
-    const payload=JSON.parse(request.body);assert.equal(payload.read_only,true);
+    const payload=JSON.parse(request.body);actualQuery=payload.query;assert.equal(payload.read_only,true);
     assert.match(payload.query,/\('account_native_activity_receipt'\)/);
     assert.match(payload.query,/from public\.account_native_activity_receipt/);
     // Privilege-name literals in the reused catalog are not SQL writes. The
@@ -807,6 +807,15 @@ test('native receipt reader sends only the fixed read-only metadata query and ne
     assert(!payload.query.includes(fixedNativeActivityReceiptArmQuery));
     return Response.json(nativeReceiptRows(),{status:201});
   }});
+  const tableSource = " from targets w left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass('public.'||w.name)),";
+  const receiptTableSource = " from (select name from targets union all values ('account_native_activity_receipt')) w left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass('public.'||w.name)),";
+  const split = actualQuery.split('\n    from (');
+  assert.equal(split.length, 2);
+  assert.ok(split[1].endsWith(') as saved;'));
+  const inner = split[1].slice(0, -') as saved;'.length);
+  assert.equal(inner.split(receiptTableSource).length, 2, 'only tables gains the receipt target');
+  assert.equal(inner.replace(receiptTableSource, tableSource), accountInactivityCatalogQuery.trim().replace(/;$/, ''),
+    'all legacy targets, CHECK definitions and other metadata remain the exact original query');
   assert.equal(calls,1);assert.equal(result.status,'NATIVE_RECEIPT_UNARMED');
   assert.equal(result.nativeCaptureObserved,false);assert.equal(result.authResponseObserved,false);
   assert.equal(result.coverageStartAuthority,false);assert.equal(result.activityEligibility,'HOLD');
