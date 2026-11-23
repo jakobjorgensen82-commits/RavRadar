@@ -2890,7 +2890,9 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const currentRun={...copy(originRun),id:currentReuse.run,head_sha:actualHead,created_at:'2026-11-17T12:00:00Z',status:'in_progress',conclusion:null};
     const originalReceipt={...copy(receipt),current:{run:originRun.id,attempt:1,head:parentHead,pullRequest:947,branch:currentReuse.branch}};
     const originalBytes=JSON.stringify(originalReceipt);
-    const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false,skippedCurrent=false,skippedFault=null,sourceBlocked=false}={})=>{
+    const sourceStep='Validate source contracts and release governance';
+    const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false,skippedCurrent=false,
+      skippedFault=null,sourceBlocked=false,terminalSourceFailure=false}={})=>{
       const zip=Buffer.from('bounded after599 synthetic ZIP'),calls=[],origin=copy(originRun),active=copy(currentRun);
       const laterRun={...copy(origin),id:origin.id+(sourceBlocked?2:1),head_sha:unrelatedLater?'c'.repeat(40):actualHead};
       const blockedRun={...copy(origin),id:origin.id+1,head_sha:actualHead};
@@ -2906,9 +2908,21 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
           conclusion:index>=9&&index<=21?'skipped':'success',
           started_at:'2026-11-17T10:'+String(index).padStart(2,'0')+':00Z',
           completed_at:'2026-11-17T10:'+String(index+1).padStart(2,'0')+':00Z'}))}]};
-      if(skippedCurrent){laterRun.conclusion='success';skippedFault?.({run:laterRun,job:skippedJobs.jobs[0],jobs:skippedJobs});}
+      if(skippedCurrent||terminalSourceFailure){
+        const job=skippedJobs.jobs[0];
+        laterRun.conclusion=job.conclusion=terminalSourceFailure?'failure':'success';
+        if(terminalSourceFailure){
+          const source=job.steps.find(step=>step.name===sourceStep);
+          for(const step of job.steps){
+            step.conclusion=step.number<source.number?'success':step.number===source.number?'failure':'skipped';
+            if(step.number>source.number)step.started_at=step.completed_at=source.completed_at;
+          }
+          job.steps.push({number:48,name:'Post Run actions/checkout@v7',status:'completed',conclusion:'success'});
+        }
+        skippedFault?.({run:laterRun,job,jobs:skippedJobs});
+      }
       const jobsFor=r=>{
-        if(skippedCurrent&&r.id===laterRun.id)return copy(skippedJobs);
+        if((skippedCurrent||terminalSourceFailure)&&r.id===laterRun.id)return copy(skippedJobs);
         const value=ordinaryJobsFor(r);
         if(sourceBlocked&&r.id===blockedRun.id){
           value.jobs[0].steps[14].conclusion='failure';
@@ -2918,7 +2932,8 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       };
       const metadata=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,size_in_bytes:zip.length,
         digest:'sha256:'+v2Hash(zip),created_at:'2026-11-17T10:01:00Z',workflow_run:{id:r.id,head_sha:r.head_sha}});
-      const rows=[active,...(locator||later||unrelatedLater||skippedCurrent?[laterRun]:[]),...(sourceBlocked?[blockedRun]:[]),origin];let decoding=origin,pullReads=0;
+      const rows=[active,...(locator||later||unrelatedLater||skippedCurrent||terminalSourceFailure?[laterRun]:[]),
+        ...(sourceBlocked?[blockedRun]:[]),origin];let decoding=origin,pullReads=0;
       const proofFor=r=>({schemaVersion:r.id===laterRun.id&&locator?2:1,kind:r.id===laterRun.id&&locator?native.ASSISTANT_AFTER599_REUSE_KIND:native.ASSISTANT_AFTER599_PHASE_KIND,
         repository:ORIGIN.repository,headSha:r.head_sha,sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,
         nativePostgres:r.id===laterRun.id&&locator?{...copy(locator),current:{...currentReuse,run:r.id}}:copy(originalReceipt)});
@@ -2932,7 +2947,8 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
             ...(mutate.skippedFreshHead&&r.id===laterRun.id?{head_sha:'f'.repeat(40)}:{})};
           if(route.includes('/runs/'+r.id+'/attempts/1/jobs')){
             const value=jobsFor(r);if((mutate.pgFailure&&r.id===origin.id)||((later||unrelatedLater)&&!locator&&r.id===laterRun.id))value.jobs[0].steps[15].conclusion='failure';
-            if(mutate.sourceFailure&&r.id===origin.id)value.jobs[0].steps[14].conclusion='failure';
+            if((mutate.sourceFailure&&r.id===origin.id)||(mutate.currentSourceFailure&&r.id===active.id))
+              value.jobs[0].steps.find(step=>step.name===sourceStep).conclusion='failure';
             if(mutate.uploadFailure&&r.id===origin.id)value.jobs[0].steps[16].conclusion='failure';return value;
           }
           if(route.endsWith('/runs/'+r.id+'/artifacts?per_page=100'))return {total_count:1,artifacts:[{...metadata(r),...(mutate.expired?{expired:true}:{})}]};
@@ -2966,7 +2982,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     assert.equal(reused.kind,native.ASSISTANT_AFTER599_REUSE_KIND);assert.equal(reused.status,'REUSED');
     assert.equal(reused.executedInThisRun,false);assert.equal(reused.origin.run,originRun.id);assert.equal(reused.origin.head,parentHead);
     assert.equal(reused.eligibleForReuse,false);assert.equal(JSON.stringify(originalReceipt),originalBytes);
-    await t.test('after599 passerer kun fuldt grønt CURRENT med uudført PG',async()=>{
+    await t.test('after599 beviser uudført PG i den normale CURRENT-kontrol',async()=>{
       // Samme normale CURRENT-stepform: ingen ny PG-origin eller native-artifact.
       const skipped=makeAfter599Fixture({skippedCurrent:true});
       const skippedReceipt=await native.decideAssistantAfter599Reuse(skipped.options);
@@ -2985,7 +3001,27 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       for(const key of ['skippedFreshHead','skippedWorkflow'])
         assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({skippedCurrent:true,mutate:{[key]:true}}).options),null,key);
       assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({skippedCurrent:true,sourceBlocked:true}).options),null,
-        'Et nyere grønt CURRENT-forløb ophæver ikke en relevant tidligere rød sourcefase med uudført PG');
+        'En uafklaret form for en tidligere kildefejl spærrer fortsat');
+    });
+    await t.test('after599 passerer verificeret terminal kildefejl i begge historikopslag',async()=>{
+      const failed=makeAfter599Fixture({terminalSourceFailure:true});
+      const kept=await native.decideAssistantAfter599Reuse(failed.options);
+      assert(kept);assert.equal(kept.origin.run,originRun.id);assert.equal(kept.executedInThisRun,false);
+      const route='/runs/'+failed.skippedRun.id;
+      assert.equal(failed.calls.filter(value=>value.endsWith(route)).length,2);
+      assert(!failed.calls.some(value=>value.includes(route+'/artifacts')));
+      for(const [name,skippedFault] of [
+        ['cancellation',({run,job})=>{run.conclusion=job.conclusion='cancelled';}],
+        ['failed setup',({job})=>{job.steps[8].conclusion='failure';}],
+        ['workflow shape',({job})=>{job.steps[17].name='Other source check';}],
+        ['unknown step',({job})=>{job.steps.at(-1).name='Other action';}],
+        ['native attempted',({job})=>{job.steps.find(step=>step.name===STEP).started_at='2026-11-17T10:00:00Z';}],
+        ['uploaded phase',({job})=>{job.steps.find(step=>step.name===CURRENT586_PHASE_UPLOAD).conclusion='success';}],
+      ]){
+        assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure:true,skippedFault}).options),null,name);
+      }
+      for(const key of ['skippedFreshHead','currentSourceFailure'])
+        assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure:true,mutate:{[key]:true}}).options),null,key);
     });
     assert.equal(await native.verifyAssistantAfter599PhaseReceipt(reused,currentReuse),reused);
     const claims=await normal.assistantAfter599NativeClaims(reused,currentReuse);

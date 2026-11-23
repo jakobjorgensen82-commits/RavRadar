@@ -2322,9 +2322,10 @@ export async function decideAssistantAfter599Reuse(options){
     const provedCurrentSkip=async(row,job)=>{
       const pg=one(job.steps.filter(value=>value.name===STEP));
       if(pg.conclusion!=='skipped')return false;
-      // Kun det komplette grønne CURRENT-forløb beviser legitimt uudført PG.
-      // Det bliver hverken en SQL-origin eller ny kilde-/produktionskvalifikation.
-      assert(successful(row));assert(successful(job));assert.equal(row.run_attempt,1);
+      // En normal inaktiv PG-fase er ingen ny SQL-origin eller kildekvalifikation.
+      const terminalSourceFailure=row.conclusion==='failure'&&job.conclusion==='failure';
+      assert.equal(row.status,'completed');assert.equal(row.run_attempt,1);
+      assert(terminalSourceFailure||(successful(row)&&successful(job)));
       const run=await get(base+'/runs/'+row.id);
       for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(run[key],row[key]);
       assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
@@ -2335,7 +2336,24 @@ export async function decideAssistantAfter599Reuse(options){
       assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
       const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
       assert(hasDependencyOnlySourceSetup(workflow),'CURRENT_SOURCE_WORKFLOW_REQUIRED');
-      verifyTargetedSourceStepShape(job,workflow);return true;
+      if(!terminalSourceFailure){verifyTargetedSourceStepShape(job,workflow);return true;}
+      const {stepNames}=verifyCurrentSourceWorkflow(workflow);
+      const steps=job.steps.slice(0,stepNames.length);
+      assert.deepEqual(steps.map(step=>[step.name,step.number]),stepNames.map((name,index)=>[name,index+1]));
+      const sourceIndex=stepNames.indexOf('Validate source contracts and release governance');
+      const source=steps[sourceIndex],upload=steps[sourceIndex+2];
+      assert.equal(steps[sourceIndex+1],pg);assert.equal(upload.name,CURRENT586_PHASE_UPLOAD);
+      assert.equal(source.status,'completed');assert.equal(source.conclusion,'failure');
+      const failedAt=Date.parse(source.completed_at);
+      assert(Date.parse(source.started_at)<=failedAt);
+      const prefix=steps.slice(0,sourceIndex);
+      assert(prefix.every(successful));
+      assert(steps.slice(sourceIndex+1).every(step=>step.status==='completed'&&step.conclusion==='skipped'
+        &&step.started_at===step.completed_at&&Date.parse(step.started_at)>=failedAt));
+      const cleanupNames=new Set(['Complete job',...prefix.map(step=>'Post '+step.name)]);
+      assert(job.steps.slice(stepNames.length).every(step=>step.number>stepNames.length&&cleanupNames.delete(step.name)
+        &&(successful(step)||(step.status==='completed'&&step.conclusion==='skipped'))));
+      return true;
     };
     let selected=null,selectedJobs=null;
     for(const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)){
