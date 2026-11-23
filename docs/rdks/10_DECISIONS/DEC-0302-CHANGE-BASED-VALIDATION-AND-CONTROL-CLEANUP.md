@@ -1,3 +1,7 @@
+## 23. november – den selvstændige kontoskemaprøve
+
+En ændring i den eksisterende kontoskemaprøve vælger prøvens egen Node-kommando i den normale kildeplan. Den skal være en ændring af en eksisterende almindelig fil og indgår fortsat i kontrolgennemgangen. Ændringer i de faktiske PostgreSQL-input, herunder katalogverifikatoren, følger fortsat PostgreSQL-kontrollen. Den lokale plan er et valg af prøver. Tidsbesparelsen kræver en faktisk målrettet GitHub-kørsel.
+
 ## 22. november – offentlig Pages-kontrol og ejerprøver
 
 Den eksisterende Pages-prøve har to afgrænsede indgange til offentlig artifactverifikation og ejerens afslutning og genoptagelse. Den brede Pages-ejer kører begge sæt med alle deres hidtidige positive og negative tilfælde. Standardindgangen bevarer hele forløbet. Ændring af den offentlige verifier vælger artifactprøverne og den eksisterende ægte delingsprojektion. Transportens og ejerhjælpernes snævre valg bevarer deres hidtidige ansvar. Hver kommando beholder sin normale tidsgrænse, og ændring af planlæggeren kræver de eksisterende kontrolmål og uafhængig gennemgang.

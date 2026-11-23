@@ -346,6 +346,8 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
         'node scripts/test-forecast-share-pages-deploy.mjs']},
     {area:'ownerErasure',paths:['supabase/functions/_shared/trip-owner-erasure.js','scripts/test-delete-trip-owner-data-readback.mjs'],
       commands:['node --test scripts/test-delete-trip-owner-data-readback.mjs']},
+    {area:'accountSchemaFixture',paths:['scripts/test-account-erasure-outbox.mjs'],
+      commands:['node --test scripts/test-account-erasure-outbox.mjs']},
   ];
   const select=(before,tree,changes,label)=>{
     const candidate=makeCommit(rewriteTree(tree,changes),[before],'synthetic exact user contract '+label);checkoutCommit(candidate);
@@ -378,12 +380,12 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
       refuse(plan({baselineCommit:prior,candidateCommit:mode,expectedHead:mode}),'CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
     }
     const allPaths=[...definitions.flatMap(def=>def.paths),'scripts/weather-component-progress-cache.mjs','scripts/test-weather-component-progress-cache.mjs'];
-    const allBytes=allPaths.map(file=>[file,fixtureControlBytes(file)]),tree=rewriteTree(baselineTree,allBytes),prior=makeCommit(tree,[baselineCommit],'synthetic six existing contract owners');
+    const allBytes=allPaths.map(file=>[file,fixtureControlBytes(file)]),tree=rewriteTree(baselineTree,allBytes),prior=makeCommit(tree,[baselineCommit],'synthetic existing contract owners');
     const changes=allBytes.map(([file,bytes])=>[file,Buffer.concat([bytes,Buffer.from('\n// Synthetic owned source delta\n')])]);
-    const selected=select(prior,tree,changes,'all six');
+    const selected=select(prior,tree,changes,'mixed user and weather progress owners');
     assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
-    assert.deepEqual(selected.commands,[...new Set([...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.sharing,
-      ...CURRENT_CONTRACT_COMMANDS.ownerErasure,...CURRENT_CONTRACT_COMMANDS.weatherProgressRecovery])]);
+    assert.deepEqual(selected.commands,[...new Set([...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.accountSchemaFixture,
+      ...CURRENT_CONTRACT_COMMANDS.sharing,...CURRENT_CONTRACT_COMMANDS.ownerErasure,...CURRENT_CONTRACT_COMMANDS.weatherProgressRecovery])]);
     assert.equal(selected.controlQualificationRequired,true);passed++;
     for(const file of ['scripts/forecast-share/unclassified-handler.mjs','supabase/functions/_shared/unclassified-erasure.js'])
       refuse(select(prior,tree,[...changes,[file,Buffer.from('// Unknown neighbouring source\n')]],file),'CURRENT_UNCLASSIFIED_PATH');
