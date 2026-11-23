@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptArmQuery } from './account-native-activity-receipt-source.mjs';
+import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptArmQuery, buildFixedNativeActivityReceiptQuery } from './account-native-activity-receipt-source.mjs';
 import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata,
  readAccountInactivitySource,accountInactivityCatalogQuery,verifyAccountInactivityCatalogMetadata}
  from '../verify-account-erasure-schema.mjs';
@@ -375,7 +375,23 @@ export async function exerciseAccountNativeReceipt({ psql, runSql, repositoryRoo
   await pg(append.sql);
   const current = JSON.parse(await pg(accountInactivityCatalogQuery));
   assert.throws(() => verifyAccountInactivityCatalogMetadata([{metadata:current}], {source:original}));
-  verifyAccountInactivityCatalogMetadata([{metadata:current}], {source:{...original,bodies:{...original.bodies,account_native_activity_token_hook:append.hookBodySha256}}}); cases++;
+  verifyAccountInactivityCatalogMetadata([{metadata:current}], {source:{...original,bodies:{...original.bodies,account_native_activity_token_hook:append.hookBodySha256}}});
+  // Execute the very same query the normal HTTP reader sends. Keep the real
+  // fixture owner; this is SQL/row-shape evidence, never hosted admission.
+  const normalQuery = buildFixedNativeActivityReceiptQuery(accountInactivityCatalogQuery);
+  const normalMetadata = JSON.parse(await pg('select row_to_json(fixed_receipt) from ('
+    + normalQuery.trim().replace(/;$/, '') + ') fixed_receipt;'));
+  assert.deepEqual(Object.keys(normalMetadata).sort(), ['metadata','authAdminPublicUsage','policyEpoch','observedAt','receipt'].sort());
+  const {account_native_activity_receipt:receiptTable,...legacyTables} = normalMetadata.metadata.tables;
+  assert.deepEqual({...normalMetadata.metadata,tables:legacyTables}, current);
+  assert.equal(normalMetadata.metadata.checks.definitions.length, 17, 'Receipt CHECKs must not enter the legacy facit');
+  assert.equal(receiptTable.owner, 'rr_native_test', 'Actual fixture owner is never rewritten as postgres');
+  assert.equal(receiptTable.present, true); assert.equal(receiptTable.checks, 7); assert.equal(receiptTable.constraintCount, 8);
+  assert.equal(receiptTable.rls, true); assert.equal(receiptTable.forceRls, true); assert.equal(receiptTable.directAccess, false);
+  assert.equal(normalMetadata.authAdminPublicUsage, true);
+  assert.equal(normalMetadata.receipt.length, 1);
+  assert.equal(normalMetadata.receipt[0].armedAt, null); assert.equal(normalMetadata.receipt[0].nativeStartedAt, null);
+  assert.equal(normalMetadata.receipt[0].nativeCapturedAt, null); cases++;
   await pg("insert into auth.users values('" + target + "');insert into public.profiles(id,email,role) values('" + target + "','native-synthetic@example.invalid','expert');");
   const policy = await pg('select row_to_json(p) from public.account_inactivity_policy p;');
   const unarmed = JSON.parse(await receipt());

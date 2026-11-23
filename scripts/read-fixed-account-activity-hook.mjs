@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
-import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptMigration, fixedNativeActivityReceiptArmQuery } from './lib/account-native-activity-receipt-source.mjs';
+import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptMigration, fixedNativeActivityReceiptArmQuery, buildFixedNativeActivityReceiptQuery } from './lib/account-native-activity-receipt-source.mjs';
 export { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptMigration, fixedNativeActivityReceiptArmQuery };
 
 const AUTH_CONFIG_URL = 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/config/auth';
@@ -252,8 +252,13 @@ export async function readFixedAccountActivityHookCatalog({ accessToken, fetchIm
 export async function runFixedAccountActivityHookOperation({ operation, env, accessToken, fetchImpl = globalThis.fetch }) {
   if (!isFixedActivityHookWriteOwner(env ?? {}, operation)) return { status: 'OWNER_REQUIRED' };
   if (operation === 'enable') {
-    const catalog = await readFixedAccountActivityHookCatalog({ accessToken, fetchImpl });
-    if (catalog.status !== 'HOOK_CATALOG_VERIFIED') return catalog;
+    // SQL80 extends the token-hook body. Verify the exact installed append,
+    // receipt table and existing OFF/ACL contract instead of the legacy body.
+    // Receipt state is no Auth-response or coverage-start authority; never arm here.
+    const receipt = await readFixedNativeActivityReceipt({ accessToken, fetchImpl });
+    if (!['NATIVE_RECEIPT_UNARMED', 'NATIVE_RECEIPT_ARMED', 'NATIVE_CAPTURE_OBSERVED'].includes(receipt.status)) {
+      return { status: receipt.status };
+    }
   }
   // Disabling must remain available if capture conservatively invalidated the
   // policy or the database is unavailable. Its exact own-URI read is mandatory.
@@ -334,21 +339,7 @@ async function nativeReceiptQueryAndSource() {
   const base = await import('./verify-account-erasure-schema.mjs');
   const append = readFixedNativeActivityReceiptSource();
   const source = base.readAccountInactivitySource();
-  const targets = "targets(name) as (values ('account_inactivity_policy'),('account_lifecycle_activity'),('account_inactivity_notices'))";
-  if (base.accountInactivityCatalogQuery.split(targets).length !== 2) throw new Error('NATIVE_RECEIPT_QUERY_REQUIRED');
-  const extended = base.accountInactivityCatalogQuery.replace(targets,
-    targets.slice(0, -1) + ",('account_native_activity_receipt'))").trim().replace(/;$/, '');
-  const query = `select saved.metadata,
-    pg_catalog.has_schema_privilege('supabase_auth_admin','public','USAGE') as "authAdminPublicUsage",
-    (select coverage_epoch::text from public.account_inactivity_policy where singleton) as "policyEpoch",
-    pg_catalog.to_char(pg_catalog.clock_timestamp() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "observedAt",
-    (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
-      'armEpoch', arm_epoch::text, 'coverageEpoch', coverage_epoch::text,
-      'armedAt', case when armed_at is null then null else pg_catalog.to_char(armed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end,
-      'nativeStartedAt', case when native_started_at is null then null else pg_catalog.to_char(native_started_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end,
-      'nativeCapturedAt', case when native_captured_at is null then null else pg_catalog.to_char(native_captured_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end))
-      from public.account_native_activity_receipt) as "receipt"
-    from (` + extended + ') as saved;';
+  const query = buildFixedNativeActivityReceiptQuery(base.accountInactivityCatalogQuery);
   return { base, append, query, source: { ...source, bodies: { ...source.bodies, account_native_activity_token_hook: append.hookBodySha256 } } };
 }
 

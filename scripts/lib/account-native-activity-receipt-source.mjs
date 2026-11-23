@@ -17,6 +17,30 @@ export function readFixedNativeActivityReceiptSource() {
     hookBodySha256: createHash('sha256').update(bodies[0][3].trim(), 'utf8').digest('hex') };
 }
 
+// The normal reader and existing native case share this exact fixed SQL.
+// Only the table projection gains the receipt; the legacy 17-CHECK scope stays intact.
+export function buildFixedNativeActivityReceiptQuery(catalogQuery) {
+  const targets = "targets(name) as (values ('account_inactivity_policy'),('account_lifecycle_activity'),('account_inactivity_notices'))";
+  const tableSource = " from targets w left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass('public.'||w.name)),";
+  const receiptTableSource = " from (select name from targets union all values ('account_native_activity_receipt')) w left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass('public.'||w.name)),";
+  if (typeof catalogQuery !== 'string' || Buffer.byteLength(catalogQuery, 'utf8') > 65536
+    || catalogQuery.split(targets).length !== 2 || catalogQuery.split(tableSource).length !== 2) {
+    throw new Error('NATIVE_RECEIPT_QUERY_REQUIRED');
+  }
+  const extended = catalogQuery.replace(tableSource, receiptTableSource).trim().replace(/;$/, '');
+  return `select saved.metadata,
+    pg_catalog.has_schema_privilege('supabase_auth_admin','public','USAGE') as "authAdminPublicUsage",
+    (select coverage_epoch::text from public.account_inactivity_policy where singleton) as "policyEpoch",
+    pg_catalog.to_char(pg_catalog.clock_timestamp() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "observedAt",
+    (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+      'armEpoch', arm_epoch::text, 'coverageEpoch', coverage_epoch::text,
+      'armedAt', case when armed_at is null then null else pg_catalog.to_char(armed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end,
+      'nativeStartedAt', case when native_started_at is null then null else pg_catalog.to_char(native_started_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end,
+      'nativeCapturedAt', case when native_captured_at is null then null else pg_catalog.to_char(native_captured_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') end))
+      from public.account_native_activity_receipt) as "receipt"
+    from (` + extended + ') as saved;';
+}
+
 // Parameterless, one-time arm contract for the later admitted fixed owner. It
 // changes no policy/activity. Repeating it cannot reset the first time or epoch.
 export const fixedNativeActivityReceiptArmQuery = `begin;

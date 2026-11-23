@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { computeRavScorePublicBrowserClosure } from './lib/ravscore-public-browser-closure.mjs';
@@ -13,6 +14,7 @@ import {
   PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY as policy,
   buildProtectedOperationalEvidenceArchive,
   publishProtectedOperationalEvidence,
+  readReentryMainHead,
   restoreProtectedOperationalEvidence,
   validateProtectedOperationalEvidencePointer,
 } from './protected-operational-reentry-evidence.mjs';
@@ -22,6 +24,62 @@ import { readAuthenticPagesAttemptClosure, hasAuthenticPagesAttemptClosure } fro
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repository = 'ravradar/RavRadar';
 const clone = value => structuredClone(value);
+
+test('the exact main read recovers a transient connection and fails closed on invalid metadata or authentication', async () => {
+  const token = 'fixture-token';
+  const sha = 'a'.repeat(40);
+  const expected = { ref: 'refs/heads/main', object: { type: 'commit', sha } };
+  const waits = [];
+  let reads = 0;
+  const response = await readReentryMainHead({ repository, token, wait: async delay => waits.push(delay),
+    fetchImpl: async (url, options) => {
+      assert.equal(url, 'https://api.github.com/repos/ravradar/RavRadar/git/ref/heads/main');
+      assert.equal(options.method, 'GET');
+      assert.equal(options.cache, 'no-store');
+      assert.equal(options.redirect, 'error');
+      assert.equal(options.headers.Authorization, 'Bearer ' + token);
+      if (++reads === 1) throw new TypeError('fetch failed', { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } });
+      if (reads === 2) return new Response('', { status: 503 });
+      return Response.json(expected);
+    },
+  });
+  assert.equal(response, sha);
+  assert.equal(reads, 3);
+  assert.deepEqual(waits, [1000, 2000]);
+
+  for (const [body, code] of [[Response.json({ ...expected, ref: 'refs/heads/other' }), 'REENTRY_MAIN_REF_INVALID'],
+    [Response.json({ ...expected, object: { ...expected.object, sha: [sha] } }), 'REENTRY_MAIN_REF_INVALID'],
+    [new Response('', { status: 403 }), 'REENTRY_MAIN_REF_HTTP_REFUSED']]) {
+    await assert.rejects(() => readReentryMainHead({ repository, token, fetchImpl: async () => body,
+      wait: async () => assert.fail('Permanent failures must not retry') }), new RegExp(code));
+  }
+  await assert.rejects(() => readReentryMainHead({ repository: '../archive', token,
+    fetchImpl: async () => assert.fail('Invalid repository must not request') }), /REENTRY_MAIN_REF_IDENTITY_REQUIRED/);
+  reads = 0;
+  await assert.rejects(() => readReentryMainHead({ repository, token, wait: async () => {},
+    fetchImpl: async () => { reads++; return new Response('', { status: 502 }); } }), /REENTRY_MAIN_REF_RETRY_EXHAUSTED/);
+  assert.equal(reads, 3);
+});
+
+test('the ordinary preflight CLI prints only a main commit and opens no Supabase clients', () => {
+  const sha = 'b'.repeat(40);
+  const hook = `globalThis.fetch = async (url, options) => {
+    if (url !== 'https://api.github.com/repos/ravradar/RavRadar/git/ref/heads/main' || options.method !== 'GET')
+      throw new Error('unexpected network scope');
+    return Response.json({ref:'refs/heads/main',object:{type:'commit',sha:'${sha}'}});
+  };`;
+  const args = ['--import', 'data:text/javascript,' + encodeURIComponent(hook),
+    'scripts/protected-operational-reentry-evidence.mjs', '--read-live-main-head'];
+  for (const [ref, status] of [['refs/heads/main', 0], ['refs/heads/other', 1]]) {
+    const result = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', timeout: 5000,
+      env: { ...process.env, GITHUB_REF: ref, GITHUB_REPOSITORY: repository, GH_TOKEN: 'fixture-token',
+        SUPABASE_URL: '', SUPABASE_SERVICE_ROLE_KEY: '', SUPABASE_PUBLISHABLE_KEY: '' } });
+    assert.equal(result.status, status);
+    assert.equal(result.stdout.trim(), status === 0 ? sha : '');
+    if (status === 0) assert.equal(result.stderr, '');
+    else assert.match(result.stderr, /REENTRY_MAIN_REF_IDENTITY_REQUIRED/);
+  }
+});
 
 test('historical pre-POST closure refuses other owners, incomplete logs and unsafe signed redirects', async () => {
   const owner = { repository: 'jakobjorgensen82-commits/RavRadar', runId: 43216888462, runAttempt: 1,
