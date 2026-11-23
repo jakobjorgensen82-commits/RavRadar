@@ -252,8 +252,13 @@ export async function readFixedAccountActivityHookCatalog({ accessToken, fetchIm
 export async function runFixedAccountActivityHookOperation({ operation, env, accessToken, fetchImpl = globalThis.fetch }) {
   if (!isFixedActivityHookWriteOwner(env ?? {}, operation)) return { status: 'OWNER_REQUIRED' };
   if (operation === 'enable') {
-    const catalog = await readFixedAccountActivityHookCatalog({ accessToken, fetchImpl });
-    if (catalog.status !== 'HOOK_CATALOG_VERIFIED') return catalog;
+    // SQL80 extends the token-hook body. Verify the exact installed append,
+    // receipt table and existing OFF/ACL contract instead of the legacy body.
+    // Receipt state is no Auth-response or coverage-start authority; never arm here.
+    const receipt = await readFixedNativeActivityReceipt({ accessToken, fetchImpl });
+    if (!['NATIVE_RECEIPT_UNARMED', 'NATIVE_RECEIPT_ARMED', 'NATIVE_CAPTURE_OBSERVED'].includes(receipt.status)) {
+      return { status: receipt.status };
+    }
   }
   // Disabling must remain available if capture conservatively invalidated the
   // policy or the database is unavailable. Its exact own-URI read is mandatory.
