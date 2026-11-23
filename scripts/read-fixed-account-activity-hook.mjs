@@ -19,15 +19,15 @@ export function isFixedActivityHookReadOwner(env) {
     && env.GITHUB_WORKFLOW_REF === REPOSITORY + '/.github/workflows/deploy-trip-storage.yml@refs/heads/main';
 }
 
-async function readBoundedJson(response) {
+async function readBoundedJson(response, maximumBytes = MAX_RESPONSE_BYTES) {
   const declaredLength = response.headers.get('content-length');
-  if (declaredLength !== null && (!/^[0-9]+$/.test(declaredLength) || Number(declaredLength) > MAX_RESPONSE_BYTES)) {
+  if (declaredLength !== null && (!/^[0-9]+$/.test(declaredLength) || Number(declaredLength) > maximumBytes)) {
     return null;
   }
   if (!response.body) return null;
 
   // The management response may contain secrets. Keep it transient and return no fields from it.
-  const bytes = new Uint8Array(MAX_RESPONSE_BYTES);
+  const bytes = new Uint8Array(maximumBytes);
   let length = 0;
   for await (const chunk of response.body) {
     if (!(chunk instanceof Uint8Array) || chunk.byteLength > bytes.length - length) return null;
@@ -194,18 +194,76 @@ export function isFixedActivityHookWriteOwner(env, operation) {
     && env.RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION === WRITE_CONFIRMATIONS[operation];
 }
 
-export function isFixedActivityHookCatalogReadOwner(env) {
+function isFixedAccountActivityMetadataReadOwner(env, operation) {
   return env !== null && typeof env === 'object' && !Array.isArray(env)
     && isFixedActivityHookReadOwner(env)
     && env.GITHUB_JOB === 'read-fixed-supabase-metadata'
     && /^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? '')
-    && env.RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION === 'catalog-read';
+    && env.RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION === operation;
+}
+
+export function isFixedActivityHookCatalogReadOwner(env) {
+  return isFixedAccountActivityMetadataReadOwner(env, 'catalog-read');
 }
 
 function onlyKeys(value, expected) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     && Object.keys(value).length === expected.length
     && Object.keys(value).sort().join('\n') === [...expected].sort().join('\n');
+}
+
+const MANUAL_CATALOG_MAX_BYTES = 32768;
+const MANUAL_CATALOG_HTTP_STATUSES = new Set([400,401,403,404,408,409,422,429,500,502,503,504]);
+const MANUAL_CATALOG_SQLSTATES = new Set(['42501','42703','42883','42P01','55P03','57014','25006']);
+const MANUAL_CATALOG_VALIDATION = new Set([
+  'CATALOG_ENVELOPE','TABLE_CONTRACT','COLUMN_CONTRACT','INDEX_CONTRACT',
+  'FUNCTION_CONTRACT','TRIGGER_CONTRACT','CHECK_FORMAT',
+]);
+
+function manualCatalogSqlState(value) {
+  const message = typeof value?.message === 'string' ? value.message : '';
+  const reported = [value?.code, value?.sqlstate, value?.error?.code,
+    /^(?:Failed to run SQL query: )?ERROR:\s+([A-Z0-9]{5})(?=[:\s])/i.exec(message)?.[1]?.toUpperCase()];
+  return reported.find(code => MANUAL_CATALOG_SQLSTATES.has(code));
+}
+
+export async function diagnoseFixedManualAccountErasureCatalog({ env, accessToken, fetchImpl = globalThis.fetch }) {
+  const refused = (category, detail = {}) => ({ status: 'MANUAL_CATALOG_DIAGNOSTIC_REFUSED', category, ...detail });
+  if (!isFixedAccountActivityMetadataReadOwner(env, 'manual-catalog-diagnose')) return refused('OWNER_REQUIRED');
+  if (typeof accessToken !== 'string' || !accessToken.length || /[\r\n]/.test(accessToken)) return refused('CREDENTIAL_UNAVAILABLE');
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  let phase = 'REQUEST';
+  try {
+    const { accountErasureCatalogQuery, verifyAccountErasureCatalogMetadata } = await import('./verify-account-erasure-schema.mjs');
+    const response = await fetchImpl('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query', {
+      method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+      headers: { authorization: 'Bearer ' + accessToken, 'content-type': 'application/json' },
+      body: JSON.stringify({ query: accountErasureCatalogQuery, read_only: true }),
+    });
+    if (response.redirected) return refused('HTTP_REDIRECT');
+    if (response.status !== 201) {
+      const httpStatus = MANUAL_CATALOG_HTTP_STATUSES.has(response.status) ? response.status : null;
+      const sqlState = [400,422,500].includes(httpStatus)
+        ? manualCatalogSqlState(await readBoundedJson(response, MANUAL_CATALOG_MAX_BYTES).catch(() => null)) : undefined;
+      return refused('HTTP_STATUS', { httpStatus, ...(sqlState ? { sqlState } : {}) });
+    }
+    phase = 'RESPONSE_BODY';
+    const value = await readBoundedJson(response, MANUAL_CATALOG_MAX_BYTES);
+    if (value === null) return refused('RESPONSE_BODY');
+    phase = 'CATALOG_UNCLASSIFIED';
+    const rows = Array.isArray(value) ? value : onlyKeys(value, ['result']) ? value.result
+      : onlyKeys(value, ['data']) ? value.data : null;
+    verifyAccountErasureCatalogMetadata(rows);
+    return { status: 'MANUAL_CATALOG_DIAGNOSTIC_PASS', checkExpressionSemanticsVerified: false };
+  } catch (error) {
+    if (controller.signal.aborted) return refused('RESPONSE_DEADLINE');
+    return refused(MANUAL_CATALOG_VALIDATION.has(error?.catalogCategory) ? error.catalogCategory : phase);
+  } finally {
+    clearTimeout(timeout);
+    controller.abort();
+  }
 }
 
 // Reuse the installed OFF catalog and its source/body/ACL verifier. The sole
@@ -453,6 +511,10 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       : { status: 'OWNER_REQUIRED' };
     console.log(JSON.stringify(result));
     if (result.status !== 'HOOK_CATALOG_VERIFIED') process.exitCode = 1;
+  } else if (process.argv.length === 3 && process.argv[2] === '--manual-catalog-diagnose') {
+    const result = await diagnoseFixedManualAccountErasureCatalog({ env: process.env, accessToken: process.env.SUPABASE_ACCESS_TOKEN });
+    console.log(JSON.stringify(result));
+    if (result.status !== 'MANUAL_CATALOG_DIAGNOSTIC_PASS') process.exitCode = 1;
   } else if (operation !== null) {
     const result = await runFixedAccountActivityHookOperation({ operation, env: process.env, accessToken: process.env.SUPABASE_ACCESS_TOKEN });
     console.log(JSON.stringify(result));

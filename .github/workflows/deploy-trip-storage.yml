@@ -16,6 +16,7 @@ on:
           - typed-trip-catalog-read
           - fixed-account-activity-hook-read
           - fixed-account-activity-hook-catalog-read
+          - fixed-account-erasure-catalog-diagnose
           - fixed-account-activity-hook-enable
           - fixed-account-activity-hook-disable
           - fixed-public-rate-log-read
@@ -997,7 +998,7 @@ jobs:
         run: node scripts/verify-cloudflare-trip-gateway.mjs
 
   read-fixed-supabase-metadata:
-    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-account-activity-hook-read' || inputs.operation == 'fixed-account-activity-hook-catalog-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-2344' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-account-activity-hook-read' || inputs.operation == 'fixed-account-activity-hook-catalog-read' || inputs.operation == 'fixed-account-erasure-catalog-diagnose' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' || inputs.operation == 'fixed-public-rate-console-read-20261015' || inputs.operation == 'fixed-assistant-failure-log-read-20261101' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-1712' || inputs.operation == 'fixed-assistant-failure-log-read-20261121-2344' || inputs.operation == 'fixed-storage-upload-log-read-20261013' }}
     name: Bounded fixed Supabase read (no installation or repair)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1069,6 +1070,14 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: catalog-read
 
+      - name: Diagnose only the fixed manual account erasure catalog
+        if: inputs.operation == 'fixed-account-erasure-catalog-diagnose'
+        timeout-minutes: 1
+        run: node scripts/read-fixed-account-activity-hook.mjs --manual-catalog-diagnose
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: manual-catalog-diagnose
+
       - name: Read only the fixed account activity Auth hook status
         if: inputs.operation == 'fixed-account-activity-hook-read'
         timeout-minutes: 1
@@ -1133,7 +1142,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-account-activity-hook-read' && inputs.operation != 'fixed-account-activity-hook-catalog-read' && inputs.operation != 'fixed-account-activity-hook-enable' && inputs.operation != 'fixed-account-activity-hook-disable' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-account-activity-hook-read' && inputs.operation != 'fixed-account-activity-hook-catalog-read' && inputs.operation != 'fixed-account-erasure-catalog-diagnose' && inputs.operation != 'fixed-account-activity-hook-enable' && inputs.operation != 'fixed-account-activity-hook-disable' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1
