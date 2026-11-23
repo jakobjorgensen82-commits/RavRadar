@@ -3205,8 +3205,10 @@ test('current80 actual PG input includes the pure leaf, refuses partial pairs an
  };
  try{
   const current=await native.captureAssistantAfter599PgInput({readGit:readInputGit});assert.equal(current.sqlFiles,80);assert.equal(current.complete,true);
+  assert.deepEqual(await native.captureAssistantAfter599PgInput(),current,'Batched normal read preserves the entire input identity');
   const leafBytes=await fs.readFile(leaf);const changed=variant(leaf,'100644',Buffer.concat([leafBytes,Buffer.from('\n// synthetic leaf input mutation\n')]));
   const changedInput=await native.captureAssistantAfter599PgInput({ref:changed,physical:false,readGit:readInputGit});assert.notEqual(changedInput.inputSha256,current.inputSha256);
+  assert.deepEqual(await native.captureAssistantAfter599PgInput({ref:changed,physical:false}),changedInput);
   const http=variant('scripts/read-fixed-account-activity-hook.mjs','100644',Buffer.concat([await fs.readFile('scripts/read-fixed-account-activity-hook.mjs'),Buffer.from('\n// synthetic HTTP-only input mutation\n')]));
   assert.deepEqual(await native.captureAssistantAfter599PgInput({ref:http,physical:false,readGit:readInputGit}),current);
   for(const file of [leaf,sql])await assert.rejects(native.captureAssistantAfter599PgInput({ref:variant(file,'100644',null),physical:false,readGit:readInputGit}));

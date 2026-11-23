@@ -2113,13 +2113,69 @@ export async function verifyAssistantAfter598PhaseReceipt(native,current){
 }
 // The normal old EXECUTED-V1 receipt stays unchanged. This separately typed
 // decision qualifies an authentic original phase; it never claims new SQL.
-function after599BoundedGit(readGit,deadline){
-  return args=>{
-    const remaining=()=>{const value=Math.floor(deadline-performance.now());assert(value>0,'AFTER599_PG_REUSE_TIME_BOUND');return value;};
-    const time=remaining();const value=readGit===git?execFileSync('git',args,{encoding:'utf8',maxBuffer:64*1024*1024,
-      timeout:Math.min(10000,time),env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}):readGit(args);
-    remaining();return value;
+const after599GitBatch = Symbol('after599GitBatch');
+const after599MaxBlobBytes = 4 * 1024 * 1024;
+const after599MaxInputBytes = 64 * 1024 * 1024;
+function after599BoundedGit(readGit, deadline) {
+  const remaining = () => {
+    const value = Math.floor(deadline - performance.now());
+    assert(value > 0, 'AFTER599_PG_REUSE_TIME_BOUND');
+    return value;
   };
+  const env = {...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'};
+  const read = args => {
+    const time = remaining();
+    const value = readGit === git ? execFileSync('git', args, {encoding:'utf8', maxBuffer:after599MaxInputBytes,
+      timeout:Math.min(10000, time), env}) : readGit(args);
+    remaining();
+    return value;
+  };
+  if (readGit === git || readGit[after599GitBatch]) {
+    read[after599GitBatch] = (args, input, callerBudget = 10000) => {
+      const timeout = Math.min(callerBudget, remaining());
+      const output = readGit === git ? execFileSync('git', args, {input, timeout, env,
+        maxBuffer:after599MaxInputBytes + 65536}) : readGit[after599GitBatch](args, input, timeout);
+      remaining();
+      return output;
+    };
+  }
+  return read;
+}
+
+function loadAfter599GitBlobs(readBatch, oids, objects) {
+  const missing = [...new Set(oids)].filter(oid => !objects.has(oid));
+  if (!missing.length) return;
+  assert(missing.length + objects.size <= 512 && missing.every(oid => /^[a-f0-9]{40}$/.test(oid)));
+  const request = Buffer.from(missing.join('\n') + '\n', 'ascii');
+  const inventory = readBatch(['cat-file', '--batch-check'], request).toString('ascii').trimEnd().split('\n');
+  assert.equal(inventory.length, missing.length);
+  let selectedBytes = 0;
+  const sizes = inventory.map((line, index) => {
+    const match = /^([a-f0-9]{40}) blob ([0-9]+)$/.exec(line);
+    assert(match && match[1] === missing[index]);
+    const size = Number(match[2]);
+    assert(Number.isSafeInteger(size) && size >= 0 && size <= after599MaxBlobBytes);
+    selectedBytes += size;
+    return size;
+  });
+  for (const raw of objects.values()) selectedBytes += raw.length;
+  assert(selectedBytes <= after599MaxInputBytes);
+  const output = readBatch(['cat-file', '--batch'], request);
+  let offset = 0;
+  for (const [index, oid] of missing.entries()) {
+    const headerEnd = output.indexOf(10, offset);
+    assert(headerEnd > offset);
+    const size = sizes[index];
+    assert.equal(output.toString('ascii', offset, headerEnd), oid + ' blob ' + size);
+    const start = headerEnd + 1;
+    const end = start + size;
+    assert(end < output.length && output[end] === 10);
+    const raw = output.subarray(start, end);
+    assert.equal(crypto.createHash('sha1').update('blob ' + size + '\0').update(raw).digest('hex'), oid);
+    objects.set(oid, raw);
+    offset = end + 1;
+  }
+  assert.equal(offset, output.length);
 }
 export async function captureAssistantAfter599PgInput(options){
   requireAssistantAfter599Output(); // FIRST, including before option getters.
@@ -2132,22 +2188,36 @@ export async function captureAssistantAfter599PgInput(options){
   assert(sql.length>0&&sql.length<=512);
   if(physical)assert.deepEqual((await fs.readdir(path.join(root,'supabase/migrations'))).filter(file=>file.endsWith('.sql')).sort(),
     sql.map(file=>path.posix.basename(file)));
-  const rows=new Map();let bytes=0;
+  const rows=new Map(), objects=new Map();let bytes=0;
+  const batch=readGit[after599GitBatch];
+  const load=files=>{
+    if (!batch) return;
+    const selected=files.map(file=>index.get(file)).filter(Boolean);
+    assert(selected.every(row=>['100644','100755'].includes(row[1])&&row[2]==='blob'));
+    loadAfter599GitBlobs(batch,selected.map(row=>row[3]),objects);
+  };
+  const content=(file,row)=>{
+    if (!batch) return Buffer.from(readGit(['cat-file','blob',ref+':'+file]));
+    const raw=objects.get(row[3]);
+    assert(raw,'Missing selected native input blob');
+    return raw;
+  };
   const read=async file=>{
     assert(typeof file==='string'&&file.length<=512&&!file.startsWith('/')&&!file.split('/').includes('..'));
     if(rows.has(file))return rows.get(file);
     const row=index.get(file);
     if(!row){assert(!physical,'Required current native input is absent: '+file);const absent={file,present:false};rows.set(file,absent);return absent;}
     assert(['100644','100755'].includes(row[1])&&row[2]==='blob');
-    const raw=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));bytes+=raw.length;
-    assert(raw.length<=4*1024*1024&&bytes<=64*1024*1024&&rows.size<512);
+    const raw=content(file,row);bytes+=raw.length;
+    assert(raw.length<=after599MaxBlobBytes&&bytes<=after599MaxInputBytes&&rows.size<512);
     if(physical){const absolute=path.resolve(root,file),stat=await fs.lstat(absolute);
       assert(stat.isFile()&&!stat.isSymbolicLink());assert.equal(stat.size,raw.length);assert.equal(await fs.realpath(absolute),absolute);
       assert.deepEqual(await fs.readFile(absolute),raw,'Physical native input differs from Git');}
     const value={file,mode:row[1],bytes:raw.length,sha256:sha(raw)};rows.set(file,value);return value;
   };
-  const profileFile='scripts/lib/source-impact-domain-inputs-598.json';await read(profileFile);
-  const profile=JSON.parse(String(readGit(['cat-file','blob',ref+':'+profileFile])));
+  const profileFile='scripts/lib/source-impact-domain-inputs-598.json';
+  load([profileFile]);await read(profileFile);
+  const profile=JSON.parse(content(profileFile,index.get(profileFile)).toString('utf8'));
   assert.equal(profile.id,'REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12');assert.equal(profile.postgresModules.length,69);
   const receiptSql='supabase/migrations/20261122200000_account_native_activity_receipt_off.sql';
   const receiptSource='scripts/lib/account-native-activity-receipt-source.mjs';
@@ -2158,15 +2228,17 @@ export async function captureAssistantAfter599PgInput(options){
     ...(receiptPresent?[receiptSource]:[])]);
   const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
   const selected=new Set([...modules,...profile.postgresData,...setup,...profile.continuation.files,profile.continuation.file,...sql]);
+  load(Object.values(profile.models).map(definition=>definition.file));
   for(const definition of Object.values(profile.models)){
     await read(definition.file);selected.add(definition.file);
-    const source=String(readGit(['cat-file','blob',ref+':'+definition.file]));
+    const source=content(definition.file,index.get(definition.file)).toString('utf8');
     const escaped=definition.manifestName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     const match=new RegExp('export const '+escaped+' = Object\\.freeze\\(([\\s\\S]*)\\);\\n$').exec(source);assert(match);
     const manifest=JSON.parse(match[1]);assert.equal(manifest.schemaVersion,definition.schemaVersion);
     assert.equal(manifest.normalizationId,definition.normalizationId);assert(Array.isArray(manifest.files)&&manifest.files.length<=512);
     for(const row of manifest.files){assert(typeof row[definition.rowKey]==='string');selected.add(row[definition.rowKey]);}
   }
+  load([...selected]);
   for(const file of [...selected].sort())await read(file);
   const scopePaths=new Set(['package.json']);
   for(const file of modules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
