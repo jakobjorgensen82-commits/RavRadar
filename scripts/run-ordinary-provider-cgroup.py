@@ -21,10 +21,12 @@ ROOT = Path(__file__).resolve().parents[1]
 SELF = Path(__file__).resolve()
 BOOTSTRAP_PYTHON = "/usr/bin/python3"
 TERMINAL_SEAL = "terminal-progress-seal"
+OPEN_METEO = "open-meteo"
 TERMINAL_SECONDS = 240
 PROVIDERS = {
     "dmi": ("run-dmi-bulk-supervised.py", b"ordinary_dmi_producer_closed=true\n"),
     "copernicus": ("run-copernicus-current-pilot-with-retry.py", b"copernicus_producer_closed=true\n"),
+    OPEN_METEO: ("fill-open-meteo-current-fallback.py", b"open_meteo_producer_closed=true\n"),
     TERMINAL_SEAL: ("weather-component-progress-cache.mjs", None),
 }
 FRAME_LIMIT = 128 * 1024
@@ -131,7 +133,8 @@ def watch_owner(provider_fd):
 
 
 def provider_environment(provider, environ, executable):
-    provider_names = {"dmi": DMI_PROVIDER_ENV, "copernicus": COPERNICUS_PROVIDER_ENV}
+    provider_names = {"dmi": DMI_PROVIDER_ENV, "copernicus": COPERNICUS_PROVIDER_ENV,
+                      OPEN_METEO: {"OPEN_METEO_MARINE_BASE_URL", "OPEN_METEO_API_KEY"}}
     names = TERMINAL_SEAL_ENV if provider == TERMINAL_SEAL else SHARED_PROVIDER_ENV | provider_names[provider]
     dmi_prefixes = ("DMI_BULK_", "CURRENT_FIELD_SHADOW_", "ECCODES_")
     environment = {
@@ -153,6 +156,11 @@ def provider_command(provider, args, executable):
     if provider == TERMINAL_SEAL:
         require(not args and Path(executable).name == "node", "TERMINAL_SEAL_ARGUMENTS_REFUSED")
         return [executable, str(ROOT / "scripts" / script), "--seal-terminal-stage"]
+    if provider == OPEN_METEO:
+        require(len(args) == 9 and args[0] == "--at" and 0 < len(args[1]) <= 64
+                and args[2:] == ["--dmi", ".cache/dmi-candidate-progress.json", "--timeout-seconds", "30",
+                                 "--runtime-seconds", "900", "--critical-only"],
+                "OPEN_METEO_OWNER_ARGUMENTS_REFUSED")
     return [executable, "-u", str(ROOT / "scripts" / script), *args]
 
 
@@ -270,6 +278,14 @@ def ferry_closed_channels(provider, channels, terminal_window=None):
         require(name == "GITHUB_OUTPUT" and terminal_window is not None
                 and all(not row[3] for row in collected[1:]), "TERMINAL_SEAL_RECEIPT_REFUSED")
         collected = [(name, target, identity, terminal_cipher_handoff(terminal_window, outputs))]
+    elif provider == OPEN_METEO:
+        require(name == "GITHUB_OUTPUT"
+                and re.fullmatch(rb"(?:[a-z][a-z0-9_]{0,63}=[^\r\n\0]*\n)*", outputs)
+                and not any(line.startswith(b"open_meteo_producer_closed=") for line in outputs.splitlines()),
+                "OPEN_METEO_STAGED_OUTPUT_REFUSED")
+        # The worker reports progress, but only this physically closed owner
+        # can publish custody of the workspace.
+        collected[0] = (name, target, identity, outputs + marker)
     else:
         lines = outputs.splitlines(keepends=True)
         require(name == "GITHUB_OUTPUT" and lines and lines[-1] == marker
@@ -372,13 +388,16 @@ def hosted_controller(provider, runtime_seconds, args):
             and os.getenv("ImageOS") == "ubuntu24" and os.geteuid() != 0,
             "PROVIDER_HOSTED_UBUNTU24_REQUIRED")
     terminal = provider == TERMINAL_SEAL
+    owns_writer = terminal or provider == OPEN_METEO
     executable = sys.executable
     if terminal:
         started = terminal_boot_ms()
+    if owns_writer:
         from lib.weather_acquisition_writer import (
             acquire_weather_acquisition_writer, assert_weather_acquisition_writer,
             release_weather_acquisition_writer, retain_weather_acquisition_writer,
         )
+    if terminal:
         deadline = started + TERMINAL_SECONDS * 1_000
         setup_deadline = started + 2 * CONTROL_SECONDS * 1_000
         stop_before = deadline - (OWNER_GRACE_SECONDS + 2 * CONTROL_SECONDS) * 1_000
@@ -409,9 +428,9 @@ def hosted_controller(provider, runtime_seconds, args):
     scope = None
     group = identity = invocation = None
     scratch_releasable = False
-    seal_lease = None
-    terminal_launch_attempted = False
-    terminal_closed = False
+    writer_lease = None
+    writer_launch_attempted = False
+    writer_closed = False
     previous = {}
     try:
         for signum in (signal.SIGINT, signal.SIGTERM):
@@ -437,16 +456,20 @@ def hosted_controller(provider, runtime_seconds, args):
         frame = environment_frame(environment)
         owner_read, owner_write = os.pipe2(os.O_CLOEXEC)
         os.set_blocking(owner_write, False)
+        if owns_writer:
+            require(setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE" if terminal else "PROVIDER_STEP_OWNER_LOST")
+            writer_lease = acquire_weather_acquisition_writer()
+            assert_weather_acquisition_writer(writer_lease)
         if terminal:
-            require(setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE")
-            seal_lease = acquire_weather_acquisition_writer()
-            assert_weather_acquisition_writer(seal_lease)
             runtime_seconds = (stop_before - terminal_boot_ms()) // 1_000
             require(runtime_seconds > 0 and setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE")
+        elif owns_writer:
+            require(setup_alive(), "PROVIDER_STEP_OWNER_LOST")
         properties = ["ExitType=main", "KillMode=mixed", f"TimeoutStopSec={OWNER_GRACE_SECONDS}s",
-                      f"RuntimeMaxSec={runtime_seconds}s", "Restart=no", "NoNewPrivileges=yes",
-                      f"WorkingDirectory={ROOT}"]
-        terminal_launch_attempted = terminal
+                      "Restart=no", "NoNewPrivileges=yes", f"WorkingDirectory={ROOT}"]
+        if runtime_seconds is not None:
+            properties.append(f"RuntimeMaxSec={runtime_seconds}s")
+        writer_launch_attempted = owns_writer
         launcher = subprocess.Popen(
             ["/usr/bin/systemd-run", "--user", "--quiet", "--pipe", "--wait",
              "--service-type=exec", "--expand-environment=no", f"--unit={unit}",
@@ -501,7 +524,7 @@ def hosted_controller(provider, runtime_seconds, args):
         retired_state = retire_closed_unit(control_environment, unit, invocation, group, identity)
         log_relay.join(timeout=2)
         require(not log_relay.is_alive() and not log_failures, "PROVIDER_LOG_RELAY_UNPROVED")
-        terminal_closed = terminal
+        writer_closed = owns_writer
         print("WEATHER_PROVIDER_CGROUP_CLOSED", flush=True)
         if not normal_wait or not alive():
             scratch_releasable = True
@@ -509,9 +532,11 @@ def hosted_controller(provider, runtime_seconds, args):
         require_controlled_exit(status, retired_state, unit, invocation)
         if terminal:
             require(status == 0, "TERMINAL_SEAL_EXIT_REFUSED")
-            assert_weather_acquisition_writer(seal_lease)
-            release_owner, seal_lease = seal_lease, None
+        if owns_writer:
+            assert_weather_acquisition_writer(writer_lease)
+            release_owner, writer_lease = writer_lease, None
             release_weather_acquisition_writer(release_owner)
+        if terminal:
             ferry_closed_channels(provider, channels, (runner_temp, run, attempt, boot, started))
         else:
             ferry_closed_channels(provider, channels)
@@ -521,12 +546,12 @@ def hosted_controller(provider, runtime_seconds, args):
         for fd in (owner_read, owner_write, parent_fd):
             if fd is not None:
                 os.close(fd)
-        if seal_lease is not None:
-            if terminal_launch_attempted and not terminal_closed:
-                retain_weather_acquisition_writer(seal_lease)
+        if writer_lease is not None:
+            if writer_launch_attempted and not writer_closed:
+                retain_weather_acquisition_writer(writer_lease)
             else:
-                release_weather_acquisition_writer(seal_lease)
-        if scope is not None and ((launcher is None and not terminal_launch_attempted) or scratch_releasable):
+                release_weather_acquisition_writer(writer_lease)
+        if scope is not None and ((launcher is None and not writer_launch_attempted) or scratch_releasable):
             # This fixed scratch contains only the staged GitHub output files.
             for channel in CHANNELS:
                 (scope / channel).unlink(missing_ok=True)
@@ -540,6 +565,11 @@ def main(arguments):
         return watch_owner(int(arguments[1]))
     if len(arguments) >= 2 and arguments[0] == "--unit":
         return service_entry(arguments[1], arguments[2:])
+    if arguments and arguments[0] == OPEN_METEO:
+        require(len(arguments) >= 3 and arguments[1] == "--", "PROVIDER_ARGUMENTS_REFUSED")
+        # The existing provider's own request/runtime budgets and job deadline
+        # remain authoritative. Ownership adds no earlier acquisition deadline.
+        return hosted_controller(OPEN_METEO, None, arguments[2:])
     require(len(arguments) >= 3 and arguments[2] == "--", "PROVIDER_ARGUMENTS_REFUSED")
     kind, seconds, _, *args = arguments
     runtime_seconds = int(seconds)

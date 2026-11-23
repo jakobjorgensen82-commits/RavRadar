@@ -2977,17 +2977,36 @@ jobs:
         id: open-meteo-fill
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
         continue-on-error: true
-        run: >-
-          python scripts/fill-open-meteo-current-fallback.py
-          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --dmi .cache/dmi-candidate-progress.json
-          --timeout-seconds 30
-          --runtime-seconds ${{ inputs.quick_confirmation && '120' || '900' }}
-          --critical-only
-          ${{ inputs.checkpoint_only && '--reuse-only' || '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+            --dmi .cache/dmi-candidate-progress.json
+            --timeout-seconds 30
+            --runtime-seconds ${{ inputs.quick_confirmation && '120' || '900' }}
+            --critical-only
+            ${{ inputs.checkpoint_only && '--reuse-only' || '' }}
+          )
+          if test "$RAVRADAR_ORDINARY_PROVIDER_CLOSURE" = true && test "${{ steps.operational-action.outputs.action }}" = integrated; then
+            exec python -B scripts/run-ordinary-provider-cgroup.py open-meteo -- "${args[@]}"
+          fi
+          exec python scripts/fill-open-meteo-current-fallback.py "${args[@]}"
+
+      - name: Require physically stopped ordinary Open-Meteo before reading its checkpoint
+        id: open-meteo-fill-closure
+        if: always() && env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.open-meteo-fill.outcome != '' && steps.open-meteo-fill.outcome != 'skipped'
+        shell: bash
+        env:
+          PRODUCER_CLOSED: ${{ steps.open-meteo-fill.outputs.open_meteo_producer_closed }}
+        run: |
+          if test "$PRODUCER_CLOSED" != true; then
+            echo '::error::OPEN_METEO_ORDINARY_PRODUCER_STOP_UNPROVED'
+            exit 1
+          fi
 
       - name: Preserve safe weather acquisition diagnostics before terminal gates
-        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-bulk.outcome == '' || steps.dmi-bulk.outcome == 'skipped' || steps.dmi-producer-closure.outcome == 'success') && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || (steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success')) && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.open-meteo-fill.outcome == '' || steps.open-meteo-fill.outcome == 'skipped' || steps.open-meteo-fill-closure.outcome == 'success') && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-bulk.outcome == '' || steps.dmi-bulk.outcome == 'skipped' || steps.dmi-producer-closure.outcome == 'success') && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || (steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success')) && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
@@ -3003,7 +3022,7 @@ jobs:
             data/diagnostics/open-meteo-current-fetch.json
 
       - name: Require verified Open-Meteo residual checkpoint before closure
-        if: inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'))
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.open-meteo-fill.outcome == '' || steps.open-meteo-fill.outcome == 'skipped' || steps.open-meteo-fill-closure.outcome == 'success') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'))
         shell: bash
         run: |
           set -euo pipefail
@@ -3227,7 +3246,7 @@ jobs:
         # An early restore/short-confirmation failure must never publish a new
         # run-id checkpoint that is only a copy of older progress. At least the
         # first real supplier step must have been attempted.
-        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || ((steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success') && (steps.copernicus-next-run-refresh.outcome == '' || steps.copernicus-next-run-refresh.outcome == 'skipped' || steps.copernicus-next-run-refresh-closure.outcome == 'success'))) && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-producer-closure.outcome == 'success') && (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
+        if: (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.open-meteo-fill.outcome == '' || steps.open-meteo-fill.outcome == 'skipped' || steps.open-meteo-fill-closure.outcome == 'success') && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || ((steps.copernicus-fill.outcome == '' || steps.copernicus-fill.outcome == 'skipped' || steps.copernicus-fill-closure.outcome == 'success') && (steps.copernicus-next-run-refresh.outcome == '' || steps.copernicus-next-run-refresh.outcome == 'skipped' || steps.copernicus-next-run-refresh-closure.outcome == 'success'))) && (env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE != 'true' || steps.operational-action.outputs.action != 'integrated' || steps.dmi-producer-closure.outcome == 'success') && (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
         continue-on-error: true
         timeout-minutes: 4
         shell: bash

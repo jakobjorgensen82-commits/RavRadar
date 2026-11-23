@@ -123,10 +123,14 @@ test('ordinary producer cessation precedes RAW, consumers and encrypted progress
   const fill = step(source, 'Fill only exact-hour DMI gaps from Copernicus');
   const fillStop = step(source, 'Require physically stopped ordinary Copernicus before reading its source stage');
   const fillRead = step(source, 'Require reusable Copernicus source stage before combined current closure');
+  const openMeteo = step(source, 'Fill only the exact remaining current gaps from Open-Meteo');
+  const openMeteoStop = step(source, 'Require physically stopped ordinary Open-Meteo before reading its checkpoint');
+  const openMeteoRead = step(source, 'Require verified Open-Meteo residual checkpoint before closure');
   const refresh = step(source, 'Reclaim a bounded Copernicus quality slice for the next normal run');
   const refreshStop = step(source, 'Require physically stopped ordinary Copernicus after optional quality work');
   const seal = step(source, 'Encrypt newly saved private weather progress before later production steps');
-  const sequence = [dmi, dmiStop, rawWrite, fill, fillStop, fillRead, refresh, refreshStop, seal]
+  const sequence = [dmi, dmiStop, rawWrite, fill, fillStop, fillRead, openMeteo, openMeteoStop,
+    openMeteoRead, refresh, refreshStop, seal]
     .map(block => source.indexOf(block));
   assert.ok(sequence.every((position, index) => position > (sequence[index - 1] ?? -1)));
   assert.match(dmi, /node scripts\/run-current-family-cold-start.mjs run-dmi/);
@@ -136,7 +140,7 @@ test('ordinary producer cessation precedes RAW, consumers and encrypted progress
   assert.match(fill, /run-ordinary-provider-cgroup.py copernicus 1560 --/);
   assert.match(refresh, /timeout-minutes: 7/);
   assert.match(refresh, /run-ordinary-provider-cgroup.py copernicus 380 --/);
-  for (const stop of [dmiStop, fillStop, refreshStop]) {
+  for (const stop of [dmiStop, fillStop, openMeteoStop, refreshStop]) {
     assert.match(stop, /if: always\(\) && env.RAVRADAR_ORDINARY_PROVIDER_CLOSURE == 'true'/);
     assert.match(stop, /test "\$PRODUCER_CLOSED" != true/);
     assert.doesNotMatch(stop, /continue-on-error/);
@@ -148,6 +152,48 @@ test('ordinary producer cessation precedes RAW, consumers and encrypted progress
   assert.match(seal, /steps.dmi-producer-closure.outcome == 'success'/);
   assert.match(seal, /steps.copernicus-fill-closure.outcome == 'success'/);
   assert.match(seal, /steps.copernicus-next-run-refresh-closure.outcome == 'success'/);
+  assert.match(openMeteo, /--runtime-seconds \$\{\{ inputs.quick_confirmation && '120' \|\| '900' \}\}/);
+  assert.match(openMeteo, /--timeout-seconds 30/);
+  assert.match(openMeteo, /--critical-only/);
+  assert.match(openMeteo, /\$\{\{ inputs.checkpoint_only && '--reuse-only' \|\| '' \}\}/);
+  assert.match(openMeteo, /run-ordinary-provider-cgroup.py open-meteo -- "\$\{args\[@\]\}"/);
+  assert.match(openMeteo, /exec python scripts\/fill-open-meteo-current-fallback.py "\$\{args\[@\]\}"/);
+  assert.match(openMeteoStop, /steps.open-meteo-fill.outputs.open_meteo_producer_closed/);
+  for(const reader of [openMeteoRead, step(source, 'Preserve safe weather acquisition diagnostics before terminal gates'), seal]){
+    assert.match(reader, /steps.open-meteo-fill-closure.outcome == 'success'/);
+  }
+
+  const enabled = (block, steps) => {
+    const condition = /^        if: (.*)$/m.exec(block)[1]
+      .replace(/\bsteps\.([a-z][\w-]*)/g, 'steps["$1"]');
+    return runInNewContext(condition, { steps, always:()=>true, inputs:{},
+      env:{RAVRADAR_ORDINARY_PROVIDER_CLOSURE:'true'}, github:{ref:'refs/heads/main'} });
+  };
+  const steps = {
+    preflight:{outputs:{should_run:'true'}}, 'operational-action':{outputs:{action:'integrated'}},
+    'weather-source-handoff':{outputs:{reused:'false'}}, 'dmi-bulk':{outcome:'success'},
+    'dmi-producer-closure':{outcome:'success'}, 'copernicus-fill':{outcome:'skipped'},
+    'copernicus-next-run-refresh':{outcome:'skipped'},
+    'component-progress-restore':{outcome:'success',outputs:{captured:'true'}},
+    'open-meteo-fill':{outcome:'success'}, 'open-meteo-fill-closure':{outcome:'success'},
+  };
+  assert.equal(enabled(openMeteo,steps),true);
+  assert.equal(enabled(openMeteoStop,steps),true);
+  for (const outcome of ['success','failure']) {
+    const available = {...steps,'open-meteo-fill':{outcome}};
+    assert.equal(enabled(seal,available),true,'Physical closure permits the normal or partial snapshot path');
+    assert.equal(enabled(seal,{...available,'open-meteo-fill-closure':{outcome:'failure'}}),false);
+    assert.equal(enabled(openMeteoRead,{...available,'open-meteo-fill-closure':{outcome:'failure'}}),false);
+  }
+  assert.equal(enabled(seal,{...steps,'open-meteo-fill':{outcome:'cancelled'},
+    'open-meteo-fill-closure':{outcome:'skipped'}}),false);
+  const handoff = {...steps,'weather-source-handoff':{outputs:{reused:'true'}},
+    'open-meteo-fill':{outcome:'skipped'},'open-meteo-fill-closure':{outcome:'skipped'}};
+  assert.equal(enabled(openMeteo,handoff),false);
+  assert.equal(enabled(openMeteoStop,handoff),false);
+  assert.equal(enabled(openMeteoRead,handoff),true);
+  assert.equal(enabled(seal,{...handoff,'dmi-bulk':{outcome:'skipped'}}),false);
+  assert.match(openMeteoRead, /test -s \.cache\/open-meteo-current-fallback\.json/);
 });
 
 test('normal DMI save uses its measured allowance and must actually finalize before fresh weather', () => {
