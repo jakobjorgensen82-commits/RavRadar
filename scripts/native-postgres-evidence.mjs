@@ -1943,6 +1943,26 @@ async function assistantAfter599PhaseIdentity(){
 
 // App evidence is separate from the unchanged64-row numerical cutover report.
 // No caller option can turn a current76-row source into historical75-row evidence.
+async function accountNativeReceiptSourceIdentity(){
+  const files=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql'));
+  if(!files.includes('20261122200000_account_native_activity_receipt_off.sql'))return null;
+  assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE,'Receipt source is current80 only');
+  const {currentNativeActivityReceiptSourceContext}=await import('./lib/account-native-activity-receipt-source.mjs');
+  const identity=currentNativeActivityReceiptSourceContext();assert(identity);return identity;
+}
+function projectAccountNativeReceiptNative(value,identity){
+  if(identity===null){assert.equal(value,undefined,'Original79 cannot claim current80 receipt SQL');return null;}
+  const expected={kind:'ACCOUNT_NATIVE_ACTIVITY_RECEIPT_NATIVE_SQL_CASES',sqlExecuted:true,...identity,
+    cases:9,appendSha256:identity.migrationSQLSha256,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,realAuthResponse:false,
+    exclusiveHookOnly:true,browserRpcCannotWitness:true,outerTransactionRollback:true,oneReceipt:true,
+    policyActivated:false,notices:false,deletion:false,userDataReported:false};
+  assert.deepEqual(value,expected,'Current80 requires its actually executed nine-case append, never original79 evidence');
+  return Object.freeze(expected);
+}
+export async function assertCurrentAccountNativeReceiptNativeReport(report){
+  return projectAccountNativeReceiptNative(report.accountNativeReceipt,await accountNativeReceiptSourceIdentity());
+}
+
 async function accountErasureSourceIdentity(){
   const directory=new URL('../supabase/migrations/',import.meta.url);
   const filename='20261116181500_account_erasure_outbox_off.sql';
@@ -1957,7 +1977,8 @@ async function accountErasureSourceIdentity(){
   const notice=accountErasureSchema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
   if(notice!==undefined)assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE,'Current notice source cannot impersonate a historical family');
   const expectedCount=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?(notice===undefined?77:79):76;
-  assert.equal(files.length,expectedCount,'Every original SQL and the active append must physically exist');
+  const receipt=await accountNativeReceiptSourceIdentity();
+  assert.equal(files.length,expectedCount+Number(receipt!==null),'Every original SQL and the active append must physically exist');
   assert(files.includes(filename),'The current OFF source must physically exist');
   const file=new URL(filename,directory),stat=await fs.lstat(file);
   assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>0&&stat.size<=65536,'OFF source must be bounded regular SQL');
@@ -1970,7 +1991,8 @@ async function accountInactivitySourceIdentity(){
   assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE);
   const source=accountErasureSchema.readAccountInactivitySource();
   const files=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql'));
-  assert.equal(files.length,79,'Current OFF pair requires the actual whole79-file source');
+  const receipt=await accountNativeReceiptSourceIdentity();
+  assert.equal(files.length,79+Number(receipt!==null),'Original OFF scope79 plus only the current receipt append');
   assert(!files.includes('20261116230000_account_inactivity_notice_off.sql')&&!files.includes('20261117030000_account_native_activity_capture_off.sql'),
     'Private donor names must not become historical-prefix migrations');
   return {sourceSqlFileCount:79,migrations:source.migrations.map(({sql,id,...row})=>row)};
@@ -2058,9 +2080,10 @@ export async function assistantAfter599NativeReportProjection(report,options){
   assert(Object.hasOwn(report,'accountErasure'),'After599 requires actual current77-file app evidence');
   const app=projectAccountErasureNative(report.accountErasure,await accountErasureSourceIdentity(),postgresMajorVersion);
   const inactivity=projectAccountInactivityNative(report.accountInactivity,await accountInactivitySourceIdentity(),postgresMajorVersion);
+  const receipt=projectAccountNativeReceiptNative(report.accountNativeReceipt,await accountNativeReceiptSourceIdentity());
   return {kind:SCALAR597_REPORT_MARKER,sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
     normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,assistantAfter599Successor:observed,
-    accountErasure:app,...(inactivity===null?{}:{accountInactivity:inactivity})};
+    accountErasure:app,...(inactivity===null?{}:{accountInactivity:inactivity}),...(receipt===null?{}:{accountNativeReceipt:receipt})};
 }
 export function assistantAfter598NativeReportCollector(options){
   requireAssistantAfter598Output(); // FIRST before options or evidence ingestion.
@@ -2125,7 +2148,13 @@ export async function captureAssistantAfter599PgInput(options){
   const profileFile='scripts/lib/source-impact-domain-inputs-598.json';await read(profileFile);
   const profile=JSON.parse(String(readGit(['cat-file','blob',ref+':'+profileFile])));
   assert.equal(profile.id,'REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12');assert.equal(profile.postgresModules.length,69);
-  const modules=new Set([...profile.postgresModules,'scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs']);
+  const receiptSql='supabase/migrations/20261122200000_account_native_activity_receipt_off.sql';
+  const receiptSource='scripts/lib/account-native-activity-receipt-source.mjs';
+  const receiptPresent=index.has(receiptSql);
+  assert.equal(index.has(receiptSource),receiptPresent,'Incomplete current80 source dependency');
+  if(receiptPresent)assert.equal(sql.length,80,'Receipt input requires the complete current80 source');
+  const modules=new Set([...profile.postgresModules,'scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs',
+    ...(receiptPresent?[receiptSource]:[])]);
   const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
   const selected=new Set([...modules,...profile.postgresData,...setup,...profile.continuation.files,profile.continuation.file,...sql]);
   for(const definition of Object.values(profile.models)){
@@ -2394,6 +2423,7 @@ export async function executeAssistantAfter599Native(){
   if(reused){await record(reused);return;}
   const identity=await assistantAfter599PhaseIdentity(); // Before environment/Git/native launch.
   const appSourceBefore=await accountErasureSourceIdentity();
+  const receiptSourceBefore=await accountNativeReceiptSourceIdentity();
   const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;
   assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
   const verifyCheckout=()=>{
@@ -2412,6 +2442,8 @@ export async function executeAssistantAfter599Native(){
     assistantAfter599NativeReportCollector({selectedPrograms:runtime.selectedPrograms}));
   if(!report)return;
   assert.deepEqual(await accountErasureSourceIdentity(),appSourceBefore,'OFF source changed during native execution');
+  assert.deepEqual(await accountNativeReceiptSourceIdentity(),receiptSourceBefore,'Receipt source changed during native execution');
+  await assertCurrentAccountNativeReceiptNativeReport(report);
   await assertCurrentAccountErasureNativeReport(report);
   verifyCheckout();verifyAssistantPublic591Runtime(runtime,await assistantPublic591Runtime());
   const {shape,migrationInventory,ledgerFixture,...issued}=identity;
@@ -2429,6 +2461,7 @@ async function record(receipt) {
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE){
     await assertCurrentAccountErasureNativeReport(receipt.report);
     await assertCurrentAccountInactivityNativeReport(receipt.report);
+    await assertCurrentAccountNativeReceiptNativeReport(receipt.report);
     await verifyAssistantAfter599PhaseReceipt(receipt,current);
   }
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE){

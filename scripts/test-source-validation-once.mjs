@@ -62,7 +62,8 @@ assert.deepEqual(sourceCommandsForChangedPaths(['.github/workflows/deploy-trip-s
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/lib/pages-closure-historical-test-input.mjs']),[]);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/audit-pages-artifact-privacy.mjs',
   'scripts/build-forecast-share-projection.mjs','scripts/verify-ravscore-operational-pages-deployment.mjs']),
-  ['node scripts/test-pages-artifact-privacy.mjs','node scripts/test-forecast-share-projection.mjs']);
+  ['node scripts/test-pages-artifact-privacy.mjs','node scripts/test-forecast-share-projection.mjs',
+    'node scripts/test-ravscore-operational-pages-deployment.mjs --public-verification-only']);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/verify-code-only-migration-plan.mjs',
   'scripts/lib/account-erasure-outbox-native-fixture.mjs','scripts/test-account-erasure-outbox.mjs']),
   ['node --test scripts/test-account-erasure-outbox.mjs']);

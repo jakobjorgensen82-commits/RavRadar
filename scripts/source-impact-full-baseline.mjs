@@ -22,6 +22,11 @@ export const SOURCE_IMPACT_FULL_BASELINE_KIND='RAVRADAR_SOURCE_IMPACT_FULL_BASEL
 // Old receipt/reference formats remain unchanged; caller booleans grant nothing.
 const qualifiedAccountErasureChecksByResult=new WeakMap();
 const qualifiedAccountInactivityChecksByResult=new WeakMap();
+const qualifiedAccountNativeReceiptByResult=new WeakMap();
+export function qualifiedAccountNativeReceipt(result){
+  const value=result&&typeof result==='object'?qualifiedAccountNativeReceiptByResult.get(result):null;
+  return value?structuredClone(value):null;
+}
 export function qualifiedAccountInactivityChecks(result){
   const value=result&&typeof result==='object'?qualifiedAccountInactivityChecksByResult.get(result):null;
   return value?structuredClone(value):null;
@@ -307,6 +312,11 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       qualifiedAccountInactivityChecksByResult.set(result,{candidateCommit:input.candidateCommit,reference,
         sourceSqlFileCount:native.report.accountInactivity.sourceSqlFileCount,migrations:native.report.accountInactivity.migrations,
         checkReference:native.report.accountInactivity.checkReference});
+    }
+    if([ASSISTANT_AFTER599_PHASE_KIND,ASSISTANT_AFTER599_REUSE_KIND].includes(phaseProof.kind)&&native.report.accountNativeReceipt){
+      qualifiedAccountNativeReceiptByResult.set(result,{candidateCommit:input.candidateCommit,reference,
+        execution:{status:native.status,executedInThisRun:native.executedInThisRun,origin:structuredClone(native.origin)},
+        receipt:structuredClone(native.report.accountNativeReceipt)});
     }
     return result;
   }catch{return refused();}
