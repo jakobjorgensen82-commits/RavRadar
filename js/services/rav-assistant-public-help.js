@@ -103,10 +103,18 @@ const GENERAL_PRECAUTIONS={
   de:/^(?:worauf (?:sollte|sollten|muss|müssen) (?:ich|man|wir) achten|was (?:sollte|sollten|muss|müssen) (?:ich|man|wir) (?:beachten|vermeiden))$/iu,
   en:/^what (?:should|must) (?:i|we|one) (?:watch (?:out )?for|look (?:out )?for|keep in mind|avoid)$/iu
 };
-function practicalBeachEquipmentHelp(text,language){
+const BEACH_NET_REFERENTS={
+  da:{pronoun:/\bden\b/iu,name:'en ravkese'},
+  de:{pronoun:/\bihn\b/iu,name:'einen Bernsteinkescher'},
+  en:{pronoun:/\bit\b/iu,name:'an amber net'},
+};
+function practicalBeachEquipmentHelp(text,language,referent=null){
   const parts=text.split(/,?\s+(?:og|und|and)\s+(?=(?:hvad|worauf|was|what)\b)|[?!.]\s+(?=(?:hvad|worauf|was|what)\b)/iu);
-  if(parts.length>2||!BEACH_EQUIPMENT_USE[language].test(parts[0])
-    ||(parts.length===2&&!GENERAL_PRECAUTIONS[language].test(parts[1])))return null;
+  const [use,precautions]=parts;
+  const explicitUse=referent?use.replace(referent.pronoun,referent.name):use;
+  if(parts.length>2||(referent&&(!precautions||explicitUse===use))
+    ||!BEACH_EQUIPMENT_USE[language].test(explicitUse)
+    ||(parts.length===2&&!GENERAL_PRECAUTIONS[language].test(precautions)))return null;
   const units=[localRavKnowledgeAnswer('Hvad er en kesse til ravjagt?',language),
     localRavKnowledgeAnswer('Hvordan leder jeg systematisk på stranden?',language)];
   if(units.some(unit=>typeof unit!=='string'||!unit))return null;
@@ -118,6 +126,13 @@ function publicHelpText(question, language) {
   if (!raw || raw.length > 600 || !['da', 'de', 'en'].includes(language)
     || routeRavQuestion(raw) === 'fixed-refusal') return null;
   return raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?!.]{1,3}$/u, '');
+}
+
+export function publicRavAssistantEquipmentFollowup(question,topic,language) {
+  if(topic!=='public-knowledge:equipment.amber-net')return null;
+  const text=publicHelpText(question,language);
+  if(!text)return null;
+  return practicalBeachEquipmentHelp(text,language,BEACH_NET_REFERENTS[language])?.answer??null;
 }
 
 const AMBER_BUBBLE_FORMS = {

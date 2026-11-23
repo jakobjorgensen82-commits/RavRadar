@@ -18,7 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261123-origin-age&followup=daylight-20261122`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261123-origin-and-net&followup=daylight-20261122`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -90,7 +90,7 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now, star
       asked.push(question);
       return assistant.askRavRadar(question, context, { language: locale, now, localOnly: true });
     },
-    publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup,
+    publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup,
     classifyRavQuestion: assistant.classifyRavQuestion,
     assistantTopicForQuestion: assistant.assistantTopicForQuestion,
     assistantLocalFollowupAnswer: assistant.assistantLocalFollowupAnswer,
@@ -134,9 +134,9 @@ test('finite public knowledge references keep the whole DA/DE/EN followup on the
     'x-ravradar-model-bundle-sha256':binding.modelBundleSha256,'x-ravradar-assistant-knowledge-schema':knowledge.schemaVersion,
     'x-ravradar-assistant-knowledge-sha256':knowledgeHash};
   const rows=[
-    ['da','Hvad er er kese?','Kan den også bruges på stranden, og hvad skal jeg være opmærksom på?','equipment.amber-net'],
-    ['de','Was ist ein Bernsteinkescher?','Kann man ihn auch am Strand benutzen, und worauf sollte ich achten?','equipment.amber-net'],
-    ['en','What is an amber net?','Can it also be used on the beach, and what should I watch for?','equipment.amber-net'],
+    ['da','Hvad er er kese?','Kan den også bruges på stranden?','equipment.amber-net'],
+    ['de','Was ist ein Bernsteinkescher?','Kann man ihn auch am Strand benutzen?','equipment.amber-net'],
+    ['en','What is an amber net?','Can it also be used on the beach?','equipment.amber-net'],
   ];
   for(const [locale,first,next,id]of rows){
     const ui=fixture(locale);await ui.submit(first);assert.equal(ui.topic(),'public-knowledge:'+id);
@@ -157,6 +157,38 @@ test('finite public knowledge references keep the whole DA/DE/EN followup on the
     assert.equal(requests,1);assert.equal(ui.answers().at(-1),'SYNTHETIC_WHOLE_QUESTION_'+locale);
     assert.equal(ui.topic(),'public-knowledge:'+id);assert.equal(ui.loading(),false);assert.equal(ui.detailCalls(),0);
   }
+});
+
+test('beach net followups reuse approved advice for the resolved net and whole precautions',async()=>{
+  const topic='public-knowledge:equipment.amber-net';
+  const cases=[
+    ['da','Hvad er er kese?','Kan den også bruges på stranden, og hvad skal jeg være opmærksom på?',
+      'Kan en ravkese også bruges på stranden, og hvad skal jeg være opmærksom på?',' Hvordan finder jeg rav med en ukendt ravmaskine?'],
+    ['de','Was ist ein Bernsteinkescher?','Kann man ihn auch am Strand benutzen, und worauf sollte ich achten?',
+      'Kann man einen Bernsteinkescher auch am Strand benutzen, und worauf sollte ich achten?',' Wie benutzt man eine unbekannte Bernsteinmaschine?'],
+    ['en','What is an amber net?','Can it also be used on the beach, and what should I watch for?',
+      'Can an amber net also be used on the beach, and what should I watch for?',' How do I use an unknown amber machine?'],
+  ];
+  for(const [locale,definition,question,named,extra] of cases){
+    const expected=publicRavAssistantHelp(named,locale).answer;
+    const ui=fixture(locale);
+    await ui.submit(definition);assert.equal(ui.topic(),topic);
+    const asked=[];
+    ui.context.askRavRadar=async text=>{asked.push(text);return 'NORMAL_WHOLE_QUESTION';};
+    await ui.submit(question);
+    assert.equal(ui.answers().at(-1),expected);
+    assert.equal(ui.topic(),topic);assert.equal(ui.loading(),false);assert.equal(ui.detailCalls(),0);
+    assert.deepEqual(asked,[]);
+
+    const mixed=question+extra;
+    await ui.submit(mixed);
+    assert.deepEqual(asked,[assistant.assistantPublicFollowupQuestion(mixed,topic,locale)]);
+    assert(asked[0].endsWith(mixed));
+    ui.emit('dialog','close');
+    await ui.submit(question);
+    assert.equal(asked.at(-1),question,'Without the dialog referent no net is inferred.');
+  }
+  assert.equal(fetchCalls,0);
 });
 
 const uvDaylightCases = [
@@ -425,7 +457,7 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261123-origin-age');
+    assert.equal(url.searchParams.get('assistant-help'), '20261123-origin-and-net');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
     assert.equal(url.searchParams.get('assistant-ready'), '20261122');
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);

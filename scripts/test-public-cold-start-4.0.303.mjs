@@ -91,7 +91,7 @@ const previousDaylightSuffix = `${previousReadySuffix}&assistant-ready=20261122`
 const previousFrameSuffix = `${previousDaylightSuffix}&assistant-followup=daylight-frame-20261122`;
 const previousDataReadySuffix = `${previousFrameSuffix}&assistant-data=ready-20261123`;
 const previousPublishedHelpSuffix = previousDataReadySuffix.replace('assistant-help=20261121', 'assistant-help=20261123');
-const suffix = previousPublishedHelpSuffix.replace('assistant-help=20261123', 'assistant-help=20261123-origin-age');
+const suffix = previousPublishedHelpSuffix.replace('assistant-help=20261123', 'assistant-help=20261123-origin-and-net');
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
@@ -187,7 +187,7 @@ for (const file of ['bootstrap.js', 'app.js']) {
 }
 const oldHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261120`;
 const previousPublishedHelpPath = `./js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261123&followup=daylight-20261122`;
-const helpPath = previousPublishedHelpPath.replace('ui=public-help-20261123', 'ui=public-help-20261123-origin-age');
+const helpPath = previousPublishedHelpPath.replace('ui=public-help-20261123', 'ui=public-help-20261123-origin-and-net');
 assert.ok(app.includes(`from "${helpPath}"`));
 cached.set(oldHelpUrl, new Response('old-help-module'));
 const previousHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261121`;
