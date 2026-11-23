@@ -1676,13 +1676,51 @@ async function protectedFilesBy({request,storage,repository,deploymentId=null,ma
   const files=await decodeArchive(await storage.download(descriptor.objectPath),descriptor,PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY);
   return {descriptor,files};
 }
+const repairGithubHeaders = token => ({ Authorization: 'Bearer ' + token,
+  Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' });
+
 async function repairGithubJson(route,fetchImpl=fetch) {
-  const response=await fetchImpl('https://api.github.com/repos/'+route,{headers:{
-    Authorization:'Bearer '+(process.env.GH_TOKEN||process.env.GITHUB_TOKEN),Accept:'application/vnd.github+json',
-    'X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(15000)});
+  const response=await fetchImpl('https://api.github.com/repos/'+route,{
+    headers:repairGithubHeaders(process.env.GH_TOKEN||process.env.GITHUB_TOKEN),signal:AbortSignal.timeout(15000)});
   if(!response.ok)throw new Error('Prepared recovery GitHub evidence unavailable (HTTP '+
     (Number.isInteger(response.status)?response.status:'unknown')+').');
   return response.json();
+}
+
+const retryableMainRefStatus = new Set([502, 503, 504]);
+const retryableMainRefConnection = new Set(['UND_ERR_CONNECT_TIMEOUT', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN']);
+
+export async function readReentryMainHead({ repository, token, fetchImpl = fetch,
+  wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) } = {}) {
+  if (typeof repository !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(repository)
+    || typeof token !== 'string' || !token) {
+    throw new Error('REENTRY_MAIN_REF_IDENTITY_REQUIRED');
+  }
+  const url = `https://api.github.com/repos/${repository}/git/ref/heads/main`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const signal = AbortSignal.timeout(10_000);
+    let response;
+    try {
+      response = await fetchImpl(url, { method: 'GET', cache: 'no-store', redirect: 'error',
+        headers: repairGithubHeaders(token), signal });
+    } catch (error) {
+      const ownTimeout = signal.aborted && signal.reason?.name === 'TimeoutError' && error === signal.reason;
+      const temporaryConnection = error instanceof TypeError && retryableMainRefConnection.has(error.cause?.code);
+      if (!ownTimeout && !temporaryConnection) throw new Error('REENTRY_MAIN_REF_UNAVAILABLE');
+    }
+    if (response?.status === 200) {
+      const ref = await response.json().catch(() => null);
+      if (ref?.ref !== 'refs/heads/main' || ref.object?.type !== 'commit'
+        || typeof ref.object.sha !== 'string' || !/^[0-9a-f]{40}$/.test(ref.object.sha)) {
+        throw new Error('REENTRY_MAIN_REF_INVALID');
+      }
+      return ref.object.sha;
+    }
+    if (response && !retryableMainRefStatus.has(response.status)) throw new Error('REENTRY_MAIN_REF_HTTP_REFUSED');
+    await response?.body?.cancel().catch(() => {});
+    if (attempt < 2) await wait((attempt + 1) * 1000);
+  }
+  throw new Error('REENTRY_MAIN_REF_RETRY_EXHAUSTED');
 }
 async function repairLiveReadiness({sourceHead,publicImplementationClosureSha256,fetchImpl=fetch}={}) {
   const {checkIntegratedCutoverReadiness}=await import('./integrated-cutover-readiness.mjs');
@@ -1913,6 +1951,11 @@ async function writeJsonAtomic(file, value) {
 }
 
 async function main() {
+  if (process.argv.length === 3 && process.argv[2] === '--read-live-main-head') {
+    if (process.env.GITHUB_REF !== 'refs/heads/main') throw new Error('REENTRY_MAIN_REF_IDENTITY_REQUIRED');
+    console.log(await readReentryMainHead({ repository: process.env.GITHUB_REPOSITORY, token: process.env.GH_TOKEN }));
+    return;
+  }
   const options = parseArgs(process.argv.slice(2));
   // Operational evidence is a separate, small Supabase object family. The
   // R2 cutover only moves the large production weather/runtime generations.
