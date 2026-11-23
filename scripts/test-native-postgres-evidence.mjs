@@ -2891,8 +2891,9 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const originalReceipt={...copy(receipt),current:{run:originRun.id,attempt:1,head:parentHead,pullRequest:947,branch:currentReuse.branch}};
     const originalBytes=JSON.stringify(originalReceipt);
     const sourceStep='Validate source contracts and release governance';
+    const sourceTreeStep='Build deterministic source-tree content identity';
     const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false,skippedCurrent=false,
-      skippedFault=null,sourceBlocked=false,terminalSourceFailure=false}={})=>{
+      skippedFault=null,sourceBlocked=false,terminalSourceFailure=null}={})=>{
       const zip=Buffer.from('bounded after599 synthetic ZIP'),calls=[],origin=copy(originRun),active=copy(currentRun);
       const laterRun={...copy(origin),id:origin.id+(sourceBlocked?2:1),head_sha:unrelatedLater?'c'.repeat(40):actualHead};
       const blockedRun={...copy(origin),id:origin.id+1,head_sha:actualHead};
@@ -2912,7 +2913,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
         const job=skippedJobs.jobs[0];
         laterRun.conclusion=job.conclusion=terminalSourceFailure?'failure':'success';
         if(terminalSourceFailure){
-          const source=job.steps.find(step=>step.name===sourceStep);
+          const source=job.steps.find(step=>step.name===terminalSourceFailure);
           for(const step of job.steps){
             step.conclusion=step.number<source.number?'success':step.number===source.number?'failure':'skipped';
             if(step.number>source.number)step.started_at=step.completed_at=source.completed_at;
@@ -3004,24 +3005,32 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
         'En uafklaret form for en tidligere kildefejl spærrer fortsat');
     });
     await t.test('after599 passerer verificeret terminal kildefejl i begge historikopslag',async()=>{
-      const failed=makeAfter599Fixture({terminalSourceFailure:true});
-      const kept=await native.decideAssistantAfter599Reuse(failed.options);
-      assert(kept);assert.equal(kept.origin.run,originRun.id);assert.equal(kept.executedInThisRun,false);
-      const route='/runs/'+failed.skippedRun.id;
-      assert.equal(failed.calls.filter(value=>value.endsWith(route)).length,2);
-      assert(!failed.calls.some(value=>value.includes(route+'/artifacts')));
+      for(const terminalSourceFailure of [sourceTreeStep,sourceStep]){
+        const failed=makeAfter599Fixture({terminalSourceFailure});
+        const kept=await native.decideAssistantAfter599Reuse(failed.options);
+        assert(kept,terminalSourceFailure);
+        assert.equal(kept.origin.run,originRun.id);assert.equal(kept.executedInThisRun,false);
+        const route='/runs/'+failed.skippedRun.id;
+        assert.equal(failed.calls.filter(value=>value.endsWith(route)).length,2);
+        assert(!failed.calls.some(value=>value.includes(route+'/artifacts')));
+      }
+      const terminalSourceFailure=sourceTreeStep;
       for(const [name,skippedFault] of [
         ['cancellation',({run,job})=>{run.conclusion=job.conclusion='cancelled';}],
-        ['failed setup',({job})=>{job.steps[8].conclusion='failure';}],
-        ['workflow shape',({job})=>{job.steps[17].name='Other source check';}],
+        ['failed setup',({job})=>{job.steps[7].conclusion='failure';}],
+        ['second failure',({job})=>{job.steps[17].conclusion='failure';}],
+        ['workflow shape',({job})=>{job.steps[8].name='Other source check';}],
         ['unknown step',({job})=>{job.steps.at(-1).name='Other action';}],
         ['native attempted',({job})=>{job.steps.find(step=>step.name===STEP).started_at='2026-11-17T10:00:00Z';}],
         ['uploaded phase',({job})=>{job.steps.find(step=>step.name===CURRENT586_PHASE_UPLOAD).conclusion='success';}],
       ]){
-        assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure:true,skippedFault}).options),null,name);
+        assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure,skippedFault}).options),null,name);
       }
+      assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({
+        terminalSourceFailure:'Install declared DMI dependencies before source planning',
+      }).options),null,'fully skipped suffix cannot qualify a setup failure');
       for(const key of ['skippedFreshHead','currentSourceFailure'])
-        assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure:true,mutate:{[key]:true}}).options),null,key);
+        assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure,mutate:{[key]:true}}).options),null,key);
     });
     assert.equal(await native.verifyAssistantAfter599PhaseReceipt(reused,currentReuse),reused);
     const claims=await normal.assistantAfter599NativeClaims(reused,currentReuse);

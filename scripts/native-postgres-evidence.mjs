@@ -2337,13 +2337,17 @@ export async function decideAssistantAfter599Reuse(options){
       const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
       assert(hasDependencyOnlySourceSetup(workflow),'CURRENT_SOURCE_WORKFLOW_REQUIRED');
       if(!terminalSourceFailure){verifyTargetedSourceStepShape(job,workflow);return true;}
-      const {stepNames}=verifyCurrentSourceWorkflow(workflow);
+      const {stepNames,nativeUploadNumber}=verifyCurrentSourceWorkflow(workflow);
       const steps=job.steps.slice(0,stepNames.length);
       assert.deepEqual(steps.map(step=>[step.name,step.number]),stepNames.map((name,index)=>[name,index+1]));
-      const sourceIndex=stepNames.indexOf('Validate source contracts and release governance');
-      const source=steps[sourceIndex],upload=steps[sourceIndex+2];
-      assert.equal(steps[sourceIndex+1],pg);assert.equal(upload.name,CURRENT586_PHASE_UPLOAD);
-      assert.equal(source.status,'completed');assert.equal(source.conclusion,'failure');
+      const sourceIndex=steps.findIndex(step=>step.conclusion==='failure');
+      const source=steps[sourceIndex];
+      assert(source?.name==='Build deterministic source-tree content identity'
+        ||source?.name==='Validate source contracts and release governance');
+      assert(sourceIndex<nativeUploadNumber-2);
+      assert.equal(steps[nativeUploadNumber-2],pg);
+      assert.equal(steps[nativeUploadNumber-1].name,CURRENT586_PHASE_UPLOAD);
+      assert.equal(source.status,'completed');
       const failedAt=Date.parse(source.completed_at);
       assert(Date.parse(source.started_at)<=failedAt);
       const prefix=steps.slice(0,sourceIndex);
