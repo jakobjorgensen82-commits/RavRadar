@@ -60,6 +60,8 @@ assert.deepEqual(sourceCommandsForChangedPaths(['.github/workflows/deploy-trip-s
   ['node scripts/test-fixed-assistant-failure-log-20261101.mjs',
     'node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs']);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/lib/pages-closure-historical-test-input.mjs']),[]);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/audit-cloudflare-trip-storage.mjs']),
+  ['node scripts/test-hybrid-trip-storage-4.0.287.mjs']);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/audit-pages-artifact-privacy.mjs',
   'scripts/build-forecast-share-projection.mjs','scripts/verify-ravscore-operational-pages-deployment.mjs']),
   ['node scripts/test-pages-artifact-privacy.mjs','node scripts/test-forecast-share-projection.mjs',
