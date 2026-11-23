@@ -2893,7 +2893,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const sourceStep='Validate source contracts and release governance';
     const sourceTreeStep='Build deterministic source-tree content identity';
     const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false,skippedCurrent=false,
-      skippedFault=null,sourceBlocked=false,terminalSourceFailure=null}={})=>{
+      skippedFault=null,sourceBlocked=false,terminalSourceFailure=null,differentRunner=false}={})=>{
       const zip=Buffer.from('bounded after599 synthetic ZIP'),calls=[],origin=copy(originRun),active=copy(currentRun);
       const laterRun={...copy(origin),id:origin.id+(sourceBlocked?2:1),head_sha:unrelatedLater?'c'.repeat(40):actualHead};
       const blockedRun={...copy(origin),id:origin.id+1,head_sha:actualHead};
@@ -2933,26 +2933,35 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       };
       const metadata=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,size_in_bytes:zip.length,
         digest:'sha256:'+v2Hash(zip),created_at:'2026-11-17T10:01:00Z',workflow_run:{id:r.id,head_sha:r.head_sha}});
-      const rows=[active,...(locator||later||unrelatedLater||skippedCurrent||terminalSourceFailure?[laterRun]:[]),
-        ...(sourceBlocked?[blockedRun]:[]),origin];let decoding=origin,pullReads=0;
+      const rows=[active,...(locator||later||unrelatedLater||skippedCurrent||terminalSourceFailure||differentRunner?[laterRun]:[]),
+        ...(sourceBlocked?[blockedRun]:[]),origin];let decoding=origin,pullReads=0,historyReads=0;
       const proofFor=r=>({schemaVersion:r.id===laterRun.id&&locator?2:1,kind:r.id===laterRun.id&&locator?native.ASSISTANT_AFTER599_REUSE_KIND:native.ASSISTANT_AFTER599_PHASE_KIND,
         repository:ORIGIN.repository,headSha:r.head_sha,sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,
-        nativePostgres:r.id===laterRun.id&&locator?{...copy(locator),current:{...currentReuse,run:r.id}}:copy(originalReceipt)});
+        nativePostgres:r.id===laterRun.id&&locator?{...copy(locator),current:{...currentReuse,run:r.id}}
+          :r.id===laterRun.id&&differentRunner?{...copy(originalReceipt),current:{...currentReuse,run:r.id},
+            runtime:{...copy(runtime),imageVersion:'20261117.7125'}}:copy(originalReceipt)});
       const get=async(route,options={})=>{
         calls.push(route);if(mutate.unavailable)throw Error('SYNTHETIC_UNAVAILABLE');
         if(route.endsWith('/pulls/947')){pullReads++;return {number:947,state:'open',draft:false,base:{ref:'main',repo:{full_name:ORIGIN.repository}},
           head:{sha:mutate.prHead?'f'.repeat(40):mutate.originPrHead&&pullReads>1?normal.ORIGIN.head:actualHead,ref:currentReuse.branch,repo:{full_name:ORIGIN.repository}}};}
-        if(route.includes('/workflows/'))return {total_count:rows.length,workflow_runs:copy(rows)};
+        if(route.includes('/workflows/')){
+          historyReads++;
+          const observed=mutate.otherRunnerMissingFromHistory&&historyReads>1?rows.filter(r=>r.id!==laterRun.id):rows;
+          return {total_count:observed.length,workflow_runs:copy(observed)};
+        }
         for(const r of rows){
           if(route.endsWith('/runs/'+r.id))return {...copy(r),...(mutate.attempt&&r.id===origin.id?{run_attempt:2}:{}),
             ...(mutate.skippedFreshHead&&r.id===laterRun.id?{head_sha:'f'.repeat(40)}:{})};
           if(route.includes('/runs/'+r.id+'/attempts/1/jobs')){
-            const value=jobsFor(r);if((mutate.pgFailure&&r.id===origin.id)||((later||unrelatedLater)&&!locator&&r.id===laterRun.id))value.jobs[0].steps[15].conclusion='failure';
+            const value=jobsFor(r);if((mutate.pgFailure&&r.id===origin.id)||((later||unrelatedLater||mutate.otherRunnerPgFailure)&&!locator&&r.id===laterRun.id))value.jobs[0].steps[15].conclusion='failure';
             if((mutate.sourceFailure&&r.id===origin.id)||(mutate.currentSourceFailure&&r.id===active.id))
               value.jobs[0].steps.find(step=>step.name===sourceStep).conclusion='failure';
             if(mutate.uploadFailure&&r.id===origin.id)value.jobs[0].steps[16].conclusion='failure';return value;
           }
-          if(route.endsWith('/runs/'+r.id+'/artifacts?per_page=100'))return {total_count:1,artifacts:[{...metadata(r),...(mutate.expired?{expired:true}:{})}]};
+          if(route.endsWith('/runs/'+r.id+'/artifacts?per_page=100')){
+            if(mutate.otherRunnerMissingArtifact&&r.id===laterRun.id)return {total_count:0,artifacts:[]};
+            return {total_count:1,artifacts:[{...metadata(r),...(mutate.expired?{expired:true}:{})}]};
+          }
           if(route.endsWith('/artifacts/'+(r.id+2000)+'/zip')){decoding=r;return mutate.zip?Buffer.from('wrong'):zip;}
           if(route.endsWith('/artifacts/'+(r.id+2000)))return {...metadata(r),...(mutate.finalArtifact?{expired:true}:{})};
         }
@@ -2983,6 +2992,17 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     assert.equal(reused.kind,native.ASSISTANT_AFTER599_REUSE_KIND);assert.equal(reused.status,'REUSED');
     assert.equal(reused.executedInThisRun,false);assert.equal(reused.origin.run,originRun.id);assert.equal(reused.origin.head,parentHead);
     assert.equal(reused.eligibleForReuse,false);assert.equal(JSON.stringify(originalReceipt),originalBytes);
+    await t.test('after599 genbruger den ældre præcise runner efter en nyere verificeret PostgreSQL-prøve',async()=>{
+      const differentRunner=makeAfter599Fixture({differentRunner:true});
+      const compatible=await native.decideAssistantAfter599Reuse(differentRunner.options);
+      assert.equal(compatible?.origin.run,originRun.id);
+      assert.equal(compatible.executedInThisRun,false);
+      assert(differentRunner.calls.some(route=>route.endsWith('/artifacts/'+(differentRunner.skippedRun.id+2000)+'/zip')));
+      for(const fault of ['otherRunnerMissingArtifact','otherRunnerPgFailure','otherRunnerMissingFromHistory','runtime']) {
+        const uncertain=makeAfter599Fixture({differentRunner:true,mutate:{[fault]:true}});
+        assert.equal(await native.decideAssistantAfter599Reuse(uncertain.options),null,fault);
+      }
+    });
     await t.test('after599 beviser uudført PG i den normale CURRENT-kontrol',async()=>{
       // Samme normale CURRENT-stepform: ingen ny PG-origin eller native-artifact.
       const skipped=makeAfter599Fixture({skippedCurrent:true});

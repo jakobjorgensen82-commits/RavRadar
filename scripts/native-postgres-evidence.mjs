@@ -7,6 +7,7 @@ import path from 'node:path';
 import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
 import {fileURLToPath} from 'node:url';
+import {isDeepStrictEqual} from 'node:util';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,
   requireInstalled593Original591Release,requireInstalled593Original591Binding,requireInstalled593Original591Output,
@@ -2431,14 +2432,6 @@ export async function decideAssistantAfter599Reuse(options){
         &&(successful(step)||(step.status==='completed'&&step.conclusion==='skipped'))));
       return true;
     };
-    let selected=null,selectedJobs=null;
-    for(const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)){
-      if(!await sameInput(row.head_sha))continue;
-      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
-      if(await provedCurrentSkip(row,jobFor(row,jobs)))continue;
-      selected=row;selectedJobs=jobs;break;
-    }
-    assert(selected,'No authentic matching phase');
     const originPr=async(run,number)=>{
       const pr=await get(repo+'/pulls/'+number);
       assert.equal(pr.number,number);assert(['open','closed'].includes(pr.state));assert.equal(pr.base?.ref,'main');
@@ -2448,10 +2441,10 @@ export async function decideAssistantAfter599Reuse(options){
       if(pr.head.sha!==run.head_sha)readGit(['merge-base','--is-ancestor',run.head_sha,pr.head.sha]);
       return pr;
     };
-    const load=async expected=>{
+    const load=async(expected,knownJobs)=>{
       const run=await get(base+'/runs/'+expected.id);
       assert.equal(run.id,expected.id);assert.equal(run.head_sha,expected.head_sha);assert.equal(run.run_attempt,1);
-      const jobs=run.id===selected.id?selectedJobs:await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
+      const jobs=knownJobs??await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
       const phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const metadata=one(artifacts.artifacts.filter(row=>row.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
@@ -2468,23 +2461,45 @@ export async function decideAssistantAfter599Reuse(options){
       await verifyAssistantAfter599PhaseReceipt(receipt,receipt.current,{readGit});
       return {run,phase,metadata,proof};
     };
-    let original=await load(selected);
-    if(original.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND){
-      const locator=original.proof.nativePostgres.origin;
-      original=await load({id:locator.run,head_sha:locator.head});
-      assert.equal(original.phase.job,locator.job);assert.equal(original.metadata.id,locator.artifactId);
-      assert.equal(original.metadata.digest,locator.artifactDigest);assert.equal(original.proof.sourceTreeSha256,locator.sourceTreeSha256);
+    let original=null;
+    const otherRunners=new Map();
+    for (const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)) {
+      if (!await sameInput(row.head_sha)) continue;
+      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
+      if (await provedCurrentSkip(row,jobFor(row,jobs))) continue;
+      let candidate=await load(row,jobs);
+      const locator=candidate.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND
+        ?candidate.proof.nativePostgres.origin:null;
+      if (locator) {
+        candidate=await load({id:locator.run,head_sha:locator.head});
+        assert.equal(candidate.phase.job,locator.job);assert.equal(candidate.metadata.id,locator.artifactId);
+        assert.equal(candidate.metadata.digest,locator.artifactDigest);assert.equal(candidate.proof.sourceTreeSha256,locator.sourceTreeSha256);
+      }
+      const prior=candidate.proof.nativePostgres;
+      assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
+      assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
+      assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
+      verifyAssistantAfter599PgInput(nativeInput,await inputFor(candidate.run.head_sha));
+      if (!isDeepStrictEqual(runtime,prior.runtime)) {
+        // A verified actual success on another runner does not provide this run's evidence.
+        // Search the same bounded history for an exactly matching original.
+        assert(!locator,'A reused receipt must point to the current runtime');
+        otherRunners.set(row.id,candidate.run);
+        continue;
+      }
+      original=candidate;
+      break;
     }
+    assert(original,'No authentic phase for this exact runtime');
     const prior=original.proof.nativePostgres;
-    assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
-    assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
-    assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
-    verifyAssistantAfter599PgInput(nativeInput,await inputFor(original.run.head_sha));
-    verifyAssistantPublic591Runtime(runtime,prior.runtime);
     const laterQuery=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+original.run.created_at});
     const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+laterQuery);assert(complete(later,'workflow_runs'));
     assert.equal(new Set(later.workflow_runs.map(row=>row.id)).size,later.total_count);
     assert(later.workflow_runs.some(row=>row.id===original.run.id)&&later.workflow_runs.some(row=>row.id===current.run));
+    for (const [id,previous] of otherRunners) {
+      const fresh=one(later.workflow_runs.filter(row=>row.id===id));
+      for (const key of ['head_sha','head_branch','run_attempt','status','conclusion']) assert.equal(fresh[key],previous[key]);
+    }
     for(const row of later.workflow_runs.filter(row=>row.id>original.run.id&&row.id!==current.run)){
       if(!await sameInput(row.head_sha))continue;
       assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
@@ -2492,8 +2507,9 @@ export async function decideAssistantAfter599Reuse(options){
       const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
       const job=jobFor(row,jobs);
       if(await provedCurrentSkip(row,job))continue;
+      assert(['success','failure'].includes(row.conclusion)&&['success','failure'].includes(job.conclusion));
       assert(successful(one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'))));
-      const pg=one(job.steps.filter(value=>value.name===STEP));assert(pg.conclusion==='skipped'||successful(pg));
+      const pg=one(job.steps.filter(value=>value.name===STEP));assert(successful(pg));
     }
     // Fresh identity and independent origin metadata after the history walk.
     verifyAssistantAfter599PgInput(nativeInput,await getInput({readGit}));
