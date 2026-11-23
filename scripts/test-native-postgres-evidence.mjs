@@ -2893,9 +2893,12 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const sourceStep='Validate source contracts and release governance';
     const sourceTreeStep='Build deterministic source-tree content identity';
     const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false,skippedCurrent=false,
-      skippedFault=null,sourceBlocked=false,terminalSourceFailure=null,differentRunner=false}={})=>{
+      skippedFault=null,sourceBlocked=false,terminalSourceFailure=null,differentRunner=false,missingHistory=false}={})=>{
       const zip=Buffer.from('bounded after599 synthetic ZIP'),calls=[],origin=copy(originRun),active=copy(currentRun);
       const laterRun={...copy(origin),id:origin.id+(sourceBlocked?2:1),head_sha:unrelatedLater?'c'.repeat(40):actualHead};
+      const fetches=[];
+      let recovered=false,historyCaptures=0;
+      if(missingHistory){laterRun.id=active.id+1;laterRun.head_sha='b'.repeat(40);}
       const blockedRun={...copy(origin),id:origin.id+1,head_sha:actualHead};
       const ordinaryJobsFor=r=>({total_count:1,jobs:[{id:r.id+1000,name:JOB,run_id:r.id,run_attempt:1,head_sha:r.head_sha,
         status:'completed',conclusion:'failure',steps:Array.from({length:17},(_,i)=>({number:i+1,
@@ -2951,7 +2954,8 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
         }
         for(const r of rows){
           if(route.endsWith('/runs/'+r.id))return {...copy(r),...(mutate.attempt&&r.id===origin.id?{run_attempt:2}:{}),
-            ...(mutate.skippedFreshHead&&r.id===laterRun.id?{head_sha:'f'.repeat(40)}:{})};
+            ...(mutate.skippedFreshHead&&r.id===laterRun.id?{head_sha:'f'.repeat(40)}:{}),
+            ...(mutate.foreignHistory&&r.id===laterRun.id?{head_repository:{full_name:'foreign/RavRadar'}}:{})};
           if(route.includes('/runs/'+r.id+'/attempts/1/jobs')){
             const value=jobsFor(r);if((mutate.pgFailure&&r.id===origin.id)||((later||unrelatedLater||mutate.otherRunnerPgFailure)&&!locator&&r.id===laterRun.id))value.jobs[0].steps[15].conclusion='failure';
             if((mutate.sourceFailure&&r.id===origin.id)||(mutate.currentSourceFailure&&r.id===active.id))
@@ -2972,19 +2976,36 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
         SOURCE_GATE_HEAD_SHA:actualHead,GITHUB_RUN_ID:String(currentReuse.run),PULL_REQUEST_NUMBER:'947',GITHUB_HEAD_REF:currentReuse.branch},
         get,getInput:async({ref='HEAD'}={})=>{
           inputCalls++;const result=copy(actualInput);
+          if(missingHistory&&ref===laterRun.head_sha){
+            historyCaptures++;
+            if(!recovered||mutate.brokenRecoveredInput)throw Error('SYNTHETIC_TREE_UNAVAILABLE');
+          }
           if((mutate.input&&ref===parentHead)||(mutate.freshInput&&inputCalls>2))result.inputSha256='f'.repeat(64);
           if(mutate.sql77&&ref===parentHead||unrelatedLater&&ref===laterRun.head_sha){result.sqlFiles=77;result.inputSha256='d'.repeat(64);}return result;
         },getRuntime:async()=>{runtimeCalls++;return {...v2Runtime(),...(mutate.runtime||mutate.freshRuntime&&runtimeCalls>1?{imageVersion:'20261117.999'}:{})};},
-        readGit:args=>{
+        readGit:(args,input)=>{
           if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return actualHead+'\n';
           if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
           if(args[0]==='status'||args[0]==='for-each-ref')return '';
+          if(missingHistory&&args[0]==='cat-file'&&args[1]==='--batch-check=%(objectname) %(objecttype)'){
+            assert.equal(String(input),laterRun.head_sha+'\n');
+            const kind=mutate.presentButInvalid?'commit':recovered?(mutate.nonCommitRecovery?'tree':'commit'):'missing';
+            return laterRun.head_sha+' '+kind+'\n';
+          }
+          if(missingHistory&&args[0]==='ls-remote'&&args[1]==='--get-url')
+            return (mutate.mappedGitOrigin?'https://foreign.invalid/repo.git':args[2])+'\n';
+          if(missingHistory&&args[0]==='-c'&&args[2]==='fetch'){
+            fetches.push(args);calls.push('git-recover');recovered=true;return '';
+          }
+          if(missingHistory&&args[0]==='cat-file'&&args[2]===laterRun.head_sha+':'+WORKFLOW){
+            assert(recovered);return Buffer.from(workflow);
+          }
           if(mutate.skippedWorkflow&&args[0]==='cat-file'&&args[2]===actualHead+':'+WORKFLOW)
             return Buffer.from(workflow.replace('  contents: read','  contents: write'));
           if(args[0]==='ls-tree'||args[0]==='cat-file'&&args[1]==='blob')return execFileSync('git',args);
           return execFileSync('git',args,{encoding:'utf8'});
         },decode:()=>{const proof=proofFor(decoding);if(mutate.receipt)mutate.receipt(proof.nativePostgres);return Buffer.from(JSON.stringify(proof));}};
-      return {options,calls,skippedRun:laterRun};
+      return {options,calls,skippedRun:laterRun,fetches,historyCaptures:()=>historyCaptures};
     };
     const positive=makeAfter599Fixture();
     const reused=await native.decideAssistantAfter599Reuse(positive.options);
@@ -3051,6 +3072,28 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       }).options),null,'fully skipped suffix cannot qualify a setup failure');
       for(const key of ['skippedFreshHead','currentSourceFailure'])
         assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure,mutate:{[key]:true}}).options),null,key);
+    });
+    await t.test('after599 recovers only an authenticated exact missing history commit',async()=>{
+      const fixture=mutate=>makeAfter599Fixture({missingHistory:true,terminalSourceFailure:sourceTreeStep,mutate});
+      const pending=fixture({});
+      const accepted=await native.decideAssistantAfter599Reuse(pending.options);
+      assert.equal(accepted?.origin.run,originRun.id);
+      assert.equal(pending.historyCaptures(),2);
+      const rowRead='/runs/'+pending.skippedRun.id;
+      assert(pending.calls.findIndex(route=>route.endsWith(rowRead))<pending.calls.indexOf('git-recover'));
+      assert.deepEqual(pending.fetches,[['-c','http.followRedirects=false','fetch','--no-tags','--no-prune',
+        '--no-prune-tags','--no-recurse-submodules','--no-write-fetch-head','--refmap=','--no-auto-maintenance',
+        '--no-write-commit-graph','--','https://github.com/'+ORIGIN.repository+'.git',pending.skippedRun.head_sha]]);
+      for(const fault of ['skippedFreshHead','foreignHistory','mappedGitOrigin','presentButInvalid']){
+        const refused=fixture({[fault]:true});
+        assert.equal(await native.decideAssistantAfter599Reuse(refused.options),null,fault);
+        assert.equal(refused.fetches.length,0,fault);
+      }
+      for(const fault of ['nonCommitRecovery','brokenRecoveredInput']){
+        const refused=fixture({[fault]:true});
+        assert.equal(await native.decideAssistantAfter599Reuse(refused.options),null,fault);
+        assert.equal(refused.fetches.length,1,fault);
+      }
     });
     assert.equal(await native.verifyAssistantAfter599PhaseReceipt(reused,currentReuse),reused);
     const claims=await normal.assistantAfter599NativeClaims(reused,currentReuse);

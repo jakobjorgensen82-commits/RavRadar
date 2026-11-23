@@ -2124,10 +2124,10 @@ function after599BoundedGit(readGit, deadline) {
     return value;
   };
   const env = {...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'};
-  const read = args => {
+  const read = (args, input) => {
     const time = remaining();
-    const value = readGit === git ? execFileSync('git', args, {encoding:'utf8', maxBuffer:after599MaxInputBytes,
-      timeout:Math.min(10000, time), env}) : readGit(args);
+    const value = readGit === git ? execFileSync('git', args, {encoding:'utf8', input, maxBuffer:after599MaxInputBytes,
+      stdio:['pipe','pipe','pipe'], timeout:Math.min(10000, time), env}) : readGit(args,input);
     remaining();
     return value;
   };
@@ -2385,8 +2385,38 @@ export async function decideAssistantAfter599Reuse(options){
     assert.equal(listing.workflow_runs.length,Math.min(listing.total_count,100));
     assert.equal(new Set(listing.workflow_runs.map(row=>row.id)).size,listing.workflow_runs.length);
     const inputs=new Map([[head,nativeInput]]);
-    const inputFor=async ref=>{if(!inputs.has(ref))inputs.set(ref,await getInput({ref,readGit,physical:false}));return inputs.get(ref);};
-    const sameInput=async ref=>JSON.stringify(await inputFor(ref))===JSON.stringify(nativeInput);
+    const inputFor=async row=>{
+      const ref=row.head_sha;
+      assert.match(ref,/^[a-f0-9]{40}$/);
+      if(inputs.has(ref))return inputs.get(ref);
+      const capture=()=>getInput({ref,readGit,physical:false});
+      let input;
+      try {
+        input=await capture();
+      } catch(error) {
+        // Another authenticated Actions run can appear after checkout. Only a
+        // missing exact commit can be recovered, never a broken input inventory.
+        const probe=['cat-file','--batch-check=%(objectname) %(objecttype)'];
+        const request=Buffer.from(ref+'\n','ascii');
+        if(String(readGit(probe,request))!==ref+' missing\n')throw error;
+        assert(Number.isSafeInteger(row.id)&&row.id>0);
+        const live=await get(base+'/runs/'+row.id);
+        for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(live[key],row[key]);
+        assert.equal(live.run_attempt,1);assert.equal(live.event,'pull_request');assert.equal(live.path,WORKFLOW);
+        assert.equal(live.repository?.full_name,ORIGIN.repository);assert.equal(live.head_repository?.full_name,ORIGIN.repository);
+        assert(typeof live.head_branch==='string'&&live.head_branch.length>0);
+        const remote='https://github.com/'+ORIGIN.repository+'.git';
+        assert.equal(readGit(['ls-remote','--get-url',remote]).trim(),remote);
+        readGit(['-c','http.followRedirects=false','fetch','--no-tags','--no-prune','--no-prune-tags',
+          '--no-recurse-submodules','--no-write-fetch-head','--refmap=','--no-auto-maintenance',
+          '--no-write-commit-graph','--',remote,ref]);
+        assert.equal(String(readGit(probe,request)),ref+' commit\n');
+        input=await capture();
+      }
+      inputs.set(ref,input);
+      return input;
+    };
+    const sameInput=async row=>JSON.stringify(await inputFor(row))===JSON.stringify(nativeInput);
     const jobFor=(row,jobs)=>{
       assert(complete(jobs,'jobs'));const job=one(jobs.jobs.filter(value=>value.name===JOB));
       assert.equal(job.run_id,row.id);assert.equal(job.head_sha,row.head_sha);
@@ -2464,7 +2494,7 @@ export async function decideAssistantAfter599Reuse(options){
     let original=null;
     const otherRunners=new Map();
     for (const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)) {
-      if (!await sameInput(row.head_sha)) continue;
+      if (!await sameInput(row)) continue;
       const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
       if (await provedCurrentSkip(row,jobFor(row,jobs))) continue;
       let candidate=await load(row,jobs);
@@ -2479,7 +2509,7 @@ export async function decideAssistantAfter599Reuse(options){
       assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
       assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
       assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
-      verifyAssistantAfter599PgInput(nativeInput,await inputFor(candidate.run.head_sha));
+      verifyAssistantAfter599PgInput(nativeInput,await inputFor(candidate.run));
       if (!isDeepStrictEqual(runtime,prior.runtime)) {
         // A verified actual success on another runner does not provide this run's evidence.
         // Search the same bounded history for an exactly matching original.
@@ -2501,7 +2531,7 @@ export async function decideAssistantAfter599Reuse(options){
       for (const key of ['head_sha','head_branch','run_attempt','status','conclusion']) assert.equal(fresh[key],previous[key]);
     }
     for(const row of later.workflow_runs.filter(row=>row.id>original.run.id&&row.id!==current.run)){
-      if(!await sameInput(row.head_sha))continue;
+      if(!await sameInput(row))continue;
       assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
       assert.equal(row.status,'completed');assert.equal(row.repository?.full_name,ORIGIN.repository);
       const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
