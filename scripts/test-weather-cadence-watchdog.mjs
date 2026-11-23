@@ -281,6 +281,31 @@ test('Recovery metadata reads only the exact first attempt and rejects a partial
   readCode('WEATHER_CADENCE_READ_ARGUMENT_REJECTED'));
 });
 
+test('Exact main metadata survives a bounded connection retry and rejects a different ref', async () => {
+  const options = { ...readOptions, kind: 'main-ref' };
+  const expected = { ref: 'refs/heads/main', object: { type: 'commit', sha: 'a'.repeat(40) } };
+  const waits = [];
+  let reads = 0;
+  assert.deepEqual(await readWeatherCadenceGithub({ ...options, request: async (url, request) => {
+    assert.equal(url, 'https://api.github.com/repos/owner/repository/git/ref/heads/main');
+    assert.equal(request.method, 'GET');
+    assert.equal(request.cache, 'no-store');
+    assert.equal(request.redirect, 'error');
+    if (++reads === 1) throw new TypeError('fetch failed', { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } });
+    return readResponse(200, expected);
+  }, wait: async ms => { waits.push(ms); } }), expected);
+  assert.equal(reads, 2);
+  assert.deepEqual(waits, [1000]);
+  for (const invalid of [
+    { ...expected, ref: 'refs/heads/another' },
+    { ...expected, object: { ...expected.object, type: 'tag' } },
+    { ...expected, object: { ...expected.object, sha: 'not-a-commit' } },
+  ]) {
+    await assert.rejects(readWeatherCadenceGithub({ ...options, request: async () => readResponse(200, invalid),
+      wait: async () => assert.fail('Rejected main metadata must not wait') }), readCode('WEATHER_CADENCE_READ_METADATA_REJECTED'));
+  }
+});
+
 test('Cadence metadata retries only 502/503/504 with bounded delays and unchanged GET scope', async () => {
   for (const status of [502, 503, 504]) {
     const calls = [], waits = [];
@@ -374,7 +399,15 @@ const timer=globalThis.setTimeout;
 globalThis.setTimeout=(cb,ms,...args)=>{if(ms===1000||ms===2000){waits.push(ms);queueMicrotask(()=>cb(...args));return 0;}return timer(cb,ms,...args);};
 globalThis.fetch=async (url,options)=>{
   calls++;
-  if(options.method!=='GET'||!String(url).startsWith('https://api.github.com/repos/owner/repository/actions/workflows/'))throw Error('PRIVATE_RESPONSE_CANARY');
+  if(options.method!=='GET')throw Error('PRIVATE_RESPONSE_CANARY');
+  const scenario=process.env.RR_CADENCE_CASE;
+  if(scenario.startsWith('main-')){
+    if(String(url)!=='https://api.github.com/repos/owner/repository/git/ref/heads/main')throw Error('PRIVATE_RESPONSE_CANARY');
+    if(scenario==='main-wrong-ref')return new Response(JSON.stringify({ref:'refs/heads/other',object:{type:'commit',sha:'a'.repeat(40)}}));
+    if(calls===1)throw new TypeError('PRIVATE_RESPONSE_CANARY',{cause:{code:'UND_ERR_CONNECT_TIMEOUT'}});
+    return new Response(JSON.stringify({ref:'refs/heads/main',object:{type:'commit',sha:'a'.repeat(40)}}));
+  }
+  if(!String(url).startsWith('https://api.github.com/repos/owner/repository/actions/workflows/'))throw Error('PRIVATE_RESPONSE_CANARY');
   if(process.env.RR_CADENCE_CASE==='persistent')return new Response('PRIVATE_RESPONSE_CANARY',{status:502});
   if(process.env.RR_CADENCE_CASE==='auth')return new Response('PRIVATE_RESPONSE_CANARY',{status:403});
   if(process.env.RR_CADENCE_CASE==='malformed')return new Response('PRIVATE_RESPONSE_CANARY',{status:200});
@@ -387,9 +420,11 @@ process.on('exit',()=>fs.writeFileSync(process.env.RR_CADENCE_CALLS,JSON.stringi
     for (const [scenario, status, count, code] of [
       ['success', 0, 2, null], ['persistent', 1, 3, 'WEATHER_CADENCE_READ_RETRY_EXHAUSTED'],
       ['auth', 1, 1, 'WEATHER_CADENCE_READ_AUTH_REJECTED'], ['malformed', 1, 1, 'WEATHER_CADENCE_READ_JSON_REJECTED'],
+      ['main-recovered', 0, 2, null], ['main-wrong-ref', 1, 1, 'WEATHER_CADENCE_READ_METADATA_REJECTED'],
     ]) {
+      const kind = scenario.startsWith('main-') ? 'main-ref' : 'manual';
       const result = spawnSync(process.execPath, ['--import', pathToFileURL(hookFile).href,
-        'scripts/read-weather-cadence-github.mjs', 'manual'], { encoding: 'utf8', timeout: 3000,
+        'scripts/read-weather-cadence-github.mjs', kind], { encoding: 'utf8', timeout: 3000,
         env: { ...process.env, GITHUB_REF: 'refs/heads/main', GITHUB_REPOSITORY: 'owner/repository',
           GH_TOKEN: 'OFFLINE_SYNTHETIC_TOKEN', RR_CADENCE_CASE: scenario, RR_CADENCE_CALLS: callsFile } });
       assert.equal(result.error, undefined);
@@ -397,7 +432,11 @@ process.on('exit',()=>fs.writeFileSync(process.env.RR_CADENCE_CALLS,JSON.stringi
       assert.equal(result.status, status);
       assert.equal((result.stdout + result.stderr).includes('PRIVATE_RESPONSE_CANARY'), false);
       assert.equal(JSON.parse(await fs.readFile(callsFile, 'utf8')).calls, count);
-      if (status === 0) { assert.deepEqual(JSON.parse(result.stdout), { workflow_runs: [] }); assert.equal(result.stderr, ''); }
+      if (status === 0) {
+        if (kind === 'main-ref') assert.equal(result.stdout.trim(), 'a'.repeat(40));
+        else assert.deepEqual(JSON.parse(result.stdout), { workflow_runs: [] });
+        assert.equal(result.stderr, '');
+      }
       else { assert.equal(result.stdout, ''); assert.equal(result.stderr.trim(), code); }
     }
   } finally {

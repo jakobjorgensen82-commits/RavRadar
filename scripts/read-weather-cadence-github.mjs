@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Only the watchdog's existing metadata GETs may retry. Dispatch is separate.
+// Retry only fixed metadata reads. Dispatch is separate.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,6 +9,7 @@ const routes = {
   manual: 'run-current-weather-once.yml/runs?per_page=100',
 };
 const transient = new Set([502, 503, 504]);
+const temporaryConnectionErrors = new Set(['UND_ERR_CONNECT_TIMEOUT', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN']);
 const delays = [1000, 2000];
 const fail = code => { throw Object.assign(new Error(code), { cadenceReadCode: code }); };
 export const CADENCE_ACTIVE_STATES = Object.freeze(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
@@ -19,7 +20,8 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
   const recovery = kind === 'recovery-jobs';
   const ownerOrders = kind === 'owner-orders';
   const activeRuns = kind === 'owner-active-runs';
-  if ((!recovery && !ownerOrders && !activeRuns && !Object.hasOwn(routes, kind))
+  const main = kind === 'main-ref';
+  if ((!recovery && !ownerOrders && !activeRuns && !main && !Object.hasOwn(routes, kind))
     || (recovery ? !/^[1-9][0-9]{0,14}$/.test(recoveryRunId ?? '') : recoveryRunId !== undefined)
     || (ownerOrders ? !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(ownerOrdersSince ?? '') : ownerOrdersSince !== undefined)
     || (activeRuns ? !CADENCE_ACTIVE_STATES.includes(activeRunStatus) : activeRunStatus !== undefined)
@@ -27,12 +29,13 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
     || typeof token !== 'string' || !token || typeof request !== 'function' || typeof wait !== 'function') {
     fail('WEATHER_CADENCE_READ_ARGUMENT_REJECTED');
   }
-  const route = recovery ? `runs/${recoveryRunId}/attempts/1/jobs?per_page=100`
-    : ownerOrders ? 'workflows/watch-missed-weather-schedule.yml/runs?branch=main&event=workflow_dispatch&per_page=100&created='
+  const route = main ? 'git/ref/heads/main'
+    : recovery ? `actions/runs/${recoveryRunId}/attempts/1/jobs?per_page=100`
+    : ownerOrders ? 'actions/workflows/watch-missed-weather-schedule.yml/runs?branch=main&event=workflow_dispatch&per_page=100&created='
       + encodeURIComponent('>=' + ownerOrdersSince)
-    : activeRuns ? 'runs?status=' + activeRunStatus + '&per_page=100'
-    : `workflows/${routes[kind]}`;
-  const url = `https://api.github.com/repos/${repository}/actions/${route}`;
+    : activeRuns ? 'actions/runs?status=' + activeRunStatus + '&per_page=100'
+    : `actions/workflows/${routes[kind]}`;
+  const url = `https://api.github.com/repos/${repository}/${route}`;
   // Each job reads at most four bounded endpoints, including recovery metadata.
   // The separate single POST is bounded to 20s inside the unchanged 5min job.
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -52,7 +55,9 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
           fail('WEATHER_CADENCE_READ_JSON_REJECTED');
         }
         if (!document || typeof document !== 'object' || Array.isArray(document)
-          || (recovery ? !Array.isArray(document.jobs) || document.jobs.length > 100
+          || (main ? document.ref !== 'refs/heads/main' || document.object?.type !== 'commit'
+            || !/^[a-f0-9]{40}$/.test(document.object?.sha ?? '')
+            : recovery ? !Array.isArray(document.jobs) || document.jobs.length > 100
             || document.total_count !== document.jobs.length
             : kind === 'workflow' ? document.state !== 'active'
             : !Array.isArray(document.workflow_runs) || document.workflow_runs.length > 100
@@ -63,8 +68,9 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
       }
     } catch (error) {
       if (error?.cadenceReadCode) throw error;
-      // A network error, caller abort or unknown exception is not our timeout.
-      if (!signal.aborted || signal.reason?.name !== 'TimeoutError' || error !== signal.reason) {
+      const ownTimeout = signal.aborted && signal.reason?.name === 'TimeoutError' && error === signal.reason;
+      const temporaryConnection = main && error instanceof TypeError && temporaryConnectionErrors.has(error.cause?.code);
+      if (!ownTimeout && !temporaryConnection) {
         fail('WEATHER_CADENCE_READ_UNAVAILABLE');
       }
     }
@@ -77,10 +83,11 @@ async function main() {
   if (process.argv.length !== 3 || process.env.GITHUB_REF !== 'refs/heads/main') {
     fail('WEATHER_CADENCE_READ_ARGUMENT_REJECTED');
   }
-  const document = await readWeatherCadenceGithub({ kind: process.argv[2],
+  const kind = process.argv[2];
+  const document = await readWeatherCadenceGithub({ kind,
     repository: process.env.GITHUB_REPOSITORY, token: process.env.GH_TOKEN });
-  // Exactly one JSON document; transient failures never contaminate run files.
-  console.log(JSON.stringify(document));
+  // Keep the main binding small and the existing cadence files as JSON.
+  console.log(kind === 'main-ref' ? document.object.sha : JSON.stringify(document));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(error => { console.error(error?.cadenceReadCode ?? 'WEATHER_CADENCE_READ_UNAVAILABLE'); process.exitCode = 1; });
