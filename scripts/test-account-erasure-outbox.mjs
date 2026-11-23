@@ -54,6 +54,55 @@ for(const [label,response] of [['wrong status',()=>new Response(JSON.stringify(m
   await assert.rejects(verifyInstalledAccountErasureSchema({accessToken:'SYNTHETIC',expectedCheckReference:accountErasureCheckReference(metadata()[0].metadata.checks),fetchImpl:async()=>{calls++;return response();}}));
   assert.equal(calls,1,'No transport retry after an unknown metadata result');
  });
+test('manual erasure catalogue diagnostic verifies the scoped wireup and returns only fixed failure categories',async()=>{
+ const {diagnoseFixedManualAccountErasureCatalog}=await import('./read-fixed-account-activity-hook.mjs');
+ const env={GITHUB_ACTIONS:'true',RUNNER_ENVIRONMENT:'github-hosted',GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',
+  GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+  GITHUB_WORKFLOW_REF:'jakobjorgensen82-commits/RavRadar/.github/workflows/deploy-trip-storage.yml@refs/heads/main',
+  GITHUB_SHA:'a'.repeat(40),GITHUB_JOB:'read-fixed-supabase-metadata',RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION:'manual-catalog-diagnose'};
+ const refused=(category,detail={})=>({status:'MANUAL_CATALOG_DIAGNOSTIC_REFUSED',category,...detail});
+ const sentinel='sensitive-diagnostic-fixture';
+ async function check(response,scope=env){
+  let calls=0;
+  const result=await diagnoseFixedManualAccountErasureCatalog({env:scope,accessToken:sentinel,fetchImpl:async(url,request)=>{
+   calls++;assert(url.endsWith('/database/query'));assert.equal(request.method,'POST');
+   assert.equal(request.redirect,'error');assert.equal(request.cache,'no-store');
+   assert.deepEqual(JSON.parse(request.body),{query:accountErasureCatalogQuery,read_only:true});
+   return response();
+  }});
+  assert(!JSON.stringify(result).includes(sentinel));
+  return {result,calls};
+ }
+ const result=(rows=metadata())=>Response.json(rows,{status:201});
+ assert.deepEqual(await check(()=>result()),{result:{status:'MANUAL_CATALOG_DIAGNOSTIC_PASS',checkExpressionSemanticsVerified:false},calls:1});
+ assert.deepEqual(await check(()=>result(),{...env,GITHUB_JOB:'apply-binding'}),{result:refused('OWNER_REQUIRED'),calls:0});
+ assert.deepEqual(await check(()=>Response.json({code:'42501',message:sentinel},{status:500})),
+  {result:refused('HTTP_STATUS',{httpStatus:500,sqlState:'42501'}),calls:1});
+ assert.deepEqual(await check(()=>Response.json({code:'ZZ999',message:sentinel},{status:500})),
+  {result:refused('HTTP_STATUS',{httpStatus:500}),calls:1});
+ assert.deepEqual(await check(()=>Response.json({message:sentinel},{status:418})),
+  {result:refused('HTTP_STATUS',{httpStatus:null}),calls:1});
+ assert.deepEqual(await check(()=>new Response('{}',{status:201,headers:{'content-length':'32769'}})),
+  {result:refused('RESPONSE_BODY'),calls:1});
+ for(const [category,change] of [
+  ['CATALOG_ENVELOPE',r=>{r[0].other=sentinel;}],['TABLE_CONTRACT',r=>{r[0].metadata.table.forceRls=false;}],
+  ['COLUMN_CONTRACT',r=>{r[0].metadata.table.columns=[];}],['INDEX_CONTRACT',r=>{r[0].metadata.table.activeTargetIndex.predicate=sentinel;}],
+  ['FUNCTION_CONTRACT',r=>{r[0].metadata.functions.account_erasure_check_metadata.bodySha256=sentinel;}],
+  ['TRIGGER_CONTRACT',r=>{r[0].metadata.triggers.account_erasure_profile_write_guard.relation='public.profiles';}],
+  ['CHECK_FORMAT',r=>{r[0].metadata.checks.definitions[0][1]=sentinel;}],
+ ]){
+  const rows=metadata();change(rows);
+  assert.deepEqual(await check(()=>result(rows)),{result:refused(category),calls:1});
+ }
+ const workflow=fs.readFileSync(new URL('../.github/workflows/deploy-trip-storage.yml',import.meta.url),'utf8').replaceAll('\r\n','\n');
+ const metadataJob=workflow.slice(workflow.indexOf('\n  read-fixed-supabase-metadata:\n'),workflow.indexOf('\n  reject-unknown-operation:\n'));
+ const invocation='node scripts/read-fixed-account-activity-hook.mjs --manual-catalog-diagnose';
+ assert(metadataJob.includes("if: inputs.operation == 'fixed-account-erasure-catalog-diagnose'"));
+ assert(metadataJob.includes('RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: manual-catalog-diagnose'));
+ assert(metadataJob.indexOf(invocation)>metadataJob.indexOf('node scripts/check-fixed-supabase-account-read-idle.mjs'));
+ assert(metadataJob.indexOf(invocation)>metadataJob.indexOf('node scripts/weather-source-gate.mjs check'));
+ assert.equal(workflow.split(invocation).length,2);
+});
 test('installed readback requires the qualified native CHECK reference before transport',async()=>{
  let calls=0;await assert.rejects(verifyInstalledAccountErasureSchema({accessToken:'SYNTHETIC',fetchImpl:async()=>{calls++;}}));assert.equal(calls,0);
 });

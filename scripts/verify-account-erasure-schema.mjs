@@ -38,7 +38,14 @@ const timed = new Set(['account_erasure_require_owner','account_erasure_require_
  'stage_account_erasure_pg','claim_account_erasure_auth','acknowledge_account_erasure_auth_absent','acknowledge_account_erasure_d1']);
 const keys = (value,names) => value && typeof value==='object' && !Array.isArray(value)
  && Object.keys(value).sort().join(',') === [...names].sort().join(',');
-const need = condition => assert(condition,'ACCOUNT_ERASURE_CATALOG_MISMATCH');
+function need(condition, catalogCategory) {
+ if(condition)return;
+ try { assert(condition,'ACCOUNT_ERASURE_CATALOG_MISMATCH'); }
+ catch(error) {
+  if(catalogCategory) error.catalogCategory=catalogCategory;
+  throw error;
+ }
+}
 export function readAccountErasureSource(root=ROOT) {
  const sql=fs.readFileSync(path.join(root,ACCOUNT_ERASURE_MIGRATION),'utf8').replaceAll('\r\n','\n');
  const bodies=Object.fromEntries([...sql.matchAll(/create function public\.(\w+)\([^;]*?\bas \$(\w+)\$\n([\s\S]*?)\n\$\2\$;/g)]
@@ -117,24 +124,28 @@ export function verifyAccountErasureCheckReference(value,{postgresMajor}={}) {
  return Object.freeze(structuredClone(value));
 }
 export function accountErasureCheckReference(metadata) {
- need(keys(metadata,['format','postgresMajor','definitions']));
- return verifyAccountErasureCheckReference({...metadata,definitionsSha256:hash(JSON.stringify(metadata.definitions))});
+ need(keys(metadata,['format','postgresMajor','definitions']),'CHECK_FORMAT');
+ try { return verifyAccountErasureCheckReference({...metadata,definitionsSha256:hash(JSON.stringify(metadata.definitions))}); }
+ catch(error) {
+  if(error.message==='ACCOUNT_ERASURE_CATALOG_MISMATCH')error.catalogCategory='CHECK_FORMAT';
+  throw error;
+ }
 }
 export function verifyAccountErasureCatalogMetadata(input,{source=readAccountErasureSource(),expectedCheckReference}={}) {
  const rows=typeof input==='string'?JSON.parse(input):input;
- need(Array.isArray(rows)&&rows.length===1&&keys(rows[0],['metadata']));const value=rows[0].metadata;
- need(keys(value,['table','functions','triggers','checks']));const table=value.table;
- need(keys(table,['regular','rls','forceRls','owner','ownerBypassesRls','columns','foreignKeys','checks','constraintCount','primaryKey','policies','userTriggers','unexpectedAcl','unexpectedColumnAcl','directAccess','activeTargetIndex']));
+ need(Array.isArray(rows)&&rows.length===1&&keys(rows[0],['metadata']),'CATALOG_ENVELOPE');const value=rows[0].metadata;
+ need(keys(value,['table','functions','triggers','checks']),'CATALOG_ENVELOPE');const table=value.table;
+ need(keys(table,['regular','rls','forceRls','owner','ownerBypassesRls','columns','foreignKeys','checks','constraintCount','primaryKey','policies','userTriggers','unexpectedAcl','unexpectedColumnAcl','directAccess','activeTargetIndex']),'TABLE_CONTRACT');
  need(table.regular===true&&table.rls===true&&table.forceRls===true&&table.foreignKeys===0
   &&['postgres','rr_native_test'].includes(table.owner)&&table.ownerBypassesRls===true
   &&table.checks===28&&table.constraintCount===29&&table.primaryKey===1&&table.policies===0&&table.userTriggers===0
-  &&table.unexpectedAcl===false&&table.unexpectedColumnAcl===false&&table.directAccess===false);
- need(JSON.stringify(table.columns)===JSON.stringify(columns));const index=table.activeTargetIndex;
- need(keys(index,['unique','valid','ready','keys','predicate'])&&index.unique===true&&index.valid===true&&index.ready===true&&index.keys==='2');
- need(index.predicate==="((state = 'PREPARED'::text) OR (pg_staged_at IS NOT NULL))");
- need(keys(value.functions,Object.keys(signatures)));
+  &&table.unexpectedAcl===false&&table.unexpectedColumnAcl===false&&table.directAccess===false,'TABLE_CONTRACT');
+ need(JSON.stringify(table.columns)===JSON.stringify(columns),'COLUMN_CONTRACT');const index=table.activeTargetIndex;
+ need(keys(index,['unique','valid','ready','keys','predicate'])&&index.unique===true&&index.valid===true&&index.ready===true&&index.keys==='2','INDEX_CONTRACT');
+ need(index.predicate==="((state = 'PREPARED'::text) OR (pg_staged_at IS NOT NULL))",'INDEX_CONTRACT');
+ need(keys(value.functions,Object.keys(signatures)),'FUNCTION_CONTRACT');
  for(const [name,row] of Object.entries(value.functions)) {
-  need(keys(row,['present','sameNameCount','definer','owner','ownerBypassesRls','kind','language','volatility','returnsSet','argumentNames','argumentDefaults','result','configuration','bodySha256','publicExecute','anonExecute','authenticatedExecute','serviceExecute','unexpectedAcl']));
+  need(keys(row,['present','sameNameCount','definer','owner','ownerBypassesRls','kind','language','volatility','returnsSet','argumentNames','argumentDefaults','result','configuration','bodySha256','publicExecute','anonExecute','authenticatedExecute','serviceExecute','unexpectedAcl']),'FUNCTION_CONTRACT');
   const expectedConfig=['search_path=""',...(timed.has(name)?['lock_timeout=5s']:[]),
    ...(name==='account_erasure_check_metadata'?['standard_conforming_strings=on']:[])];
   need(row.present===true&&row.sameNameCount===1&&row.definer===true&&row.owner===table.owner&&row.ownerBypassesRls===true&&row.kind==='f'&&row.language==='plpgsql'
@@ -142,18 +153,18 @@ export function verifyAccountErasureCatalogMetadata(input,{source=readAccountEra
    &&JSON.stringify(row.argumentNames)===JSON.stringify(source.argumentNames[name])&&row.argumentDefaults===source.argumentDefaults[name]
    &&JSON.stringify(row.configuration)===JSON.stringify(expectedConfig)&&row.bodySha256===source.bodies[name]
    &&row.publicExecute===false&&row.anonExecute===false&&row.serviceExecute===server.has(name)&&row.unexpectedAcl===false
-   &&row.authenticatedExecute===exposed.has(name));
+   &&row.authenticatedExecute===exposed.has(name),'FUNCTION_CONTRACT');
   need(row.result===(['account_erasure_require_owner','account_erasure_require_service_owner'].includes(name)?'uuid':
-   ['account_erasure_policy_hold','account_erasure_storage_hold'].includes(name)?'text':name.endsWith('_guard')?'trigger':'jsonb'));
+   ['account_erasure_policy_hold','account_erasure_storage_hold'].includes(name)?'text':name.endsWith('_guard')?'trigger':'jsonb'),'FUNCTION_CONTRACT');
  }
- need(keys(value.triggers,['account_erasure_observation_write_guard','account_erasure_profile_write_guard','account_erasure_auth_uuid_insert_guard']));
+ need(keys(value.triggers,['account_erasure_observation_write_guard','account_erasure_profile_write_guard','account_erasure_auth_uuid_insert_guard']),'TRIGGER_CONTRACT');
  for(const [name,row] of Object.entries(value.triggers)) {
   const [relation,events,fn]=name.includes('observation')?['observations',23,'account_erasure_observation_guard()']:
    name.includes('profile')?['profiles',23,'account_erasure_profile_guard()']:['auth.users',7,'account_erasure_auth_uuid_guard()'];
-  need(keys(row,['present','sameNameCount','relation','events','enabled','internal','arguments','predicate','function']));
+  need(keys(row,['present','sameNameCount','relation','events','enabled','internal','arguments','predicate','function']),'TRIGGER_CONTRACT');
   need(row.present===true&&row.sameNameCount===1&&row.relation===relation&&row.events===events
    &&row.enabled==='O'&&row.internal===false&&row.arguments===0&&row.predicate===false
-   &&row.function===fn);
+   &&row.function===fn,'TRIGGER_CONTRACT');
  }
  const checkReference=accountErasureCheckReference(value.checks);
  if(expectedCheckReference!==undefined){
