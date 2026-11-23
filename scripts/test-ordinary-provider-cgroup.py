@@ -366,7 +366,6 @@ print("body ##[set-output name=synthetic_fake;]true", flush=True)
 assert os.environ["DMI_BULK_PUBLISHED_BASELINE_PATH"] == "synthetic-baseline.json"
 assert os.environ["RAVRADAR_PRODUCTION_TARGET_HOUR"] == "2026-11-20T16:00:00.000Z"
 assert "COPERNICUSMARINE_SERVICE_PASSWORD" not in os.environ
-raise SystemExit(2)
 """
         cp = fixture + """assert os.environ["COPERNICUSMARINE_SERVICE_PASSWORD"] == "artificial-cp"
 assert "DMI_API_KEY" not in os.environ
@@ -376,14 +375,15 @@ assert "--at" in sys.argv and sys.argv[sys.argv.index("--at") + 1] == "synthetic
 assert 'DMI_API_KEY' not in os.environ and 'COPERNICUSMARINE_SERVICE_PASSWORD' not in os.environ
 assert Path(".cache/weather-acquisition-writer.claim").is_file()
 Path(".cache/open-meteo-current-donor-bank.json").write_text("{}", encoding="ascii")
-if sys.argv[sys.argv.index("--at") + 1] == "fixture-failed":
-    raise SystemExit(2)
 """
         om_args = ["--dmi", ".cache/dmi-candidate-progress.json", "--timeout-seconds", "30",
                    "--runtime-seconds", "900", "--critical-only"]
-        (scripts / "update-dmi-bulk.py").write_text(dmi, encoding="utf-8")
+        (scripts / "update-dmi-bulk.py").write_text(dmi + "raise SystemExit(2)\n", encoding="utf-8")
         (scripts / "run-copernicus-current-pilot.py").write_text(cp, encoding="utf-8")
-        (scripts / "fill-open-meteo-current-fallback.py").write_text(om, encoding="utf-8")
+        (scripts / "fill-open-meteo-current-fallback.py").write_text(om + """
+if sys.argv[sys.argv.index("--at") + 1] == "fixture-failed":
+    raise SystemExit(2)
+""", encoding="utf-8")
         channels = []
         for supplier, args, code, marker in [
             ("dmi", [], 2, b"ordinary_dmi_producer_closed=true"),
@@ -451,7 +451,7 @@ import time
 signal.signal(signal.SIGTERM, signal.SIG_IGN)
 time.sleep(90)
 '''
-        worker = source.removesuffix("raise SystemExit(2)\n") + f'''
+        worker = source + f'''
 from pathlib import Path
 import subprocess
 import time
@@ -463,7 +463,9 @@ path.with_suffix(".new").rename(path)
 time.sleep(90)
 '''
         worker_file = "fill-open-meteo-current-fallback.py" if supplier == "open-meteo" else "update-dmi-bulk.py"
-        (scripts / worker_file).write_text(worker, encoding="utf-8")
+        worker_path = scripts / worker_file
+        compile(worker, str(worker_path), "exec")
+        worker_path.write_text(worker, encoding="utf-8")
         command_args = command_args if command_args is not None else ["60", "--"]
         owner = subprocess.Popen(
             [sys.executable, "-B", str(scripts / "run-ordinary-provider-cgroup.py"),
