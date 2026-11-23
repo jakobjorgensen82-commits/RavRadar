@@ -114,6 +114,32 @@ function publicHelpText(question, language) {
   return raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?!.]{1,3}$/u, '');
 }
 
+const AMBER_BUBBLE_FORMS = {
+  da: /^(?:hvad betyder (?:små )?(?:luft)?bobler i (?:et muligt ravfund|(?:et stykke )?rav)|kan (?:et stykke )?rav have (?:små )?(?:luft)?bobler|kan der være (?:små )?(?:luft)?bobler i (?:et stykke )?rav)$/iu,
+  de: /^(?:was bedeuten (?:kleine )?(?:luft)?blasen in (?:einem möglichen bernsteinfund|bernstein)|kann bernstein (?:kleine )?(?:luft)?blasen (?:haben|enthalten)|können (?:kleine )?(?:luft)?blasen in bernstein vorkommen)$/iu,
+  en: /^(?:what do (?:small )?(?:air )?bubbles in (?:a possible amber find|amber) mean|can amber (?:have|contain) (?:small )?(?:air )?bubbles|can there be (?:small )?(?:air )?bubbles in amber)$/iu,
+};
+
+// The observation, identification and gentle checks must all concern the same find.
+const AMBER_BUBBLES_WITH_UV_FORMS = {
+  da: /^jeg har fundet et (?:(?:gennemsigtigt|gennemskinneligt) )?stykke (?:ved vandet|på stranden)[.!] det (?:lyser|gløder) under uv(?:[- ]lys)?,? men har (?:små )?(?:luft)?bobler[.!] hvad (?:fortæller det mig|betyder det)(?:,? og hvilke skånsomme tjek kan jeg bruge(?: uden at beskadige det)?)?$/iu,
+  de: /^ich habe (?:am strand|am wasser) ein (?:(?:durchsichtiges|durchscheinendes) )?stück gefunden,? das unter uv[- ]licht leuchtet und (?:kleine )?(?:luft)?blasen enthält[.!] kann es bernstein sein(?:,? und wie (?:prüfe|untersuche) ich es schonend(?:,? ohne es zu beschädigen)?)?$/iu,
+  en: /^i (?:have )?found a (?:(?:translucent|transparent) )?piece (?:on the beach|by the water)[.!] it (?:glows|fluoresces) under uv(?:[- ]light)? and has (?:small )?(?:air )?bubbles[.!] (?:can|could) it be amber(?:,? and how can i (?:check|examine) it (?:gently|without damage|without damaging it))?$/iu,
+};
+
+function amberBubbleHelp(text, language) {
+  const includesUv = AMBER_BUBBLES_WITH_UV_FORMS[language].test(text);
+  if (!includesUv && !AMBER_BUBBLE_FORMS[language].test(text)) return null;
+
+  const questions = ['Kan glas ligne rav?'];
+  if (includesUv) questions.push('Kan UV bevise at rav er baltisk?', 'Skal jeg kombinere flere test af rav?');
+  const units = questions.map(question => localRavKnowledgeAnswer(question, language));
+  if (!units.every(Boolean)) return null;
+
+  const answer = units.join('\n\n');
+  return answer.length <= 900 ? {kind:'local-public-help', id:'amber-bubble-identification', answer} : null;
+}
+
 const FIND_IDENTIFICATION_FORMS = Object.freeze({
   da: {
     initial: /^jeg har fundet en (?:gul )?sten(?: med hvide striber)?[.!] hvordan (?:undersøger|tester) jeg den uden at ridse den,? og hvad (?:ville|kan) få dig til at tvivle på,? at den er rav[?!.]*$/iu,
@@ -162,6 +188,8 @@ export function publicRavAssistantHelp(question,language){
   const raw=String(question||'').trim();
   const text=publicHelpText(raw,language);
   if(!text)return null;
+  const bubbles=amberBubbleHelp(text,language);
+  if(bubbles)return bubbles;
   const practical=practicalBeachEquipmentHelp(text,language);
   if(practical)return practical;
   if(UV_FLUORESCENCE_DAYLIGHT[language].test(text)){
