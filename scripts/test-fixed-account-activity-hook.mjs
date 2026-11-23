@@ -443,20 +443,26 @@ test('catalog refuses absent USAGE, changed body/ACL/policy and unexpected field
   }
 });
 test('catalog transport is bounded and failure never reaches Auth configuration', async () => {
-  for (const [response, expected] of [
-    [() => new Response(null, { status: 403 }), 'HOOK_CATALOG_PERMISSION_REFUSED'],
-    [() => new Response(null, { status: 200 }), 'HOOK_CATALOG_UNAVAILABLE'],
-    [() => new Response('{}', { status: 201, headers: { 'Content-Length': '65537' } }), 'HOOK_CATALOG_REFUSED'],
-    [() => new Response(syntheticSecret, { status: 201 }), 'HOOK_CATALOG_UNAVAILABLE'],
-    [() => { throw new DOMException('synthetic', 'AbortError'); }, 'HOOK_CATALOG_UNAVAILABLE'],
-    [() => Response.json({ result: goodHookCatalog(), extra: syntheticSecret }, { status: 201 }), 'HOOK_CATALOG_REFUSED'],
+  for (const [response, expected, expectedReceipt] of [
+    [() => new Response(null, { status: 403 }), 'HOOK_CATALOG_PERMISSION_REFUSED', 'NATIVE_RECEIPT_PERMISSION_REFUSED'],
+    [() => new Response(null, { status: 200 }), 'HOOK_CATALOG_UNAVAILABLE', 'NATIVE_RECEIPT_UNAVAILABLE'],
+    [() => new Response('{}', { status: 201, headers: { 'Content-Length': '65537' } }), 'HOOK_CATALOG_REFUSED', 'NATIVE_RECEIPT_UNAVAILABLE'],
+    [() => new Response(syntheticSecret, { status: 201 }), 'HOOK_CATALOG_UNAVAILABLE', 'NATIVE_RECEIPT_UNAVAILABLE'],
+    [() => { throw new DOMException('synthetic', 'AbortError'); }, 'HOOK_CATALOG_UNAVAILABLE', 'NATIVE_RECEIPT_UNAVAILABLE'],
+    [() => Response.json({ result: goodHookCatalog(), extra: syntheticSecret }, { status: 201 }), 'HOOK_CATALOG_REFUSED', 'NATIVE_RECEIPT_REFUSED'],
   ]) {
+    let catalogCalls = 0;
+    const catalog = await readFixedAccountActivityHookCatalog({ accessToken: 'test', fetchImpl: async url => {
+      catalogCalls++; assert.ok(url.endsWith('/database/query')); return response();
+    }});
+    assert.deepEqual(catalog, { status: expected });
+    assert.equal(catalogCalls, 1);
     let calls = 0;
     const result = await runFixedAccountActivityHookOperation({
       operation: 'enable', env: hostedHookOwner('enable'), accessToken: 'test',
       fetchImpl: async url => { calls++; assert.ok(url.endsWith('/database/query')); return response(); },
     });
-    assert.deepEqual(result, { status: expected });
+    assert.deepEqual(result, { status: expectedReceipt });
     assert.equal(calls, 1);
   }
 });
@@ -475,25 +481,28 @@ test('write owner requires exact purpose, hosted first main attempt and the actu
   for (const operation of ['rollback', 'unknown', undefined]) assert.equal(isFixedActivityHookWriteOwner(owner, operation), false);
 });
 test('normal enable orders catalog, fresh state, one exact PATCH, independent readback', async () => {
-  const calls = [];
-  const result = await runFixedAccountActivityHookOperation({
-    operation: 'enable', env: hostedHookOwner('enable'), accessToken: 'test',
-    fetchImpl: async (url, request) => {
-      calls.push(request.method);
-      if (calls.length === 1) {
-        assert.ok(url.endsWith('/database/query'));
-        assert.equal(request.method, 'POST');
-        return Response.json({ result: goodHookCatalog() }, { status: 201 });
-      }
-      assert.ok(url.endsWith('/config/auth'));
-      if (calls.length === 2) return configResponse(false, null);
-      if (calls.length === 3) return expectPatch(true, expectedUri)(request);
-      assert.equal(calls.length, 4); assert.equal(request.method, 'GET');
-      return configResponse(true, expectedUri);
-    },
-  });
-  assert.deepEqual(result, { status: 'HOOK_ENABLED_VERIFIED' });
-  assert.deepEqual(calls, ['POST', 'GET', 'PATCH', 'GET']);
+  for (const state of ['UNARMED', 'ARMED', 'CAPTURED']) {
+    const calls = [];
+    const result = await runFixedAccountActivityHookOperation({
+      operation: 'enable', env: hostedHookOwner('enable'), accessToken: 'test',
+      fetchImpl: async (url, request) => {
+        calls.push(request.method);
+        if (calls.length === 1) {
+          assert.ok(url.endsWith('/database/query'));
+          assert.equal(request.method, 'POST');
+          assert.equal(JSON.parse(request.body).read_only, true);
+          return Response.json({ result: nativeReceiptRows(state) }, { status: 201 });
+        }
+        assert.ok(url.endsWith('/config/auth'));
+        if (calls.length === 2) return configResponse(false, null);
+        if (calls.length === 3) return expectPatch(true, expectedUri)(request);
+        assert.equal(calls.length, 4); assert.equal(request.method, 'GET');
+        return configResponse(true, expectedUri);
+      },
+    });
+    assert.deepEqual(result, { status: 'HOOK_ENABLED_VERIFIED' });
+    assert.deepEqual(calls, ['POST', 'GET', 'PATCH', 'GET']);
+  }
 });
 test('explicit disable remains possible if the database or coverage is invalid', async () => {
   const calls = [];
@@ -728,6 +737,39 @@ function nativeReceiptRows(state = 'UNARMED') {
   return rows;
 }
 
+test('current enable requires the exact installed SQL80 receipt and never falls back to the old catalog', async () => {
+  const invalid = [
+    goodHookCatalog(),
+    ...[
+      rows => rows[0].metadata.functions.account_native_activity_token_hook.bodySha256 = readAccountInactivitySource().bodies.account_native_activity_token_hook,
+      rows => rows[0].metadata.functions.account_native_activity_token_hook.authAdminExecute = false,
+      rows => rows[0].metadata.tables.account_native_activity_receipt.directAccess = true,
+      rows => rows[0].authAdminPublicUsage = false,
+      rows => rows[0].receipt[0].coverageEpoch = '60000000-0000-4000-8000-000000000009',
+      rows => rows[0].metadata.policy.noticesEnabled = true,
+    ].map(change => { const rows = nativeReceiptRows('ARMED'); change(rows); return rows; }),
+  ];
+  for (const rows of invalid) {
+    let calls = 0;
+    const result = await runFixedAccountActivityHookOperation({
+      operation: 'enable', env: hostedHookOwner('enable'), accessToken: 'test',
+      fetchImpl: async (url, request) => {
+        calls++;
+        assert.equal(url, 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+        assert.equal(request.method, 'POST');
+        const body = JSON.parse(request.body);
+        assert.equal(body.read_only, true);
+        assert.match(body.query, /from public\.account_native_activity_receipt/);
+        assert(!body.query.includes(fixedNativeActivityReceiptArmQuery));
+        return Response.json(rows, { status: 201 });
+      },
+    });
+    assert.deepEqual(result, { status: 'NATIVE_RECEIPT_REFUSED' });
+    assert.equal(calls, 1, 'no fallback, Auth GET or PATCH after refused receipt');
+    assert(!JSON.stringify(result).includes(syntheticSecret));
+  }
+});
+
 test('native receipt append preserves the whole original hook except the explicit optional observer', () => {
   const old = readAccountInactivitySource().migrations[1].sql.match(/as \$token_hook\$\n([\s\S]*?)\n\$token_hook\$;/)[1];
   const append = readFixedNativeActivityReceiptSource();
@@ -751,12 +793,12 @@ test('native receipt append preserves the whole original hook except the explici
 });
 
 test('native receipt reader sends only the fixed read-only metadata query and never arms', async () => {
-  let calls = 0;
+  let calls = 0, actualQuery;
   const result = await readFixedNativeActivityReceipt({ accessToken:'SYNTHETIC',fetchImpl:async(url,request)=>{
     calls++;assert.equal(url,'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
     assert.equal(request.method,'POST');assert.equal(request.redirect,'error');assert.equal(request.credentials,'omit');
     assert.equal(request.cache,'no-store');assert.equal(request.signal.aborted,false);
-    const payload=JSON.parse(request.body);assert.equal(payload.read_only,true);
+    const payload=JSON.parse(request.body);actualQuery=payload.query;assert.equal(payload.read_only,true);
     assert.match(payload.query,/\('account_native_activity_receipt'\)/);
     assert.match(payload.query,/from public\.account_native_activity_receipt/);
     // Privilege-name literals in the reused catalog are not SQL writes. The
@@ -765,6 +807,15 @@ test('native receipt reader sends only the fixed read-only metadata query and ne
     assert(!payload.query.includes(fixedNativeActivityReceiptArmQuery));
     return Response.json(nativeReceiptRows(),{status:201});
   }});
+  const tableSource = " from targets w left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass('public.'||w.name)),";
+  const receiptTableSource = " from (select name from targets union all values ('account_native_activity_receipt')) w left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass('public.'||w.name)),";
+  const split = actualQuery.split('\n    from (');
+  assert.equal(split.length, 2);
+  assert.ok(split[1].endsWith(') as saved;'));
+  const inner = split[1].slice(0, -') as saved;'.length);
+  assert.equal(inner.split(receiptTableSource).length, 2, 'only tables gains the receipt target');
+  assert.equal(inner.replace(receiptTableSource, tableSource), accountInactivityCatalogQuery.trim().replace(/;$/, ''),
+    'all legacy targets, CHECK definitions and other metadata remain the exact original query');
   assert.equal(calls,1);assert.equal(result.status,'NATIVE_RECEIPT_UNARMED');
   assert.equal(result.nativeCaptureObserved,false);assert.equal(result.authResponseObserved,false);
   assert.equal(result.coverageStartAuthority,false);assert.equal(result.activityEligibility,'HOLD');

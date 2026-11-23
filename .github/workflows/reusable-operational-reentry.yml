@@ -95,10 +95,15 @@ jobs:
 
       - name: Bind reconciliation runner to newest exact main
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git fetch --no-tags origin main
+          set -euo pipefail
           test "$GITHUB_REF" = "refs/heads/main"
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          test "$(git rev-parse --verify 'HEAD^{commit}')" = "$GITHUB_SHA"
+          test "$(git rev-parse --verify 'refs/remotes/origin/main^{commit}')" = "$GITHUB_SHA"
+          git_main=$(node scripts/protected-operational-reentry-evidence.mjs --read-live-main-head)
+          test "$git_main" = "$GITHUB_SHA"
 
       - name: Read, prove and classify the exact historical Pages attempt
         id: reconcile
