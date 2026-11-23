@@ -471,9 +471,6 @@ const PATH_AREAS=freeze({
   savedWeatherAudit:[
     '.github/workflows/audit-saved-weather-inputs.yml',
     'scripts/audit-b358-water-level-trend.mjs',
-    'scripts/lib/saved-b374-water-support/audit.mjs',
-    'scripts/lib/saved-b374-water-support/entry.mjs',
-    'scripts/lib/saved-b374-water-support/runner.mjs',
     'scripts/test-saved-weather-audit-workflow.mjs',
   ],
   historicalUpdaterOracles:[

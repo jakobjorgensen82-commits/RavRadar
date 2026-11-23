@@ -1108,3 +1108,235 @@ test('B358 Sibirien requires exact direct and public hours before inferring SOUR
   for (const privateData of ['private-source-canary', newest, older, 'waterPoint', 'waterLevelCm', ':76', ':83'])
     assert.equal(JSON.stringify(result).includes(privateData), false);
 });
+
+import { execFile } from 'node:child_process';
+import { Writable } from 'node:stream';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { auditB374WaterSourceSupport, B374_H0 as H0, B374_H3 as H3, B374_SCOPE as scope,
+  b374VerifyNormalInputSteps as verifyNormalInputSteps, b374StageIdentity as ordinaryStageIdentity,
+  b374ArtifactRedirectUrl as artifactRedirectUrl, b374CheckArtifactMetadata as checkArtifactMetadata,
+  b374TransferExact as transferExact } from './audit-b358-water-level-trend.mjs';
+
+{
+const directRouter = await import('./lib/water-source-forecast-routing.mjs');
+const normal = { ...directRouter, collectionAllowedForZone: allowed,
+  haversineKm: () => 1 };
+const sources = [1, 2].map(n => ({
+  sourceKey: `PRIVATE_FIXTURE_SOURCE_${n}`, stationId: `artificial-${n}`,
+  sourceType: 'forecast-point', name: 'fixture source', point: [10 + n / 100, 56],
+}));
+const oldRun = '2026-11-22T21:00:00.000Z';
+const sourceVolume = (makeRows) => ({
+  generatedAt: H0, timeStrideHours: 3,
+  zones: Object.fromEntries(sources.map((source, i) => [
+    `SOURCE::${source.sourceKey}`, { hourly: makeRows(source, i) },
+  ])),
+});
+const empty = {};
+const native = sourceVolume((source, i) => Object.fromEntries(Array.from({ length: 40 }, (_, j) => {
+  const validAt = new Date(Date.parse(H0) + j * 3 * 3_600_000).toISOString();
+  return [validAt, dmiWaterSourceFixture(source, validAt, 76 + i * 8 + j, j === 0 ? oldRun : H0)];
+})));
+
+function candidateVolume({ missingSecond = false, delta = 0, differentGrid = false } = {}) {
+  return sourceVolume((source, i) => {
+    if (i === 1 && missingSecond) return empty;
+    const row = dmiWaterSourceFixture(source, H3, 62 + i * 8 + delta, oldRun);
+    if (differentGrid) row.sources.waterLevel.gridDefinitionSha256 = 'c'.repeat(64);
+    return { [H3]: row };
+  });
+}
+
+async function prepare(protectedBulk, retainedIndex = new Map(), historicalBulk = null) {
+  const merged = normal.buildWaterSourceForecastIndex(sources, native, H0, {
+    protectedBulkCache: protectedBulk, historicalBulkCache: historicalBulk, retainedSourceIndex: retainedIndex,
+  });
+  const packed = await normal.packWaterSourceForecastContinuity(merged, H0);
+  const sealedIndex = await normal.unpackWaterSourceForecastContinuity(packed, H0);
+  const stationRegistry = normal.applyWaterSourceForecastStatus(sources, sealedIndex, H0);
+  const routing = { zones: Object.fromEntries(scope.map(([zoneId]) => [zoneId, {
+    enabled: true, requireAll: true, method: 'manual-weights',
+    stations: sources.map((source, i) => ({ sourceKey: source.sourceKey, weight: i + 1 })),
+  }])) };
+  const cases = new Map(scope.map(([zoneId, partId]) => [partId, {
+    part: { partId, zoneId, waterPoint: [10.04, 55.9] },
+    feature: { properties: { id: zoneId } },
+    publicHours: new Map([
+      [H0, { waterLevelCm: 81, waterLevelTrendCm3h: null }],
+      [H3, { waterLevelCm: 82, waterLevelTrendCm3h: null }],
+    ]),
+  }]));
+  return { normal, cases, stationRegistry, routing, routingConfigurationSha256: normal.waterRoutingConfigurationSha256(routing),
+    sealedIndex, activeBulk: native, protectedBulk, historicalBulk, retainedIndex };
+}
+
+test('B374 all routed donors have hidden same-series H3; output stays categorical and inputs unchanged', async () => {
+  const inputs = await prepare(candidateVolume());
+  const before = JSON.stringify([inputs.activeBulk, inputs.protectedBulk, [...inputs.sealedIndex], inputs.routing]);
+  const report = auditB374WaterSourceSupport(inputs);
+  assert.deepEqual(report.parts, scope.map(([, partId]) => ({
+    partId, decision: 'QUALIFIED_SUPPORT_EXISTS', candidateBanks: ['PROTECTED_BULK'],
+  })));
+  assert.doesNotMatch(JSON.stringify(report), /PRIVATE_FIXTURE_SOURCE|waterLevel|gridPoint|modelRun|56/);
+  assert.equal(JSON.stringify([inputs.activeBulk, inputs.protectedBulk, [...inputs.sealedIndex], inputs.routing]), before);
+});
+
+test('B374 missing one donor or changing its native grid does not produce support', async () => {
+  const prepared = await Promise.all([
+    prepare(candidateVolume({ missingSecond: true })),
+    prepare(candidateVolume({ differentGrid: true })),
+  ]);
+  assert.ok(prepared.every(inputs => auditB374WaterSourceSupport(inputs).parts
+    .every(row => row.decision === 'QUALIFIED_SUPPORT_MISSING')));
+});
+
+test('B374 a retained qualified H3 can support the identical H0; competing values are ambiguous', async () => {
+  const retained = normal.buildWaterSourceForecastIndex(sources, candidateVolume({ delta: 5 }), H0);
+  const [onlyRetained, conflicting] = await Promise.all([
+    prepare(sourceVolume(() => empty), retained),
+    prepare(candidateVolume(), retained),
+  ]);
+  assert.ok(auditB374WaterSourceSupport(onlyRetained).parts
+    .every(row => row.decision === 'QUALIFIED_SUPPORT_EXISTS' && row.candidateBanks.join() === 'RETAINED_SOURCE'));
+  assert.ok(auditB374WaterSourceSupport(conflicting).parts
+    .every(row => row.decision === 'CONFLICTING_SUPPORT' && row.candidateBanks.join() === 'PROTECTED_BULK,RETAINED_SOURCE'));
+});
+
+test('B374 meaningful routing, observed public evidence, and B374 selected SOURCE union must match', async () => {
+  const inputs = await prepare(candidateVolume());
+  assert.throws(() => auditB374WaterSourceSupport({ ...inputs, routingConfigurationSha256: '0'.repeat(64) }),
+    /^Error: SEALED_B374_ROUTING_CONFIGURATION_MISMATCH$/);
+  const cases = structuredClone(inputs.cases);
+  cases.get(scope[0][1]).publicHours.get(H0).waterLevelCm += 1;
+  assert.throws(() => auditB374WaterSourceSupport({ ...inputs, cases }), /^Error: SEALED_B374_ROUTE_MISMATCH$/);
+  const activeBulk = structuredClone(inputs.activeBulk);
+  const future = new Date(Date.parse(H3) + 3 * 3_600_000).toISOString();
+  activeBulk.zones[`SOURCE::${sources[0].sourceKey}`].hourly[future]['sea-mean-deviation'] += 0.25;
+  assert.throws(() => auditB374WaterSourceSupport({ ...inputs, activeBulk }), /^Error: SEALED_B374_SOURCE_UNION_MISMATCH$/);
+});
+
+}
+
+{
+const step = (number, name, conclusion = 'success') => ({
+  number, name, conclusion, status: 'completed', started_at: '2026-11-23T00:23:50Z',
+  completed_at: '2026-11-23T00:23:55Z',
+});
+const job = {
+  id: 137412108521, head_sha: 'fdf7078929d477092e247a4bee00146952aeebc7', run_id: 45088278207,
+  run_attempt: 1, conclusion: 'success',
+  steps: [
+    step(59, 'Verify and restore the private production runtime bundle'),
+    step(60, 'Preserve original pairs and rebind metadata before new-hour source reconstruction', 'skipped'),
+    step(61, 'Preserve nationwide originals before new-hour current-grid reconstruction', 'skipped'),
+    step(62, 'Rebind the exact bounded-conditions predecessor before installation', 'skipped'),
+    step(63, 'Rebind exact 11Z private state without changing weather measurements', 'skipped'),
+    step(64, 'Install only the allowlisted restored private runtime files'),
+    step(66, 'Classify one-time DMI PART continuity donor'),
+    step(67, 'Restore exact previous native DMI donor without older score state', 'skipped'),
+    step(87, 'Reapply exact verified weather sources after private runtime installation', 'skipped'),
+    step(88, 'Reconcile the paired 15Z originals with the working weather sources', 'skipped'),
+    step(91, 'Import exact public Candidate G runtime only for first integrated bootstrap', 'skipped'),
+    step(96, 'Preserve deployed DMI zone cache as safe fallback'),
+    step(150, 'Verify rebuilt closure exactly matches the run-bound source handoff', 'skipped'),
+    step(153, 'Update central weather cache'),
+  ],
+};
+
+test('B374 requires the exact completed job and ordinary original-data inputs', () => {
+  assert.equal(verifyNormalInputSteps(job).number, 59);
+  for (const number of [67, 87, 150]) {
+    const changed = structuredClone(job);
+    changed.steps.find(row => row.number === number).conclusion = 'success';
+    assert.throws(() => verifyNormalInputSteps(changed), /^Error: B374_ACTUAL_STEP_BINDING$/);
+  }
+  const changed = { ...job, run_attempt: 2 };
+  assert.throws(() => verifyNormalInputSteps(changed), /^Error: B374_PRODUCER_JOB_IDENTITY$/);
+});
+
+test('B374 both fixed attempts reach the real read-only metadata request interface', async () => {
+  const { downloadOrdinaryCompletedStageArtifact } = await import('./ordinary-completed-stage-artifact.mjs');
+  for (const runId of [45065945955, 45088278207]) {
+    const requests = [];
+    await assert.rejects(downloadOrdinaryCompletedStageArtifact({
+      ...ordinaryStageIdentity(runId), token: 'synthetic',
+      fetchImpl: async (url) => { requests.push(url); return new Response(null, { status: 403 }); },
+    }), /^Error: ORDINARY_STAGE_METADATA_HTTP$/);
+    assert.deepEqual(requests, [
+      `https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/actions/runs/${runId}/attempts/1`,
+    ]);
+  }
+});
+
+}
+
+{
+const marker = Buffer.from('synthetic ZIP bytes');
+const sha256 = crypto.createHash('sha256').update(marker).digest('hex');
+const pin = { id: 111, name: 'synthetic fixture', bytes: marker.length, sha256 };
+const currentTime = Date.parse('2026-11-23T04:00:00Z');
+const meta = { id: pin.id, name: pin.name, size_in_bytes: pin.bytes, digest: 'sha256:' + sha256,
+  expired: false, created_at: '2026-11-23T02:53:04Z', expires_at: '2026-12-07T02:52:58Z',
+  workflow_run: { id: 45088278207, repository_id: 1306858343, head_repository_id: 1306858343, head_branch: 'main',
+    head_sha: 'fdf7078929d477092e247a4bee00146952aeebc7' } };
+
+test('B374 matches exact metadata, repository identity, and expiry', () => {
+  assert.doesNotThrow(() => checkArtifactMetadata(meta, pin, currentTime));
+  for (const changed of [
+    { ...meta, id: 112 }, { ...meta, size_in_bytes: pin.bytes + 1 },
+    { ...meta, digest: 'sha256:' + '0'.repeat(64) }, { ...meta, expired: true },
+    { ...meta, expires_at: '2026-11-23T03:00:00Z' },
+    { ...meta, workflow_run: { ...meta.workflow_run, head_repository_id: 10 } },
+  ]) assert.throws(() => checkArtifactMetadata(changed, pin, currentTime), /^Error: B374_PUBLIC_ARTIFACT_IDENTITY$/);
+});
+
+test('B374 permits only signed storage-host redirects with no userinfo or fragment', () => {
+  assert.equal(artifactRedirectUrl(302, 'https://fixture.blob.core.windows.net/archive?read=fixture').hostname,
+    'fixture.blob.core.windows.net');
+  for (const [status, url] of [
+    [200, 'https://fixture.blob.core.windows.net/archive'],
+    [302, 'https://fixture.blob.core.windows.net.evil.example/archive'],
+    [302, 'https://user@fixture.blob.core.windows.net/archive'],
+    [302, 'http://fixture.blob.core.windows.net/archive'],
+    [302, 'https://fixture.blob.core.windows.net/archive#bad'],
+  ]) assert.throws(() => artifactRedirectUrl(status, url), /^Error: B374_PUBLIC_ARTIFACT_REDIRECT$/);
+});
+
+test('B374 writes only bounded bytes and verifies the complete archive hash', async () => {
+  const output = [];
+  const sink = () => new Writable({ write(chunk, _encoding, done) { output.push(Buffer.from(chunk)); done(); } });
+  await transferExact(new Response(marker, { status: 200, headers: { 'content-length': String(pin.bytes) } }),
+    sink(), pin);
+  assert.deepEqual(Buffer.concat(output), marker);
+  output.length = 0;
+  await assert.rejects(transferExact(new Response(Buffer.concat([marker, marker])), sink(), pin),
+    /^Error: B374_PUBLIC_ARTIFACT_SIZE$/);
+  assert.equal(output.length, 0);
+  await assert.rejects(transferExact(new Response(marker), sink(), { ...pin, sha256: '0'.repeat(64) }),
+    /^Error: B374_PUBLIC_ARTIFACT_DIGEST$/);
+  await assert.rejects(transferExact(new Response(marker, { headers: { 'content-encoding': 'gzip' } }), sink(), pin),
+    /^Error: B374_PUBLIC_ARTIFACT_RESPONSE$/);
+});
+
+test('B374 local CLI returns one fixed failure and before acquiring any contents', async () => {
+  await assert.rejects(promisify(execFile)(process.execPath, [fileURLToPath(new URL('audit-b358-water-level-trend.mjs', import.meta.url)), '--b374'],
+    { env: { ...process.env, GITHUB_ACTIONS: 'false' } }), error =>
+    error.code === 1 && error.stdout === 'B374_HOSTED_READER_REQUIRED\n' && error.stderr === '');
+});
+
+}
+
+test('B374 admits only its fixed read-only workflow job and preserves previous audit selectors', async () => {
+  const workflow = await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8');
+  const block = workflow.split('\n  water-source-support-374:')[1];
+  assert.match(block, /inputs\.confirmation == 'READ-B374-ROMO-WATER-SOURCE-SUPPORT'/);
+  assert.match(block, /node scripts\/audit-b358-water-level-trend\.mjs --b374/);
+  assert.doesNotMatch(block, /actions\/cache|secrets: inherit|gh workflow run|--publish|\/logs|(?:contents|actions|pages|id-token): write/);
+  const proof = block.indexOf('test "$SOURCE_REQUIRED" = false');
+  const call = block.indexOf('node scripts/audit-b358-water-level-trend.mjs --b374');
+  assert.ok(proof >= 0 && proof < call && call < block.indexOf('WEATHER_PROGRESS_MASTER_SECRET:'));
+  assert.match(block, /path: \$\{\{ runner.temp \}\}\/ravradar-b374-water-result\/source-support\.json/);
+  for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272'])
+    assert.ok(workflow.split('\n  '+job+':\n')[1]?.split('\n')[0].includes("inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT'"));
+});

@@ -1386,7 +1386,7 @@ jobs:
           git -c protocol.allow=never worktree add --detach "$RUNNER_TEMP/ravradar-b374-water-reader" fdf7078929d477092e247a4bee00146952aeebc7
       - name: Compare qualified source endpoints without providers or production writes
         run: |
-          node scripts/lib/saved-b374-water-support/entry.mjs \
+          node scripts/audit-b358-water-level-trend.mjs --b374 \
             "$RUNNER_TEMP/ravradar-b373-water-reader" \
             "$RUNNER_TEMP/ravradar-b374-water-reader" \
             "$RUNNER_TEMP/ravradar-b374-water-result/source-support.json"
