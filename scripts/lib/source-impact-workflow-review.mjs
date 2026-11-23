@@ -189,8 +189,23 @@ export function verifyCurrentSourceWorkflow(value){
   assert.equal(run('Install source-gate dependencies'),
     'python -m pip install --disable-pip-version-check -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt');
   assert.equal(run('Build deterministic source-tree content identity'),'node scripts/weather-source-gate.mjs impact-digest');
-  assert.equal(run('Validate source contracts and release governance'),
-    'npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs');
+  const sourceValidation='npm run validate:source';
+  const rollbackValidation=[
+    'node scripts/test-prepare-candidate-g-operational-rollback.mjs',
+    'node scripts/test-candidate-g-rollback-public-stage.mjs',
+  ];
+  const governance=run('Validate source contracts and release governance');
+  // Already-issued receipts still refer to workflows with the old log probes.
+  const historicalGovernance=[
+    sourceValidation,
+    'node scripts/test-fixed-public-rate-log-20261013.mjs',
+    'node scripts/test-fixed-storage-upload-log-20261013.mjs',
+    'node scripts/test-fixed-public-rate-console-log-20261015.mjs',
+    ...rollbackValidation,
+  ].join(' && ');
+  if(historicalNational||governance!==[sourceValidation,...rollbackValidation].join(' && ')){
+    assert.equal(governance,historicalGovernance);
+  }
   assert.equal(run('Validate native PostgreSQL checkpoint CAS on artificial data only'),
     'set -euo pipefail node --test scripts/test-native-postgres-evidence.mjs node scripts/native-postgres-evidence.mjs');
   if(historicalNational)assert.equal(run(HISTORICAL_NATIONAL_STEP),'node scripts/national584-source-evidence.mjs');

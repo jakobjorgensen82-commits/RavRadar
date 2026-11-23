@@ -21,6 +21,10 @@ const liveSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-req
 assert.equal(verifyCurrentSourceWorkflow(liveSource).historicalNational,false);
 assert.ok(!liveSource.includes('node scripts/national584-source-evidence.mjs'),
   'The normal PR job no longer runs the frozen national proof');
+for(const probe of ['test-fixed-public-rate-log-20261013.mjs',
+  'test-fixed-storage-upload-log-20261013.mjs','test-fixed-public-rate-console-log-20261015.mjs']){
+  assert.ok(!liveSource.includes(probe),'A completed log investigation is not a normal PR command');
+}
 verifyWorkflow(liveSource);
 let liveCases=1;
 for (const [before,after] of [
@@ -31,6 +35,9 @@ for (const [before,after] of [
   ["outputs.selection != 'TARGETED'", "outputs.selection == 'TARGETED'"],
   ['SOURCE_GATE_HEAD_SHA: \${{ github.event.pull_request.head.sha }}','SOURCE_GATE_HEAD_SHA: \${{ github.sha }}'],
   ['path: .cache/native-postgres-phase-proof.json','path: .cache/changed-phase.json'],
+  ['run: npm run validate:source &&','run: true &&'],
+  ['run: npm run validate:source &&','run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs &&'],
+  [' && node scripts/test-candidate-g-rollback-public-stage.mjs',''],
   ['-r requirements-copernicus.txt\n','-r requirements-copernicus.txt\n          && node scripts/test-source-impact-plan.mjs\n'],
 ]) {
   const changed=liveSource.replace(before,after);
