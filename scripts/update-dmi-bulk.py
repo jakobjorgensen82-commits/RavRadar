@@ -15190,6 +15190,9 @@ def first_marine_tail_catalogue(
     pending_reserve, preserves_plan,
 ):
     """Offer a newer catalogue once, before this collection changes any rows."""
+    def refuse(reason: str) -> None:
+        progress(f"DMI_FIRST_MARINE_TAIL_CATALOGUE {collection} {reason}")
+
     old_run, old_assets, old_stats = old_catalogue
     old_times = set(old_stats.get("officialRequiredValidTimes") or ())
     old_support = marine_catalogue_support_times(old_assets, required_times)
@@ -15199,18 +15202,25 @@ def first_marine_tail_catalogue(
     }
     now = time.monotonic()
     reserve = DKSS_FIRST_TURN_CATALOGUE_MAX_SECONDS
+    if collection not in MARINE_COLLECTIONS:
+        return None
     if (
-        collection not in MARINE_COLLECTIONS
-        or not old_run
+        not old_run
         or old_stats.get("catalogInventoryComplete") is not True
         or old_stats.get("selectedNativeRunComplete") is not True
         or not old_times
-        or not uncovered_tail
-        or now - observed_at < DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS
-        or remaining_bytes <= 0
-        or not checkpoint_controller.can_start_asset(pending_reserve + reserve, cost_family=collection)
     ):
-        return None
+        return refuse("PREVIOUS_CATALOGUE_UNQUALIFIED")
+    if not uncovered_tail:
+        return refuse("NO_QUALIFIED_TAIL")
+    if now - observed_at < DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS:
+        return refuse("PREFETCH_TOO_RECENT")
+    if remaining_bytes <= 0:
+        return refuse("BYTE_BUDGET_EMPTY")
+    if not checkpoint_controller.can_start_asset(pending_reserve + reserve, cost_family=collection):
+        return refuse("RESERVE_BEFORE")
+
+    phase = "CATALOGUE"
     try:
         with asset_download_work_deadline(now + reserve):
             offer = list_operational_marine_assets(
@@ -15225,25 +15235,38 @@ def first_marine_tail_catalogue(
                 asset["size"] if asset.get("size") is not None else known_asset_bytes
                 for asset in assets if asset["valid"] in extra_tail
             )
-            if (
-                not run or not epoch(old_run) < epoch(run) <= reference.timestamp()
-                or stats.get("catalogInventoryComplete") is not True
+            if not run or not epoch(old_run) < epoch(run) <= reference.timestamp():
+                reason = (
+                    "NO_NEWER_COMPLETE_RUN" if stats.get("catalogInventoryComplete") is True
+                    else "CATALOGUE_INCOMPLETE"
+                )
+            elif (
+                stats.get("catalogInventoryComplete") is not True
                 or stats.get("requiredWindowInventoryComplete") is not True
                 or stats.get("selectedNativeRunComplete") is not True
                 or stats.get("requiredRowsTruncatedByAssetLimit") != 0
-                or not old_times <= new_times or not old_support <= new_support
-                or not extra_tail
-                or not any(type(size) is int and 0 < size <= remaining_bytes for size in sizes)
-                or not preserves_plan(offer)
             ):
-                return None
+                reason = "CATALOGUE_INCOMPLETE"
+            elif not old_times <= new_times or not old_support <= new_support:
+                reason = "CATALOGUE_LOSES_EXISTING_TIMES"
+            elif not extra_tail:
+                reason = "NO_QUALIFIED_TAIL_IN_OFFER"
+            elif not any(type(size) is int and 0 < size <= remaining_bytes for size in sizes):
+                reason = "TAIL_ASSET_OUTSIDE_BYTE_BUDGET"
+            else:
+                phase = "EVIDENCE"
+                reason = None if preserves_plan(offer) else "EVIDENCE_NOT_PRESERVED"
     except AssetDownloadCleanupUnproven:
         raise
+    except AssetDownloadRuntimeBudget:
+        return refuse(f"{phase}_TIMEOUT")
     except (OSError, RuntimeError, ValueError, TypeError, KeyError):
-        return None
-    if checkpoint_controller.can_start_asset(pending_reserve, cost_family=collection):
-        return offer
-    return None
+        return refuse(f"{phase}_ERROR")
+    if reason is not None:
+        return refuse(reason)
+    if not checkpoint_controller.can_start_asset(pending_reserve, cost_family=collection):
+        return refuse("RESERVE_AFTER")
+    return offer
 
 
 def main() -> int:
