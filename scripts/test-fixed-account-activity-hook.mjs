@@ -520,7 +520,7 @@ test('explicit disable remains possible if the database or coverage is invalid',
   assert.deepEqual(calls, ['GET', 'PATCH', 'GET']);
 });
 test('actual workflow preserves old operations and gates the fixed job with weather then trip', async () => {
-  const workflow = await fs.readFile(new URL('../.github/workflows/deploy-trip-storage.yml', import.meta.url), 'utf8');
+  const workflow = (await fs.readFile(new URL('../.github/workflows/deploy-trip-storage.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
   const header = workflow.slice(0, workflow.indexOf('\njobs:\n'));
   assert.match(header, /default: full-install/);
   for (const option of ['full-install', 'existing-worker-repair', 'existing-owner-export-upgrade', 'existing-owner-erasure-guard',
@@ -561,7 +561,7 @@ test('catalog-only read has its own exact read-job purpose and never qualifies a
   assert.equal(isFixedActivityHookCatalogReadOwner(readOwner), true);
   assert.equal(isFixedActivityHookWriteOwner(readOwner, 'enable'), false);
   for (const key of Object.keys(readOwner)) assert.equal(isFixedActivityHookCatalogReadOwner({ ...readOwner, [key]: 'unexpected' }), false);
-  const workflow = await fs.readFile(new URL('../.github/workflows/deploy-trip-storage.yml', import.meta.url), 'utf8');
+  const workflow = (await fs.readFile(new URL('../.github/workflows/deploy-trip-storage.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
   const begin = workflow.indexOf('\n  read-fixed-supabase-metadata:\n');
   const after = workflow.slice(begin + 1);
   const next = after.search(/\n  [a-zA-Z0-9_-]+:\n/);

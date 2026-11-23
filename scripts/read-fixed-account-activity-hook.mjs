@@ -215,6 +215,13 @@ function onlyKeys(value, expected) {
 const MANUAL_CATALOG_MAX_BYTES = 32768;
 const MANUAL_CATALOG_HTTP_STATUSES = new Set([400,401,403,404,408,409,422,429,500,502,503,504]);
 const MANUAL_CATALOG_SQLSTATES = new Set(['42501','42703','42883','42P01','55P03','57014','25006']);
+const MANUAL_CATALOG_PERMISSION_TARGETS = new Map([
+  ['permission denied for function account_erasure_check_metadata', 'CHECK_METADATA_EXECUTE'],
+  ['permission denied for schema auth', 'AUTH_SCHEMA_USAGE'],
+  ['permission denied for schema extensions', 'EXTENSIONS_SCHEMA_USAGE'],
+  ['permission denied for function digest', 'DIGEST_EXECUTE'],
+  ['permission denied for table pg_constraint', 'CHECK_CATALOG_READ'],
+]);
 const MANUAL_CATALOG_VALIDATION = new Set([
   'CATALOG_ENVELOPE','TABLE_CONTRACT','COLUMN_CONTRACT','INDEX_CONTRACT',
   'FUNCTION_CONTRACT','TRIGGER_CONTRACT','CHECK_FORMAT',
@@ -245,9 +252,16 @@ export async function diagnoseFixedManualAccountErasureCatalog({ env, accessToke
     if (response.redirected) return refused('HTTP_REDIRECT');
     if (response.status !== 201) {
       const httpStatus = MANUAL_CATALOG_HTTP_STATUSES.has(response.status) ? response.status : null;
-      const sqlState = [400,422,500].includes(httpStatus)
-        ? manualCatalogSqlState(await readBoundedJson(response, MANUAL_CATALOG_MAX_BYTES).catch(() => null)) : undefined;
-      return refused('HTTP_STATUS', { httpStatus, ...(sqlState ? { sqlState } : {}) });
+      const error = [400,422,500].includes(httpStatus)
+        ? await readBoundedJson(response, MANUAL_CATALOG_MAX_BYTES).catch(() => null) : null;
+      const sqlState = manualCatalogSqlState(error);
+      // The provider message remains private. Only exact known permission targets get a category.
+      const permissionMessage = sqlState === '42501' && typeof error?.message === 'string'
+        ? error.message.split(/\r?\n/, 1)[0]
+          .replace(/^(?:Failed to run SQL query: )?ERROR:\s+(?:42501:\s+)?/i, '').trim() : null;
+      const permissionTarget = MANUAL_CATALOG_PERMISSION_TARGETS.get(permissionMessage);
+      return refused('HTTP_STATUS', { httpStatus, ...(sqlState ? { sqlState } : {}),
+        ...(permissionTarget ? { permissionTarget } : {}) });
     }
     phase = 'RESPONSE_BODY';
     const value = await readBoundedJson(response, MANUAL_CATALOG_MAX_BYTES);
