@@ -18,7 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261123&followup=daylight-20261122`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261123-origin-age&followup=daylight-20261122`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -425,7 +425,7 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261123');
+    assert.equal(url.searchParams.get('assistant-help'), '20261123-origin-age');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
     assert.equal(url.searchParams.get('assistant-ready'), '20261122');
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
