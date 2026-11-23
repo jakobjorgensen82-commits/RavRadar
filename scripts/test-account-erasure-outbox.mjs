@@ -78,6 +78,20 @@ test('manual erasure catalogue diagnostic verifies the scoped wireup and returns
  assert.deepEqual(await check(()=>result(),{...env,GITHUB_JOB:'apply-binding'}),{result:refused('OWNER_REQUIRED'),calls:0});
  assert.deepEqual(await check(()=>Response.json({code:'42501',message:sentinel},{status:500})),
   {result:refused('HTTP_STATUS',{httpStatus:500,sqlState:'42501'}),calls:1});
+ for(const [target,message] of [
+  ['CHECK_METADATA_EXECUTE','permission denied for function account_erasure_check_metadata'],
+  ['AUTH_SCHEMA_USAGE','permission denied for schema auth'],
+  ['EXTENSIONS_SCHEMA_USAGE','permission denied for schema extensions'],
+  ['DIGEST_EXECUTE','permission denied for function digest'],
+  ['CHECK_CATALOG_READ','permission denied for table pg_constraint'],
+ ]){
+  assert.deepEqual(await check(()=>Response.json({message:'Failed to run SQL query: ERROR:  42501: '+message+'\nDETAIL: '+sentinel},{status:400})),
+   {result:refused('HTTP_STATUS',{httpStatus:400,sqlState:'42501',permissionTarget:target}),calls:1});
+ }
+ assert.deepEqual(await check(()=>Response.json({code:'42501',message:'permission denied for schema auth '+sentinel},{status:400})),
+  {result:refused('HTTP_STATUS',{httpStatus:400,sqlState:'42501'}),calls:1});
+ assert.deepEqual(await check(()=>Response.json({code:'42883',message:'permission denied for schema auth'},{status:400})),
+  {result:refused('HTTP_STATUS',{httpStatus:400,sqlState:'42883'}),calls:1});
  assert.deepEqual(await check(()=>Response.json({code:'ZZ999',message:sentinel},{status:500})),
   {result:refused('HTTP_STATUS',{httpStatus:500}),calls:1});
  assert.deepEqual(await check(()=>Response.json({message:sentinel},{status:418})),
