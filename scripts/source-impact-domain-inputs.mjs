@@ -22,6 +22,8 @@ const ERASURE_SQL='supabase/migrations/20261116181500_account_erasure_outbox_off
 const INACTIVITY_OFF_SQL=Object.freeze(['supabase/migrations/20261117180000_account_inactivity_notice_off.sql','supabase/migrations/20261117180100_account_native_activity_capture_off.sql']);
 const ERASURE_METADATA_READER='scripts/verify-account-erasure-schema.mjs';
 const ERASURE_NATIVE_ADAPTER='scripts/lib/account-erasure-outbox-native-fixture.mjs';
+const NATIVE_RECEIPT_SQL='supabase/migrations/20261122200000_account_native_activity_receipt_off.sql';
+const NATIVE_RECEIPT_SOURCE='scripts/lib/account-native-activity-receipt-source.mjs';
 const PROFILE_FILE='scripts/lib/source-impact-domain-inputs-594.json';
 const PROFILE_SHA256='ae33e59b09a9d005579da78a32e2be5943856bfe03fdc2a54ba252071e5fe563';
 const MAX_BLOB=4*1024*1024,MAX_TOTAL=32*1024*1024,MAX_GIT=64*1024*1024;
@@ -320,9 +322,16 @@ export function analyzeSourceDomainInputs(input){
       assert(count===0||(is601&&count===2),'DOMAIN_PARTIAL_OR_WRONG_FAMILY_NOTICE_SQL');
       return count===2;
     };
-    const pgModules=ref=>{noticePresent(ref);return offPresent(ref)?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER]:p.postgresModules;};
+    const receiptPresent=ref=>{
+      const present=trees.get(ref).has(NATIVE_RECEIPT_SQL);
+      assert.equal(trees.get(ref).has(NATIVE_RECEIPT_SOURCE),present,'DOMAIN_PARTIAL_NATIVE_RECEIPT_SOURCE');
+      if(present)assert(is601&&offPresent(ref)&&noticePresent(ref)&&sql(ref).length===80,'DOMAIN_NATIVE_RECEIPT_REQUIRES_WHOLE80');
+      return present;
+    };
+    const pgModules=ref=>{noticePresent(ref);const receipt=receiptPresent(ref);return offPresent(ref)
+      ?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER,...(receipt?[NATIVE_RECEIPT_SOURCE]:[])]:p.postgresModules;};
     // All SQL stays in the real PG inventory; the known76th row grants no reuse.
-    assert.equal(sql(input.baselineCommit).length,is601?77+2*Number(noticePresent(input.baselineCommit)):is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
+    assert.equal(sql(input.baselineCommit).length,is601?77+2*Number(noticePresent(input.baselineCommit))+Number(receiptPresent(input.baselineCommit)):is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
       'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
     if(is597||is598||is599||is601){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
       assert.equal(modelData.get(input.baselineCommit).I.manifest.files.length,100,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');}

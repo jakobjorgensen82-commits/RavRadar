@@ -1,3 +1,29 @@
+## 23. november — særskilt inaktiv SQL80-installationsvej er lokal
+
+Den lokale kandidat tilkobler kun den eksakte receipt-append til den eksisterende finite backend-installationsworkflow. Valget er særskilt og default false, kræver aktuel kvalificeret FULL/native80 samt alle installerede forgængere og udelukker de øvrige opgraderinger. Før SQL kræves uændret OFF-katalog med de eksisterende CHECK-facit og deaktiveret Auth-hook. En frisk migrationsliste, dry-run og main-genbekræftelse begrænser skrivningen til denne ene append; allerede installeret SQL genlæses uden ny push. Den efterfølgende faste metadataaflæsning kræver den nye body/ACL, uarmeret receipt og fortsat UNKNOWN/OFF/HOLD. Normal efterfølger må kun genkende den samme allerede installerede append fra dens præcise kilde.
+
+Gamle79-SQL og OFF-verifikatoren bevares. De målrettede lokale protokolprøver består, men faktisk native80, kilde-PR-kvalifikation og hosted installation/genlæsning er ikke udført. Installationsvejen kalder hverken arm, Auth-enable, coverage-start, Edge-deploy, mail, varsel eller sletning. Hook-accept og senere dækningsstart kræver fortsat særskilt faktisk bevis og normal ejer.
+
+## 23. november — normal App80-kvalifikation er lokalt tilkoblet
+
+Den lokale efterfølger skiller kvitteringens faste SQL/source-data fra HTTP-kontrolleren. Den normale PG-inputfortegnelse medtager det rene sourceblad sammen med den eksakte nye append; manglende eller delvis tilkobling afvises. En ændring af HTTP-kontrolleren alene bliver ikke numerisk PG-input.
+
+Den eksisterende ejede native kalder genudfører de uændrede 49/17-prøver i deres oprindelige 79-scope og kalder derefter de ni særskilte kvitteringscases. En obligatorisk current80-facet binder den nye append og source-body. Gamle79-kvitteringer ommærkes ikke og kan ikke alene opfylde80. Den normale decoder, inputgenlæsning og slutrecord kræver den nye facet, og kun normal autentisk FULL-kvalifikation kan frigive den som kvalificeret evidens.
+
+Dette er stadig lokal kildeforberedelse. PostgreSQL-kørsel, installation, normal live-læserute, arm, faktisk Auth-svar og dækningsstart er ikke udført. Der aktiveres ingen policy, varsling, cron eller sletning. Alle tidligere SQL og numeriske C/I/T bevares.
+
+## 22. november — særskilt native engangskvittering er en lokal kontrakt
+
+Den lokale uinstallerede app-append forbereder én privat, uaktiveret kvitteringsrække. En særskilt arm bindes til den eksisterende dæknings-epoch. Kun den eksklusive native token-hook kan efter positiv capture sætte de faste servertider én gang. En hook startet før armen afvises som vidne. Klientens normale aktivitets-RPC ændres ikke og kan ikke sætte kvitteringen. Ingen brugeridentitet, token, claims eller fritekst gemmes; nye login giver ikke nye kvitteringsrækker. Observeren venter ikke på en låst række og må ikke erstatte capturefunktionens eksisterende invaliderings-/rollbackværn.
+
+Den særskilte læser kontrollerer appendens præcise kilde-body, den oprindelige katalog-/ACL-kontrakt og den nye private tabel. Den returnerer kun faste tilstande, tider og epoch-digests. Den gamle OFF-verifikator og tidligere SQL bevares. Kvitteringen er hverken en observeret Auth-HTTP-response, per-konto-korrelation, komplet aktivitetsdækning eller aktiverings-/sletteautoritet. Lokale syntaks- og mockprøver består; de ni nye PostgreSQL-cases er forberedt, men ikke kørt. Native kvalifikation, normal migrations-/kaldertilkobling, installation, arm og faktisk Auth-accept forbliver åbne. Ingen policy, varsel eller sletning er aktiveret.
+
+## 22. november — fast genlæsning af aktivitetsdækning
+
+Den lokale kontoaktivitetslæser kan særskilt observere den ene dækningspolicys tilstand, faste epoch og serverens start-/aflæsningstid. Den læser ingen konti eller journalrækker og ændrer ingen data. Observationen kvalificerer ikke Auth-accept, fuldstændig aktivitet, varsling eller sletning. Den oprindelige OFF-installationsverifikator beholder sit uændrede facit.
+
+En hosted dækningsstart er fortsat afgrænset fra hook-konfiguration og kræver et faktisk tidsstemplet Auth-acceptforløb. Der findes endnu ingen normal maskinbundet acceptkvittering i den faste ejer. En caller-dato eller et positivt flag må ikke erstatte den. Dækning må ikke tilbagedateres, gammel aktivitet må ikke hævdes, og ukendt aktivitet forbliver HOLD. Ingen startoperation, automatisk varsel eller automatisk sletning følger af den lokale læser.
+
 ## 21. november — lokalt svar om UV-fluorescens og dagslys
 
 Et tydeligt, todelt spørgsmål om hvorfor rav lyser under UV, og hvordan dagslys påvirker testen, fik et offentligt HTTP 502-afslag. Den lokale app kan nu besvare hele hensigten på dansk, tysk og engelsk med den godkendte forklaring af fluorescens og det eksisterende råd om kontrast i dagslys. Spørgsmål med andre ønsker, ukendte detaljer eller private tilføjelser følger den almindelige vej med hele teksten. Den lokale prøve er uden ekstern AI. Frontsiden, startmodulet og hjælpemodulet har nye cacheadresser, så en normal navigation kan hente den nye tekst, også med forrige filer i cachen. Præcis GitHub-kvalifikation og offentlig levering udestår.

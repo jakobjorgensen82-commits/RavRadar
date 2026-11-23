@@ -22,6 +22,8 @@ import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
 // Historical schema namespaces need not export this later, inert app descriptor.
 export const ACCOUNT_ERASURE_APP_MIGRATION=accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION;
 export const ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS=accountErasureSchema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+import {fixedNativeActivityReceiptMigration,currentNativeActivityReceiptSourceContext,readFixedNativeActivityReceiptSource} from './lib/account-native-activity-receipt-source.mjs';
+export const ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION=Object.freeze({version:'20261122200000',filename:fixedNativeActivityReceiptMigration});
 import { ACCOUNT_ASSISTANT_MIGRATION } from './lib/account-assistant-successor-source.mjs';
 import { CURRENT_GRID_MIGRATION } from './lib/current-grid-successor-source.mjs';
 import { nativeIdentityMigration, readNativeIdentityCanonicalSource }
@@ -790,6 +792,11 @@ function fixedAssistantRows(migrationListText,profile){
   if(profile===ASSISTANT_AFTER599_ROWS){
     for(const row of ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS)offVersions.add(row.version);
     const [notice,capture]=ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+    if(currentNativeActivityReceiptSourceContext()!==null){
+      const receipt=ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION;offVersions.add(receipt.version);
+      assert(!remote.has(receipt.version)||(remote.has(notice.version)&&remote.has(capture.version)&&local.has(receipt.version)),
+        'Receipt requires both installed OFF predecessors and its exact local source');
+    }
     assert(!remote.has(capture.version)||remote.has(notice.version),'Native capture requires its exact prior notice append');
     for(const row of ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS)if(remote.has(row.version))assert(local.has(row.version),'Applied OFF app requires its actual source');
   }
@@ -1394,8 +1401,13 @@ function assertTemporaryCutoverWorkdir(value) {
   return workdir;
 }
 
-export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false, includeAccountErasureSource = false, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE } = {}) {
+export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false, includeAccountErasureSource = false, includeAccountNativeReceiptSource = false, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE } = {}) {
   assert.equal(typeof includeAccountErasureSource,'boolean');
+  assert.equal(typeof includeAccountNativeReceiptSource,'boolean');
+  if(includeAccountNativeReceiptSource){
+    assert.equal(sourcePhase,'assistant-after599-successor');assert.equal(includeAccountErasureSource,false);
+    assert(currentNativeActivityReceiptSourceContext(),'Exact current80 source required');
+  }
   if(includeAccountErasureSource)assert(['assistant-after598-successor','assistant-after599-successor'].includes(sourcePhase),
     'The OFF app installer requires an explicitly supported installed family');
   const requiredMigrations = migrationsForSourcePhase(sourcePhase);
@@ -1421,10 +1433,13 @@ export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWor
   if(sourcePhase==='assistant-after598-successor'&&ACCOUNT_ERASURE_APP_MIGRATION)await fs.copyFile(
     path.join(MIGRATIONS_DIRECTORY,ACCOUNT_ERASURE_APP_MIGRATION.filename),
     path.join(migrationsDirectory,ACCOUNT_ERASURE_APP_MIGRATION.filename));
-  if(includeAccountErasureSource&&sourcePhase==='assistant-after599-successor'){
+  if((includeAccountErasureSource||includeAccountNativeReceiptSource)&&sourcePhase==='assistant-after599-successor'){
     const source=accountErasureSchema.readAccountInactivitySource();
     for(const row of source.migrations)await fs.copyFile(path.join(MIGRATIONS_DIRECTORY,row.filename),path.join(migrationsDirectory,row.filename));
   }
+  if(includeAccountNativeReceiptSource)await fs.copyFile(
+    path.join(MIGRATIONS_DIRECTORY,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename),
+    path.join(migrationsDirectory,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename));
   // Statistics230 is now a required historical source and was copied above.
   // Its explicit legacy option still verifies the immutable source, not a grant.
   return Object.freeze({ workdir, migrationsDirectory });
@@ -1586,6 +1601,12 @@ export async function hydrateTemporaryRemoteMigrationHistory({
       await fs.copyFile(file,path.join(migrationsDirectory,ACCOUNT_ERASURE_APP_MIGRATION.filename));
       continue; // Exact real SQL source, never a remote-history placeholder.
     }
+    if(sourcePhase==='assistant-after599-successor'&&version===ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.version){
+      assert(currentNativeActivityReceiptSourceContext(),'Applied receipt needs its exact current80 source');
+      assert(ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS.every(row=>remote.has(row.version)),'Receipt predecessors required');
+      await fs.copyFile(path.join(MIGRATIONS_DIRECTORY,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename),path.join(migrationsDirectory,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename));
+      continue; // A known applied source, never pending-write or history-placeholder authority.
+    }
     assert.ok(migrationChronologicalKey(version) < firstUniqueCutoverVersion,
       `remote contains an unknown post-cutover migration ${version}; refusing to normalize history`);
     const filename = `${version}_remote_applied_history_placeholder.sql`;
@@ -1620,10 +1641,17 @@ export async function assertSupabaseMigrationPlan({
   allowAccountAssistantPrewritePlan = false,
   allowStatisticsPreferenceRevisionPlan = false,
   allowAccountErasurePlan = false,
+  allowAccountNativeReceiptPlan = false,
 } = {}) {
   ACTIVE.requireOutput(); // Fast aktiv familie; UNISSUED må ikke falde tilbage.
   assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
   assert.equal(typeof allowAccountErasurePlan,'boolean');
+  assert.equal(typeof allowAccountNativeReceiptPlan,'boolean');
+  if(allowAccountNativeReceiptPlan){
+    assert.equal(ACTIVE.sourcePhase,'assistant-after599-successor');
+    assert(!allowAccountErasurePlan&&!allowAccountAssistantPrewritePlan&&!allowStatisticsPreferenceRevisionPlan);
+    assert(currentNativeActivityReceiptSourceContext(),'Exact current80 source required');
+  }
   if(allowAccountErasurePlan){
     assert(['assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase));
     assert.equal(allowAccountAssistantPrewritePlan,false);assert.equal(allowStatisticsPreferenceRevisionPlan,false);
@@ -1653,6 +1681,12 @@ export async function assertSupabaseMigrationPlan({
   const rows = parseSupabaseMigrationList(migrationListText);
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');
+  if(allowAccountNativeReceiptPlan){
+    for(const row of [...REQUIRED_CUTOVER_MIGRATIONS,...ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS])assert(remote.has(row.version),'Receipt requires every installed predecessor');
+    const receipt=ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION;assert.equal(inspected.versionToFilename.get(receipt.version),receipt.filename);
+    assert.deepEqual(await fs.readFile(path.join(migrationsDirectory,receipt.filename)),await fs.readFile(path.join(MIGRATIONS_DIRECTORY,receipt.filename)),'Receipt source bytes changed');
+    assert.deepEqual([...local].filter(version=>!remote.has(version)),remote.has(receipt.version)?[]:[receipt.version],'Only the exact receipt append may be pending');
+  }
   // A normal/code-only installer may observe an already-installed successor,
   // never acquire its separate original-preserving recovery write authority.
   assert.ok(remote.has(nativeIdentityMigration().version),
@@ -1662,7 +1696,7 @@ export async function assertSupabaseMigrationPlan({
   assert.ok(remote.has(establishedNativeCurrentOriginMigration().version),
     'ESTABLISHED_NATIVE_CURRENT_ORIGIN_PREWRITE_ROUTE_REQUIRED');
   if(ACTIVE.sourcePhase==='assistant-after599-successor'){
-    if(allowAccountErasurePlan){
+    if(allowAccountErasurePlan||allowAccountNativeReceiptPlan){
       const {required}=fixedAssistantRows(migrationListText,ASSISTANT_AFTER599_ROWS);
       for(const row of required)assert(remote.has(row.version),'OFF installation requires installed601 and app600');
     }else assertAssistantAfter599MigrationsApplied(migrationListText);
@@ -1697,8 +1731,9 @@ export async function assertSupabaseMigrationPlan({
   }
   assert.ok(remote.has(assistantPublic587SuccessorMigration().version),'ASSISTANT_PUBLIC587_SUCCESSOR_PREWRITE_ROUTE_REQUIRED');
   if(!['assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase))assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
-  const plannedMigrations = allowAccountErasurePlan
-    ? [...REQUIRED_CUTOVER_MIGRATIONS,...selectedAppMigrations] : REQUIRED_CUTOVER_MIGRATIONS;
+  const plannedMigrations = allowAccountNativeReceiptPlan
+    ? [...REQUIRED_CUTOVER_MIGRATIONS,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION]
+    : allowAccountErasurePlan? [...REQUIRED_CUTOVER_MIGRATIONS,...selectedAppMigrations] : REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
   for (const migration of REQUIRED_CUTOVER_MIGRATIONS) {
@@ -1747,7 +1782,12 @@ export async function assertSupabaseMigrationPlan({
   });
 }
 
-export function assertSupabaseMigrationsApplied(migrationListText,{requireAccountErasure=false}={}) {
+export function assertSupabaseMigrationsApplied(migrationListText,{requireAccountErasure=false,requireAccountNativeReceipt=false}={}) {
+  assert.equal(typeof requireAccountNativeReceipt,'boolean');
+  if(requireAccountNativeReceipt){
+    assert.equal(ACTIVE.sourcePhase,'assistant-after599-successor');assert.equal(requireAccountErasure,false);
+    assert(currentNativeActivityReceiptSourceContext());
+  }
   assert.equal(typeof requireAccountErasure,'boolean');
   if(ACTIVE.sourcePhase==='assistant-after598-successor')assertAssistantAfter598MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-after599-successor')assertAssistantAfter599MigrationsApplied(migrationListText);
@@ -1774,6 +1814,8 @@ export function assertSupabaseMigrationsApplied(migrationListText,{requireAccoun
     for(const row of selected)assert(local.has(row.version)&&remote.has(row.version),
       'Every selected OFF app migration must actually be applied');
   }
+  if(requireAccountNativeReceipt)for(const row of [...ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION])
+    assert(local.has(row.version)&&remote.has(row.version),'Receipt and all OFF predecessors must be applied');
   return Object.freeze({ appliedVersions: Object.freeze([...requiredVersions]) });
 }
 
@@ -2403,7 +2445,8 @@ async function runCli() {
   if (command === 'prepare-workdir') {
     const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: argumentValue('--output'),
       includeStatisticsPreferenceRevisionSource:process.argv.includes('--statistics-preference-revision-source'),
-      includeAccountErasureSource:process.argv.includes('--account-erasure-source') });
+      includeAccountErasureSource:process.argv.includes('--account-erasure-source'),
+      includeAccountNativeReceiptSource:process.argv.includes('--account-native-receipt-source') });
     console.log(`Temporary Supabase cutover view prepared with ${REQUIRED_CUTOVER_MIGRATIONS.length} exact source migrations.`);
     assert.ok(prepared.migrationsDirectory);
     return;
@@ -2427,7 +2470,7 @@ async function runCli() {
   }
   if (command === 'applied') {
     const migrationListText = await fs.readFile(argumentValue('--migration-list'), 'utf8');
-    const result = assertSupabaseMigrationsApplied(migrationListText,{requireAccountErasure:process.argv.includes('--account-erasure')});
+    const result = assertSupabaseMigrationsApplied(migrationListText,{requireAccountErasure:process.argv.includes('--account-erasure'),requireAccountNativeReceipt:process.argv.includes('--account-native-receipt')});
     console.log(`Supabase migration metadata readback is complete: ${result.appliedVersions.join(', ')}.`);
     return;
   }

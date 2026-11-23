@@ -72,6 +72,12 @@ assert.deepEqual(selected(route+'-unknown'),['reject-unknown-operation']);
 assert.deepEqual(selected(outputRoute),['read-fixed-supabase-metadata']);
 assert.deepEqual(selected(outputRoute+'-unknown'),['reject-unknown-operation']);
 assert.deepEqual(selected('fixed-assistant-failure-log-read-20261101'),['read-fixed-supabase-metadata']);
+for(const [operation,job]of [['fixed-account-activity-hook-catalog-read','read-fixed-supabase-metadata'],
+ ['fixed-account-activity-hook-enable','configure-fixed-account-activity-hook'],
+ ['fixed-account-activity-hook-disable','configure-fixed-account-activity-hook']]){
+  assert.deepEqual(selected(operation),[job],'A known fixed hook operation selects exactly its own job');
+  assert.deepEqual(selected(operation+'-unknown'),['reject-unknown-operation']);
+}
 assert.equal(workflow.split('          - '+route+'\n').length,2);
 assert.equal(workflow.split('          - '+outputRoute+'\n').length,2);
 const job=jobs.find(row=>row.id==='read-fixed-supabase-metadata').source;

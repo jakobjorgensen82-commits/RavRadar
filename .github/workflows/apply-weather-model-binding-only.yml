@@ -4,11 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: "Skriv APPLY-WEATHER-MODEL-BINDING eller særskilt APPLY-ACCOUNT-ERASURE"
+        description: "Skriv APPLY-WEATHER-MODEL-BINDING, APPLY-ACCOUNT-ERASURE eller APPLY-ACCOUNT-NATIVE-RECEIPT"
         required: true
         type: string
       install_account_erasure:
         description: "Kun konto-app-SQL og genlæsning; ingen kontosletning, Auth-hook, automatisk mail eller Edge"
+        required: false
+        default: false
+        type: boolean
+      install_account_native_receipt:
+        description: "Kun eksakt SQL80-kvittering og OFF-genlæsning; ingen Auth-enable, arm, coverage, mail eller sletning"
         required: false
         default: false
         type: boolean
@@ -57,6 +62,7 @@ jobs:
       cancel-in-progress: false
     env:
       RAVRADAR_ACCOUNT_ERASURE_OPT_IN: ${{ inputs.install_account_erasure }}
+      RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN: ${{ inputs.install_account_native_receipt }}
       RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: ${{ inputs.upgrade_current_grid_original }}
       RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY: ${{ inputs.diagnose_current_grid_original }}
       RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN: ${{ inputs.upgrade_assistant_later_h0_original }}
@@ -79,7 +85,14 @@ jobs:
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
-          if test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
+          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
+            test "$GITHUB_RUN_ATTEMPT" = 1
+            test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" != true
+            test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" != true
+            test "$RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY" != true
+            test "$RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN" != true
+            test "$CONFIRMATION" = APPLY-ACCOUNT-NATIVE-RECEIPT
+          elif test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
             test "$GITHUB_RUN_ATTEMPT" = 1
             test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" != true
             test "$RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY" != true
@@ -118,6 +131,13 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE: ${{ inputs.account_erasure_source_reference }}
         run: node scripts/verify-code-only-migration-plan.mjs --qualify-account-erasure-source
+
+      - name: Require qualified native80 before the inactive receipt append
+        if: inputs.install_account_native_receipt == true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE: ${{ inputs.account_erasure_source_reference }}
+        run: node scripts/verify-code-only-migration-plan.mjs --qualify-account-native-receipt-source
 
       - name: Seal exact integrated implementation identity
         id: integrated-implementation
@@ -159,7 +179,9 @@ jobs:
             --public-implementation-closure-sha256 \
             "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
           extra_app_source=()
-          if test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
+          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
+            extra_app_source+=(--account-native-receipt-source)
+          elif test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
             extra_app_source+=(--account-erasure-source)
           fi
           node scripts/integrated-cutover-readiness.mjs prepare-workdir \
@@ -235,13 +257,26 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RAVRADAR_BINDING_MIGRATION_WORKDIR: ${{ steps.migration-view.outputs.workdir }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE: ${{ inputs.account_erasure_source_reference }}
         run: |
           set -euo pipefail
           cd "${{ steps.migration-view.outputs.workdir }}"
           supabase migration list --linked | tee "$RUNNER_TEMP/weather-binding-migrations-plan.txt"
           supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt"
           cd "$GITHUB_WORKSPACE"
-          if test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
+          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
+            receipt_plan="$(node scripts/verify-code-only-migration-plan.mjs --account-native-receipt-plan \
+              --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
+              --dry-run "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt" \
+              --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations")"
+            receipt_pending="$(printf '%s' "$receipt_plan" | jq -er '((.pendingVersions | length) == 1) | tostring')"
+            if test "$receipt_pending" = true; then
+              node scripts/verify-code-only-migration-plan.mjs --read-account-native-receipt-before
+            else
+              node scripts/verify-code-only-migration-plan.mjs --read-account-native-receipt-installed
+            fi
+          elif test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
             env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs
             node scripts/verify-code-only-migration-plan.mjs --account-erasure-plan \
               --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
@@ -278,9 +313,25 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RAVRADAR_BINDING_MIGRATION_WORKDIR: ${{ steps.migration-view.outputs.workdir }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE: ${{ inputs.account_erasure_source_reference }}
         run: |
           set -euo pipefail
-          if test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
+          receipt_pending=false
+          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
+            (cd "${{ steps.migration-view.outputs.workdir }}" && supabase migration list --linked) | tee "$RUNNER_TEMP/weather-binding-migrations-plan.txt"
+            (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt"
+            receipt_plan="$(node scripts/verify-code-only-migration-plan.mjs --account-native-receipt-plan \
+              --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
+              --dry-run "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt" \
+              --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations")"
+            receipt_pending="$(printf '%s' "$receipt_plan" | jq -er '((.pendingVersions | length) == 1) | tostring')"
+            if test "$receipt_pending" = true; then
+              node scripts/verify-code-only-migration-plan.mjs --read-account-native-receipt-before
+            else
+              node scripts/verify-code-only-migration-plan.mjs --read-account-native-receipt-installed
+            fi
+          elif test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
             env -u SUPABASE_DB_PASSWORD node scripts/verify-statistics-preference-revision-schema.mjs
             node scripts/verify-code-only-migration-plan.mjs --account-erasure-plan \
               --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
@@ -294,8 +345,15 @@ jobs:
             node scripts/build-public-coastal-parts-v2.mjs
             node scripts/assistant-later-h0-binding-prewrite.mjs verify
           fi
+          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
+            git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+            test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+            test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          fi
           cd "${{ steps.migration-view.outputs.workdir }}"
-          supabase db push --linked --skip-vault
+          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" != true || test "$receipt_pending" = true; then
+            supabase db push --linked --skip-vault
+          fi
 
       - name: Read back applied migration and live database binding
         if: inputs.diagnose_current_grid_original != true
@@ -311,7 +369,9 @@ jobs:
           supabase migration list --linked | tee "$RUNNER_TEMP/weather-binding-migrations-applied.txt"
           cd "$GITHUB_WORKSPACE"
           extra_app_readback=()
-          if test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
+          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
+            extra_app_readback+=(--account-native-receipt)
+          elif test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
             extra_app_readback+=(--account-erasure)
           fi
           node scripts/integrated-cutover-readiness.mjs applied \
@@ -326,8 +386,16 @@ jobs:
           RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE: ${{ inputs.account_erasure_source_reference }}
         run: node scripts/verify-code-only-migration-plan.mjs --read-account-erasure-installed
 
+      - name: Read back only the unarmed inactive native receipt schema
+        if: inputs.install_account_native_receipt == true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE: ${{ inputs.account_erasure_source_reference }}
+        run: node scripts/verify-code-only-migration-plan.mjs --read-account-native-receipt-installed
+
       - name: Reconfirm exact main before assistant Edge deployment
-        if: inputs.install_account_erasure != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
+        if: inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -338,7 +406,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Deploy only the exact RavRadar assistant Edge function
-        if: inputs.install_account_erasure != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
+        if: inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
         timeout-minutes: 5
         shell: bash
         env:
@@ -358,7 +426,7 @@ jobs:
           exit 1
 
       - name: Verify exact backend and assistant readback without weather or Pages
-        if: inputs.install_account_erasure != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
+        if: inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
