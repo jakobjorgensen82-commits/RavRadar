@@ -37,7 +37,9 @@ test('erasure metadata: exact artificial contract preserves every pending bounda
  assert.equal(result.authDeletionProved,false);assert.equal(result.d1Acknowledged,false);
  assert.equal(result.completionAuthority,false);assert.equal(result.automaticEligibility,false);
  assert.equal(result.checkExpressionSemanticsVerified,false,'Structural metadata is not a SQL execution claim');
- assert(!/\bfrom\s+(?:public\.(profiles|observations)|auth\.users)\b/i.test(accountErasureCatalogQuery),'Metadata query does not select account/trip rows');
+ assert(!/\bfrom\s+(?:public\.(profiles|observations|account_erasure_operations)|auth\.users)\b/i.test(accountErasureCatalogQuery),'Metadata query does not select account/trip rows');
+ assert.doesNotMatch(accountErasureCatalogQuery,/'checks',\s*public\.account_erasure_check_metadata\(\)/);
+ assert.match(accountErasureCatalogQuery,/pg_catalog\.pg_get_constraintdef\(k\.oid,false\)/);
 });
 test('erasure installed readback uses one existing fixed read-only management request',async()=>{
  let calls=0;const receipt=await verifyInstalledAccountErasureSchema({accessToken:'SYNTHETIC',expectedCheckReference:accountErasureCheckReference(metadata()[0].metadata.checks),fetchImpl:async(url,options)=>{
