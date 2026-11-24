@@ -1,3 +1,11 @@
+## Drift — versionsværktøj og håndbog
+
+- Versionsværktøjet opdaterer håndbogens aktuelle modelfakta og installationskopien i samme kørsel. Den separate kontrol kan derefter læse det færdige resultat.
+
+## 4.0.602 — rav mellem revler
+
+- Spørg RavRadar kan forklare, hvordan strøm kan flytte materiale mellem revler uden nyt opskyl, og hvad man kan se fra stranden. Svaret findes på dansk, tysk og engelsk.
+
 ## Drift — fast kategorilæsning efter assistentafslag
 
 - Lokal kandidat til en fast, skrivefri læsning af fejlkategorier omkring 21. november kl. 17.12 UTC. Den ændrer hverken assistentens Edge-kode, AI-kald eller svar. Kildekvalifikation og faktisk driftslæsning udestår.
@@ -9,6 +17,7 @@
 
 ## Drift — rotation af DMI-råcacher
 
+- Ved modstrid mellem GitHubs antal aktive kørsler og den viste liste læser cachekontrollen hele listen én gang til. Ved fortsat afslag viser GitHub-jobbet den konkrete fejlkategori.
 - Cachekontrollen angiver nu trin og fejlkategori. Oprydningsjobbet stopper med at vente, når det tilhørende byggejob er afsluttet uden at udgive et bevis.
 - Før oprydning kontrolleres både den næste låste times behov og de originaler, en senere genoptagelse kan kræve. Filer med samme fysiske identitet tælles én gang. En ældre kopi fjernes først efter verificeret genlæsning.
 - Når en normal kørsel har gemt og verificeret den nye kopi og udgivet prognosen, kan den afslutte rotationen samme gang. En gyldig genoptagelse, som bruger den ældste kopi, bevarer den.

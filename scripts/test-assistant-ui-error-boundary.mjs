@@ -18,7 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261123-origin-and-net&followup=daylight-20261122`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261124-sandbar-transport&followup=daylight-20261122`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -457,7 +457,7 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261123-origin-and-net');
+    assert.equal(url.searchParams.get('assistant-help'), '20261124-sandbar-transport');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
     assert.equal(url.searchParams.get('assistant-ready'), '20261122');
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
@@ -965,4 +965,25 @@ test('app practical beach equipment composes approved whole use and precautions 
     }
   }
   assert.equal(fetchCalls,0,'Composed public facts are not external AI acceptance');
+});
+
+test('the public dialog answers transport between sandbars and what can be seen from land',async()=>{
+  const questions=[
+    ['da','Kan strømmen flytte rav mellem to revler?','Kan ravansamlinger flytte sig mellem to revler uden nyt opskyl, og hvad kan jeg se fra stranden?','Kan strømmen flytte rav mellem revler uden nyt opskyl?','og hvor finder jeg rav i Nibe i dag?',/revler/i,/fra stranden/i,/opskyl/i],
+    ['de','Kann Bernstein zwischen zwei Sandbänken durch Strömung verlagert werden?','Können sich Bernsteinansammlungen zwischen zwei Sandbänken ohne neuen Spülsaum verlagern, und was kann ich vom Strand aus beobachten, um das zu erkennen?','Kann die Strömung Bernstein zwischen zwei Sandbänken ohne neuen Spülsaum verlagern?','und wo finde ich heute in Nibe Bernstein?',/sandbänken/i,/vom strand/i,/spülsaum/i],
+    ['en','Can currents move amber between two sandbars?','Can amber accumulations shift between two sandbars without new wash, and what can I observe from the beach to notice it?','Can the current move amber between sandbars without fresh wash?','and where can I find amber in Nibe today?',/sandbars/i,/from the beach/i,/wash/i],
+  ];
+  for(const [locale,simple,mixed,variant,location,bars,observations,wash] of questions){
+    for(const question of [simple,mixed,variant]){
+      const ui=fixture(locale);
+      ui.context.askRavRadar=async()=>{throw Error('SAND_BAR_HELP_MUST_NOT_FETCH');};
+      await ui.submit(question);
+      const response=ui.answers().at(-1);
+      assert.match(response,bars);
+      assert.match(response,observations);
+      assert.match(response,wash);
+      assert.equal(ui.detailCalls(),0);
+    }
+    assert.equal(publicRavAssistantHelp(simple.replace(/\?$/,' ')+location,locale),null);
+  }
 });

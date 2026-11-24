@@ -14,7 +14,7 @@ import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.602&ui=account-20261006";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.602";
 import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.602";
-import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.602&ui=public-help-20261123-origin-and-net&followup=daylight-20261122";
+import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.602&ui=public-help-20261124-sandbar-transport&followup=daylight-20261122";
 import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.602";
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.602";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.602";

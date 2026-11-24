@@ -352,6 +352,8 @@ Revisionskandidatens binding af en bred programfortegnelse til numerisk modelide
 
 Historiske kildeprøver skal bruge deres egne frosne input. Aktuel produktkode og dens faktiske kaldere afprøves separat; nye helfil-cohorts må ikke være standardvejen for en lille rettelse. Automatisk model-/håndbogssynkronisering skal ske før prøverne, der læser de afledte fakta. Hårde krav til originaler, databevarelse, kildeprioritet, eksklusiv skrivning og offentlig identitet bevares.
 
+Den almindelige app-versionering kalder håndbogssynkroniseringen efter opdatering af version og releasekontrakt. Den samme synkronisering skriver de aktuelle håndbogsblokke og installationskopiens håndbogspayload. Den eksisterende versionstest kører den faktiske setter i en isoleret kopi og kontrollerer straks, at håndbogen er ajour. Prøven sammenligner fortsat modelidentiteter, udstedte SQL-migrationer og geodata før og efter det rene versionsløft.
+
 Metodegrundlag: [Google SRE, Release Engineering](https://sre.google/sre-book/release-engineering/), [Simplicity](https://sre.google/sre-book/simplicity/), [SLSA Build Provenance](https://slsa.dev/spec/v1.2/build-provenance) og [Deployment Pipeline](https://martinfowler.com/bliki/DeploymentPipeline.html). Anbefalingerne er sammenholdt med faktisk kode; de er ikke i sig selv bevis for RavRadars adfærd.
 
 ## 12. november — samlet oprydning af leveringssystemet er bestilt

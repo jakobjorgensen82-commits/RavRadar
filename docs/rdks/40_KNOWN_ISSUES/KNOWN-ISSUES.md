@@ -1,3 +1,15 @@
+## 24. november — råcacherotation stoppede vejr #381
+
+#380 udgav prognosen, mens to andre GitHub-kørsler stadig var aktive. Oprydningen returnerede HOLD, så tre råkopier var stadig til stede ved #381. #381 fik også HOLD, før DMI startede, og fjernede ingen kopier. GitHub returnerede kort efter antal én og en tom liste over aktive kørsler. Den daværende log skrev kun HOLD, så det enkelte svar kan ikke knyttes til #381s afgørelse.
+
+Den lokale ændring læser alle aktive tilstande igen én gang ved modstrid mellem et gyldigt antal og listen. En anden mulig læser eller en ugyldig post giver straks afslag. Resultatet skal stadig være fuldstændigt, og alt bevis før og efter en sletning kræves som før. Jobloggen angiver den faste kategori ved afslag. GitHub-kvalifikation og første almindelige driftsbevis udestår.
+
+## 24. november — spørgsmål om rav mellem revler
+
+I det offentlige tyske spørgeforløb kom et valideret svar fra den eksterne AI. Den bad om at få spørgsmålet delt op. Opfølgningen om transport mellem to revler fik i stedet den generelle forklaring af kortets strømpil.
+
+Den lokale hjælpetekst besvarer hele det praktiske spørgsmål på dansk, tysk og engelsk, også når spørgsmålet nævner manglende opskyl og tegn fra stranden. Brud i bølgemønstret og skum eller flydende tang beskrives som observationer ved overfladen med usikkerhed om bunden og ravets placering. Spørgsmål med yderligere sted- eller tidsled følger den almindelige rute. Teknisk grundlag i håndbog 89.265 og [NOAA om synlige tegn ved revler](https://www.weather.gov/safety/ripcurrent-faqs). Kildekvalifikation og offentlig efterprøve udestår.
+
 ## 22. november — verificering af kontoaktivitet før inaktivitetsvarsling
 
 Den eksisterende GitHub-arbejdsgang har en afgrænset læsning af Supabases indstilling for registrering af kontoaktivitet. Læsningen kræver verificeret hovedgren og en ledig kø. Den seneste skrivefrie kørsel viste, at Supabases automatiske registrering ved udstedelse af login-token er slået fra. Appen må fortsat ikke bruge manglende aktivitetsregistrering som bevis for inaktivitet.
