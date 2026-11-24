@@ -26,6 +26,12 @@ for(const probe of ['test-fixed-public-rate-log-20261013.mjs',
   assert.ok(!liveSource.includes(probe),'A completed log investigation is not a normal PR command');
 }
 verifyWorkflow(liveSource);
+const sourceWithNativeFixture='npm run validate:source -- --with-native-evidence-fixture';
+const nativeRunLine='          node scripts/native-postgres-evidence.mjs';
+const precedingNativeFixture='          node --test scripts/test-native-postgres-evidence.mjs\n'+nativeRunLine;
+const previousLiveSource=liveSource.replace(sourceWithNativeFixture,'npm run validate:source')
+  .replace(nativeRunLine,precedingNativeFixture);
+assert.equal(verifyCurrentSourceWorkflow(previousLiveSource).historicalNational,false);
 let liveCases=1;
 for (const [before,after] of [
   ['  contents: read','  contents: write'],
@@ -35,8 +41,11 @@ for (const [before,after] of [
   ["outputs.selection != 'TARGETED'", "outputs.selection == 'TARGETED'"],
   ['SOURCE_GATE_HEAD_SHA: \${{ github.event.pull_request.head.sha }}','SOURCE_GATE_HEAD_SHA: \${{ github.sha }}'],
   ['path: .cache/native-postgres-phase-proof.json','path: .cache/changed-phase.json'],
-  ['run: npm run validate:source &&','run: true &&'],
-  ['run: npm run validate:source &&','run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs &&'],
+  [sourceWithNativeFixture,'true'],
+  [sourceWithNativeFixture,'npm run validate:source'],
+  [sourceWithNativeFixture,sourceWithNativeFixture+' && node scripts/test-fixed-public-rate-log-20261013.mjs'],
+  [nativeRunLine,precedingNativeFixture],
+  [nativeRunLine,'          true'],
   [' && node scripts/test-candidate-g-rollback-public-stage.mjs',''],
   ['-r requirements-copernicus.txt\n','-r requirements-copernicus.txt\n          && node scripts/test-source-impact-plan.mjs\n'],
 ]) {

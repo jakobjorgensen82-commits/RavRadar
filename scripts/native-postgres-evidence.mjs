@@ -1020,13 +1020,18 @@ async function assistantPublic591LocalProof({env=process.env,readGit=git,getRunt
     eligibleForReuse:true,current,nativeInput,runtime};
 }
 export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
+  return verifyAssistantPublic591PhaseMetadata(run,jobs,readGit);
+}
+function verifyAssistantPublic591PhaseMetadata(run,jobs,readGit,activeTail=false){
   assert.equal(run.run_attempt,1);assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
   assert.equal(run.repository?.full_name,ORIGIN.repository);assert.equal(run.head_repository?.full_name,ORIGIN.repository);
-  assert.equal(run.status,'completed');assert(['success','failure'].includes(run.conclusion));
+  const expectedStatus=activeTail?'in_progress':'completed';
+  const conclusions=activeTail?[null]:['success','failure'];
+  assert.equal(run.status,expectedStatus);assert(conclusions.includes(run.conclusion));
   assert.match(run.head_sha,/^[a-f0-9]{40}$/);assert(typeof run.head_branch==='string'&&run.head_branch.length>0);
   assert(complete(jobs,'jobs'));const job=one(jobs.jobs.filter(row=>row.name===JOB));
   assert.equal(job.run_id,run.id);assert.equal(job.run_attempt,1);assert.equal(job.head_sha,run.head_sha);
-  assert.equal(job.status,'completed');assert(['success','failure'].includes(job.conclusion));
+  assert.equal(job.status,expectedStatus);assert(conclusions.includes(job.conclusion));
   assert(Number.isSafeInteger(job.id)&&job.id>0);
   const source=one(job.steps.filter(row=>row.name==='Validate source contracts and release governance'));
   const pg=one(job.steps.filter(row=>row.name===STEP)),upload=one(job.steps.filter(row=>row.name===CURRENT586_PHASE_UPLOAD));
@@ -1034,6 +1039,7 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
   assert(earlyDmi.length<=1);
   const earlyNode24=job.steps.filter(row=>OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.includes(row.name));
   let node24Offset=0,historicalNationalOmitted=false;
+  let reviewedWorkflow,actionNames;
   if(earlyNode24.length){
     // Only this exact whole workflow permits two extra environment steps. Raw
     // job metadata and old receipt/command meanings remain unchanged.
@@ -1042,7 +1048,13 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
     const raw=readGit(['cat-file','blob',run.head_sha+':'+WORKFLOW]);
     assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
     const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
-    if(hasDependencyOnlySourceSetup(workflow))historicalNationalOmitted=!verifyCurrentSourceWorkflow(workflow).historicalNational;
+    if(hasDependencyOnlySourceSetup(workflow)){
+      reviewedWorkflow=verifyCurrentSourceWorkflow(workflow);
+      historicalNationalOmitted=!reviewedWorkflow.historicalNational;
+      if(activeTail)actionNames=new Set(workflow.split(/(?=^      - (?:name|uses):)/m).slice(1)
+        .filter(block=>/^      - uses: |^        uses: /m.test(block))
+        .map(block=>block.split('\n',1)[0].replace(/^      - uses: /,'Run ').replace(/^      - name: /,'').trim()));
+    }
     else{
       assert.notEqual(inverseOwnedCacheNativeWorkflow(workflow),workflow,'EXACT_OWNED_CACHE_NATIVE_WORKFLOW_REQUIRED');
       assert.equal(sha(projectSourceImpactWorkflowFull(workflow)),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
@@ -1062,6 +1074,25 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
   const prefix=job.steps.filter(row=>row.number<=upload.number);
   assert.deepEqual(prefix.map(row=>row.number),Array.from({length:upload.number},(_,i)=>i+1));
   assert(prefix.every(successful));
+  if(activeTail){
+    assert(reviewedWorkflow,'Active native completion requires the normal source workflow');
+    const {stepNames,nativeUploadNumber}=reviewedWorkflow;
+    assert.equal(upload.number,nativeUploadNumber);
+    const normalSteps=job.steps.slice(0,stepNames.length);
+    assert.deepEqual(normalSteps.map(step=>[step.name,step.number]),stepNames.map((name,index)=>[name,index+1]));
+    const cleanupNames=new Set(['Complete job',...normalSteps.filter(step=>successful(step)&&actionNames.has(step.name))
+      .map(step=>'Post '+step.name)]);
+    let lastNumber=stepNames.length;
+    for(const step of job.steps.slice(stepNames.length)){
+      assert(Number.isSafeInteger(step.number)&&step.number>lastNumber&&cleanupNames.delete(step.name));
+      const started=Date.parse(step.started_at),ended=Date.parse(step.completed_at);
+      const pending=step.status==='pending'&&step.conclusion===null&&step.started_at===null&&step.completed_at===null;
+      const running=step.status==='in_progress'&&step.conclusion===null&&step.completed_at===null;
+      const completed=step.status==='completed'&&['success','skipped'].includes(step.conclusion)&&started<=ended;
+      assert(pending||(started>=Date.parse(upload.completed_at)&&(running||completed)));
+      lastNumber=step.number;
+    }
+  }
   assert(Date.parse(source.completed_at)<=Date.parse(pg.started_at)&&Date.parse(pg.started_at)<=Date.parse(pg.completed_at)
     &&Date.parse(pg.completed_at)<=Date.parse(upload.completed_at));
   return {job:job.id,pgStartedAt:pg.started_at,uploadedAt:upload.completed_at,
@@ -2471,11 +2502,12 @@ export async function decideAssistantAfter599Reuse(options){
       if(pr.head.sha!==run.head_sha)readGit(['merge-base','--is-ancestor',run.head_sha,pr.head.sha]);
       return pr;
     };
-    const load=async(expected,knownJobs)=>{
+    const load=async(expected,knownJobs,activeTail=false)=>{
       const run=await get(base+'/runs/'+expected.id);
       assert.equal(run.id,expected.id);assert.equal(run.head_sha,expected.head_sha);assert.equal(run.run_attempt,1);
+      if(activeTail)assert.equal(run.head_branch,expected.head_branch);
       const jobs=knownJobs??await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
-      const phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
+      const phase=verifyAssistantPublic591PhaseMetadata(run,jobs,readGit,activeTail);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const metadata=one(artifacts.artifacts.filter(row=>row.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
       verifyAssistantPublic591ArtifactMetadata(metadata,run,phase);
@@ -2493,8 +2525,11 @@ export async function decideAssistantAfter599Reuse(options){
     };
     let original=null;
     const otherRunners=new Map();
+    const activeHistory=new Map();
     for (const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)) {
       if (!await sameInput(row)) continue;
+      // Only the later observation can clear an ongoing run. It cannot be an origin.
+      if(row.status==='in_progress'){activeHistory.set(row.id,row);continue;}
       const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
       if (await provedCurrentSkip(row,jobFor(row,jobs))) continue;
       let candidate=await load(row,jobs);
@@ -2526,6 +2561,10 @@ export async function decideAssistantAfter599Reuse(options){
     const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+laterQuery);assert(complete(later,'workflow_runs'));
     assert.equal(new Set(later.workflow_runs.map(row=>row.id)).size,later.total_count);
     assert(later.workflow_runs.some(row=>row.id===original.run.id)&&later.workflow_runs.some(row=>row.id===current.run));
+    for(const [id,previous] of activeHistory){
+      const fresh=one(later.workflow_runs.filter(row=>row.id===id));
+      for(const key of ['head_sha','head_branch','run_attempt'])assert.equal(fresh[key],previous[key]);
+    }
     for (const [id,previous] of otherRunners) {
       const fresh=one(later.workflow_runs.filter(row=>row.id===id));
       for (const key of ['head_sha','head_branch','run_attempt','status','conclusion']) assert.equal(fresh[key],previous[key]);
@@ -2533,8 +2572,19 @@ export async function decideAssistantAfter599Reuse(options){
     for(const row of later.workflow_runs.filter(row=>row.id>original.run.id&&row.id!==current.run)){
       if(!await sameInput(row))continue;
       assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
-      assert.equal(row.status,'completed');assert.equal(row.repository?.full_name,ORIGIN.repository);
+      assert.equal(row.repository?.full_name,ORIGIN.repository);
       const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
+      if(row.status==='in_progress'){
+        const workflowBlob=ref=>String(readGit(['rev-parse',ref+':'+WORKFLOW])).trim();
+        assert.equal(workflowBlob(row.head_sha),workflowBlob(head),'Same actual workflow required for an active tail');
+        const overlap=await load(row,jobs,true);
+        assert.equal(overlap.proof.nativePostgres.kind,ASSISTANT_AFTER599_PHASE_KIND);
+        assert.deepEqual(overlap.proof.nativePostgres.runtime,runtime);
+        const fresh=await get(base+'/runs/'+row.id);
+        for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(fresh[key],overlap.run[key]);
+        continue;
+      }
+      assert.equal(row.status,'completed');
       const job=jobFor(row,jobs);
       if(await provedCurrentSkip(row,job))continue;
       assert(['success','failure'].includes(row.conclusion)&&['success','failure'].includes(job.conclusion));

@@ -203,11 +203,15 @@ export function verifyCurrentSourceWorkflow(value){
     'node scripts/test-fixed-public-rate-console-log-20261015.mjs',
     ...rollbackValidation,
   ].join(' && ');
-  if(historicalNational||governance!==[sourceValidation,...rollbackValidation].join(' && ')){
+  const fixtureInSource=!historicalNational&&governance===
+    [sourceValidation+' -- --with-native-evidence-fixture',...rollbackValidation].join(' && ');
+  if(!fixtureInSource&&(historicalNational||governance!==[sourceValidation,...rollbackValidation].join(' && '))){
     assert.equal(governance,historicalGovernance);
   }
   assert.equal(run('Validate native PostgreSQL checkpoint CAS on artificial data only'),
-    'set -euo pipefail node --test scripts/test-native-postgres-evidence.mjs node scripts/native-postgres-evidence.mjs');
+    fixtureInSource
+      ?'set -euo pipefail node scripts/native-postgres-evidence.mjs'
+      :'set -euo pipefail node --test scripts/test-native-postgres-evidence.mjs node scripts/native-postgres-evidence.mjs');
   if(historicalNational)assert.equal(run(HISTORICAL_NATIONAL_STEP),'node scripts/national584-source-evidence.mjs');
   for(const [name,markers] of [
     ['Upload independently completed native586 PostgreSQL phase',[
