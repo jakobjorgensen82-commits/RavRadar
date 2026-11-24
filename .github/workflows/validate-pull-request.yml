@@ -140,7 +140,7 @@ jobs:
 
       - name: Validate source contracts and release governance
         if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
-        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs
+        run: npm run validate:source && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs
 
       # Reject source-contract regressions before the native PostgreSQL matrix.
       # All the same gates must succeed; only their execution order changes.

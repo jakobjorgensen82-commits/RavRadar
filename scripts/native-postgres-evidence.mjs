@@ -7,6 +7,7 @@ import path from 'node:path';
 import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
 import {fileURLToPath} from 'node:url';
+import {isDeepStrictEqual} from 'node:util';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,
   requireInstalled593Original591Release,requireInstalled593Original591Binding,requireInstalled593Original591Output,
@@ -2113,13 +2114,69 @@ export async function verifyAssistantAfter598PhaseReceipt(native,current){
 }
 // The normal old EXECUTED-V1 receipt stays unchanged. This separately typed
 // decision qualifies an authentic original phase; it never claims new SQL.
-function after599BoundedGit(readGit,deadline){
-  return args=>{
-    const remaining=()=>{const value=Math.floor(deadline-performance.now());assert(value>0,'AFTER599_PG_REUSE_TIME_BOUND');return value;};
-    const time=remaining();const value=readGit===git?execFileSync('git',args,{encoding:'utf8',maxBuffer:64*1024*1024,
-      timeout:Math.min(10000,time),env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}):readGit(args);
-    remaining();return value;
+const after599GitBatch = Symbol('after599GitBatch');
+const after599MaxBlobBytes = 4 * 1024 * 1024;
+const after599MaxInputBytes = 64 * 1024 * 1024;
+function after599BoundedGit(readGit, deadline) {
+  const remaining = () => {
+    const value = Math.floor(deadline - performance.now());
+    assert(value > 0, 'AFTER599_PG_REUSE_TIME_BOUND');
+    return value;
   };
+  const env = {...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'};
+  const read = (args, input) => {
+    const time = remaining();
+    const value = readGit === git ? execFileSync('git', args, {encoding:'utf8', input, maxBuffer:after599MaxInputBytes,
+      stdio:['pipe','pipe','pipe'], timeout:Math.min(10000, time), env}) : readGit(args,input);
+    remaining();
+    return value;
+  };
+  if (readGit === git || readGit[after599GitBatch]) {
+    read[after599GitBatch] = (args, input, callerBudget = 10000) => {
+      const timeout = Math.min(callerBudget, remaining());
+      const output = readGit === git ? execFileSync('git', args, {input, timeout, env,
+        maxBuffer:after599MaxInputBytes + 65536}) : readGit[after599GitBatch](args, input, timeout);
+      remaining();
+      return output;
+    };
+  }
+  return read;
+}
+
+function loadAfter599GitBlobs(readBatch, oids, objects) {
+  const missing = [...new Set(oids)].filter(oid => !objects.has(oid));
+  if (!missing.length) return;
+  assert(missing.length + objects.size <= 512 && missing.every(oid => /^[a-f0-9]{40}$/.test(oid)));
+  const request = Buffer.from(missing.join('\n') + '\n', 'ascii');
+  const inventory = readBatch(['cat-file', '--batch-check'], request).toString('ascii').trimEnd().split('\n');
+  assert.equal(inventory.length, missing.length);
+  let selectedBytes = 0;
+  const sizes = inventory.map((line, index) => {
+    const match = /^([a-f0-9]{40}) blob ([0-9]+)$/.exec(line);
+    assert(match && match[1] === missing[index]);
+    const size = Number(match[2]);
+    assert(Number.isSafeInteger(size) && size >= 0 && size <= after599MaxBlobBytes);
+    selectedBytes += size;
+    return size;
+  });
+  for (const raw of objects.values()) selectedBytes += raw.length;
+  assert(selectedBytes <= after599MaxInputBytes);
+  const output = readBatch(['cat-file', '--batch'], request);
+  let offset = 0;
+  for (const [index, oid] of missing.entries()) {
+    const headerEnd = output.indexOf(10, offset);
+    assert(headerEnd > offset);
+    const size = sizes[index];
+    assert.equal(output.toString('ascii', offset, headerEnd), oid + ' blob ' + size);
+    const start = headerEnd + 1;
+    const end = start + size;
+    assert(end < output.length && output[end] === 10);
+    const raw = output.subarray(start, end);
+    assert.equal(crypto.createHash('sha1').update('blob ' + size + '\0').update(raw).digest('hex'), oid);
+    objects.set(oid, raw);
+    offset = end + 1;
+  }
+  assert.equal(offset, output.length);
 }
 export async function captureAssistantAfter599PgInput(options){
   requireAssistantAfter599Output(); // FIRST, including before option getters.
@@ -2132,22 +2189,36 @@ export async function captureAssistantAfter599PgInput(options){
   assert(sql.length>0&&sql.length<=512);
   if(physical)assert.deepEqual((await fs.readdir(path.join(root,'supabase/migrations'))).filter(file=>file.endsWith('.sql')).sort(),
     sql.map(file=>path.posix.basename(file)));
-  const rows=new Map();let bytes=0;
+  const rows=new Map(), objects=new Map();let bytes=0;
+  const batch=readGit[after599GitBatch];
+  const load=files=>{
+    if (!batch) return;
+    const selected=files.map(file=>index.get(file)).filter(Boolean);
+    assert(selected.every(row=>['100644','100755'].includes(row[1])&&row[2]==='blob'));
+    loadAfter599GitBlobs(batch,selected.map(row=>row[3]),objects);
+  };
+  const content=(file,row)=>{
+    if (!batch) return Buffer.from(readGit(['cat-file','blob',ref+':'+file]));
+    const raw=objects.get(row[3]);
+    assert(raw,'Missing selected native input blob');
+    return raw;
+  };
   const read=async file=>{
     assert(typeof file==='string'&&file.length<=512&&!file.startsWith('/')&&!file.split('/').includes('..'));
     if(rows.has(file))return rows.get(file);
     const row=index.get(file);
     if(!row){assert(!physical,'Required current native input is absent: '+file);const absent={file,present:false};rows.set(file,absent);return absent;}
     assert(['100644','100755'].includes(row[1])&&row[2]==='blob');
-    const raw=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));bytes+=raw.length;
-    assert(raw.length<=4*1024*1024&&bytes<=64*1024*1024&&rows.size<512);
+    const raw=content(file,row);bytes+=raw.length;
+    assert(raw.length<=after599MaxBlobBytes&&bytes<=after599MaxInputBytes&&rows.size<512);
     if(physical){const absolute=path.resolve(root,file),stat=await fs.lstat(absolute);
       assert(stat.isFile()&&!stat.isSymbolicLink());assert.equal(stat.size,raw.length);assert.equal(await fs.realpath(absolute),absolute);
       assert.deepEqual(await fs.readFile(absolute),raw,'Physical native input differs from Git');}
     const value={file,mode:row[1],bytes:raw.length,sha256:sha(raw)};rows.set(file,value);return value;
   };
-  const profileFile='scripts/lib/source-impact-domain-inputs-598.json';await read(profileFile);
-  const profile=JSON.parse(String(readGit(['cat-file','blob',ref+':'+profileFile])));
+  const profileFile='scripts/lib/source-impact-domain-inputs-598.json';
+  load([profileFile]);await read(profileFile);
+  const profile=JSON.parse(content(profileFile,index.get(profileFile)).toString('utf8'));
   assert.equal(profile.id,'REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12');assert.equal(profile.postgresModules.length,69);
   const receiptSql='supabase/migrations/20261122200000_account_native_activity_receipt_off.sql';
   const receiptSource='scripts/lib/account-native-activity-receipt-source.mjs';
@@ -2158,15 +2229,17 @@ export async function captureAssistantAfter599PgInput(options){
     ...(receiptPresent?[receiptSource]:[])]);
   const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
   const selected=new Set([...modules,...profile.postgresData,...setup,...profile.continuation.files,profile.continuation.file,...sql]);
+  load(Object.values(profile.models).map(definition=>definition.file));
   for(const definition of Object.values(profile.models)){
     await read(definition.file);selected.add(definition.file);
-    const source=String(readGit(['cat-file','blob',ref+':'+definition.file]));
+    const source=content(definition.file,index.get(definition.file)).toString('utf8');
     const escaped=definition.manifestName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     const match=new RegExp('export const '+escaped+' = Object\\.freeze\\(([\\s\\S]*)\\);\\n$').exec(source);assert(match);
     const manifest=JSON.parse(match[1]);assert.equal(manifest.schemaVersion,definition.schemaVersion);
     assert.equal(manifest.normalizationId,definition.normalizationId);assert(Array.isArray(manifest.files)&&manifest.files.length<=512);
     for(const row of manifest.files){assert(typeof row[definition.rowKey]==='string');selected.add(row[definition.rowKey]);}
   }
+  load([...selected]);
   for(const file of [...selected].sort())await read(file);
   const scopePaths=new Set(['package.json']);
   for(const file of modules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
@@ -2312,8 +2385,38 @@ export async function decideAssistantAfter599Reuse(options){
     assert.equal(listing.workflow_runs.length,Math.min(listing.total_count,100));
     assert.equal(new Set(listing.workflow_runs.map(row=>row.id)).size,listing.workflow_runs.length);
     const inputs=new Map([[head,nativeInput]]);
-    const inputFor=async ref=>{if(!inputs.has(ref))inputs.set(ref,await getInput({ref,readGit,physical:false}));return inputs.get(ref);};
-    const sameInput=async ref=>JSON.stringify(await inputFor(ref))===JSON.stringify(nativeInput);
+    const inputFor=async row=>{
+      const ref=row.head_sha;
+      assert.match(ref,/^[a-f0-9]{40}$/);
+      if(inputs.has(ref))return inputs.get(ref);
+      const capture=()=>getInput({ref,readGit,physical:false});
+      let input;
+      try {
+        input=await capture();
+      } catch(error) {
+        // Another authenticated Actions run can appear after checkout. Only a
+        // missing exact commit can be recovered, never a broken input inventory.
+        const probe=['cat-file','--batch-check=%(objectname) %(objecttype)'];
+        const request=Buffer.from(ref+'\n','ascii');
+        if(String(readGit(probe,request))!==ref+' missing\n')throw error;
+        assert(Number.isSafeInteger(row.id)&&row.id>0);
+        const live=await get(base+'/runs/'+row.id);
+        for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(live[key],row[key]);
+        assert.equal(live.run_attempt,1);assert.equal(live.event,'pull_request');assert.equal(live.path,WORKFLOW);
+        assert.equal(live.repository?.full_name,ORIGIN.repository);assert.equal(live.head_repository?.full_name,ORIGIN.repository);
+        assert(typeof live.head_branch==='string'&&live.head_branch.length>0);
+        const remote='https://github.com/'+ORIGIN.repository+'.git';
+        assert.equal(readGit(['ls-remote','--get-url',remote]).trim(),remote);
+        readGit(['-c','http.followRedirects=false','fetch','--no-tags','--no-prune','--no-prune-tags',
+          '--no-recurse-submodules','--no-write-fetch-head','--refmap=','--no-auto-maintenance',
+          '--no-write-commit-graph','--',remote,ref]);
+        assert.equal(String(readGit(probe,request)),ref+' commit\n');
+        input=await capture();
+      }
+      inputs.set(ref,input);
+      return input;
+    };
+    const sameInput=async row=>JSON.stringify(await inputFor(row))===JSON.stringify(nativeInput);
     const jobFor=(row,jobs)=>{
       assert(complete(jobs,'jobs'));const job=one(jobs.jobs.filter(value=>value.name===JOB));
       assert.equal(job.run_id,row.id);assert.equal(job.head_sha,row.head_sha);
@@ -2322,9 +2425,10 @@ export async function decideAssistantAfter599Reuse(options){
     const provedCurrentSkip=async(row,job)=>{
       const pg=one(job.steps.filter(value=>value.name===STEP));
       if(pg.conclusion!=='skipped')return false;
-      // Kun det komplette grønne CURRENT-forløb beviser legitimt uudført PG.
-      // Det bliver hverken en SQL-origin eller ny kilde-/produktionskvalifikation.
-      assert(successful(row));assert(successful(job));assert.equal(row.run_attempt,1);
+      // En normal inaktiv PG-fase er ingen ny SQL-origin eller kildekvalifikation.
+      const terminalSourceFailure=row.conclusion==='failure'&&job.conclusion==='failure';
+      assert.equal(row.status,'completed');assert.equal(row.run_attempt,1);
+      assert(terminalSourceFailure||(successful(row)&&successful(job)));
       const run=await get(base+'/runs/'+row.id);
       for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(run[key],row[key]);
       assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
@@ -2335,16 +2439,29 @@ export async function decideAssistantAfter599Reuse(options){
       assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
       const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
       assert(hasDependencyOnlySourceSetup(workflow),'CURRENT_SOURCE_WORKFLOW_REQUIRED');
-      verifyTargetedSourceStepShape(job,workflow);return true;
+      if(!terminalSourceFailure){verifyTargetedSourceStepShape(job,workflow);return true;}
+      const {stepNames,nativeUploadNumber}=verifyCurrentSourceWorkflow(workflow);
+      const steps=job.steps.slice(0,stepNames.length);
+      assert.deepEqual(steps.map(step=>[step.name,step.number]),stepNames.map((name,index)=>[name,index+1]));
+      const sourceIndex=steps.findIndex(step=>step.conclusion==='failure');
+      const source=steps[sourceIndex];
+      assert(source?.name==='Build deterministic source-tree content identity'
+        ||source?.name==='Validate source contracts and release governance');
+      assert(sourceIndex<nativeUploadNumber-2);
+      assert.equal(steps[nativeUploadNumber-2],pg);
+      assert.equal(steps[nativeUploadNumber-1].name,CURRENT586_PHASE_UPLOAD);
+      assert.equal(source.status,'completed');
+      const failedAt=Date.parse(source.completed_at);
+      assert(Date.parse(source.started_at)<=failedAt);
+      const prefix=steps.slice(0,sourceIndex);
+      assert(prefix.every(successful));
+      assert(steps.slice(sourceIndex+1).every(step=>step.status==='completed'&&step.conclusion==='skipped'
+        &&step.started_at===step.completed_at&&Date.parse(step.started_at)>=failedAt));
+      const cleanupNames=new Set(['Complete job',...prefix.map(step=>'Post '+step.name)]);
+      assert(job.steps.slice(stepNames.length).every(step=>step.number>stepNames.length&&cleanupNames.delete(step.name)
+        &&(successful(step)||(step.status==='completed'&&step.conclusion==='skipped'))));
+      return true;
     };
-    let selected=null,selectedJobs=null;
-    for(const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)){
-      if(!await sameInput(row.head_sha))continue;
-      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
-      if(await provedCurrentSkip(row,jobFor(row,jobs)))continue;
-      selected=row;selectedJobs=jobs;break;
-    }
-    assert(selected,'No authentic matching phase');
     const originPr=async(run,number)=>{
       const pr=await get(repo+'/pulls/'+number);
       assert.equal(pr.number,number);assert(['open','closed'].includes(pr.state));assert.equal(pr.base?.ref,'main');
@@ -2354,10 +2471,10 @@ export async function decideAssistantAfter599Reuse(options){
       if(pr.head.sha!==run.head_sha)readGit(['merge-base','--is-ancestor',run.head_sha,pr.head.sha]);
       return pr;
     };
-    const load=async expected=>{
+    const load=async(expected,knownJobs)=>{
       const run=await get(base+'/runs/'+expected.id);
       assert.equal(run.id,expected.id);assert.equal(run.head_sha,expected.head_sha);assert.equal(run.run_attempt,1);
-      const jobs=run.id===selected.id?selectedJobs:await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
+      const jobs=knownJobs??await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
       const phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const metadata=one(artifacts.artifacts.filter(row=>row.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
@@ -2374,32 +2491,55 @@ export async function decideAssistantAfter599Reuse(options){
       await verifyAssistantAfter599PhaseReceipt(receipt,receipt.current,{readGit});
       return {run,phase,metadata,proof};
     };
-    let original=await load(selected);
-    if(original.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND){
-      const locator=original.proof.nativePostgres.origin;
-      original=await load({id:locator.run,head_sha:locator.head});
-      assert.equal(original.phase.job,locator.job);assert.equal(original.metadata.id,locator.artifactId);
-      assert.equal(original.metadata.digest,locator.artifactDigest);assert.equal(original.proof.sourceTreeSha256,locator.sourceTreeSha256);
+    let original=null;
+    const otherRunners=new Map();
+    for (const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)) {
+      if (!await sameInput(row)) continue;
+      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
+      if (await provedCurrentSkip(row,jobFor(row,jobs))) continue;
+      let candidate=await load(row,jobs);
+      const locator=candidate.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND
+        ?candidate.proof.nativePostgres.origin:null;
+      if (locator) {
+        candidate=await load({id:locator.run,head_sha:locator.head});
+        assert.equal(candidate.phase.job,locator.job);assert.equal(candidate.metadata.id,locator.artifactId);
+        assert.equal(candidate.metadata.digest,locator.artifactDigest);assert.equal(candidate.proof.sourceTreeSha256,locator.sourceTreeSha256);
+      }
+      const prior=candidate.proof.nativePostgres;
+      assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
+      assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
+      assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
+      verifyAssistantAfter599PgInput(nativeInput,await inputFor(candidate.run));
+      if (!isDeepStrictEqual(runtime,prior.runtime)) {
+        // A verified actual success on another runner does not provide this run's evidence.
+        // Search the same bounded history for an exactly matching original.
+        assert(!locator,'A reused receipt must point to the current runtime');
+        otherRunners.set(row.id,candidate.run);
+        continue;
+      }
+      original=candidate;
+      break;
     }
+    assert(original,'No authentic phase for this exact runtime');
     const prior=original.proof.nativePostgres;
-    assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
-    assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
-    assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
-    verifyAssistantAfter599PgInput(nativeInput,await inputFor(original.run.head_sha));
-    verifyAssistantPublic591Runtime(runtime,prior.runtime);
     const laterQuery=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+original.run.created_at});
     const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+laterQuery);assert(complete(later,'workflow_runs'));
     assert.equal(new Set(later.workflow_runs.map(row=>row.id)).size,later.total_count);
     assert(later.workflow_runs.some(row=>row.id===original.run.id)&&later.workflow_runs.some(row=>row.id===current.run));
+    for (const [id,previous] of otherRunners) {
+      const fresh=one(later.workflow_runs.filter(row=>row.id===id));
+      for (const key of ['head_sha','head_branch','run_attempt','status','conclusion']) assert.equal(fresh[key],previous[key]);
+    }
     for(const row of later.workflow_runs.filter(row=>row.id>original.run.id&&row.id!==current.run)){
-      if(!await sameInput(row.head_sha))continue;
+      if(!await sameInput(row))continue;
       assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
       assert.equal(row.status,'completed');assert.equal(row.repository?.full_name,ORIGIN.repository);
       const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
       const job=jobFor(row,jobs);
       if(await provedCurrentSkip(row,job))continue;
+      assert(['success','failure'].includes(row.conclusion)&&['success','failure'].includes(job.conclusion));
       assert(successful(one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'))));
-      const pg=one(job.steps.filter(value=>value.name===STEP));assert(pg.conclusion==='skipped'||successful(pg));
+      const pg=one(job.steps.filter(value=>value.name===STEP));assert(successful(pg));
     }
     // Fresh identity and independent origin metadata after the history walk.
     verifyAssistantAfter599PgInput(nativeInput,await getInput({readGit}));
