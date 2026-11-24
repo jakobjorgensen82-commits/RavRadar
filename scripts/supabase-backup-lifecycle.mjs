@@ -97,7 +97,55 @@ export function verifyDatabaseBackupReserve({indexSha256,restoreRunId},
     'DATABASE_BACKUP_RESERVE_NOT_RECOVERY_VERIFIED');
   return {indexSha256,restoreRunId:String(restoreRunId),sourceHead:run.head_sha};
 }
+const backupWriteSteps = new Set(['Capture private Supabase database', 'Restore and seal current private Supabase archive']);
+const terminalStepConclusions = new Set(['success', 'failure', 'neutral', 'cancelled', 'skipped', 'timed_out', 'action_required']);
+const terminalRunOrJobConclusions = new Set([...terminalStepConclusions, 'startup_failure', 'stale']);
+
+function provesNoBackupAccess(run, job, writer) {
+  if (run.path !== '.github/workflows/maintain-admin-document-history.yml'
+    || run.head_branch !== 'main' || run.event !== 'workflow_dispatch' || run.actor?.login !== 'github-actions[bot]'
+    || run.status !== 'completed' || run.conclusion !== 'success' || !/^[a-f0-9]{40}$/.test(run.head_sha ?? '')
+    || job.name !== 'Maintain one due private database backup after document history'
+    || String(job.run_id) !== String(run.id) || job.run_attempt !== 1 || job.head_sha !== run.head_sha
+    || job.status !== 'completed' || job.conclusion !== 'success'
+    || writer.status !== 'completed' || writer.conclusion !== 'success'
+    || !Number.isSafeInteger(writer.number) || writer.number < 1) return false;
+
+  const markers = job.steps.filter(step => step.name === 'Confirm backup stopped before private access');
+  return job.steps.filter(step => backupWriteSteps.has(step.name)).length === 1
+    && markers.length === 1 && markers[0].status === 'completed' && markers[0].conclusion === 'success'
+    && Number.isSafeInteger(markers[0].number) && markers[0].number > writer.number;
+}
+
+function manualBackupMayHaveWritten(run, jobList) {
+  const [job] = jobList;
+  if (run.head_branch !== 'main' || run.event !== 'workflow_dispatch' || run.status !== 'completed'
+    || !terminalRunOrJobConclusions.has(run.conclusion) || !/^[a-f0-9]{40}$/.test(run.head_sha ?? '') || jobList.length !== 1
+    || job.name !== 'supabase-database-backup' || String(job.run_id) !== String(run.id)
+    || job.run_attempt !== 1 || job.head_sha !== run.head_sha || job.status !== 'completed'
+    || !terminalRunOrJobConclusions.has(job.conclusion) || !Array.isArray(job.steps)) return true;
+
+  // Only capture executes both preparatory steps. The generic step also runs
+  // diagnostics, so its conclusion alone cannot determine write authority.
+  const stepNames = [
+    'Check private bucket before capture-only CLI setup',
+    'Set up the already used pinned Supabase CLI only for capture',
+    'Run only the fixed backup operation',
+  ];
+  const matches = stepNames.map(name => job.steps.filter(step => step.name === name));
+  if (!matches.every(steps => steps.length === 1)) return true;
+  const [preflight, cli, execute] = matches.map(([step]) => step);
+  if (![preflight, cli, execute].every(step => step.status === 'completed'
+    && terminalStepConclusions.has(step.conclusion) && Number.isSafeInteger(step.number) && step.number > 0)
+    || !(preflight.number < cli.number && cli.number < execute.number)
+    || (preflight.conclusion === 'skipped' && cli.conclusion !== 'skipped')) return true;
+
+  return execute.conclusion !== 'skipped'
+    && (preflight.conclusion !== 'skipped' || cli.conclusion !== 'skipped');
+}
+
 export function requireNoUnresolvedDatabaseCapture(current,{env=process.env,read=backupGithubReader(env)}={}){
+  // This bound uses workflow creation time and does not cover older queued runs.
   const since=encodeURIComponent('>='+current.completedAt);
   for(const workflow of ['maintain-admin-document-history.yml','backup-supabase-database.yml']){
     const result=read('workflows/'+workflow+'/runs?per_page=100&created='+since);
@@ -109,9 +157,11 @@ export function requireNoUnresolvedDatabaseCapture(current,{env=process.env,read
       if(String(run.id)===env.GITHUB_RUN_ID||String(run.id)===current.context.runId
         ||current.restoreRunIds?.includes(String(run.id)))continue;
       need(run.run_attempt===1,'DATABASE_BACKUP_CAPTURE_ATTEMPT_UNKNOWN');
-      const started=jobs(read,String(run.id)).some(job=>(job.steps??[]).some(step=>
-        ['Capture private Supabase database','Restore and seal current private Supabase archive'].includes(step.name)
-          &&step.status!=='pending'&&step.status!=='queued'&&step.conclusion!=='skipped'));
+      const jobList=jobs(read,String(run.id));
+      const started=workflow==='backup-supabase-database.yml'?manualBackupMayHaveWritten(run,jobList)
+        :jobList.some(job=>(job.steps??[]).some(step=>
+          backupWriteSteps.has(step.name) && step.status!=='pending' && step.status!=='queued' && step.conclusion!=='skipped'
+            && !provesNoBackupAccess(run,job,step)));
       need(!started,'DATABASE_BACKUP_CAPTURE_OUTCOME_UNRESOLVED');
     }
   }

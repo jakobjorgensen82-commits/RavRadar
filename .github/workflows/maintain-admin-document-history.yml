@@ -588,6 +588,7 @@ jobs:
         with:
           version: 2.117.0
       - name: ${{ steps.backup-plan.outputs.action == 'capture' && 'Capture private Supabase database' || steps.backup-plan.outputs.action == 'restore' && 'Restore and seal current private Supabase archive' || 'Rotate one expired private Supabase archive' }}
+        id: backup-execute
         if: steps.backup-plan.outputs.proceed == 'true'
         timeout-minutes: 26
         run: node scripts/run-autonomous-supabase-backup.mjs --execute
@@ -604,3 +605,6 @@ jobs:
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_DB_PASSWORD: ${{ steps.backup-plan.outputs.action == 'capture' && secrets.SUPABASE_DB_PASSWORD || '' }}
+      - name: Confirm backup stopped before private access
+        if: steps.backup-execute.outputs.no_private_access == 'true'
+        run: echo 'The original weather window closed before private backup access.'
