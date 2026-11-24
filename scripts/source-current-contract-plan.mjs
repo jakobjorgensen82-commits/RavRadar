@@ -53,6 +53,7 @@ const LOCAL_RESTORE_INVENTORY_DISPATCH=[
 
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
 const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs scripts/test-committed-raw-current-capture-union.mjs';
+const WEATHER_CADENCE_SOURCE_COMMAND = 'node scripts/test-weather-cadence-watchdog.mjs';
 
 const WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND='node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs';
 
@@ -119,7 +120,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node --test scripts/test-native-postgres-evidence.mjs',
     'node --test scripts/test-source-impact-full-baseline.mjs',
     'node scripts/test-weather-source-gate.mjs',
-    'node scripts/test-weather-cadence-watchdog.mjs',
+    WEATHER_CADENCE_SOURCE_COMMAND,
   ],
   currentInstalledCodeOnly:[
     'node --test scripts/test-native-original-continuity-callers.mjs',
@@ -719,24 +720,28 @@ export function pagesContractCommandsForChangedInputs(changes){
   return freeze(COMMANDS.pages.filter(command=>command!==PAGES_PUBLIC_VERIFICATION_COMMAND));
 }
 
-// Kun de eksisterende planner-/CURRENT-prøveinput kan vælge de fire hele mål.
-// Andre kontrolinput beholder hele standarden; den normale Gitplan afviser
-// fortsat ukendte/beskyttede input og kræver uafhængigt kontrolreview.
+// Narrow control ownership still requires normal whole tests and independent review.
 const SOURCE_CONTROL_PLANNER_INPUTS=new Set(['scripts/source-current-contract-plan.mjs',
   'scripts/test-source-current-contracts.mjs']);
+const SOURCE_CONTROL_CADENCE_READER_INPUTS=new Set(['scripts/read-weather-cadence-github.mjs',
+  'scripts/test-weather-cadence-watchdog.mjs']);
+const SOURCE_CONTROL_CADENCE_READER_COMMANDS=freeze([WEATHER_CADENCE_SOURCE_COMMAND]);
 const SOURCE_CONTROL_PLANNER_COMMANDS=freeze([
   'node --test scripts/test-source-current-contracts.mjs',
   'node scripts/test-source-impact-workflow.mjs',
   'node scripts/test-weather-source-gate.mjs',
-  'node scripts/test-weather-cadence-watchdog.mjs',
+  WEATHER_CADENCE_SOURCE_COMMAND,
 ]);
 export function sourceControlCommandsForChangedInputs(changes){
   if(!Array.isArray(changes)||!changes.length
     ||changes.some(row=>!row||typeof row.path!=='string')
     ||new Set(changes.map(row=>row.path)).size!==changes.length)return COMMANDS.sourceControls;
   const controls=changes.filter(row=>sourceControlPaths.has(row.path));
-  if(controls.length&&controls.every(row=>SOURCE_CONTROL_PLANNER_INPUTS.has(row.path)
-    &&row.status==='M'&&row.beforeMode==='100644'&&row.afterMode==='100644'))
+  if(!controls.length||controls.some(row=>row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+    return COMMANDS.sourceControls;
+  if(controls.every(row=>SOURCE_CONTROL_CADENCE_READER_INPUTS.has(row.path)))
+    return SOURCE_CONTROL_CADENCE_READER_COMMANDS;
+  if(controls.every(row=>SOURCE_CONTROL_PLANNER_INPUTS.has(row.path)))
     return SOURCE_CONTROL_PLANNER_COMMANDS;
   return COMMANDS.sourceControls;
 }

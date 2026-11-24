@@ -84,6 +84,7 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],
 // Præcise kataloginput vælger hele CURRENT/workflow/gate/cadence; standarden bevares.
 function assertPlannerControlCommandSelection(){
   const planner=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
+  const cadence=['scripts/read-weather-cadence-github.mjs','scripts/test-weather-cadence-watchdog.mjs'];
   const whole=[
     'node --test scripts/test-source-current-contracts.mjs',
     'node scripts/test-source-impact-workflow.mjs',
@@ -102,6 +103,12 @@ function assertPlannerControlCommandSelection(){
     const selected=sourceControlCommandsForChangedInputs(changes);
     assert.deepEqual(selected,whole);assert(Object.isFrozen(selected));passed++;
   }
+  for(const changes of [[modified(cadence[0])],[modified(cadence[1])],
+    [...cadence.map(modified),modified('docs/rdks/10_DECISIONS/DEC-0259-EXTERNAL-FOUR-HOUR-WEATHER-CADENCE.md')]]){
+    const selected=sourceControlCommandsForChangedInputs(changes);
+    assert.deepEqual(selected,[whole[3]]);assert(Object.isFrozen(selected));passed++;
+    assert.strictEqual(sourceControlCommandsForChangedInputs([...planner.map(modified),...changes]),broad);passed++;
+  }
   for(const file of ['.github/workflows/validate-pull-request.yml',
     'scripts/lib/source-impact-workflow-review.mjs','scripts/test-source-impact-workflow.mjs',
     'scripts/source-current-contract-receipt.mjs','scripts/source-targeted-producer.mjs',
@@ -112,7 +119,7 @@ function assertPlannerControlCommandSelection(){
     'scripts/test-source-impact-full-baseline.mjs','scripts/test-source-targeted-domain-integration.mjs',
     'scripts/weather-source-gate.mjs','.github/workflows/watch-missed-weather-schedule.yml',
     'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs',
-    'scripts/test-weather-cadence-watchdog.mjs','scripts/validate-release-version.mjs',
+    'scripts/validate-release-version.mjs',
     'scripts/test-module-version-closure-4.0.87.mjs','scripts/test-security-hardening-4.0.284.mjs']){
     assert.strictEqual(sourceControlCommandsForChangedInputs([modified(file)]),broad);passed++;
     assert.strictEqual(sourceControlCommandsForChangedInputs([...planner.map(modified),modified(file)]),broad);passed++;
@@ -121,6 +128,8 @@ function assertPlannerControlCommandSelection(){
     [modified(planner[0]),modified(planner[0])],[{}],[null],
     [{...modified(planner[0]),status:'A',beforeMode:'000000'}],
     [{...modified(planner[1]),status:'D',afterMode:'000000'}],
+    [{...modified(cadence[0]),status:'A',beforeMode:'000000'}],
+    [{...modified(cadence[1]),afterMode:'100755'}],
     [{...modified(planner[0]),beforeMode:'100755'}],
     [{...modified(planner[1]),afterMode:'100755'}]]){
     assert.strictEqual(sourceControlCommandsForChangedInputs(changes),broad);passed++;
@@ -773,6 +782,11 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
     assert.deepEqual(Object.keys(singleton.areas),['core','sourceControls']);
     assert.deepEqual(singleton.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands]);
     assert.deepEqual(singleton.areas.sourceControls.changedPaths,[files[1]]);
+    const cadenceFiles=['scripts/read-weather-cadence-github.mjs','scripts/test-weather-cadence-watchdog.mjs'];
+    const cadence=select('cadence-reader-only',cadenceFiles);
+    assert.equal(cadence.selection,'CURRENT_CONTRACTS');assert.equal(cadence.controlQualificationRequired,true);
+    assert.deepEqual(cadence.commands,[...CURRENT_CONTRACT_COMMANDS.core,commands[7]]);
+    assert.deepEqual(cadence.areas.sourceControls.changedPaths,cadenceFiles);
     const selectorFiles=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
     const all=select('all-controller-owners-with-selector-and-docs',[...files,
       ...selectorFiles,'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);

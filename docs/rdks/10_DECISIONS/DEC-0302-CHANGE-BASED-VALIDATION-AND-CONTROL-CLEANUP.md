@@ -592,3 +592,13 @@ I første kørsel for #1058 bestod alle 13 mål, mens den samtidige vejrhentning
 ### 24. november – afbrudt opsætning før databaseprøven
 
 I GitHub-kørsel #1676 blev PR-jobbet afbrudt under installation af kildeafhængigheder. Den daværende prøve mistede muligheden for at genbruge en tidligere databaseafprøvning med samme input, selv om GitHub viser, at både databasen og kvitteringsuploaden blev sprunget over. Kildekontrollen medregner kun denne afbrydelse som en uudført databasefase, når workflowfilen er byteidentisk med den aktuelle, og kørslen, jobbet, det præcise opsætningstrin og alle efterfølgende trin stemmer. En tidligere gyldig kvittering og de aktuelle kildeprøver er stadig påkrævet. Afbrydelser senere i forløbet og samtidige job med uafklaret databaseaktivitet spærrer fortsat for genbrug. Virkningen i GitHub afventer.
+
+### Vejrvagtens GitHub-læser
+
+Almindelige ændringer i vejrvagtens eksisterende skrivefri GitHub-læser
+og dens egen prøve vælger hele vejrvagtprøven sammen med den faste
+sikkerhedskerne. Prøven dækker de normale kaldere, genlæsning, samtidighed
+og den enkelte bestilling. Producenten og læseren af kildebeviser samt
+deres databasebeviser prøves, når deres egne kontrolinput er berørt.
+Uafhængig gennemgang og de eksisterende krav for ændringer i tilladelser,
+workflow eller beskyttede input gælder fortsat.
