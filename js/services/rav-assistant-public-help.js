@@ -27,6 +27,11 @@ const ANSWERS={
     de:'RavRadar hilft, anhand von Prognosen und Küstenbedingungen ein vielversprechendes Gebiet und einen Zeitpunkt für die Bernsteinsuche zu wählen. Es misst nicht, wo Bernstein liegt, und garantiert keine Funde. Über das Projekt: '+PUBLIC_ABOUT,
     en:'RavRadar helps you choose a promising coastal area and time for amber hunting from forecasts and coastal conditions. It does not measure where amber lies or guarantee a find. About the project: '+PUBLIC_ABOUT
   },
+  'landing-precision':{
+    da:'Nej. RavRadar bruger vejrprognoser og kystforhold til at pege på lovende områder og tidspunkter. Modellen kan ikke forudsige præcis, hvor et ravstykke skyller op på stranden.',
+    de:'Nein. RavRadar nutzt Wettervorhersagen und Küstenbedingungen, um auf vielversprechende Suchgebiete und Zeiten hinzuweisen. Das Modell kann nicht genau vorhersagen, wo ein Stück Bernstein angespült wird.',
+    en:'No. RavRadar uses weather forecasts and coastal conditions to suggest promising areas and times to search. The model cannot predict exactly where a piece of amber will wash ashore.'
+  },
   beginner:{
     da:'Start med at lære at kende rav fra sten og plast. Søg systematisk i opskylslinjer og lommer med let materiale, og sammenlign frisk og ældre opskyl. Se på vejrforløbet og kysten frem for én vindretning eller vandstand. Kontrollér fund med flere skånsomme tegn; UV alene er ikke bevis. Tilpas udstyr til strand eller vand, og vurder altid forholdene på stedet. En prognose eller RavScore er ingen fund- eller sikkerhedsgaranti.',
     de:'Lerne zunächst, Bernstein von Steinen und Kunststoff zu unterscheiden. Suche systematisch in Spülsäumen und Taschen mit leichtem Material und vergleiche frische und ältere Ablagerungen. Beachte Wetterverlauf und Küste statt nur einer Windrichtung oder eines Wasserstands. Prüfe Funde anhand mehrerer schonender Merkmale; UV allein ist kein Beweis. Passe die Ausrüstung an Strand oder Wasser an und beurteile die Lage vor Ort. Eine Prognose oder ein Score garantiert weder Funde noch Sicherheit.',
@@ -58,6 +63,11 @@ const FORMS={
   group:{da:/^(?:har ravradar en facebook[- ]?gruppe|har ravradar en gruppe på facebook|hvor finder (?:jeg|vi) ravradars facebook[- ]?gruppe)$/iu,de:/^(?:hat ravradar eine facebook[- ]?gruppe|gibt es eine facebook[- ]?gruppe für ravradar|wo finde ich die facebook[- ]?gruppe von ravradar)$/iu,en:/^(?:does ravradar have a facebook group|is there a facebook group for ravradar|where can i find ravradar(?:’s|'s) facebook group)$/iu},
   project:{da:/^hvad er ravradar$/iu,de:/^was ist ravradar$/iu,en:/^what is ravradar$/iu},
   beginner:{da:/^hvad (?:skal|bør|behøver) (?:jeg|vi|man) (?:at )?vide om (?:ravjagt|at finde rav|at lede efter rav)$/iu,de:/^was (?:sollte|muss) (?:ich|man) über (?:die )?bernsteinsuche wissen$/iu,en:/^what (?:do i need to|should i|must i) know about (?:amber hunting|looking for amber|finding amber)$/iu},
+  'landing-precision':{
+    da:/^kan ravradar forudsige (?:(?:det )?(?:præcise|nøjagtige) landings(?:sted|punkt) for rav(?:et)?|(?:præcis|nøjagtig),? hvor (?:ravet|et ravstykke) skyller (?:op|i land))$/iu,
+    de:/^kann ravradar (?:die (?:genaue|exakte) landestelle|den (?:genauen|exakten) landeort) von bernstein vorhersagen$/iu,
+    en:/^can ravradar predict (?:exactly where (?:a piece of )?amber will wash ashore|the (?:exact|precise) landing (?:spot|place|point) (?:of|for) (?:a piece of )?amber)$/iu,
+  },
   'origin-age':{
     da:/^hvor kommer rav(?:et)? fra(?:,? og |[?.] (?:og )?)kan (?:jeg|vi|man) (?:se|bestemme) alderen på et (?:rav)?fund$/iu,
     de:/^woher kommt bernstein(?:,? und |[?.] (?:und )?)kann (?:ich|man) das alter eines (?:bernstein)?fund(?:es|s) bestimmen$/iu,
