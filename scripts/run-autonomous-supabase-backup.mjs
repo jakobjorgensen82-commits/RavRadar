@@ -91,11 +91,18 @@ export async function runAutonomousDatabaseBackup({phase='plan'}={},dependencies
     archiveWrittenThisOperation:captured.archiveWrittenThisOperation,centralLocatorVerified:captured.centralLocatorVerified,
     fullDatabaseBackupVerified:false,freeReady:false,automaticRetry:false};
 }
+export function databaseBackupWorkflowOutputs(phase, result) {
+  if (phase === 'plan') return 'proceed='+String(result.proceed)+'\n'+'action='+(result.action??'none')+'\n';
+  if (phase === 'execute' && result.status === 'DATABASE_BACKUP_SKIPPED_ORIGINAL_WEATHER_WINDOW'
+    && result.privateAccessStarted === false) return 'no_private_access=true\n';
+  return '';
+}
 async function main(){const args=process.argv.slice(2);
   need(args.length===1&&['--plan','--execute'].includes(args[0]),'DATABASE_BACKUP_PHASE');
-  const result=await runAutonomousDatabaseBackup({phase:args[0].slice(2)});
-  if(args[0]==='--plan'&&process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,
-    'proceed='+String(result.proceed)+'\n'+'action='+(result.action??'none')+'\n');
+  const phase=args[0].slice(2);
+  const result=await runAutonomousDatabaseBackup({phase});
+  const outputs=databaseBackupWorkflowOutputs(phase,result);
+  if(outputs&&process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,outputs);
   console.log(JSON.stringify(result));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)main().catch(error=>{
