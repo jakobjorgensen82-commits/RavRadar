@@ -100,7 +100,7 @@ import {
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { publicManifestWithoutBulkArchive } from './lib/public-bulk-details-archive.mjs';
 import { validFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
-import { LF7_WATER_ROUTING_COUNTERS, lf7WaterOnlyZone, waterRoutingConfigurationSha256 }
+import { LF7_UNKNOWN_T3_REASONS, LF7_WATER_ROUTING_COUNTERS, lf7WaterOnlyZone, waterRoutingConfigurationSha256 }
   from './lib/water-source-forecast-routing.mjs';
 
 const DEFAULT_INPUT = 'data/live/conditions.json';
@@ -1175,15 +1175,22 @@ function prepareLf7WaterRoutingAcceptance(full, diagnostics, routing) {
   const countKeys = [...LF7_WATER_ROUTING_COUNTERS, 'computedValueMismatchHours'];
   const keys = ['schemaVersion','kind','referenceAt','expectedPartCount','observedPartCount',
     'expectedPartHours','configurationSha256','selectionSha256','computedValuesSha256','counts'];
+  const hasTrendReasons = observation.schemaVersion === 2;
+  if (hasTrendReasons) keys.push('unknownT3Reasons');
   const exact = (value, names) => value && typeof value === 'object' && !Array.isArray(value)
     && Object.keys(value).sort().join(',') === [...names].sort().join(',');
-  if (!exact(observation, keys) || observation.schemaVersion !== 1 || observation.kind !== 'LF7_WATER_ROUTING_OBSERVATION'
-    || !exact(observation.counts, countKeys) || !countKeys.every(key => Number.isSafeInteger(observation.counts[key])
-      && observation.counts[key] >= 0 && observation.counts[key] <= 673 * 118)
+  const isPartHourCount = value => Number.isSafeInteger(value) && value >= 0 && value <= 673 * 118;
+  if (!exact(observation, keys) || (!hasTrendReasons && observation.schemaVersion !== 1)
+    || observation.kind !== 'LF7_WATER_ROUTING_OBSERVATION'
+    || !exact(observation.counts, countKeys) || !countKeys.every(key => isPartHourCount(observation.counts[key]))
     || !Number.isSafeInteger(observation.expectedPartCount) || observation.expectedPartCount < 1 || observation.expectedPartCount > 673
     || !Number.isSafeInteger(observation.observedPartCount) || observation.observedPartCount < 0 || observation.observedPartCount > observation.expectedPartCount
     || observation.expectedPartHours !== observation.expectedPartCount * 118
     || !['configurationSha256','selectionSha256','computedValuesSha256'].every(key => /^[a-f0-9]{64}$/.test(observation[key]))) return unknown('FORMAT_INVALID');
+  if (hasTrendReasons && (!exact(observation.unknownT3Reasons, LF7_UNKNOWN_T3_REASONS)
+    || !LF7_UNKNOWN_T3_REASONS.every(key => isPartHourCount(observation.unknownT3Reasons[key]))
+    || LF7_UNKNOWN_T3_REASONS.reduce((sum, key) => sum + observation.unknownT3Reasons[key], 0)
+      !== observation.counts.unknownT3Hours)) return unknown('TREND_REASON_COUNTS_INVALID');
   if (waterRoutingConfigurationSha256(routing) !== observation.configurationSha256) return unknown('CONFIGURATION_MISMATCH');
   const parts = Object.entries(full.coastalParts?.parts ?? {}).filter(([,part]) => lf7WaterOnlyZone(part?.zoneId));
   const counts = observation.counts;
@@ -1205,7 +1212,9 @@ function finishLf7WaterRoutingAcceptance(values, observation) {
     reason: null, waterOnlyConformant, sourceTrendConformant, computedValuesMatch,
     coverageComplete: counts.missingWaterHours === 0, allRoutedT3Comparable: counts.unknownT3Hours === 0,
     configurationSha256: observation.configurationSha256, selectionSha256: observation.selectionSha256,
-    counts: { ...counts }, rawValuesIncluded: false };
+    counts: { ...counts },
+    ...(observation.schemaVersion === 2 ? { unknownT3Reasons: { ...observation.unknownT3Reasons } } : {}),
+    rawValuesIncluded: false };
 }
 
 // Retain the synchronous pure API for callers with the original computed rows.
