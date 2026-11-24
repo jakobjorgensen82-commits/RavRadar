@@ -1,3 +1,12 @@
+## 24. november – størrelsesmåling på gemte DMI-cachefiler
+
+Den eksisterende skrivefri komponentdiagnose måler antallet af bytes i to
+cachefiler fra den autentificerede vejrpakke. Den bruger gzip-niveau 1
+fra den lokale komprimeringskandidat og kontrollerer filernes størrelse
+og SHA-256 under læsningen. Målingen tilføjer kun tællere til rapporten.
+Målingen dækker de to inputfiler. Den samlede krypterede checkpointpakke
+skal måles særskilt, før tallene kan bruges til at vælge en lagergrænse.
+
 ## 22. november – observeret H0 til H3 ved Rømø
 
 En lokal kildekandidat registrerer den faktisk valgte vandstandsgren for delene i DK-B04-07 og DK-B04-08 ved prognosens første time. Ved routet SOURCE bruges den normale kalders allerede beregnede sammenligningsbeslutning og dens allerede kvalificerede støtterækker. Sporet skelner manglende kvalificeret H+3 fra afvist serie eller policy og fra positiv sammenligning. Et bevaret direkte PART-input får kun oplysning om feltets tilstedeværelse. En ukendt årsag forbliver ukendt.
