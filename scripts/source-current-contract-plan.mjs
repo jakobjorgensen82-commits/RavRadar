@@ -217,6 +217,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-github-action-versions.mjs',
   ],
   savedWeatherAudit:[
+    'node --test scripts/test-audit-saved-weather-inputs.mjs',
     'node --test scripts/test-saved-weather-audit-workflow.mjs',
   ],
   historicalUpdaterOracles:[
@@ -475,6 +476,8 @@ const PATH_AREAS=freeze({
   ],
   savedWeatherAudit:[
     '.github/workflows/audit-saved-weather-inputs.yml',
+    'scripts/audit-saved-weather-inputs.mjs',
+    'scripts/test-audit-saved-weather-inputs.mjs',
     'scripts/audit-b358-water-level-trend.mjs',
     'scripts/test-saved-weather-audit-workflow.mjs',
   ],

@@ -2,6 +2,7 @@
 // Stage A only: authenticated saved bytes and original-context availability.
 // Default: no providers, union, scoring or remote writes. One exact opt-in
 // may rebuild normal inputs/score only in private scratch; no production authority.
+import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
@@ -10,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { createGunzip } from 'node:zlib';
+import { createGunzip, createGzip } from 'node:zlib';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as protectedApi from './protected-private-production-runtime.mjs';
 import { buildSupabaseAdminHeaders } from './lib/supabase-admin-rest.mjs';
@@ -654,6 +655,35 @@ function fileMetrics(files, names) {
   }
   return { fileCount: files.length, bytes, largestFileBytes, named, otherFiles, otherBytes };
 }
+async function measureDmiCheckpointInputs(payloadRoot, files) {
+  const result = {};
+  for (const [role, id] of [['forecast', 'dmi-forecast-cache'], ['bulk', 'dmi-bulk-cache']]) {
+    const expected = PRIVATE_RUNTIME_BASE_FILES.find(file => file.id === id);
+    const entry = files.find(file => file.id === id && file.relativePath === expected.relativePath);
+    if (!entry || !integer(entry.bytes) || entry.bytes < 1 || entry.bytes > policy.maximumFilePayloadBytes) {
+      fail('AUDIT_COUNTER_INVALID');
+    }
+    const file = await noSymlinks(payloadRoot, path.join(payloadRoot, expected.relativePath));
+    if (!(await fs.lstat(file)).isFile()) fail('PRIVATE_PATH_INVALID');
+    const hash = crypto.createHash('sha256');
+    let rawBytes = 0, gzipBytes = 0;
+    async function* countSource(stream) {
+      for await (const chunk of stream) {
+        rawBytes += chunk.length;
+        if (rawBytes > entry.bytes) fail('AUDIT_COUNTER_INVALID');
+        hash.update(chunk);
+        yield chunk;
+      }
+    }
+    await pipeline(createReadStream(file), countSource, createGzip(), new Writable({
+      write(chunk, _encoding, done) { gzipBytes += chunk.length; done(); },
+    }));
+    if (rawBytes !== entry.bytes || hash.digest('hex') !== entry.sha256) fail('BUNDLE_IDENTITY_MISMATCH');
+    result[role] = { rawBytes, gzipBytes };
+  }
+  return result;
+}
+
 async function forecastIndex(file) {
   if (!file) return null;
   try { return await inspectDmiForecastFile(file); } catch { fail('FORECAST_INSPECTION_FAILED'); }
@@ -1424,7 +1454,8 @@ export async function auditProtectedBaselineComponentFallback(options = {}) {
     if (manifest.bundleContentSha256 !== source.bundleContentSha256) fail('BUNDLE_IDENTITY_MISMATCH');
     phase = 'COMPONENT_SUMMARY';
     const archive = await clients.archiveMetrics();
-    const conditions = await readJson(path.join(bundlePath, 'payload', 'data/live/conditions.json'), 535_822_312);
+    const payloadRoot = path.join(bundlePath, 'payload');
+    const conditions = await readJson(path.join(payloadRoot, 'data/live/conditions.json'), 535_822_312);
     originalParts(conditions);
     const summary = conditions.weatherEngine?.componentFallback;
     const conditionsFiles = manifest.files.filter(file => file.relativePath === 'data/live/conditions.json');
@@ -1434,11 +1465,12 @@ export async function auditProtectedBaselineComponentFallback(options = {}) {
     const rawPayloadBytes = manifest.files.reduce((total, file) => total + file.bytes, 0)
       + (await fs.stat(path.join(bundlePath, 'manifest.json'))).size;
     if (!integer(rawPayloadBytes)) fail('AUDIT_COUNTER_INVALID');
+    const dmiCheckpointInputs = await measureDmiCheckpointInputs(payloadRoot, manifest.files);
     const report = { ...baseReport('AUDIT_COMPLETED'), readScope,
       protectedGenerationReadbackVerified: true, exactArchivedSourceContractsVerified: true,
       encryptedProgressRead: false, rawCacheRead: false, componentPackUnpacked: false,
       summaryPresent: object(summary), protectedBaselineComponentFallback: safeWeatherComponentSummary(summary),
-      capacity: { protected: { ...archive, rawPayloadBytes, conditionsBytes }, limits: {
+      capacity: { protected: { ...archive, rawPayloadBytes, conditionsBytes, dmiCheckpointInputs }, limits: {
         archiveBytes: policy.maximumArchiveAggregateBytes, rawPayloadBytes: policy.maximumRawPayloadBytes,
         fileBytes: policy.maximumFilePayloadBytes, conditionsBytes: 535_822_312 } } };
     phase = 'FINAL_READBACK';

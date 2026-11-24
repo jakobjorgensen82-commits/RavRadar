@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import vm from 'node:vm';
+import { gzipSync } from 'node:zlib';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { auditSavedWeatherInputs, auditProtectedBaselineComponentFallback, auditVoersaaWaterLevelTrace, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
@@ -1790,6 +1791,12 @@ test('B-only component summary: actual authenticated B works without progress or
   assert.equal(conditionsFiles.length, 1);
   assert.equal(report.capacity.protected.conditionsBytes, conditionsFiles[0].bytes);
   assert.equal(report.capacity.protected.conditionsBytes, beforeConditions.length);
+  const samples = report.capacity.protected.dmiCheckpointInputs;
+  assert.deepEqual(Object.keys(samples), ['forecast', 'bulk']);
+  for (const [role, file] of [['forecast', 'dmi-forecast-cache.json'], ['bulk', 'dmi-bulk-cache.json']]) {
+    const bytes = await fs.readFile(path.join(f.source, 'data/live', file));
+    assert.deepEqual(samples[role], { rawBytes: bytes.length, gzipBytes: gzipSync(bytes).length });
+  }
   assert(Number.isSafeInteger(report.capacity.protected.conditionsBytes) && report.capacity.protected.conditionsBytes > 0);
   assert(report.capacity.protected.conditionsBytes <= report.capacity.limits.conditionsBytes);
   assert(report.capacity.protected.conditionsBytes <= policy.maximumFilePayloadBytes);
