@@ -1,6 +1,6 @@
 ## 24. november — særskilt klargøring af aktivitetskvitteringen
 
-SQL80 er installeret, og den faste kataloglæsning på main har bekræftet kildekroppen, adgangene og den uarmerede kvittering. Denne kandidat tilbyder et særskilt engangstrin i den eksisterende konfiguration. Den kræver deaktiveret Auth med tom URI og verificerer den samme kvittering med en frisk databasedato efter skrivning. Et ukendt skriveudfald afklares gennem den eksisterende kataloglæser. Selve konfigurationen af Auth, påvisning af login og opsamling, dækningsstart, varsling og sletning er separate udeståender.
+SQL80 er installeret, og den faste kataloglæsning på main har bekræftet kildekroppen, adgangene og den uarmerede kvittering. Engangstrinnet til klargøring ligger på main. Det kræver deaktiveret Auth med tom URI og verificerer den samme kvittering med en frisk databasedato efter skrivning. Et ukendt skriveudfald afklares gennem den eksisterende kataloglæser. Første Auth-aktivering kræver en armeret kvittering for den aktuelle dækningsperiode uden tidligere loginopsamling. Akut frakobling er mulig uden opslag i databasen. Selve klargøringen i drift, konfigurationen af Auth, påvisning af loginopsamling, dækningsstart, varsling og sletning er separate udeståender.
 
 ## 23. november — særskilt inaktiv SQL80-installationsvej er lokal
 

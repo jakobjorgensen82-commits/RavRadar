@@ -371,9 +371,10 @@ export async function runFixedAccountActivityHookOperation({ operation, env, acc
   if (operation === 'enable') {
     // SQL80 extends the token-hook body. Verify the exact installed append,
     // receipt table and existing OFF/ACL contract instead of the legacy body.
-    // Receipt state is no Auth-response or coverage-start authority; never arm here.
+    // Require an armed receipt for the current epoch before a first login can be observed.
+    // This configuration change does not establish Auth-response or coverage-start authority.
     const receipt = await readFixedNativeActivityReceipt({ accessToken, fetchImpl });
-    if (!VERIFIED_NATIVE_RECEIPT_STATES.has(receipt.status)) {
+    if (receipt.status !== 'NATIVE_RECEIPT_ARMED') {
       return { status: receipt.status };
     }
   }
