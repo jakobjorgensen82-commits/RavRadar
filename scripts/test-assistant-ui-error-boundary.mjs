@@ -1012,7 +1012,14 @@ test('the public dialog answers transport between sandbars and what can be seen 
     ['de','Kann Bernstein zwischen zwei Sandbänken durch Strömung verlagert werden?','Können sich Bernsteinansammlungen zwischen zwei Sandbänken ohne neuen Spülsaum verlagern, und was kann ich vom Strand aus beobachten, um das zu erkennen?','Kann die Strömung Bernstein zwischen zwei Sandbänken ohne neuen Spülsaum verlagern?','und wo finde ich heute in Nibe Bernstein?',/sandbänken/i,/vom strand/i,/spülsaum/i],
     ['en','Can currents move amber between two sandbars?','Can amber accumulations shift between two sandbars without new wash, and what can I observe from the beach to notice it?','Can the current move amber between sandbars without fresh wash?','and where can I find amber in Nibe today?',/sandbars/i,/from the beach/i,/wash/i],
   ];
+  const followups={
+    da:'Hvad kan jeg konkret se, hvis jeg står på stranden?',
+    de:'Was kann ich konkret vom Strand aus beobachten?',
+    en:'What can I actually see from the beach?',
+  };
   for(const [locale,simple,mixed,variant,location,bars,observations,wash] of questions){
+    const followup=followups[locale];
+    assert.equal(publicRavAssistantHelp(followup,locale),null);
     for(const question of [simple,mixed,variant]){
       const ui=fixture(locale);
       ui.context.askRavRadar=async()=>{throw Error('SAND_BAR_HELP_MUST_NOT_FETCH');};
@@ -1021,8 +1028,22 @@ test('the public dialog answers transport between sandbars and what can be seen 
       assert.match(response,bars);
       assert.match(response,observations);
       assert.match(response,wash);
+      assert.equal(ui.topic(),'public-knowledge:sandbar-transport');
+      await ui.submit(followup);
+      assert.match(ui.answers().at(-1),observations);
+      assert.doesNotMatch(ui.answers().at(-1),wash);
       assert.equal(ui.detailCalls(),0);
     }
     assert.equal(publicRavAssistantHelp(simple.replace(/\?$/,' ')+location,locale),null);
+    const ui=fixture(locale),routed=[];
+    ui.context.askRavRadar=async question=>{routed.push(question);return 'NORMAL_ASSISTANT_ROUTE';};
+    await ui.submit(simple);
+    const extra=followup.replace(/\?$/u,', '+location);
+    await ui.submit(extra);
+    assert.deepEqual(routed,[extra]);
+    await ui.submit(simple);
+    ui.emit('dialog','close');
+    await ui.submit(followup);
+    assert.deepEqual(routed,[extra,followup]);
   }
 });

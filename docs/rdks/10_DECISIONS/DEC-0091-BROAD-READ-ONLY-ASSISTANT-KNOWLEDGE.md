@@ -4,6 +4,10 @@ Den offentlige side kontaktede Cloudflare AI på det klare spørgsmål om RavRad
 
 Kandidaten svarer kun på hele spørgsmål, der udtrykkeligt handler om RavRadars mulighed. Spørgsmål om udstyr, konkrete steder og tider, private oplysninger og ekstra led går fortsat gennem den normale behandling. Cacheadresserne ændres for den offentlige app-kæde, så den tidligere hjælp ikke kan skjule det nye svar. Offentlig levering og efterprøve udestår.
 
+## 24. november — opfølgning om strøm mellem revler
+
+Browserprøven viste et fagligt svar om ravtransport mellem revler. Den korte opfølgning om, hvad man konkret kan se fra stranden, fik en generisk afvisning, fordi det første svar ikke gemte emnet. Den lokale kandidat husker nu det afgrænsede emne og genbruger det eksisterende råd om at se efter åbninger i brændingen og følge bevægelsen af skum eller tang på overfladen. Spørgsmål med ekstra led går fortsat videre i fuld længde, og lukning af dialogen nulstiller sammenhængen. Den normale kalders lokale prøver dækker dansk, tysk og engelsk. Levering udestår.
+
 ## 24. november — sammensatte spørgsmål og opfølgning om Raman
 
 Den offentlige assistent fik et valideret eksternt svar på et tysk spørgsmål om fluorescens og begrænsninger. Brugeren fik samme generiske afklaring på både spørgsmålet og opfølgningen. Den lokale app-rettelse forklarer fluorescensbaggrunden og spektroskopiens begrænsninger på dansk, tysk og engelsk. En kort, dækket opfølgning kan bruge den faste emnebetegnelse. Dialoglukning og sprogskift bryder sammenhængen. Ekstra led får den normale behandling af hele spørgsmålet.
