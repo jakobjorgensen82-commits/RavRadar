@@ -197,11 +197,9 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
         || (expectedDigest !== undefined && artifact.digest !== expectedDigest)) {
       return hold('artifact-identity-unproved');
     }
-    const [run, jobs] = await Promise.all([
-      readMetadata('attempt', attemptPath),
-      readMetadata('jobs', `${attemptPath}/jobs?per_page=100`),
-    ]);
+    const run = await readMetadata('attempt', attemptPath);
     if (!normalRun(run, context)) return hold('run-not-current');
+    const jobs = await readMetadata('jobs', `${attemptPath}/jobs?per_page=100`);
     const upload = publicationStep(jobs, context);
     if (!upload) return pending();
     if (upload.status === 'HOLD') return upload;
