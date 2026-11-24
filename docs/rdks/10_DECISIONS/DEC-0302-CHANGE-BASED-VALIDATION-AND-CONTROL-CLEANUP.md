@@ -588,3 +588,7 @@ Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fas
 ## 24. november – kort afventning af en igangværende kildeafgørelse
 
 I første kørsel for #1058 bestod alle 13 mål, mens den samtidige vejrhentnings kildeafgørelse stadig var uafklaret. Det udløste endnu en gennemgang af de samme mål. Ved afsluttende kvalifikation genlæser den lokale efterfølger den kendte afgørelse op til tre gange efter 10, 25 og 50 sekunder. De nye opslag bruger samme afgrænsede læsebudget og skal genfinde samme kørsel, forsøg, job og trin. Aktuelle afslag, manglende eller ændret identitet og fortsat uafsluttet kildeevidens spærrer stadig for kvitteringen. PR og gennemgang genlæses efter venten. Målingen på en almindelig GitHub-kørsel afventer.
+
+### 24. november – afbrudt opsætning før databaseprøven
+
+I GitHub-kørsel #1676 blev PR-jobbet afbrudt under installation af kildeafhængigheder. Den daværende prøve mistede muligheden for at genbruge en tidligere databaseafprøvning med samme input, selv om GitHub viser, at både databasen og kvitteringsuploaden blev sprunget over. Kildekontrollen medregner kun denne afbrydelse som en uudført databasefase, når workflowfilen er byteidentisk med den aktuelle, og kørslen, jobbet, det præcise opsætningstrin og alle efterfølgende trin stemmer. En tidligere gyldig kvittering og de aktuelle kildeprøver er stadig påkrævet. Afbrydelser senere i forløbet og samtidige job med uafklaret databaseaktivitet spærrer fortsat for genbrug. Virkningen i GitHub afventer.
