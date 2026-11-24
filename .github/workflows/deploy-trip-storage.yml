@@ -19,6 +19,7 @@ on:
           - fixed-account-erasure-catalog-diagnose
           - fixed-account-activity-hook-enable
           - fixed-account-activity-hook-disable
+          - fixed-account-activity-receipt-arm
           - fixed-public-rate-log-read
           - fixed-public-rate-log-read-20261013
           - fixed-public-rate-console-read-20261015
@@ -39,7 +40,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}
+  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}
   queue: max
   cancel-in-progress: false
 
@@ -1142,7 +1143,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-account-activity-hook-read' && inputs.operation != 'fixed-account-activity-hook-catalog-read' && inputs.operation != 'fixed-account-erasure-catalog-diagnose' && inputs.operation != 'fixed-account-activity-hook-enable' && inputs.operation != 'fixed-account-activity-hook-disable' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-account-activity-hook-read' && inputs.operation != 'fixed-account-activity-hook-catalog-read' && inputs.operation != 'fixed-account-erasure-catalog-diagnose' && inputs.operation != 'fixed-account-activity-hook-enable' && inputs.operation != 'fixed-account-activity-hook-disable' && inputs.operation != 'fixed-account-activity-receipt-arm' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-public-rate-console-read-20261015' && inputs.operation != 'fixed-assistant-failure-log-read-20261101' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-1712' && inputs.operation != 'fixed-assistant-failure-log-read-20261121-2344' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1
@@ -1665,7 +1666,7 @@ jobs:
           REPAIR_NODE
 
   configure-fixed-account-activity-hook:
-    if: ${{ inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' }}
+    if: ${{ inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm' }}
     name: Configure only the fixed account activity token hook
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1675,6 +1676,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Require the exact hook purpose before any credential
+        id: fixed_hook_purpose
         shell: bash
         env:
           HOOK_OPERATION: ${{ inputs.operation }}
@@ -1686,8 +1688,18 @@ jobs:
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_RUN_ATTEMPT" = 1
           case "$HOOK_OPERATION" in
-            fixed-account-activity-hook-enable) test "$HOOK_CONFIRMATION" = ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK ;;
-            fixed-account-activity-hook-disable) test "$HOOK_CONFIRMATION" = DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK ;;
+            fixed-account-activity-hook-enable)
+              test "$HOOK_CONFIRMATION" = ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK
+              echo "operation=enable" >> "$GITHUB_OUTPUT"
+              ;;
+            fixed-account-activity-hook-disable)
+              test "$HOOK_CONFIRMATION" = DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK
+              echo "operation=disable" >> "$GITHUB_OUTPUT"
+              ;;
+            fixed-account-activity-receipt-arm)
+              test "$HOOK_CONFIRMATION" = ARM-FIXED-ACCOUNT-ACTIVITY-RECEIPT
+              echo "operation=arm" >> "$GITHUB_OUTPUT"
+              ;;
             *) exit 1 ;;
           esac
 
@@ -1731,6 +1743,6 @@ jobs:
         timeout-minutes: 1
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: ${{ inputs.operation == 'fixed-account-activity-hook-enable' && 'enable' || 'disable' }}
+          RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: ${{ steps.fixed_hook_purpose.outputs.operation }}
           RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION: ${{ inputs.activity_hook_confirmation }}
-        run: node scripts/read-fixed-account-activity-hook.mjs --${{ inputs.operation == 'fixed-account-activity-hook-enable' && 'enable' || 'disable' }}
+        run: node scripts/read-fixed-account-activity-hook.mjs --"$RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION"

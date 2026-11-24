@@ -2606,8 +2606,8 @@ test('erasure workflow: the actual named source program runs plan/apply/check on
   const workflow=fs.readFileSync('.github/workflows/deploy-trip-storage.yml','utf8').replaceAll('\r\n','\n');
   assert.match(workflow,/default: full-install/);
   const outer=/^concurrency:\n([\s\S]*?)\njobs:\n/m.exec(workflow)?.[1];
-  assert.equal(outer,"  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}\n  queue: max\n  cancel-in-progress: false\n",
-    'Only the two fixed Auth writes select weather outer; erasure and all old operations retain trip outer with the reviewed queue');
+  assert.equal(outer,"  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}\n  queue: max\n  cancel-in-progress: false\n",
+    'Only the fixed account activity writes select weather outer; erasure and all old operations retain trip outer with the reviewed queue');
   const title='      - name: Install and physically attest only the named owner-erasure INSERT guards\n';
   const at=workflow.indexOf(title),end=workflow.indexOf('\n      - name:',at+title.length);
   assert(at>0&&end>at); assert.equal(workflow.indexOf(title,at+title.length),-1);

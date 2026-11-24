@@ -1,3 +1,7 @@
+## 24. november — særskilt klargøring af aktivitetskvitteringen
+
+SQL80 er installeret, og den faste kataloglæsning på main har bekræftet kildekroppen, adgangene og den uarmerede kvittering. Denne kandidat tilbyder et særskilt engangstrin i den eksisterende konfiguration. Den kræver deaktiveret Auth med tom URI og verificerer den samme kvittering med en frisk databasedato efter skrivning. Et ukendt skriveudfald afklares gennem den eksisterende kataloglæser. Selve konfigurationen af Auth, påvisning af login og opsamling, dækningsstart, varsling og sletning er separate udeståender.
+
 ## 23. november — særskilt inaktiv SQL80-installationsvej er lokal
 
 Den lokale kandidat tilkobler kun den eksakte receipt-append til den eksisterende finite backend-installationsworkflow. Valget er særskilt og default false, kræver aktuel kvalificeret FULL/native80 samt alle installerede forgængere og udelukker de øvrige opgraderinger. Før SQL kræves uændret OFF-katalog med de eksisterende CHECK-facit og deaktiveret Auth-hook. En frisk migrationsliste, dry-run og main-genbekræftelse begrænser skrivningen til denne ene append; allerede installeret SQL genlæses uden ny push. Den efterfølgende faste metadataaflæsning kræver den nye body/ACL, uarmeret receipt og fortsat UNKNOWN/OFF/HOLD. Normal efterfølger må kun genkende den samme allerede installerede append fra dens præcise kilde.

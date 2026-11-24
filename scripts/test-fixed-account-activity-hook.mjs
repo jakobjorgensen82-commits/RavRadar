@@ -391,7 +391,8 @@ function hostedHookOwner(operation) {
     GITHUB_JOB: 'configure-fixed-account-activity-hook',
     RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: operation,
     RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION: operation === 'enable'
-      ? 'ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK' : 'DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK',
+      ? 'ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK'
+      : operation === 'disable' ? 'DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK' : 'ARM-FIXED-ACCOUNT-ACTIVITY-RECEIPT',
   };
 }
 test('catalog uses the normal read-only endpoint and adds only fixed schema USAGE to the existing query', async () => {
@@ -525,17 +526,17 @@ test('actual workflow preserves old operations and gates the fixed job with weat
   const header = workflow.slice(0, workflow.indexOf('\njobs:\n'));
   assert.match(header, /default: full-install/);
   for (const option of ['full-install', 'existing-worker-repair', 'existing-owner-export-upgrade', 'existing-owner-erasure-guard',
-    'typed-trip-catalog-read', 'fixed-account-activity-hook-read', 'fixed-account-activity-hook-catalog-read', 'fixed-account-activity-hook-enable', 'fixed-account-activity-hook-disable']) {
+    'typed-trip-catalog-read', 'fixed-account-activity-hook-read', 'fixed-account-activity-hook-catalog-read', 'fixed-account-activity-hook-enable', 'fixed-account-activity-hook-disable', 'fixed-account-activity-receipt-arm']) {
     assert.ok(header.includes('          - ' + option + '\n'));
   }
-  assert.ok(header.includes("  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}"));
+  assert.ok(header.includes("  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}"));
   assert.match(header, /concurrency:\n  group: [^\n]+\n  queue: max\n  cancel-in-progress: false/);
   assert.match(header, /permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n/);
   const start = workflow.indexOf('\n  configure-fixed-account-activity-hook:\n');
   assert.ok(start > 0 && workflow.indexOf('\n  configure-fixed-account-activity-hook:\n', start + 1) < 0);
   const next = workflow.slice(start + 1).search(/\n  [a-zA-Z0-9_-]+:\n/);
   const job = next < 0 ? workflow.slice(start) : workflow.slice(start, start + next + 1);
-  assert.ok(job.includes("    if: ${{ inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' }}\n"));
+  assert.ok(job.includes("    if: ${{ inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm' }}\n"));
   assert.match(job, /concurrency:\n      group: ravradar-trip-storage-production\n      queue: max\n      cancel-in-progress: false/);
   const positions = [
     'Require the exact hook purpose before any credential', 'actions/checkout@v7',
@@ -550,7 +551,11 @@ test('actual workflow preserves old operations and gates the fixed job with weat
   assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
   assert.ok(job.includes('test "${{ steps.fixed_hook_source.outputs.required }}" = false'));
   assert.ok(job.includes('test "$GITHUB_RUN_ATTEMPT" = 1'));
-  assert.ok(job.includes('ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK') && job.includes('DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK'));
+  assert.match(job, /fixed-account-activity-receipt-arm\)\n\s+test "\$HOOK_CONFIRMATION" = ARM-FIXED-ACCOUNT-ACTIVITY-RECEIPT\n\s+echo "operation=arm" >> "\$GITHUB_OUTPUT"/);
+  assert.ok(job.includes('RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: ${{ steps.fixed_hook_purpose.outputs.operation }}'));
+  for (const confirmation of ['ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK', 'DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK']) {
+    assert.ok(job.includes(confirmation));
+  }
   assert.equal((job.match(/secrets\./g) ?? []).length, 1);
   assert.equal(/db push|functions deploy|wrangler|curl|notices_enabled|coverage_status\s*=|auth\.users/.test(job), false);
 });
@@ -771,6 +776,87 @@ test('normal catalogue read observes only the installed native receipt under its
   rows = goodHookCatalog();
   assert.deepEqual(await read(), { status: 'NATIVE_RECEIPT_REFUSED' });
   assert.equal(calls, 4, 'one read per permitted attempt, with no further transport on refusal');
+});
+
+test('arm admits exactly unarmed, Auth disabled with an empty URI, and the same epochs on readback', async () => {
+  const before = nativeReceiptRows();
+  const after = nativeReceiptRows('ARMED');
+  after[0].observedAt = '2026-11-22T12:00:05.000000Z';
+  after[0].receipt[0].armedAt = '2026-11-22T12:00:04.000000Z';
+  const owner = hostedHookOwner('arm');
+  async function exercise({ prior = before, state = configResponse(false, null), current = after,
+    write = () => Response.json([], { status: 201 }), env = owner } = {}) {
+    const calls = [];
+    const result = await runFixedAccountActivityHookOperation({
+      operation: 'arm', env, accessToken: syntheticSecret,
+      fetchImpl: async (url, request) => {
+        if (url.endsWith('/config/auth')) {
+          assert.equal(request.method, 'GET');
+          calls.push('auth');
+          return state;
+        }
+        assert.equal(url, 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+        assert.equal(request.method, 'POST');
+        assert.equal(request.redirect, 'error');
+        const body = JSON.parse(request.body);
+        if (body.read_only) {
+          assert.notEqual(body.query, fixedNativeActivityReceiptArmQuery);
+          calls.push('read');
+          return Response.json(calls.length === 1 ? prior : current, { status: 201 });
+        }
+        calls.push('arm');
+        assert.deepEqual(body, { query: fixedNativeActivityReceiptArmQuery, read_only: false });
+        return write();
+      },
+    });
+    assert(!JSON.stringify(result).includes(syntheticSecret));
+    return { result, calls };
+  }
+
+  const success = await exercise();
+  assert.deepEqual(success.calls, ['read', 'auth', 'arm', 'read']);
+  assert.equal(success.result.status, 'NATIVE_RECEIPT_ARMED_VERIFIED');
+  assert.equal(typeof success.result.coverageEpochSha256, 'string');
+  assert.equal(Object.hasOwn(success.result, 'policyEpochSha256'), false);
+  for (const key of ['nativeCaptureObserved', 'authResponseObserved', 'noticesEnabled', 'automaticDeletionEnabled'])
+    assert.equal(success.result[key], false);
+  for (const uuid of [before[0].policyEpoch, before[0].receipt[0].armEpoch])
+    assert(!JSON.stringify(success.result).includes(uuid));
+
+  const deniedOwner = await exercise({ env: { ...owner, RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION: 'wrong' } });
+  assert.deepEqual(deniedOwner, { result: { status: 'OWNER_REQUIRED' }, calls: [] });
+  const repeated = await exercise({ prior: after });
+  assert.equal(repeated.result.status, 'NATIVE_RECEIPT_ARM_PRECONDITION_REFUSED');
+  assert.deepEqual(repeated.calls, ['read']);
+  const invalidPolicy = structuredClone(before);
+  invalidPolicy[0].metadata.policy.coverageStatus = 'INVALID';
+  const invalid = await exercise({ prior: invalidPolicy });
+  assert.equal(invalid.result.status, 'NATIVE_RECEIPT_REFUSED');
+  assert.deepEqual(invalid.calls, ['read']);
+
+  for (const [enabled, uri] of [[true, expectedUri], [false, expectedUri], [false, 'other']]) {
+    const wrongAuth = await exercise({ state: configResponse(enabled, uri) });
+    assert.equal(wrongAuth.result.status, 'NATIVE_RECEIPT_ARM_AUTH_DISABLED_EMPTY_REQUIRED');
+    assert.deepEqual(wrongAuth.calls, ['read', 'auth']);
+  }
+  const deniedWrite = await exercise({ write: () => new Response(null, { status: 403 }) });
+  assert.equal(deniedWrite.result.status, 'NATIVE_RECEIPT_ARM_PERMISSION_REFUSED');
+  assert.deepEqual(deniedWrite.calls, ['read', 'auth', 'arm']);
+  const unknownWrite = await exercise({ write: () => { throw new DOMException(syntheticSecret, 'AbortError'); } });
+  assert.deepEqual(unknownWrite.result, { status: 'NATIVE_RECEIPT_ARM_WRITE_UNRESOLVED', receiptStatus: 'NATIVE_RECEIPT_ARMED' });
+  assert.deepEqual(unknownWrite.calls, ['read', 'auth', 'arm', 'read']);
+
+  for (const mutate of [
+    rows => { rows[0].policyEpoch = rows[0].receipt[0].coverageEpoch = '60000000-0000-4000-8000-000000000009'; },
+    rows => { rows[0].receipt[0].armEpoch = '60000000-0000-4000-8000-000000000008'; },
+    rows => { rows[0].receipt[0].armedAt = before[0].observedAt; },
+  ]) {
+    const current = structuredClone(after);
+    mutate(current);
+    const wrongReadback = await exercise({ current });
+    assert.equal(wrongReadback.result.status, 'NATIVE_RECEIPT_ARM_WRITE_UNRESOLVED');
+    assert.deepEqual(wrongReadback.calls, ['read', 'auth', 'arm', 'read']);
+  }
 });
 
 test('current enable requires the exact installed SQL80 receipt and never falls back to the old catalog', async () => {
