@@ -10,13 +10,14 @@ const routes = {
 };
 const transient = new Set([502, 503, 504]);
 const delays = [1000, 2000];
+const inProgressInventoryDelays = [1000, 2000, 5000, 10_000, 15_000];
 const fail = (code, routeLabel) => {
   throw Object.assign(new Error(routeLabel ? `${code} ${routeLabel}` : code), { cadenceReadCode: code });
 };
 export const CADENCE_ACTIVE_STATES = Object.freeze(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 
 export async function readWeatherCadenceGithub({ kind, repository, token, recoveryRunId,
-  ownerOrdersSince, activeRunStatus,
+  ownerOrdersSince, activeRunStatus, waitForInProgress = false,
   request = fetch, wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) }) {
   const recovery = kind === 'recovery-jobs';
   const ownerOrders = kind === 'owner-orders';
@@ -25,6 +26,7 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
     || (recovery ? !/^[1-9][0-9]{0,14}$/.test(recoveryRunId ?? '') : recoveryRunId !== undefined)
     || (ownerOrders ? !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(ownerOrdersSince ?? '') : ownerOrdersSince !== undefined)
     || (activeRuns ? !CADENCE_ACTIVE_STATES.includes(activeRunStatus) : activeRunStatus !== undefined)
+    || typeof waitForInProgress !== 'boolean' || (waitForInProgress && activeRunStatus !== 'in_progress')
     || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
     || typeof token !== 'string' || !token || typeof request !== 'function' || typeof wait !== 'function') {
     fail('WEATHER_CADENCE_READ_ARGUMENT_REJECTED');
@@ -38,9 +40,11 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
   const routeLabel = activeRuns ? `${kind}:${activeRunStatus}` : kind;
   const reject = code => fail(code, routeLabel);
   const counted = recovery || ownerOrders || activeRuns;
+  const inventoryDelays = waitForInProgress ? inProgressInventoryDelays : delays;
   // Owner inventory reads share their wait budget by running concurrently.
   // The separate single POST is bounded to 20s inside the unchanged 5min job.
-  for (let attempt = 0; attempt < 3; attempt++) {
+  let retry = 0;
+  for (;;) {
     const signal = AbortSignal.timeout(10_000);
     try {
       const response = await request(url, { method: 'GET', redirect: 'error', cache: 'no-store', signal,
@@ -72,7 +76,9 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
         if (recovery) reject('WEATHER_CADENCE_READ_METADATA_REJECTED');
         // The API can return inconsistent list/count metadata as activity changes.
         // Never combine snapshots or release a document with missing rows.
-        if (attempt === 2) reject('WEATHER_CADENCE_READ_INCOMPLETE');
+        if (retry === inventoryDelays.length) reject('WEATHER_CADENCE_READ_INCOMPLETE');
+        await wait(inventoryDelays[retry++]);
+        continue;
       }
     } catch (error) {
       if (error?.cadenceReadCode) throw error;
@@ -81,8 +87,8 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
         reject('WEATHER_CADENCE_READ_UNAVAILABLE');
       }
     }
-    if (attempt === 2) reject('WEATHER_CADENCE_READ_RETRY_EXHAUSTED');
-    await wait(delays[attempt]);
+    if (retry >= delays.length) reject('WEATHER_CADENCE_READ_RETRY_EXHAUSTED');
+    await wait(delays[retry++]);
   }
 }
 

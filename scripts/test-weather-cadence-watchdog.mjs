@@ -246,6 +246,31 @@ test('The owner can order one normal retry after the latest failed bot attempt i
   assert.equal(evaluate({ activity: activeInventory().slice(1) }).dispatch, false);
 });
 
+test('Only one proven pre-dispatch owner failure may be replaced inside the same slot', () => {
+  const prior = { ...ownerRetryRequest, id: ownerRetryRequest.id - 1, head_sha: 'c'.repeat(40),
+    created_at: '2026-09-28T00:31:00Z', updated_at: '2026-09-28T00:32:00Z',
+    status: 'completed', conclusion: 'failure' };
+  const dispatch = { id: 41000000101, name: 'dispatch', run_id: prior.id, run_attempt: 1,
+    head_branch: 'main', head_sha: prior.head_sha, status: 'completed', conclusion: 'skipped', steps: [] };
+  const jobs = (...rows) => ({ total_count: rows.length, jobs: rows });
+  const order = { ...explicitOrder, history: ownerHistory(ownerRetryRequest, prior),
+    samePriorWorkflow: true, priorJobs: jobs(dispatch) };
+  const evaluate = change => assessWeatherCadenceWatchdog({ ...base, nowMs: ownerFallbackNow,
+    manualRuns: { workflow_runs: [ownerRetryFailure] }, ownerOrder: { ...order, ...change } });
+  assert.equal(evaluate({}).dispatch, true);
+  for (const change of [
+    { samePriorWorkflow: false }, { priorJobs: undefined },
+    { priorJobs: jobs({ ...dispatch, conclusion: 'failure' }) },
+    { priorJobs: jobs({ ...dispatch, steps: [{ name: 'Dispatch one ordinary current-weather run' }] }) },
+    { priorJobs: jobs({ ...dispatch, run_id: ownerRetryRequest.id }) },
+    { priorJobs: jobs({ ...dispatch, head_sha: order.headSha }) },
+    { priorJobs: jobs({ ...dispatch, run_attempt: 2 }) },
+    { priorJobs: jobs(dispatch, { ...dispatch, id: dispatch.id + 1 }) },
+    { history: ownerHistory(ownerRetryRequest, { ...prior, updated_at: ownerRetryRequest.updated_at }) },
+    { history: ownerHistory(ownerRetryRequest, prior, { ...prior, id: prior.id - 1 }) },
+  ]) assert.equal(evaluate(change).dispatch, false);
+});
+
 test('Owner admission re-reads incomplete GitHub inventories and accepts only complete snapshots', async () => {
   const variants = [
     { kind: 'owner-orders', ownerOrdersSince: '2026-09-28T00:17:00.000Z',
@@ -283,6 +308,20 @@ test('Owner admission re-reads incomplete GitHub inventories and accepts only co
       wait: async () => assert.fail('Impossible to admit more than 100 rows'),
     }), readCode('WEATHER_CADENCE_READ_METADATA_REJECTED'));
   }
+});
+
+test('The owner waits through the observed in-progress count lag without trusting a partial list', async () => {
+  const document = ownerHistory(ownerRetryRequest);
+  const incomplete = { ...document, total_count: 2 };
+  const waits = [];
+  let reads = 0;
+  assert.deepEqual(await readWeatherCadenceGithub({ ...readOptions, kind: 'owner-active-runs',
+    activeRunStatus: 'in_progress', waitForInProgress: true,
+    request: async () => readResponse(200, ++reads === 6 ? document : incomplete),
+    wait: async milliseconds => { waits.push(milliseconds); },
+  }), document);
+  assert.equal(reads, 6);
+  assert.deepEqual(waits, [1000, 2000, 5000, 10_000, 15_000]);
 });
 
 test('Recovery metadata reads only the exact first attempt and rejects a partial job inventory', async () => {
