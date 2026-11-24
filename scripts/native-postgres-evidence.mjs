@@ -2379,9 +2379,12 @@ export async function executeAssistantAfter598Native(){
 // upload survives a later national-only failure; a newer relevant negative does not.
 export async function decideAssistantAfter599Reuse(options){
   requireAssistantAfter599Output(); // FIRST: an unissued family never reads options.
+  let refusalStage='CURRENT_INPUT', onRefusal;
   try{
     assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
-    assert(Object.keys(options).every(key=>['env','get','readGit','getRuntime','getInput','decode'].includes(key)));
+    assert(Object.keys(options).every(key=>['env','get','readGit','getRuntime','getInput','decode','onRefusal'].includes(key)));
+    assert(options.onRefusal===undefined||typeof options.onRefusal==='function');
+    onRefusal=options.onRefusal;
     let {env=process.env,get,getRuntime=assistantPublic591Runtime,getInput=captureAssistantAfter599PgInput,decode=decodeCurrent586Artifact}=options;
     const deadline=performance.now()+60000,readGit=after599BoundedGit(options.readGit??git,deadline);
     get??=installed593Original591Reader({env});
@@ -2400,7 +2403,9 @@ export async function decideAssistantAfter599Reuse(options){
     assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
     assert(typeof current.branch==='string'&&current.branch.length>0);
     const nativeInput=verifyAssistantAfter599PgInput(await getInput({readGit}));
+    refusalStage='CURRENT_RUNTIME';
     const runtime=verifyAssistantPublic591Runtime(await getRuntime());
+    refusalStage='CURRENT_RUN';
     const repo='/repos/'+ORIGIN.repository,base=repo+'/actions';
     const running=await get(base+'/runs/'+current.run);
     assert.equal(running.id,current.run);assert.equal(running.run_attempt,1);assert.equal(running.head_sha,head);
@@ -2410,6 +2415,7 @@ export async function decideAssistantAfter599Reuse(options){
     const currentJob=one(currentJobs.jobs.filter(row=>row.name===JOB));
     assert.equal(currentJob.head_sha,head);assert.equal(currentJob.run_attempt,1);assert.equal(currentJob.run_id,current.run);
     assert(successful(one(currentJob.steps.filter(row=>row.name==='Validate source contracts and release governance'))));
+    refusalStage='ORIGIN_HISTORY';
     const query=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+new Date(Date.parse(running.created_at)-30*86400000).toISOString()});
     const listing=await get(base+'/workflows/validate-pull-request.yml/runs?'+query);
     assert(Number.isSafeInteger(listing.total_count)&&listing.total_count>=0);
@@ -2534,11 +2540,13 @@ export async function decideAssistantAfter599Reuse(options){
     const otherRunners=new Map();
     const activeHistory=new Map();
     for (const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)) {
+      refusalStage='ORIGIN_HISTORY';
       if (!await sameInput(row)) continue;
       // Only the later observation can clear an ongoing run. It cannot be an origin.
       if(row.status==='in_progress'){activeHistory.set(row.id,row);continue;}
       const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');
       if (await provedCurrentSkip(row,jobFor(row,jobs))) continue;
+      refusalStage='ORIGIN_RECEIPT';
       let candidate=await load(row,jobs);
       const locator=candidate.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND
         ?candidate.proof.nativePostgres.origin:null;
@@ -2555,6 +2563,7 @@ export async function decideAssistantAfter599Reuse(options){
       if (!isDeepStrictEqual(runtime,prior.runtime)) {
         // A verified actual success on another runner does not provide this run's evidence.
         // Search the same bounded history for an exactly matching original.
+        refusalStage='ORIGIN_RUNTIME_MISMATCH';
         assert(!locator,'A reused receipt must point to the current runtime');
         otherRunners.set(row.id,candidate.run);
         continue;
@@ -2562,8 +2571,10 @@ export async function decideAssistantAfter599Reuse(options){
       original=candidate;
       break;
     }
+    refusalStage='MATCHING_ORIGIN_MISSING';
     assert(original,'No authentic phase for this exact runtime');
     const prior=original.proof.nativePostgres;
+    refusalStage='LATER_HISTORY';
     const laterQuery=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+original.run.created_at});
     const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+laterQuery);assert(complete(later,'workflow_runs'));
     assert.equal(new Set(later.workflow_runs.map(row=>row.id)).size,later.total_count);
@@ -2599,6 +2610,7 @@ export async function decideAssistantAfter599Reuse(options){
       const pg=one(job.steps.filter(value=>value.name===STEP));assert(successful(pg));
     }
     // Fresh identity and independent origin metadata after the history walk.
+    refusalStage='FINAL_REOBSERVATION';
     verifyAssistantAfter599PgInput(nativeInput,await getInput({readGit}));
     verifyAssistantPublic591Runtime(runtime,await getRuntime());checkout();
     const finalRun=await get(base+'/runs/'+original.run.id);assert.deepEqual(finalRun,original.run);
@@ -2613,11 +2625,17 @@ export async function decideAssistantAfter599Reuse(options){
       origin:{run:original.run.id,attempt:1,head:original.run.head_sha,job:original.phase.job,artifactId:original.metadata.id,
         artifactDigest:original.metadata.digest,sourceTreeSha256:original.proof.sourceTreeSha256},
       eligibleForReuse:false,nativeInput,runtime,report:prior.report};
-  }catch{return null;}
+  }catch(error){
+    const reason=error?.message==='AFTER599_PG_REUSE_TIME_BOUND'?'READ_DEADLINE':refusalStage;
+    try{onRefusal?.(reason);}catch{} // Diagnostics never grant reuse or prevent the existing fallback.
+    return null;
+  }
 }
 
 export async function executeAssistantAfter599Native(){
-  const reused=await decideAssistantAfter599Reuse();
+  const reused=await decideAssistantAfter599Reuse({
+    onRefusal:reason=>console.log('AFTER599_PG_REUSE_NOT_ESTABLISHED '+reason),
+  });
   if(reused){await record(reused);return;}
   const identity=await assistantAfter599PhaseIdentity(); // Before environment/Git/native launch.
   const appSourceBefore=await accountErasureSourceIdentity();
