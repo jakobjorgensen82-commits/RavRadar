@@ -89,22 +89,23 @@ function fixture(kind = 'proof') {
   const jobs = { total_count: 1, jobs: [job] };
   const calls = [];
   let onPause;
-  let failNextJobRead = false;
+  let nextJobReadError;
   const getJson = async path => {
     calls.push(path);
     if (path === `${route}/artifacts?name=${name}&per_page=2`) return listing;
     if (path === `${route}/attempts/1`) return run;
     assert.equal(path, `${route}/attempts/1/jobs?per_page=100`);
-    if (failNextJobRead) {
-      failNextJobRead = false;
-      throw new Error('Synthetic job metadata timeout');
+    if (nextJobReadError) {
+      const error = nextJobReadError;
+      nextJobReadError = undefined;
+      throw error;
     }
     return jobs;
   };
   const find = () => findRawRotationArtifact({...context, getJson, pause: async () => onPause?.()});
   const recheck = expected => readRawRotationArtifactOnce({...context, getJson, ...expected});
   return { find, recheck, calls, run, job, jobs, artifact, listing, afterPause: callback => { onPause = callback; },
-    failNextJobRead: () => { failNextJobRead = true; } };
+    failNextJobRead: (error = new Error('Synthetic job metadata timeout')) => { nextJobReadError = error; } };
 }
 
 test('same-run proof and result come only from their exact completed upload steps', async () => {
@@ -169,6 +170,64 @@ test('foreign or ambiguous metadata cannot expose a download ID', async () => {
     assert.equal(found.status, 'HOLD');
     assert.equal(Object.hasOwn(found, 'artifactId'), false);
   }
+});
+
+test('the result waits for a same-run artifact publication to become consistently visible', async () => {
+  for (const lag of ['step', 'timestamp', 'job-inventory', 'artifact-inventory']) {
+    const subject = fixture('result');
+    const [upload] = subject.job.steps;
+    subject.job.status = 'completed';
+    subject.job.conclusion = 'success';
+    if (lag === 'step') subject.job.steps = [{ ...upload, status: 'in_progress', conclusion: null }];
+    if (lag === 'timestamp') subject.job.steps = [{ ...upload, completed_at: null }];
+    if (lag === 'job-inventory') subject.jobs.total_count++;
+    if (lag === 'artifact-inventory') {
+      subject.listing.total_count = 1;
+      subject.listing.artifacts = [];
+    }
+    subject.afterPause(() => {
+      subject.job.steps = [upload];
+      subject.jobs.total_count = 1;
+      subject.listing.artifacts = [subject.artifact];
+    });
+    assert.deepEqual(await subject.find(), { status: 'FOUND', artifactId: 14, digest });
+  }
+});
+
+test('result retries temporary metadata requests and refuses permission or contradictory publication evidence', async () => {
+  for (const error of [Object.assign(new Error('Temporary'), { statusCode: 503 }),
+    Object.assign(new Error('Timeout'), { name: 'TimeoutError' })]) {
+    const subject = fixture('result');
+    subject.failNextJobRead(error);
+    assert.deepEqual(await subject.find(), { status: 'FOUND', artifactId: 14, digest });
+    assert.equal(subject.calls.length, 6);
+  }
+  const forbidden = fixture('result');
+  forbidden.failNextJobRead(Object.assign(new Error('Forbidden'), { statusCode: 403 }));
+  assert.deepEqual(await forbidden.find(), { status: 'HOLD', reason: 'metadata-unavailable' });
+  assert.equal(forbidden.calls.length, 3);
+
+  for (const [change, reason] of [
+    [subject => { subject.job.steps[0].conclusion = 'skipped'; }, 'upload-not-successful'],
+    [subject => { subject.job.conclusion = 'failure'; subject.job.status = 'completed'; }, 'publisher-not-successful'],
+    [subject => { subject.artifact.workflow_run.head_sha = 'c'.repeat(40); }, 'artifact-identity-unproved'],
+    [subject => { subject.artifact.created_at = time(1); }, 'artifact-outside-upload-step'],
+    [subject => { subject.listing.artifacts.push({ ...subject.artifact, id: 91 }); }, 'artifact-not-unique'],
+  ]) {
+    const subject = fixture('result');
+    change(subject);
+    subject.afterPause(() => { throw new Error('Contradictory result should not be retried'); });
+    assert.deepEqual(await subject.find(), { status: 'HOLD', reason });
+  }
+});
+
+test('a result still awaiting successful publication is held at the existing deadline', async () => {
+  const subject = fixture('result');
+  subject.job.status = 'completed';
+  subject.job.conclusion = 'success';
+  subject.job.steps = [{ ...subject.job.steps[0], completed_at: null }];
+  assert.deepEqual(await subject.find(), { status: 'HOLD', reason: 'result-publication-incomplete' });
+  assert.equal(subject.calls.length, 180);
 });
 
 test('empty artifact listing polls to its fixed bound and reports a hold', async () => {

@@ -24,12 +24,23 @@ const MAX_ARTIFACT_BYTES = 16 * 1024;
 const MAX_RECEIPT_BYTES = 1024;
 const RECEIPT_FILES = Object.freeze({ proof: 'handoff.json', result: 'decision.json', 'saved-coverage': 'coverage.json' });
 const POLL_MS = 3000;
+const RETRYABLE_RESULT_OBSERVATIONS = new Set([
+  'artifact-inventory-incomplete', 'incomplete-jobs', 'result-publication-incomplete', 'metadata-temporarily-unavailable',
+]);
+const TEMPORARY_METADATA_HTTP = [429, 500, 502, 503, 504];
+const TEMPORARY_METADATA_CONNECTION = ['EAI_AGAIN', 'ECONNRESET', 'ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET'];
 const MISSING_PROOF_PRODUCER_POLL_INTERVAL = 10;
 const DEADLINE_MS = { proof: 15 * 60_000, 'observe-proof': 90_000, result: 180_000, 'saved-coverage': 30_000 };
 const positive = value => Number.isSafeInteger(value) && value > 0;
 const timestamp = value => typeof value === 'string' ? Date.parse(value) : NaN;
 const hold = reason => ({ status: 'HOLD', reason });
 const pending = () => ({ status: 'PENDING' });
+
+function temporaryMetadataRead(error) {
+  return TEMPORARY_METADATA_HTTP.includes(error?.statusCode)
+    || ['TimeoutError', 'AbortError'].includes(error?.name)
+    || TEMPORARY_METADATA_CONNECTION.includes(error?.cause?.code ?? error?.code);
+}
 
 function normalRun(run, { repositoryId, runId, attempt, head }) {
   return run?.id === runId && run.run_attempt === attempt && run.head_sha === head && run.head_branch === 'main'
@@ -58,14 +69,26 @@ function publicationStep(response, { kind, runId, attempt, head }) {
   if (!positive(job.id) || job.run_id !== runId || job.run_attempt !== attempt || job.head_sha !== head
       || job.head_branch !== 'main' || !Array.isArray(job.steps)) return hold('publisher-identity-unproved');
   if (!(job.status === 'in_progress' && job.conclusion === null)
-      && !(job.status === 'completed' && job.conclusion === 'success')) return hold('publisher-not-successful');
+      && !(job.status === 'completed' && job.conclusion === 'success')) {
+    if (result && job.conclusion === null && ['queued', 'pending', 'waiting', 'completed'].includes(job.status)) {
+      return hold('result-publication-incomplete');
+    }
+    return hold('publisher-not-successful');
+  }
 
   const saved = kind === 'saved-coverage';
   const uploadName = saved ? SAVED_UPLOAD : result ? RESULT_UPLOAD : PROOF_UPLOAD;
   const upload = successfulStep(job, uploadName);
   if (!upload) {
     const rows = job.steps.filter(step => step?.name === uploadName);
-    return job.status === 'completed' || rows.length > 1 || rows[0]?.status === 'completed'
+    const [row] = rows;
+    // GitHub can expose a finalized artifact before the upload step's conclusion
+    // or timestamps are visible. Poll again without admitting the artifact.
+    if (result && rows.length <= 1 && (!row
+      || (row.conclusion === null && ['queued', 'pending', 'in_progress', 'completed'].includes(row.status))
+      || (row.status === 'completed' && row.conclusion === 'success'
+        && (row.started_at == null || row.completed_at == null)))) return hold('result-publication-incomplete');
+    return job.status === 'completed' || rows.length > 1 || row?.status === 'completed'
       ? hold('upload-not-successful') : null;
   }
   if (result) return upload;
@@ -116,8 +139,12 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
   const attemptPath = `${runPath}/attempts/${attempt}`;
   try {
     const listing = await getJson(`${runPath}/artifacts?name=${name}&per_page=2`);
-    if (!Array.isArray(listing?.artifacts) || listing.total_count !== listing.artifacts.length
-        || listing.total_count > 1) return hold('artifact-not-unique');
+    if (!Array.isArray(listing?.artifacts) || listing.total_count > 1 || listing.artifacts.length > 1) {
+      return hold('artifact-not-unique');
+    }
+    if (listing.total_count !== listing.artifacts.length) {
+      return hold(kind === 'result' ? 'artifact-inventory-incomplete' : 'artifact-not-unique');
+    }
     if (!listing.total_count) {
       if (kind === 'proof' && inspectMissingProofProducer) {
         let response;
@@ -160,14 +187,15 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
       return hold('artifact-outside-upload-step');
     }
     return { status: 'FOUND', artifactId: artifact.id, digest: artifact.digest };
-  } catch {
-    return hold('metadata-unavailable');
+  } catch (error) {
+    return hold(kind === 'result' && temporaryMetadataRead(error) ? 'metadata-temporarily-unavailable' : 'metadata-unavailable');
   }
 }
 
 export async function findRawRotationArtifact({ pause = wait, signal, ...context } = {}) {
   if (!Object.hasOwn(DEADLINE_MS, context.kind)) return hold('invalid-context');
   const lookups = Math.ceil(DEADLINE_MS[context.kind] / POLL_MS);
+  let lastIncompleteObservation;
   try {
     for (let poll = 0; poll < lookups && !signal?.aborted; poll += 1) {
       if (poll) await pause(POLL_MS, undefined, { signal });
@@ -175,12 +203,14 @@ export async function findRawRotationArtifact({ pause = wait, signal, ...context
         ...context, inspectMissingProofProducer: poll % MISSING_PROOF_PRODUCER_POLL_INTERVAL === 0,
       });
       if (signal?.aborted) break;
-      if (finding.status !== 'PENDING') return finding;
+      if (finding.status === 'PENDING') continue;
+      if (context.kind !== 'result' || !RETRYABLE_RESULT_OBSERVATIONS.has(finding.reason)) return finding;
+      lastIncompleteObservation = finding;
     }
   } catch {
-    return hold('metadata-unavailable');
+    if (!signal?.aborted) return hold('metadata-unavailable');
   }
-  return hold('artifact-not-ready');
+  return lastIncompleteObservation ?? hold('artifact-not-ready');
 }
 
 // The finder already proved the artifact identity. Fetch its exact ZIP without
@@ -289,10 +319,14 @@ async function main(env, args) {
         headers: { Authorization: 'Bearer ' + env.GITHUB_TOKEN, Accept: 'application/vnd.github+json',
           'X-GitHub-Api-Version': '2026-03-10' },
       });
-      if (response.status !== 200) { await response.body?.cancel(); throw new Error('RAW_ARTIFACT_METADATA_HTTP'); }
+      if (response.status !== 200) {
+        await response.body?.cancel();
+        throw Object.assign(new Error('RAW_ARTIFACT_METADATA_HTTP'), { statusCode: response.status });
+      }
       return JSON.parse(await readBoundedPublicManifest(response));
     },
   });
+  if (finding.status !== 'FOUND') console.log('RAW_ROTATION_ARTIFACT_HOLD ' + kind + ' ' + finding.reason);
   await appendFile(env.GITHUB_OUTPUT, finding.status === 'FOUND'
     ? `artifact_status=found\nartifact_id=${finding.artifactId}\nartifact_digest=${finding.digest}\n`
     : `artifact_status=hold\nartifact_reason=${finding.reason}\n`);
