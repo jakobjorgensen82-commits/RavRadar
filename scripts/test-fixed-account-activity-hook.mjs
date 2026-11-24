@@ -14,6 +14,7 @@ import {
   isFixedActivityHookWriteOwner,
   isFixedActivityHookCatalogReadOwner,
   readFixedAccountActivityHookCatalog,
+  runFixedAccountActivityCatalogRead,
   runFixedAccountActivityHookOperation,
   isFixedActivityHookReadOwner,
   readFixedAccountActivityHook,
@@ -736,6 +737,41 @@ function nativeReceiptRows(state = 'UNARMED') {
     nativeCapturedAt:state === 'CAPTURED' ? '2026-11-22T12:00:02.000000Z' : null}];
   return rows;
 }
+
+test('normal catalogue read observes only the installed native receipt under its existing read owner', async () => {
+  const env = { ...hostedHookOwner('enable'), GITHUB_JOB: 'read-fixed-supabase-metadata',
+    RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: 'catalog-read' };
+  delete env.RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION;
+  let calls = 0;
+  let rows = nativeReceiptRows();
+  const fetchImpl = async (url, request) => {
+    calls++;
+    assert.equal(url, 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+    assert.equal(request.method, 'POST');
+    const body = JSON.parse(request.body);
+    assert.equal(body.read_only, true);
+    assert.match(body.query, /from public\.account_native_activity_receipt/);
+    return Response.json(rows, { status: 201 });
+  };
+  const read = overrides => runFixedAccountActivityCatalogRead({ env, accessToken: 'test', fetchImpl, ...overrides });
+  assert.deepEqual(await read({ env: { ...env, RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: 'enable' } }), { status: 'OWNER_REQUIRED' });
+  assert.equal(calls, 0);
+  for (const [fixture, status] of [
+    ['UNARMED', 'NATIVE_RECEIPT_UNARMED'],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED'],
+    ['CAPTURED', 'NATIVE_CAPTURE_OBSERVED'],
+  ]) {
+    rows = nativeReceiptRows(fixture);
+    assert.deepEqual(await read(), {
+      status, sourceBodyAndAclVerified: true, nativeCaptureObserved: fixture === 'CAPTURED',
+      authResponseObserved: false, activityEligibility: 'HOLD', coverageStartAuthority: false,
+      noticesEnabled: false, automaticDeletionEnabled: false,
+    });
+  }
+  rows = goodHookCatalog();
+  assert.deepEqual(await read(), { status: 'NATIVE_RECEIPT_REFUSED' });
+  assert.equal(calls, 4, 'one read per permitted attempt, with no further transport on refusal');
+});
 
 test('current enable requires the exact installed SQL80 receipt and never falls back to the old catalog', async () => {
   const invalid = [
