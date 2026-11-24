@@ -42,6 +42,10 @@ const sharing=sourceCommandsForChangedPaths(['scripts/forecast-share/handler.mjs
 assert(sharing.includes('node scripts/test-forecast-share-projection.mjs'));
 assert.equal(new Set(sharing).size,sharing.length);
 assert(!sharing.some(c=>/native-postgres|test-source-current-contracts/.test(c)));
+const nativeFixture='node --test scripts/test-native-postgres-evidence.mjs';
+assert.deepEqual(sourceCommandsForChangedPaths([],{includeNativeEvidenceFixture:true}),[nativeFixture]);
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/native-postgres-evidence.mjs'],
+  {includeNativeEvidenceFixture:true}),[nativeFixture]);
 assert(sourceCommandsForChangedPaths(['js/services/rav-assistant-public-help.js'])
   .includes('node --test scripts/test-assistant-ui-error-boundary.mjs'),
   'Public help-only changes must execute the normal whole UI caller contract');

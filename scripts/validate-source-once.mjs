@@ -39,7 +39,7 @@ export function buildSourceValidationPlan(scripts) {
   };
 }
 
-export function sourceCommandsForChangedPaths(paths){
+export function sourceCommandsForChangedPaths(paths,{includeNativeEvidenceFixture=false}={}){
   assert(Array.isArray(paths)&&paths.every(relative=>typeof relative==='string'));
   const commands=new Set();
   for(const relative of paths){
@@ -47,6 +47,7 @@ export function sourceCommandsForChangedPaths(paths){
     assert(target,'SOURCE_CHANGED_OWNER_REQUIRED: '+relative);
     for(const owner of target.owners)for(const command of owner.commands)commands.add(command);
   }
+  if(includeNativeEvidenceFixture)commands.add('node --test scripts/test-native-postgres-evidence.mjs');
   return [...commands];
 }
 
@@ -184,13 +185,17 @@ export function runSourceValidation(plan, { execute = executeCommand, log = cons
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    assert.ok(process.argv.length === 2 || (process.argv.length === 3 && process.argv[2] === '--plan'), 'Unsupported source option');
+    const option=process.argv[2];
+    assert.ok(process.argv.length===2 || (process.argv.length===3
+      && ['--plan','--with-native-evidence-fixture'].includes(option)), 'Unsupported source option');
     const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
     const plan = buildSourceValidationPlan(scripts);
-    const diff=changedSourcePaths(),changed=sourceCommandsForChangedPaths(diff.paths);
+    const diff=changedSourcePaths(),changed=sourceCommandsForChangedPaths(diff.paths,{
+      includeNativeEvidenceFixture:option==='--with-native-evidence-fixture',
+    });
     plan.remaining=[...new Set([...plan.remaining,...changed])]
       .filter(command=>command!==plan.gate&&!plan.preflight.includes(command));
-    if (process.argv[2] === '--plan') {
+    if (option === '--plan') {
       console.log(JSON.stringify({ criticalSourceGate: true, bindingPreflight: plan.preflight.length,
         criticalChecks: plan.remaining.length + 1, totalCommands: plan.preflight.length + plan.remaining.length + 1,
         changedOwnerPaths:diff.paths.length,versionOnlyPaths:diff.versionOnly.length,

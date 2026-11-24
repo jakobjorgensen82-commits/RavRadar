@@ -195,7 +195,7 @@ export function verifyCurrentSourceWorkflow(value){
     'node scripts/test-candidate-g-rollback-public-stage.mjs',
   ];
   const governance=run('Validate source contracts and release governance');
-  // Already-issued receipts still refer to workflows with the old log probes.
+  // Issued receipts can still include the old log probes and retired rollback fixtures.
   const historicalGovernance=[
     sourceValidation,
     'node scripts/test-fixed-public-rate-log-20261013.mjs',
@@ -203,11 +203,17 @@ export function verifyCurrentSourceWorkflow(value){
     'node scripts/test-fixed-public-rate-console-log-20261015.mjs',
     ...rollbackValidation,
   ].join(' && ');
-  if(historicalNational||governance!==[sourceValidation,...rollbackValidation].join(' && ')){
+  const currentGovernance=sourceValidation+' -- --with-native-evidence-fixture';
+  const fixtureInSource=!historicalNational&&[currentGovernance,
+    [currentGovernance,...rollbackValidation].join(' && '),
+  ].includes(governance);
+  if(!fixtureInSource&&(historicalNational||governance!==[sourceValidation,...rollbackValidation].join(' && '))){
     assert.equal(governance,historicalGovernance);
   }
   assert.equal(run('Validate native PostgreSQL checkpoint CAS on artificial data only'),
-    'set -euo pipefail node --test scripts/test-native-postgres-evidence.mjs node scripts/native-postgres-evidence.mjs');
+    fixtureInSource
+      ?'set -euo pipefail node scripts/native-postgres-evidence.mjs'
+      :'set -euo pipefail node --test scripts/test-native-postgres-evidence.mjs node scripts/native-postgres-evidence.mjs');
   if(historicalNational)assert.equal(run(HISTORICAL_NATIONAL_STEP),'node scripts/national584-source-evidence.mjs');
   for(const [name,markers] of [
     ['Upload independently completed native586 PostgreSQL phase',[
