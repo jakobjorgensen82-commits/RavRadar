@@ -591,6 +591,9 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/test-copernicus-bounded-retry-4.0.289.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test-dmi-bulk-supervised.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test-dmi-supervisor-parent-loss.py':COMMANDS.dmiCollectionRecovery,
+  'scripts/test-dmi-native-chain-continuity.py':[
+    'python -B scripts/test-dmi-native-chain-continuity.py FirstTurnMarineCatalogueTests',
+  ],
   'scripts/test-dmi-native-provenance.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test_dmi_wave_bootstrap_update_integration.py':[
     'python -B scripts/test_dmi_wave_bootstrap_update_integration.py',

@@ -178,7 +178,9 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
 
         def execute(*, at=2235.5, name=collection, mode="native", offers=None, error=None,
                     time_available=True, bytes_left=4096, configuration="NOT_CONFIGURED",
-                    covered=None, previous_attempt=False, scalar_plan=None, initial_catalogues=None):
+                    covered=None, previous_attempt=False, scalar_plan=None, initial_catalogues=None,
+                    time_after_catalogue=None, expected_reason=None):
+            reserve_checks = iter((time_available, time_available if time_after_catalogue is None else time_after_catalogue))
             original_catalogues = catalogues if initial_catalogues is None else initial_catalogues
             context = dict(vars(producer), allow_first_turn_catalogue=True, collection_turn=mode,
                            collection=name, prefetched_marine=copy.deepcopy(original_catalogues),
@@ -192,7 +194,7 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                            current_part_zone_ids={ZONE["id"]}, active_operational_zones=[ZONE],
                            global_current_planning_pairs=set(scheduling_pairs if covered is None else covered),
                            qualified_covered_current_pair_keys=set(), coastal_part_targets=targets,
-                           checkpoint_controller=types.SimpleNamespace(can_start_asset=lambda *_args, **_opts: time_available),
+                           checkpoint_controller=types.SimpleNamespace(can_start_asset=lambda *_args, **_opts: next(reserve_checks)),
                            regional_proxy_configuration_status=configuration,
                            reserve_for_pending_critical=90.0, budget={"bytes": producer.MAX_DOWNLOAD_BYTES - bytes_left})
             diagnostics = context["result"]["diagnostics"]
@@ -207,6 +209,7 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                 patch.object(producer.time, "monotonic", return_value=at),
                 patch.object(producer, "asset_download_work_deadline", side_effect=lambda deadline: nullcontext()) as limit,
                 patch.object(producer, "request_json", return_value=offers, side_effect=error) as request,
+                patch.object(producer, "progress") as progress,
             ):
                 if isinstance(error, BaseException) and not isinstance(error, Exception):
                     with self.assertRaises(type(error)):
@@ -222,6 +225,8 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                 self.assertEqual(diagnostics["stacByCollection"][key], stats)
                 self.assertEqual(context["research_replay_catalog"][key], {"modelRun": run, "assets": assets})
             self.assertEqual(limit.call_count, request.call_count)
+            if expected_reason is not None:
+                progress.assert_called_once_with(f"DMI_FIRST_MARINE_TAIL_CATALOGUE {name} {expected_reason}")
             return context["prefetched_marine"], request.call_count
 
         new_page = page(collection, (old_model, 121), (next_model, 121))
@@ -332,19 +337,42 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
             ({"at": 1356.0, "name": "dkss_idw", "offers": page("dkss_idw", (old_model, 121))}, 1),
             ({"offers": page(collection, (old_model, 121), (next_model, 116))}, 1),
             ({"offers": page(collection, (old_model, 121), (future_model, 121))}, 1),
-            ({"offers": new_page, "time_available": False}, 0),
+            ({"offers": new_page, "time_available": False, "expected_reason": "RESERVE_BEFORE"}, 0),
+            ({"offers": new_page, "time_after_catalogue": False, "expected_reason": "RESERVE_AFTER"}, 1),
+            ({"offers": {**new_page, "numberMatched": new_page["numberMatched"] + 1},
+              "expected_reason": "CATALOGUE_INCOMPLETE"}, 1),
             ({"offers": new_page, "bytes_left": 1}, 1),
             ({"offers": new_page, "previous_attempt": True}, 0),
             ({"offers": new_page, "mode": "maintenance"}, 0),
             ({"name": "dkss_lf", "offers": new_page, "configuration": "CONFIGURED"}, 0),
             ({"offers": new_page, "covered": {("TEST", hour) for hour in hours}}, 0),
-            ({"error": producer.AssetDownloadRuntimeBudget("synthetic bounded metadata timeout")}, 1),
+            ({"error": producer.AssetDownloadRuntimeBudget("synthetic bounded metadata timeout"),
+              "expected_reason": "CATALOGUE_TIMEOUT"}, 1),
             ({"error": KeyboardInterrupt()}, 1),
         ):
             with self.subTest(options=tuple(options)):
                 unchanged, calls = execute(**options)
                 self.assertEqual(unchanged, catalogues)
                 self.assertEqual(calls, expected_calls)
+
+        original_ledger_builder = producer.build_current_operational_ledger_result
+
+        def refuse_current_evidence(reason):
+            def build(result, targets, reference, offered_catalogues, proofs):
+                outcome = original_ledger_builder(result, targets, reference, offered_catalogues, proofs)
+                if offered_catalogues[collection][0] != producer.canonical_time(old_model):
+                    if reason == "EVIDENCE_TIMEOUT":
+                        raise producer.AssetDownloadRuntimeBudget("synthetic expiry during proof comparison")
+                    outcome.attestation["verifiedPairSources"] = []
+                return outcome
+            with patch.object(producer, "build_current_operational_ledger_result", side_effect=build):
+                unchanged, calls = execute(offers=new_page, expected_reason=reason)
+            self.assertEqual(calls, 1)
+            self.assertEqual(unchanged, catalogues)
+
+        for reason in ("EVIDENCE_TIMEOUT", "EVIDENCE_NOT_PRESERVED"):
+            with self.subTest(reason=reason):
+                refuse_current_evidence(reason)
 
 
 class ComponentContinuityTests(unittest.TestCase):
