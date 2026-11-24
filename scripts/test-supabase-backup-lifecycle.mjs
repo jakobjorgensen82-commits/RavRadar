@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {verifyDatabaseBackupTrigger,requireNoUnresolvedDatabaseCapture,databaseRestoreCommitment,
   databaseReserveReceiptReady,DATABASE_BACKUP_INTERVAL_MS} from './supabase-backup-lifecycle.mjs';
-import {runAutonomousDatabaseBackup,runCurrentDatabaseArchiveRestore} from './run-autonomous-supabase-backup.mjs';
+import {databaseBackupWorkflowOutputs,runAutonomousDatabaseBackup,runCurrentDatabaseArchiveRestore} from './run-autonomous-supabase-backup.mjs';
 
 const repo={id:1306858343,full_name:'jakobjorgensen82-commits/RavRadar'},head='a'.repeat(40),index='b'.repeat(64);
 const env={GITHUB_REPOSITORY:repo.full_name,GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',GITHUB_RUN_ID:'200',
@@ -64,6 +64,119 @@ test('unresolved capture or receipt writer stops a fresh action; authenticated o
   current.restoreRunIds=[];step.conclusion='skipped';assert.doesNotThrow(()=>requireNoUnresolvedDatabaseCapture(current,{env,read}));
   run.run_attempt=2;assert.throws(()=>requireNoUnresolvedDatabaseCapture(current,{env,read}),{code:'DATABASE_BACKUP_CAPTURE_ATTEMPT_UNKNOWN'});
   data.total_count=2;assert.throws(()=>requireNoUnresolvedDatabaseCapture(current,{env,read}),{code:'DATABASE_BACKUP_CAPTURE_HISTORY_BOUND'});
+});
+test('a due backup that loses its weather window during setup leaves exact proof of no private access', async () => {
+  const source=fixture();
+  let clock=Date.parse('2026-11-10T03:44:00Z'), privateCalls=0;
+  const current={
+    indexSha256:index, remoteIndexAuthenticated:true, restoreVerified:true, rotationPending:false, rotationHeld:false,
+    completedAt:new Date(clock-DATABASE_BACKUP_INTERVAL_MS).toISOString(), context:{runId:'90'}, usedBytes:70_000_000,
+  };
+  const dependencies={
+    env, now:()=>clock, readGithub:source.read, requireSettled:()=>{},
+    inspectCurrent:async()=>{privateCalls++;return current;},
+    runHosted:()=>{privateCalls++;},
+  };
+  const plan=await runAutonomousDatabaseBackup({phase:'plan'},dependencies);
+  assert.equal(plan.action,'capture');
+  assert.equal(privateCalls,2);
+  clock+=1000;
+  const execute=await runAutonomousDatabaseBackup({phase:'execute'},dependencies);
+  assert.equal(execute.status,'DATABASE_BACKUP_SKIPPED_ORIGINAL_WEATHER_WINDOW');
+  assert.equal(privateCalls,2);
+  assert.equal(databaseBackupWorkflowOutputs('execute',execute),'no_private_access=true\n');
+  assert.equal(databaseBackupWorkflowOutputs('execute',{...execute,privateAccessStarted:true}),'');
+  assert.equal(databaseBackupWorkflowOutputs('execute',{...execute,status:'OTHER'}),'');
+
+  const run={
+    id:150, path:'.github/workflows/maintain-admin-document-history.yml', run_attempt:1, repository:repo, head_repository:repo,
+    head_branch:'main', head_sha:head, event:'workflow_dispatch', actor:{login:'github-actions[bot]'},
+    status:'completed', conclusion:'success',
+  };
+  const job={
+    name:'Maintain one due private database backup after document history', run_id:150, run_attempt:1,
+    head_sha:head, status:'completed', conclusion:'success',
+    steps:[
+      {name:'Capture private Supabase database', number:9, status:'completed', conclusion:'success'},
+      {name:'Confirm backup stopped before private access', number:10, status:'completed', conclusion:'success'},
+    ],
+  };
+  const inspect=({run,job})=>requireNoUnresolvedDatabaseCapture(current,{
+    env,
+    read:path=>path.startsWith('workflows/maintain-admin-document-history.yml')?{total_count:1,workflow_runs:[run]}
+      :path.startsWith('workflows/')?{total_count:0,workflow_runs:[]}:{total_count:1,jobs:[job]},
+  });
+  assert.doesNotThrow(()=>inspect({run,job}));
+  for(const alter of [
+    ({run})=>{run.actor.login='somebody-else';},
+    ({job})=>{job.name='Some other job';},
+    ({job})=>{job.run_attempt=2;},
+    ({job})=>{job.head_sha='c'.repeat(40);},
+    ({job})=>{job.steps.pop();},
+    ({job})=>{job.steps.push({...job.steps[1],number:11});},
+    ({job})=>{job.steps[1].number=8;},
+    ({job})=>{job.steps[1].conclusion='skipped';},
+    ({job})=>{job.steps[0].conclusion='failure';},
+  ]){
+    const invalid=structuredClone({run,job});
+    alter(invalid);
+    assert.throws(()=>inspect(invalid),{code:'DATABASE_BACKUP_CAPTURE_OUTCOME_UNRESOLVED'});
+  }
+  const workflow=fs.readFileSync(new URL('../.github/workflows/maintain-admin-document-history.yml',import.meta.url),'utf8');
+  assert.match(workflow,/id: backup-execute[\s\S]*--execute[\s\S]*- name: Confirm backup stopped before private access\s+if: steps\.backup-execute\.outputs\.no_private_access == 'true'/);
+});
+test('manual archive execution blocks when unresolved while the same job positively skips capture on a diagnosis', () => {
+  const current={completedAt:'2026-11-01T00:00:00.000Z',context:{runId:'90'},restoreRunIds:[]};
+  const run={
+    id:150, path:'.github/workflows/backup-supabase-database.yml', run_attempt:1, repository:repo, head_repository:repo,
+    head_branch:'main', head_sha:head, event:'workflow_dispatch', status:'completed', conclusion:'failure',
+  };
+  const job={
+    name:'supabase-database-backup', run_id:150, run_attempt:1, head_sha:head, status:'completed', conclusion:'failure',
+    steps:[
+      {name:'Check private bucket before capture-only CLI setup', number:8, status:'completed', conclusion:'success'},
+      {name:'Set up the already used pinned Supabase CLI only for capture', number:9, status:'completed', conclusion:'success'},
+      {name:'Run only the fixed backup operation', number:10, status:'completed', conclusion:'failure'},
+    ],
+  };
+  const inspect=({run,job})=>requireNoUnresolvedDatabaseCapture(current,{
+    env,
+    read:path=>path.startsWith('workflows/backup-supabase-database.yml')?{total_count:1,workflow_runs:[run]}
+      :path.startsWith('workflows/')?{total_count:0,workflow_runs:[]}:{total_count:1,jobs:[job]},
+  });
+  const unresolved={code:'DATABASE_BACKUP_CAPTURE_OUTCOME_UNRESOLVED'};
+  assert.throws(()=>inspect({run,job}),unresolved);
+  job.steps[2].conclusion='success';
+  assert.throws(()=>inspect({run,job}),unresolved);
+  job.steps[2].conclusion='skipped';
+  assert.doesNotThrow(()=>inspect({run,job}));
+
+  job.steps[0].conclusion='skipped';
+  job.steps[1].conclusion='skipped';
+  job.steps[2].conclusion='success';
+  assert.doesNotThrow(()=>inspect({run,job}));
+  job.steps[2].conclusion='failure';
+  assert.doesNotThrow(()=>inspect({run,job}));
+  for(const alter of [
+    ({run})=>{run.head_branch='other';},
+    ({run})=>{run.conclusion=null;},
+    ({run})=>{run.conclusion='unknown';},
+    ({job})=>{job.name='Some other job';},
+    ({job})=>{job.run_id=149;},
+    ({job})=>{job.run_attempt=2;},
+    ({job})=>{job.head_sha='c'.repeat(40);},
+    ({job})=>{job.conclusion=null;},
+    ({job})=>{job.conclusion='unknown';},
+    ({job})=>{job.steps.splice(1,1);},
+    ({job})=>{job.steps.push({...job.steps[0]});},
+    ({job})=>{job.steps[1].number=7;},
+    ({job})=>{job.steps[1].conclusion='success';},
+    ({job})=>{job.steps[2].conclusion=null;},
+  ]){
+    const invalid=structuredClone({run,job});
+    alter(invalid);
+    assert.throws(()=>inspect(invalid),unresolved);
+  }
 });
 test('normal coordinator is disabled before IO, restores before rotation and capture, and never calls a held action complete',async()=>{
   let clock=Date.parse('2026-11-10T03:10:00Z'),captures=0,restores=0,rotations=0,receipts=0,preflights=0;
