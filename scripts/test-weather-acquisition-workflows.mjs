@@ -30,20 +30,20 @@ function step(source, name) {
   return found[0];
 }
 
-test('verified RAW handoffs use the same authenticated GitHub API for discovery and download', () => {
+test('verified RAW handoffs use the exact ID and digest without listing artifacts again', () => {
   const current = read('.github/workflows/run-current-weather-once.yml');
-  for (const [workflow, name, finder] of [
-    [current, 'Download the verified RAW rotation handoff', 'raw-proof'],
-    [actualNormalWorkflow, 'Download the immutable RAW rotation decision', 'raw-rotation-decision-artifact'],
-    [current, 'Download the verified DMI RAW coverage receipt', 'saved-coverage'],
+  for (const [workflow, name, finder, kind] of [
+    [current, 'Download the verified RAW rotation handoff', 'raw-proof', 'proof'],
+    [actualNormalWorkflow, 'Download the immutable RAW rotation decision', 'raw-rotation-decision-artifact', 'result'],
+    [current, 'Download the verified DMI RAW coverage receipt', 'saved-coverage', 'saved-coverage'],
   ]) {
     const download = step(workflow, name);
     assert.ok(download.includes(`steps.${finder}.outputs.artifact_status == 'found'`), name);
-    assert.ok(download.includes(`artifact-ids: \${{ steps.${finder}.outputs.artifact_id }}`), name);
-    assert.ok(download.includes('github-token: ${{ github.token }}'), name);
-    assert.ok(download.includes('repository: ${{ github.repository }}'), name);
-    assert.ok(download.includes('run-id: ${{ github.run_id }}'), name);
-    assert.match(download, /^          digest-mismatch: error$/m, name);
+    assert.ok(download.includes(`RAW_ROTATION_ARTIFACT_ID: \${{ steps.${finder}.outputs.artifact_id }}`), name);
+    assert.ok(download.includes(`RAW_ROTATION_ARTIFACT_DIGEST: \${{ steps.${finder}.outputs.artifact_digest }}`), name);
+    assert.ok(download.includes('GITHUB_TOKEN: ${{ github.token }}'), name);
+    assert.ok(download.includes(`run: node scripts/find-raw-rotation-artifact.mjs --download-${kind}`), name);
+    assert.doesNotMatch(download, /actions\/download-artifact|continue-on-error/, name);
   }
 });
 

@@ -478,3 +478,6 @@ oneoff eller cron på lokalt testbevis. Fuld artifactgate, ingen tab på
 identiske steder/timer, central CAS, R2, Pages og synlig prognose skal
 måles, før produktionseffekt eller stabil drift påstås. Hele projektets
 resterende dækningsproblemer er ikke løst af denne rettelse.
+## 24. november – hent RAW-kvitteringer direkte på det verificerede ID
+
+Kørsel 384 fandt den aktuelle 503-byte RAW-kvittering, men download-actionens nye søgning fandt ingen af de angivne ID'er. Den samme kvittering kunne hentes direkte på ID, og ZIP-indholdet matchede registreret SHA-256. Brug direkte hentning for de tre almindelige RAW-kvitteringer og kontrollér ZIP-hash, størrelse og det forventede medlemsnavn før installation i runnerens egen mappe. Det eksisterende bevis for kørsel, forsøg og udgiver samt efterfølgende læse- og sletteværn gælder fortsat. Første almindelige kørsel på den nye kode skal bekræfte hele overførslen.
