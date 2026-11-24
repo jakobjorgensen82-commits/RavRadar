@@ -602,3 +602,7 @@ og den enkelte bestilling. Producenten og læseren af kildebeviser samt
 deres databasebeviser prøves, når deres egne kontrolinput er berørt.
 Uafhængig gennemgang og de eksisterende krav for ændringer i tilladelser,
 workflow eller beskyttede input gælder fortsat.
+
+Den korte vej giver den hele planlæggerprøve op til otte minutter.
+I den fulde kontrol #1694 bestod den efter 314 sekunder. Det tidligere
+maksimum på 300 sekunder kunne afbryde samme prøve på den korte vej.

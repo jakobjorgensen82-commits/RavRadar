@@ -334,6 +334,8 @@ export async function coordinateTargetedSourceProducer(){
     clean(head);
     const start=performance.now(),result=await new Promise(resolve=>{
       let error=null;
+      // The whole planner test can exceed the usual five-minute limit.
+      const timeout=command==='node --test scripts/test-source-current-contracts.mjs'?480_000:300_000;
       const localRestoreEnvironment=command===LOCAL_RESTORE_SELF_TEST
         ?Object.fromEntries(LOCAL_RESTORE_ENVIRONMENT.filter(key=>typeof env[key]==='string').map(key=>[key,env[key]]))
         :undefined;
@@ -341,7 +343,7 @@ export async function coordinateTargetedSourceProducer(){
         ?ownedCacheNativeInvocation(command,ownedCacheNative)
         :{program:process.execPath,args:command.split(' ').slice(1),env:localRestoreEnvironment};
       const child=spawn(invocation.program,invocation.args,
-        {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000,env:invocation.env});
+        {cwd:ROOT,stdio:'inherit',shell:false,timeout,env:invocation.env});
       child.once('error',value=>{error=value;});
       child.once('close',(status,signal)=>resolve({status,signal,error}));
     });
