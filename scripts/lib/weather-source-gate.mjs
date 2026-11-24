@@ -1,3 +1,4 @@
+import { setTimeout as wait } from 'node:timers/promises';
 import { sourceTreeProofArtifactName } from './source-tree-content.mjs';
 
 // Cache entries and artifacts are locators. GitHub's immutable job/step
@@ -161,7 +162,7 @@ export function sourceGateRecord(env, conclusion, sourceTreeSha256) {
   };
 }
 
-export async function inspectLaterMainEvidence({ env, proofTime, record, getJson }) {
+export async function inspectLaterMainEvidence({ env, proofTime, record, getJson }, awaited) {
   const runs = [];
   for (const [producerPath, historyProducer] of Object.entries(SOURCE_GATE_PRODUCERS)) {
     let completeHistory = false;
@@ -187,9 +188,18 @@ export async function inspectLaterMainEvidence({ env, proofTime, record, getJson
     }
     if (!completeHistory) return required('source-history-limit');
   }
+  if (awaited?.runId) {
+    const known = runs.filter(({ item }) => item.id === awaited.runId);
+    if (known.length !== 1 || known[0].item.run_attempt !== awaited.runAttempt
+        || known[0].producerPath !== awaited.producerPath) return required('later-source-inspection-changed');
+  }
   const newer = [];
   for (const candidate of runs) {
     const { item } = candidate;
+    if (item.id === awaited?.runId) {
+      newer.push(candidate);
+      continue;
+    }
     if (String(item.id) === String(env.GITHUB_RUN_ID) || String(item.id) === record.runId
         || item.conclusion === 'success') continue;
     const updatedAt = Date.parse(item.updated_at);
@@ -217,16 +227,52 @@ export async function inspectLaterMainEvidence({ env, proofTime, record, getJson
     });
     if (later.reason) return required(`later-${later.reason}`);
     if (later.ranProducerJobWithoutGate) return required('later-source-evidence-missing');
+    if (item.id === awaited?.runId) {
+      const same = later.matches.filter(({ job, step }) => job.id === awaited.jobId
+        && step.number === awaited.stepNumber && step.name === awaited.stepName);
+      if (same.length !== 1) return required('later-source-inspection-changed');
+      const [{ step }] = same;
+      if (step.status === 'completed') {
+        const completedAt = Date.parse(step.completed_at);
+        if (!Number.isFinite(completedAt) || completedAt < proofTime) return required('later-source-time-unknown');
+        if (!['success', 'skipped'].includes(step.conclusion)) return required('later-source-not-green');
+      } else if (step.conclusion !== null) return required('later-source-inspection-changed');
+    }
     for (const match of later.matches) {
-      const step = match.step;
+      const { job, step } = match;
       if (step.conclusion === 'skipped') continue;
-      if (step.status !== 'completed') return required('later-source-unresolved');
+      if (step.status !== 'completed') {
+        if (awaited) {
+          if (!validPositiveInteger(job.id) || !validPositiveInteger(step.number) || step.conclusion !== null
+              || (awaited.runId && (item.id !== awaited.runId || job.id !== awaited.jobId
+                || step.number !== awaited.stepNumber || step.name !== awaited.stepName))) {
+            return required('later-source-inspection-changed');
+          }
+          Object.assign(awaited, { runId: item.id, runAttempt: item.run_attempt, producerPath,
+            jobId: job.id, stepNumber: step.number, stepName: step.name });
+        }
+        return required('later-source-unresolved');
+      }
       const completedAt = Date.parse(step.completed_at);
       if (!Number.isFinite(completedAt)) return required('later-source-time-unknown');
       if (completedAt >= proofTime && step.conclusion !== 'success') return required('later-source-not-green');
     }
   }
   return null;
+}
+
+export async function finishLaterMainSourceInspection(input, pause = wait) {
+  const latestRecheck = performance.now() + 55_000;
+  const awaited = {};
+  let evidence = await inspectLaterMainEvidence(input, awaited);
+  // Give a known unfinished gate time to settle before issuing a receipt.
+  // Use the caller's existing request and time budget for every observation.
+  for (const delayMs of [10_000, 15_000, 25_000]) {
+    if (evidence?.reason !== 'later-source-unresolved' || performance.now() + delayMs >= latestRecheck) break;
+    await pause(delayMs);
+    evidence = await inspectLaterMainEvidence(input, awaited);
+  }
+  return evidence;
 }
 
 export async function decideSourceGate(record, env, getJson, { sourceTreeSha256 } = {}) {

@@ -2458,8 +2458,10 @@ export async function decideAssistantAfter599Reuse(options){
       if(pg.conclusion!=='skipped')return false;
       // En normal inaktiv PG-fase er ingen ny SQL-origin eller kildekvalifikation.
       const terminalSourceFailure=row.conclusion==='failure'&&job.conclusion==='failure';
+      const terminalCancellation=row.conclusion==='cancelled'&&job.conclusion==='cancelled';
+      const terminalSourceStop=terminalSourceFailure||terminalCancellation;
       assert.equal(row.status,'completed');assert.equal(row.run_attempt,1);
-      assert(terminalSourceFailure||(successful(row)&&successful(job)));
+      assert(terminalSourceStop||(successful(row)&&successful(job)));
       const run=await get(base+'/runs/'+row.id);
       for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(run[key],row[key]);
       assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
@@ -2470,24 +2472,29 @@ export async function decideAssistantAfter599Reuse(options){
       assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
       const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
       assert(hasDependencyOnlySourceSetup(workflow),'CURRENT_SOURCE_WORKFLOW_REQUIRED');
-      if(!terminalSourceFailure){verifyTargetedSourceStepShape(job,workflow);return true;}
+      if(terminalCancellation){
+        const currentWorkflow=readGit(['cat-file','blob',head+':'+WORKFLOW]);
+        assert(Buffer.from(raw).equals(Buffer.from(currentWorkflow)),'CANCELLED_SETUP_WORKFLOW_CHANGED');
+      }
+      if(!terminalSourceStop){verifyTargetedSourceStepShape(job,workflow);return true;}
       const {stepNames,nativeUploadNumber}=verifyCurrentSourceWorkflow(workflow);
       const steps=job.steps.slice(0,stepNames.length);
       assert.deepEqual(steps.map(step=>[step.name,step.number]),stepNames.map((name,index)=>[name,index+1]));
-      const sourceIndex=steps.findIndex(step=>step.conclusion==='failure');
+      const sourceIndex=steps.findIndex(step=>step.conclusion===row.conclusion);
       const source=steps[sourceIndex];
-      assert(source?.name==='Build deterministic source-tree content identity'
-        ||source?.name==='Validate source contracts and release governance');
+      assert(terminalCancellation?source?.name==='Install source-gate dependencies'
+        :source?.name==='Build deterministic source-tree content identity'
+          ||source?.name==='Validate source contracts and release governance');
       assert(sourceIndex<nativeUploadNumber-2);
       assert.equal(steps[nativeUploadNumber-2],pg);
       assert.equal(steps[nativeUploadNumber-1].name,CURRENT586_PHASE_UPLOAD);
       assert.equal(source.status,'completed');
-      const failedAt=Date.parse(source.completed_at);
-      assert(Date.parse(source.started_at)<=failedAt);
+      const stoppedAt=Date.parse(source.completed_at);
+      assert(Date.parse(source.started_at)<=stoppedAt);
       const prefix=steps.slice(0,sourceIndex);
       assert(prefix.every(successful));
       assert(steps.slice(sourceIndex+1).every(step=>step.status==='completed'&&step.conclusion==='skipped'
-        &&step.started_at===step.completed_at&&Date.parse(step.started_at)>=failedAt));
+        &&step.started_at===step.completed_at&&Date.parse(step.started_at)>=stoppedAt));
       const cleanupNames=new Set(['Complete job',...prefix.map(step=>'Post '+step.name)]);
       assert(job.steps.slice(stepNames.length).every(step=>step.number>stepNames.length&&cleanupNames.delete(step.name)
         &&(successful(step)||(step.status==='completed'&&step.conclusion==='skipped'))));

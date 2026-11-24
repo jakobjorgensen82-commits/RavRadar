@@ -2900,6 +2900,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       const fetches=[];
       let recovered=false,historyCaptures=0;
       if(missingHistory){laterRun.id=active.id+1;laterRun.head_sha='b'.repeat(40);}
+      if(mutate.changedCancelledSetup)laterRun.head_sha='b'.repeat(40);
       const blockedRun={...copy(origin),id:origin.id+1,head_sha:actualHead};
       const ordinaryJobsFor=r=>({total_count:1,jobs:[{id:r.id+1000,name:JOB,run_id:r.id,run_attempt:1,head_sha:r.head_sha,
         status:'completed',conclusion:'failure',steps:Array.from({length:17},(_,i)=>({number:i+1,
@@ -3030,6 +3031,9 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
           if(missingHistory&&args[0]==='cat-file'&&args[2]===laterRun.head_sha+':'+WORKFLOW){
             assert(recovered);return Buffer.from(workflow);
           }
+          if(mutate.changedCancelledSetup&&args[0]==='cat-file'&&args[2]===laterRun.head_sha+':'+WORKFLOW)
+            return Buffer.from(workflow.replace('      - name: Install source-gate dependencies\n',
+              '      - name: Install source-gate dependencies\n        shell: sh\n'));
           if(mutate.skippedWorkflow&&args[0]==='cat-file'&&args[2]===actualHead+':'+WORKFLOW)
             return Buffer.from(workflow.replace('  contents: read','  contents: write'));
           if(args[0]==='ls-tree'||args[0]==='cat-file'&&args[1]==='blob')return execFileSync('git',args);
@@ -3104,6 +3108,35 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       }).options),null,'fully skipped suffix cannot qualify a setup failure');
       for(const key of ['skippedFreshHead','currentSourceFailure'])
         assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({terminalSourceFailure,mutate:{[key]:true}}).options),null,key);
+    });
+    await t.test('after599 bevarer kvitteringen efter verificeret afbrudt kildeopsætning',async()=>{
+      const cancelled=({step='Install source-gate dependencies',mutate,change}={})=>makeAfter599Fixture({
+        terminalSourceFailure:step,mutate,
+        skippedFault:({run,job})=>{
+          run.conclusion=job.conclusion='cancelled';
+          job.steps.find(value=>value.name===step).conclusion='cancelled';
+          change?.(run,job);
+        },
+      });
+      const fixture=cancelled();
+      const receipt=await native.decideAssistantAfter599Reuse(fixture.options);
+      assert.equal(receipt?.origin.run,originRun.id);
+      assert.equal(receipt.executedInThisRun,false);
+      const route='/runs/'+fixture.skippedRun.id;
+      assert.equal(fixture.calls.filter(value=>value.endsWith(route)).length,2);
+      assert(!fixture.calls.some(value=>value.includes(route+'/artifacts')));
+
+      for(const [label,options] of [
+        ['later stop',{step:sourceStep}],
+        ['changed setup workflow',{mutate:{changedCancelledSetup:true}}],
+        ['unknown retry',{change:run=>{run.run_attempt=2;}}],
+        ['mismatched job conclusion',{change:(_run,job)=>{job.conclusion='failure';}}],
+        ['native ran',{change:(_run,job)=>{job.steps.find(step=>step.name===STEP).conclusion='success';}}],
+        ['upload unknown',{change:(_run,job)=>{job.steps.find(step=>step.name===CURRENT586_PHASE_UPLOAD).status='in_progress';}}],
+        ['current source failed',{mutate:{currentSourceFailure:true}}],
+      ]){
+        assert.equal(await native.decideAssistantAfter599Reuse(cancelled(options).options),null,label);
+      }
     });
     await t.test('after599 beholder ægte oprindelse når anden PR kun kører halen efter bevist native-upload',async()=>{
       for(const activeTail of ['earlier','later']){

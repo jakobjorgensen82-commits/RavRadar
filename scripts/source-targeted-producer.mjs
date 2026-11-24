@@ -12,7 +12,8 @@ import {buildCurrentChangeSourceReceipt,readCurrentChangeReview,readCurrentChang
 import {discoverTargetedSourceGate,decideTargetedSourceGate,verifiedMainSourceFrontier}
   from './source-targeted-consumer.mjs';
 import {assistantPublic591Reader,sourceImpactEvidenceAccess,ORIGIN} from './native-postgres-evidence.mjs';
-import {discoverPullRequestSourceGate,inspectLaterMainEvidence,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
+import {discoverPullRequestSourceGate,finishLaterMainSourceInspection,inspectLaterMainEvidence,
+  PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
@@ -354,6 +355,11 @@ export async function coordinateTargetedSourceProducer(){
   const finalContinuity=await selectImpactPlan(baseline.mergeCommit,head);
   assert(isDeepStrictEqual(finalPlan,impactPlan)&&isDeepStrictEqual(finalContinuity,cumulativeImpactPlan),
     'SOURCE_TARGETED_PRODUCER_DIFF_MOVED');
+  const frontierFresh=sourceImpactEvidenceAccess();
+  const negative=await finishLaterMainSourceInspection({env:baseContext,
+    proofTime:frontier.mode==='MAIN'?frontier.sourceProofTime:0,
+    record:frontier.sourceRecord??{runId:String(current.runId)},getJson:frontierFresh.getJson});
+  if(negative)throw frontierRefused('LATER_NEGATIVE_OR_UNKNOWN');
   // Fresh post-test transport, exactly two reads, irrespective of test duration.
   const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);
   assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');
@@ -364,11 +370,6 @@ export async function coordinateTargetedSourceProducer(){
   assert(isDeepStrictEqual(controlReview,
     readCurrentChangeReview(freshPull,reviewInput())),
     'SOURCE_TARGETED_CONTROL_REVIEW_MOVED');
-  const frontierFresh=sourceImpactEvidenceAccess();
-  const negative=await inspectLaterMainEvidence({env:baseContext,
-    proofTime:frontier.mode==='MAIN'?frontier.sourceProofTime:0,
-    record:frontier.sourceRecord??{runId:String(current.runId)},getJson:frontierFresh.getJson});
-  if(negative)throw frontierRefused('LATER_NEGATIVE_OR_UNKNOWN');
   const receipt=await buildCurrentChangeSourceReceipt({...reviewInput(),frontier,commandResults});
   clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
   return {schemaVersion:1,selection:'TARGETED',reasonCode:'QUALIFIED_FULL_ANCESTOR_AND_SELECTED_COMMANDS_PASS',
