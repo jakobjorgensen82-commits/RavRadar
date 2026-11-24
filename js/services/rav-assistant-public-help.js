@@ -64,7 +64,7 @@ const FORMS={
     en:/^where does amber come from(?:,? and |[?.] (?:and )?)can (?:i|we|one) (?:tell|determine) the age of (?:a find|an amber find|a piece of amber)$/iu,
   },
   'sandbar-transport':{
-    da:/^(?:kan strøm(?:men)? flytte rav|kan rav(?:ansamlinger)? (?:flytte sig|flyttes)) mellem (?:to )?revler(?: uden nyt opskyl)?(?:(?:,? og |[?.] )hvad kan jeg (?:se|observere) fra stranden)?$/iu,
+    da:/^(?:kan (?:hav)?strøm(?:men)? flytte rav|kan rav(?:ansamlinger)? (?:flytte sig|flyttes)) mellem (?:to )?revler(?: uden nyt opskyl)?(?:(?:,? og |[?.] )hvad kan jeg (?:se|observere) fra stranden)?$/iu,
     de:/^(?:kann bernstein zwischen (?:zwei )?sandbänken durch (?:die )?strömung verlagert werden|(?:kann die strömung bernstein|können sich bernsteinansammlungen) zwischen (?:zwei )?sandbänken(?: ohne neuen spülsaum)? verlagern)(?:(?:,? und |[?.] )was kann ich vom strand aus beobachten(?:,? um das zu erkennen)?)?$/iu,
     en:/^(?:can (?:currents?|the current) move amber|can amber(?: accumulations)? (?:shift|move)) between (?:two )?sandbars(?: without (?:new|fresh) wash)?(?:(?:,? and |[?.] )what can i (?:observe|see) from the beach(?: to notice it)?)?$/iu,
   },
@@ -131,11 +131,12 @@ function practicalBeachEquipmentHelp(text,language,referent=null){
   const answer=units.join('\n\n');
   return answer.length<=900?{kind:'local-public-help',id:'beach-equipment',answer}:null;
 }
-function publicHelpText(question, language) {
+function publicHelpText(question, language, contextualForm = null) {
   const raw = String(question || '').trim();
-  if (!raw || raw.length > 600 || !['da', 'de', 'en'].includes(language)
-    || routeRavQuestion(raw) === 'fixed-refusal') return null;
-  return raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?!.]{1,3}$/u, '');
+  if (!raw || raw.length > 600 || !['da', 'de', 'en'].includes(language)) return null;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?!.]{1,3}$/u, '');
+  // A complete, authored followup may name its subject only through the established topic.
+  return contextualForm?.test(text) || routeRavQuestion(raw) !== 'fixed-refusal' ? text : null;
 }
 
 export function publicRavAssistantEquipmentFollowup(question,topic,language) {
@@ -215,10 +216,46 @@ export function publicRavAssistantDaylightFollowup(question, topic, language) {
   return text && UV_LAMP_DAYLIGHT_FOLLOWUP[language].test(text) ? ANSWERS.daylight[language] : null;
 }
 
-export function publicRavAssistantHelp(question,language){
+const RAMAN_FLUORESCENCE_TOPIC='public-knowledge:raman-fluorescence';
+const RAMAN_FLUORESCENCE_FORMS={
+  da:/^(?:hvordan påvirker fluorescens raman[- ]spektroskopi (?:af|på) rav|hvordan kan fluorescens forstyrre et raman[- ]spektrum af rav)(?:(?:,? og |[?.] )hvilke begrænsninger (?:er der|er der stadig|har metoden))?$/iu,
+  de:/^(?:welchen einfluss hat fluoreszenz auf die raman[- ]spektroskopie bei bernstein|wie (?:stört|beeinflusst) fluoreszenz ein raman[- ]spektrum von bernstein)(?:(?:,? und |[?.] )welche grenzen (?:bleiben|hat die methode))?$/iu,
+  en:/^how does fluorescence (?:affect|interfere with) raman[- ]spectroscopy (?:of|for|on) amber(?:(?:,? and |[?.] )what limitations (?:remain|does (?:it|the method) have))?$/iu,
+};
+const RAMAN_FLUORESCENCE_FOLLOWUP={
+  da:/^(?:først fluorescensen|hvad med fluorescensen|hvordan kan (?:man|jeg) mindske den forstyrrelse)$/iu,
+  de:/^(?:zuerst die fluoreszenz|was ist mit der fluoreszenz|wie kann man diese störung (?:reduzieren|verringern))$/iu,
+  en:/^(?:the fluorescence first|first,? the fluorescence|what about the fluorescence|how can (?:you|we) reduce that interference)$/iu,
+};
+// Edwards et al., https://pubmed.ncbi.nlm.nih.gov/17320468/
+// Baltic amber comparison, https://pubmed.ncbi.nlm.nih.gov/40572580/
+const RAMAN_FLUORESCENCE={
+  da:{
+    effect:'Fluorescens fra ravet kan danne en bred lysbaggrund, der skjuler svage Raman-toppe. I laboratoriet kan man i nogle tilfælde mindske baggrunden ved at vælge en anden laserbølgelængde, for eksempel i det nærinfrarøde. Det afhænger af prøven og udstyret.',
+    limit:'Raman-spektret giver spor om ravets kemi. Naturlig variation, forvitring og behandling kan give signaler, der er svære at skelne. Ét spektrum kan ikke alene fastslå en præcis alder eller et bestemt forvitringsstadium. En faglig vurdering kan sammenholde flere spektre med FTIR og prøvens geologiske sammenhæng.',
+  },
+  de:{
+    effect:'Fluoreszenz des Bernsteins kann einen breiten Untergrund erzeugen und schwache Raman-Banden überdecken. Eine andere Anregungswellenlänge, etwa im nahen Infrarot, kann den Untergrund in manchen Fällen verringern. Das hängt von der Probe und vom Gerät ab.',
+    limit:'Das Raman-Spektrum gibt Hinweise auf die Chemie des Bernsteins. Natürliche Unterschiede, Verwitterung und Behandlung können ähnliche Signale erzeugen. Ein einzelnes Spektrum bestimmt weder das genaue Alter noch den Verwitterungszustand eindeutig. Fachleute können Vergleichsspektren, FTIR und den geologischen Kontext heranziehen.',
+  },
+  en:{
+    effect:'Fluorescence from amber can create a broad background that obscures weak Raman bands. A different excitation wavelength, such as near-infrared light, can sometimes reduce that background. It depends on the specimen and the instrument.',
+    limit:'Raman spectra give clues to amber chemistry. Natural variation, weathering and treatment can produce signals that are hard to tell apart. One spectrum alone cannot establish an exact age or a clear weathering stage. Specialists can compare spectra and use FTIR alongside the specimen’s geological context.',
+  },
+};
+
+export function publicRavAssistantHelp(question,language,previousTopic=null){
   const raw=String(question||'').trim();
-  const text=publicHelpText(raw,language);
+  const ramanFollowupForm=previousTopic===RAMAN_FLUORESCENCE_TOPIC?RAMAN_FLUORESCENCE_FOLLOWUP[language]:null;
+  const text=publicHelpText(raw,language,ramanFollowupForm);
   if(!text)return null;
+  const ramanQuestion=RAMAN_FLUORESCENCE_FORMS[language].test(text);
+  const ramanFollowup=ramanFollowupForm?.test(text);
+  if(ramanQuestion||ramanFollowup){
+    const {effect,limit}=RAMAN_FLUORESCENCE[language];
+    return {kind:'local-public-help',id:'raman-fluorescence',topic:RAMAN_FLUORESCENCE_TOPIC,
+      answer:ramanQuestion?effect+'\n\n'+limit:effect};
+  }
   const bubbles=amberBubbleHelp(text,language);
   if(bubbles)return bubbles;
   const practical=practicalBeachEquipmentHelp(text,language);
