@@ -481,3 +481,7 @@ resterende dækningsproblemer er ikke løst af denne rettelse.
 ## 24. november – hent RAW-kvitteringer direkte på det verificerede ID
 
 Kørsel 384 fandt den aktuelle 503-byte RAW-kvittering, men download-actionens nye søgning fandt ingen af de angivne ID'er. Den samme kvittering kunne hentes direkte på ID, og ZIP-indholdet matchede registreret SHA-256. Brug direkte hentning for de tre almindelige RAW-kvitteringer og kontrollér ZIP-hash, størrelse og det forventede medlemsnavn før installation i runnerens egen mappe. Det eksisterende bevis for kørsel, forsøg og udgiver samt efterfølgende læse- og sletteværn gælder fortsat. Første almindelige kørsel på den nye kode skal bekræfte hele overførslen.
+
+## 24. november – vent på verificeret publicering af RAW-afgørelsen
+
+I kørsel #387 bekræftede rotationsjobbet de to forventede råcacher og udgav en gyldig READY-kvittering. Byggejobbets opslag sluttede efter 16,6 sekunder af den eksisterende frist på 180 sekunder. Den konkrete afslagskode blev ikke gemt i loggen. Afvent midlertidige API-fejl og ufuldstændige publiceringsoplysninger i den samme treminuttersfrist. Kendte modstridende oplysninger giver fortsat straks afslag. En positiv afgørelse kræver stadig præcis kørsel, forsøg, udgiver, vellykket upload, identitet og kontrol af den hentede kvittering. Skriv den endelige afslagskategori i loggen. Bekræft ændringen gennem den almindelige vejrhentning.
