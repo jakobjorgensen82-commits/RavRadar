@@ -6,6 +6,18 @@ import {t} from '../i18n.js?v=4.0.602';
 
 const PUBLIC_ABOUT='https://ravradar.dk/about.html';
 const PUBLIC_GROUP='https://www.facebook.com/groups/1849354103138911/';
+const SANDBAR_TRANSPORT_TOPIC='public-knowledge:sandbar-transport';
+const SANDBAR_SURFACE_CLUES={
+  da:'Fra stranden kan du holde øje med åbninger i rækken af brydende bølger og se, hvordan skum eller flydende tang bevæger sig dér. Det er spor om vandets bevægelse i overfladen. Ravets placering og strømmen ved bunden er stadig usikre.',
+  de:'Vom Strand aus kannst du nach Lücken zwischen den brechenden Wellen schauen und beobachten, wie sich Schaum oder treibender Tang dort bewegt. Das sind Hinweise auf die Bewegung an der Oberfläche. Wo Bernstein liegt und wie das Wasser am Boden strömt, bleibt offen.',
+  en:'From the beach, look for gaps in the line of breaking waves and watch how foam or floating seaweed moves there. These are clues to movement at the surface. Where the amber is and how the current flows near the seabed remain uncertain.',
+};
+const SANDBAR_SURFACE_FOLLOWUP={
+  da:/^(?:og )?hvad kan (?:jeg|vi|man) (?:konkret )?(?:se|observere)(?: fra stranden|,? (?:hvis|når) (?:jeg|vi|man) står på stranden)$/iu,
+  de:/^(?:und )?was kann (?:ich|man) (?:konkret )?vom strand aus (?:sehen|beobachten)$/iu,
+  en:/^(?:and )?what can (?:i|we) (?:(?:actually|specifically) )?(?:see|observe) from the beach$/iu,
+};
+
 const ANSWERS={
   water:{
     da:'Hverken højvande eller lavvande er altid bedst til ravjagt. Højere eller stigende vand kan flytte opskyllet længere op på stranden. Lavere eller faldende vand kan blotlægge materiale, som allerede er afleveret, og gøre det lettere at gennemsøge et mindre område. Det betyder ikke, at faldet har samlet ravet. Kig efter opskylslinjer og steder, hvor let materiale samler sig. Vejrforløb og kyst betyder mere end én fast regel om vandstand. Vandstanden alene giver hverken fund- eller sikkerhedsgaranti.',
@@ -26,6 +38,11 @@ const ANSWERS={
     da:'RavRadar hjælper dig med at vælge et lovende kystområde og tidspunkt til ravjagt ud fra prognoser og kystforhold. Det er ikke en måling af, hvor ravet ligger, eller en garanti for fund. Læs om projektet: '+PUBLIC_ABOUT,
     de:'RavRadar hilft, anhand von Prognosen und Küstenbedingungen ein vielversprechendes Gebiet und einen Zeitpunkt für die Bernsteinsuche zu wählen. Es misst nicht, wo Bernstein liegt, und garantiert keine Funde. Über das Projekt: '+PUBLIC_ABOUT,
     en:'RavRadar helps you choose a promising coastal area and time for amber hunting from forecasts and coastal conditions. It does not measure where amber lies or guarantee a find. About the project: '+PUBLIC_ABOUT
+  },
+  'landing-precision':{
+    da:'Nej. RavRadar bruger vejrprognoser og kystforhold til at pege på lovende områder og tidspunkter. Modellen kan ikke forudsige præcis, hvor et ravstykke skyller op på stranden.',
+    de:'Nein. RavRadar nutzt Wettervorhersagen und Küstenbedingungen, um auf vielversprechende Suchgebiete und Zeiten hinzuweisen. Das Modell kann nicht genau vorhersagen, wo ein Stück Bernstein angespült wird.',
+    en:'No. RavRadar uses weather forecasts and coastal conditions to suggest promising areas and times to search. The model cannot predict exactly where a piece of amber will wash ashore.'
   },
   beginner:{
     da:'Start med at lære at kende rav fra sten og plast. Søg systematisk i opskylslinjer og lommer med let materiale, og sammenlign frisk og ældre opskyl. Se på vejrforløbet og kysten frem for én vindretning eller vandstand. Kontrollér fund med flere skånsomme tegn; UV alene er ikke bevis. Tilpas udstyr til strand eller vand, og vurder altid forholdene på stedet. En prognose eller RavScore er ingen fund- eller sikkerhedsgaranti.',
@@ -48,9 +65,9 @@ const ANSWERS={
     en:'Do you mean amber itself, a find of amber, or the name of an app, website or group? Please add a little context so I do not guess what the name means.'
   },
   'sandbar-transport':{
-    da:'Ja. Når bølger sætter let materiale ved bunden i bevægelse, kan strømmen flytte det mellem revler og render. Det kan ske uden nyt opskyl på stranden. Fra stranden kan du holde øje med åbninger i rækken af brydende bølger og se, hvordan skum eller flydende tang bevæger sig dér. Det er spor om vandets bevægelse i overfladen. Ravets placering og strømmen ved bunden er stadig usikre.',
-    de:'Ja. Wenn Wellen leichtes Material am Boden aufwirbeln, kann die Strömung es zwischen Sandbänken und Rinnen verlagern. Das ist auch ohne neuen Spülsaum möglich. Vom Strand aus kannst du nach Lücken zwischen den brechenden Wellen schauen und beobachten, wie sich Schaum oder treibender Tang dort bewegt. Das sind Hinweise auf die Bewegung an der Oberfläche. Wo Bernstein liegt und wie das Wasser am Boden strömt, bleibt offen.',
-    en:'Yes. When waves stir up light material near the seabed, currents can move it between sandbars and channels. This can happen without fresh wash on the beach. From the beach, look for gaps in the line of breaking waves and watch how foam or floating seaweed moves there. These are clues to movement at the surface. Where the amber is and how the current flows near the seabed remain uncertain.'
+    da:'Ja. Når bølger sætter let materiale ved bunden i bevægelse, kan strømmen flytte det mellem revler og render. Det kan ske uden nyt opskyl på stranden. '+SANDBAR_SURFACE_CLUES.da,
+    de:'Ja. Wenn Wellen leichtes Material am Boden aufwirbeln, kann die Strömung es zwischen Sandbänken und Rinnen verlagern. Das ist auch ohne neuen Spülsaum möglich. '+SANDBAR_SURFACE_CLUES.de,
+    en:'Yes. When waves stir up light material near the seabed, currents can move it between sandbars and channels. This can happen without fresh wash on the beach. '+SANDBAR_SURFACE_CLUES.en
   }
 };
 const FORMS={
@@ -58,6 +75,11 @@ const FORMS={
   group:{da:/^(?:har ravradar en facebook[- ]?gruppe|har ravradar en gruppe på facebook|hvor finder (?:jeg|vi) ravradars facebook[- ]?gruppe)$/iu,de:/^(?:hat ravradar eine facebook[- ]?gruppe|gibt es eine facebook[- ]?gruppe für ravradar|wo finde ich die facebook[- ]?gruppe von ravradar)$/iu,en:/^(?:does ravradar have a facebook group|is there a facebook group for ravradar|where can i find ravradar(?:’s|'s) facebook group)$/iu},
   project:{da:/^hvad er ravradar$/iu,de:/^was ist ravradar$/iu,en:/^what is ravradar$/iu},
   beginner:{da:/^hvad (?:skal|bør|behøver) (?:jeg|vi|man) (?:at )?vide om (?:ravjagt|at finde rav|at lede efter rav)$/iu,de:/^was (?:sollte|muss) (?:ich|man) über (?:die )?bernsteinsuche wissen$/iu,en:/^what (?:do i need to|should i|must i) know about (?:amber hunting|looking for amber|finding amber)$/iu},
+  'landing-precision':{
+    da:/^kan ravradar forudsige (?:(?:det )?(?:præcise|nøjagtige) landings(?:sted|punkt) for rav(?:et)?|(?:præcis|nøjagtig),? hvor (?:ravet|et ravstykke) skyller (?:op|i land))$/iu,
+    de:/^kann ravradar (?:die (?:genaue|exakte) landestelle|den (?:genauen|exakten) landeort) von bernstein vorhersagen$/iu,
+    en:/^can ravradar predict (?:exactly where (?:a piece of )?amber will wash ashore|the (?:exact|precise) landing (?:spot|place|point) (?:of|for) (?:a piece of )?amber)$/iu,
+  },
   'origin-age':{
     da:/^hvor kommer rav(?:et)? fra(?:,? og |[?.] (?:og )?)kan (?:jeg|vi|man) (?:se|bestemme) alderen på et (?:rav)?fund$/iu,
     de:/^woher kommt bernstein(?:,? und |[?.] (?:und )?)kann (?:ich|man) das alter eines (?:bernstein)?fund(?:es|s) bestimmen$/iu,
@@ -247,7 +269,8 @@ const RAMAN_FLUORESCENCE={
 export function publicRavAssistantHelp(question,language,previousTopic=null){
   const raw=String(question||'').trim();
   const ramanFollowupForm=previousTopic===RAMAN_FLUORESCENCE_TOPIC?RAMAN_FLUORESCENCE_FOLLOWUP[language]:null;
-  const text=publicHelpText(raw,language,ramanFollowupForm);
+  const sandbarFollowupForm=previousTopic===SANDBAR_TRANSPORT_TOPIC?SANDBAR_SURFACE_FOLLOWUP[language]:null;
+  const text=publicHelpText(raw,language,ramanFollowupForm??sandbarFollowupForm);
   if(!text)return null;
   const ramanQuestion=RAMAN_FLUORESCENCE_FORMS[language].test(text);
   const ramanFollowup=ramanFollowupForm?.test(text);
@@ -255,6 +278,10 @@ export function publicRavAssistantHelp(question,language,previousTopic=null){
     const {effect,limit}=RAMAN_FLUORESCENCE[language];
     return {kind:'local-public-help',id:'raman-fluorescence',topic:RAMAN_FLUORESCENCE_TOPIC,
       answer:ramanQuestion?effect+'\n\n'+limit:effect};
+  }
+  if(sandbarFollowupForm?.test(text)){
+    return {kind:'local-public-help',id:'sandbar-transport',topic:SANDBAR_TRANSPORT_TOPIC,
+      answer:SANDBAR_SURFACE_CLUES[language]};
   }
   const bubbles=amberBubbleHelp(text,language);
   if(bubbles)return bubbles;
@@ -272,5 +299,5 @@ export function publicRavAssistantHelp(question,language,previousTopic=null){
   if(!id&&term&&!KNOWN_COMPOUNDS.test(term)&&classifyRavQuestion(raw)==='origin')id='compound';
   if(!id)return null;
   const answer=id==='origin-age'?t('assistant.local.origin',{},language):ANSWERS[id][language];
-  return {kind:'local-public-help',id,answer};
+  return {kind:'local-public-help',id,answer,...(id==='sandbar-transport'?{topic:SANDBAR_TRANSPORT_TOPIC}:{})};
 }
