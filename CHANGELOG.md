@@ -1,3 +1,7 @@
+## Drift — versionsværktøj og håndbog
+
+- Versionsværktøjet opdaterer håndbogens aktuelle modelfakta og installationskopien i samme kørsel. Den separate kontrol kan derefter læse det færdige resultat.
+
 ## Drift — fast kategorilæsning efter assistentafslag
 
 - Lokal kandidat til en fast, skrivefri læsning af fejlkategorier omkring 21. november kl. 17.12 UTC. Den ændrer hverken assistentens Edge-kode, AI-kald eller svar. Kildekvalifikation og faktisk driftslæsning udestår.

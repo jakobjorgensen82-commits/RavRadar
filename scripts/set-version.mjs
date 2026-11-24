@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import { PRODUCTION_WORKFLOW_SOURCES } from './lib/production-workflow-sources.mjs';
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
+import { synchronizeHandbookInstallationCopy } from './sync-handbook-installation-copy.mjs';
 
 const version=process.argv[2];
 const preserveGeodataVersion=process.argv.includes('--preserve-geodata-version');
@@ -132,17 +133,5 @@ await synchronizeReleaseContractMetadata({write:true});
  }
  await fs.writeFile(file,JSON.stringify(doc,null,2)+'\n');
 }
-{
- const file='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
- let text=await fs.readFile(file,'utf8');
- const handbook=JSON.parse(await fs.readFile('docs/handbook/content.json','utf8'));
- const sqlPayload=JSON.stringify(handbook).replace(/'/g,"''");
- const marker="insert into public.admin_documents(document_key,payload,updated_by) values('handbook','";
- const start=text.indexOf(marker);
- const payloadStart=start+marker.length;
- const payloadEnd=text.indexOf("'::jsonb,null)",payloadStart);
- if(start<0||payloadEnd<0)throw new Error('Supabase-installationsfilens håndbogspayload kunne ikke findes.');
- text=`${text.slice(0,payloadStart)}${sqlPayload}${text.slice(payloadEnd)}`;
- await fs.writeFile(file,text);
-}
+await synchronizeHandbookInstallationCopy();
 console.log(`RavRadar-version opdateret fra ${previousVersion} til ${version}.${preserveGeodataVersion?' Geodataenes versionsfelter er bevaret uændret.':''}`);
