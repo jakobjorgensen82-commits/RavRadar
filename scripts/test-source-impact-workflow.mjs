@@ -25,7 +25,19 @@ for(const probe of ['test-fixed-public-rate-log-20261013.mjs',
   'test-fixed-storage-upload-log-20261013.mjs','test-fixed-public-rate-console-log-20261015.mjs']){
   assert.ok(!liveSource.includes(probe),'A completed log investigation is not a normal PR command');
 }
-verifyWorkflow(liveSource);
+const sourceWithNativeFixture='npm run validate:source -- --with-native-evidence-fixture';
+const historicalRollbackSuffix=' && node scripts/test-prepare-candidate-g-operational-rollback.mjs'
+  +' && node scripts/test-candidate-g-rollback-public-stage.mjs';
+assert.ok(!liveSource.includes('node scripts/test-prepare-candidate-g-operational-rollback.mjs'));
+assert.ok(!liveSource.includes('node scripts/test-candidate-g-rollback-public-stage.mjs'));
+const priorSourceWithFixture=liveSource.replace(sourceWithNativeFixture,
+  sourceWithNativeFixture+historicalRollbackSuffix);
+assert.equal(verifyCurrentSourceWorkflow(priorSourceWithFixture).historicalNational,false);
+const nativeRunLine='          node scripts/native-postgres-evidence.mjs';
+const precedingNativeFixture='          node --test scripts/test-native-postgres-evidence.mjs\n'+nativeRunLine;
+const previousLiveSource=priorSourceWithFixture.replace(sourceWithNativeFixture,'npm run validate:source')
+  .replace(nativeRunLine,precedingNativeFixture);
+assert.equal(verifyCurrentSourceWorkflow(previousLiveSource).historicalNational,false);
 let liveCases=1;
 for (const [before,after] of [
   ['  contents: read','  contents: write'],
@@ -35,9 +47,12 @@ for (const [before,after] of [
   ["outputs.selection != 'TARGETED'", "outputs.selection == 'TARGETED'"],
   ['SOURCE_GATE_HEAD_SHA: \${{ github.event.pull_request.head.sha }}','SOURCE_GATE_HEAD_SHA: \${{ github.sha }}'],
   ['path: .cache/native-postgres-phase-proof.json','path: .cache/changed-phase.json'],
-  ['run: npm run validate:source &&','run: true &&'],
-  ['run: npm run validate:source &&','run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs &&'],
-  [' && node scripts/test-candidate-g-rollback-public-stage.mjs',''],
+  [sourceWithNativeFixture,'true'],
+  [sourceWithNativeFixture,'npm run validate:source'],
+  [sourceWithNativeFixture,sourceWithNativeFixture+' && node scripts/test-fixed-public-rate-log-20261013.mjs'],
+  [nativeRunLine,precedingNativeFixture],
+  [nativeRunLine,'          true'],
+  [sourceWithNativeFixture,sourceWithNativeFixture+' && node scripts/test-candidate-g-rollback-public-stage.mjs'],
   ['-r requirements-copernicus.txt\n','-r requirements-copernicus.txt\n          && node scripts/test-source-impact-plan.mjs\n'],
 ]) {
   const changed=liveSource.replace(before,after);

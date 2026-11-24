@@ -140,7 +140,7 @@ jobs:
 
       - name: Validate source contracts and release governance
         if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
-        run: npm run validate:source && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs
+        run: npm run validate:source -- --with-native-evidence-fixture
 
       # Reject source-contract regressions before the native PostgreSQL matrix.
       # All the same gates must succeed; only their execution order changes.
@@ -153,7 +153,6 @@ jobs:
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          node --test scripts/test-native-postgres-evidence.mjs
           node scripts/native-postgres-evidence.mjs
 
       - name: Upload independently completed native586 PostgreSQL phase
