@@ -25,7 +25,7 @@ const MAX_RECEIPT_BYTES = 1024;
 const RECEIPT_FILES = Object.freeze({ proof: 'handoff.json', result: 'decision.json', 'saved-coverage': 'coverage.json' });
 const POLL_MS = 3000;
 const RETRYABLE_RESULT_OBSERVATIONS = new Set([
-  'artifact-inventory-incomplete', 'incomplete-jobs', 'result-publication-incomplete', 'metadata-temporarily-unavailable',
+  'artifact-inventory-incomplete', 'incomplete-jobs', 'result-publication-incomplete',
 ]);
 const TEMPORARY_METADATA_HTTP = [429, 500, 502, 503, 504];
 const TEMPORARY_METADATA_CONNECTION = ['EAI_AGAIN', 'ECONNRESET', 'ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET'];
@@ -38,8 +38,22 @@ const pending = () => ({ status: 'PENDING' });
 
 function temporaryMetadataRead(error) {
   return TEMPORARY_METADATA_HTTP.includes(error?.statusCode)
+    || (error?.statusCode === 403 && error.rateLimited === true)
     || ['TimeoutError', 'AbortError'].includes(error?.name)
     || TEMPORARY_METADATA_CONNECTION.includes(error?.cause?.code ?? error?.code);
+}
+
+function metadataHttpError(response) {
+  const retryAfter = response.headers.get('retry-after') ?? '';
+  const reset = response.headers.get('x-ratelimit-reset') ?? '';
+  const exhausted = response.headers.get('x-ratelimit-remaining') === '0';
+  const retryAfterMs = /^\d{1,10}$/.test(retryAfter) ? Number(retryAfter) * 1000 : 0;
+  const resetDelayMs = exhausted && /^\d{1,10}$/.test(reset) ? Number(reset) * 1000 - Date.now() : 0;
+  const rateLimited = response.status === 429 || (response.status === 403 && (exhausted || retryAfterMs > 0));
+  const retryDelayMs = Math.max(0, retryAfterMs, resetDelayMs) || (rateLimited ? 60_000 : 0);
+  return Object.assign(new Error('RAW_ARTIFACT_METADATA_HTTP'), {
+    statusCode: response.status, rateLimited, retryDelayMs,
+  });
 }
 
 function normalRun(run, { repositoryId, runId, attempt, head }) {
@@ -137,8 +151,14 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
   const context = { kind, name, repositoryId, runId, attempt, head };
   const runPath = `/repos/${REPOSITORY}/actions/runs/${runId}`;
   const attemptPath = `${runPath}/attempts/${attempt}`;
+  const readMetadata = async (endpoint, route) => {
+    try { return await getJson(route); }
+    catch (cause) {
+      throw Object.assign(new Error('RAW_ARTIFACT_METADATA_READ', { cause }), { endpoint });
+    }
+  };
   try {
-    const listing = await getJson(`${runPath}/artifacts?name=${name}&per_page=2`);
+    const listing = await readMetadata('artifact-list', `${runPath}/artifacts?name=${name}&per_page=2`);
     if (!Array.isArray(listing?.artifacts) || listing.total_count > 1 || listing.artifacts.length > 1) {
       return hold('artifact-not-unique');
     }
@@ -177,7 +197,10 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
         || (expectedDigest !== undefined && artifact.digest !== expectedDigest)) {
       return hold('artifact-identity-unproved');
     }
-    const [run, jobs] = await Promise.all([getJson(attemptPath), getJson(`${attemptPath}/jobs?per_page=100`)]);
+    const [run, jobs] = await Promise.all([
+      readMetadata('attempt', attemptPath),
+      readMetadata('jobs', `${attemptPath}/jobs?per_page=100`),
+    ]);
     if (!normalRun(run, context)) return hold('run-not-current');
     const upload = publicationStep(jobs, context);
     if (!upload) return pending();
@@ -188,7 +211,16 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
     }
     return { status: 'FOUND', artifactId: artifact.id, digest: artifact.digest };
   } catch (error) {
-    return hold(kind === 'result' && temporaryMetadataRead(error) ? 'metadata-temporarily-unavailable' : 'metadata-unavailable');
+    const cause = error?.cause;
+    const temporary = (kind === 'proof' || kind === 'result') && temporaryMetadataRead(cause);
+    const status = cause?.statusCode;
+    return {
+      ...hold(temporary ? 'metadata-temporarily-unavailable' : 'metadata-unavailable'),
+      metadataEndpoint: error?.endpoint ?? 'response-validation',
+      metadataCode: Number.isInteger(status) && status >= 100 && status <= 599
+        ? `http-${status}` : temporary ? 'transport' : 'unreadable',
+      retryDelayMs: temporary && positive(cause?.retryDelayMs) ? cause.retryDelayMs : 0,
+    };
   }
 }
 
@@ -196,16 +228,22 @@ export async function findRawRotationArtifact({ pause = wait, signal, ...context
   if (!Object.hasOwn(DEADLINE_MS, context.kind)) return hold('invalid-context');
   const lookups = Math.ceil(DEADLINE_MS[context.kind] / POLL_MS);
   let lastIncompleteObservation;
+  let delay = POLL_MS;
   try {
     for (let poll = 0; poll < lookups && !signal?.aborted; poll += 1) {
-      if (poll) await pause(POLL_MS, undefined, { signal });
+      if (poll) await pause(delay, undefined, { signal });
+      delay = POLL_MS;
       const finding = await readRawRotationArtifactOnce({
         ...context, inspectMissingProofProducer: poll % MISSING_PROOF_PRODUCER_POLL_INTERVAL === 0,
       });
       if (signal?.aborted) break;
       if (finding.status === 'PENDING') continue;
-      if (context.kind !== 'result' || !RETRYABLE_RESULT_OBSERVATIONS.has(finding.reason)) return finding;
+      const retryable = finding.reason === 'metadata-temporarily-unavailable'
+        || (context.kind === 'result' && RETRYABLE_RESULT_OBSERVATIONS.has(finding.reason));
+      if (!retryable) return finding;
       lastIncompleteObservation = finding;
+      delay = Math.max(POLL_MS, finding.retryDelayMs ?? 0);
+      if (delay >= DEADLINE_MS[context.kind]) return finding;
     }
   } catch {
     if (!signal?.aborted) return hold('metadata-unavailable');
@@ -320,13 +358,17 @@ async function main(env, args) {
           'X-GitHub-Api-Version': '2026-03-10' },
       });
       if (response.status !== 200) {
-        await response.body?.cancel();
-        throw Object.assign(new Error('RAW_ARTIFACT_METADATA_HTTP'), { statusCode: response.status });
+        const error = metadataHttpError(response);
+        await response.body?.cancel().catch(() => {});
+        throw error;
       }
       return JSON.parse(await readBoundedPublicManifest(response));
     },
   });
   if (finding.status !== 'FOUND') console.log('RAW_ROTATION_ARTIFACT_HOLD ' + kind + ' ' + finding.reason);
+  if (finding.metadataEndpoint) {
+    console.log('RAW_ROTATION_METADATA_READ ' + kind + ' ' + finding.metadataEndpoint + ' ' + finding.metadataCode);
+  }
   await appendFile(env.GITHUB_OUTPUT, finding.status === 'FOUND'
     ? `artifact_status=found\nartifact_id=${finding.artifactId}\nartifact_digest=${finding.digest}\n`
     : `artifact_status=hold\nartifact_reason=${finding.reason}\n`);
