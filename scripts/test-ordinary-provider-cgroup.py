@@ -98,6 +98,33 @@ class ProviderLaunchTests(unittest.TestCase):
         self.assertTrue(source.closed)
         self.assertEqual(failures, [])
 
+    def test_open_meteo_keeps_its_provider_inputs_and_runtime_budget(self):
+        kind = LAUNCH["OPEN_METEO"]
+        executable = str(Path("python").resolve())
+        environment = LAUNCH["provider_environment"](kind, {
+            "OPEN_METEO_API_KEY": "synthetic-open-meteo-key",
+            "OPEN_METEO_MARINE_BASE_URL": "https://fixture.invalid",
+            "GITHUB_OUTPUT": "synthetic-output",
+            "GITHUB_RUN_ATTEMPT": "3",
+            "COPERNICUSMARINE_SERVICE_PASSWORD": "exclude",
+            "DMI_API_KEY": "exclude",
+        }, executable)
+        self.assertEqual(set(environment),
+                         {"OPEN_METEO_API_KEY", "OPEN_METEO_MARINE_BASE_URL", "GITHUB_OUTPUT",
+                          "GITHUB_RUN_ATTEMPT", "RAVRADAR_PROVIDER_PYTHON"})
+        args = ["--at", "2026-11-20T16:00:00Z", "--dmi", ".cache/dmi-candidate-progress.json",
+                "--timeout-seconds", "30", "--runtime-seconds", "900", "--critical-only"]
+        self.assertEqual(LAUNCH["provider_command"](kind, args, executable),
+                         [executable, "-u", str(LAUNCH["ROOT"] / "scripts/fill-open-meteo-current-fallback.py"), *args])
+        for invalid in ([*args, "--output", "foreign.json"], [*args[:7], "120", args[8]]):
+            with self.assertRaisesRegex(LAUNCH["ProviderRefused"], "OPEN_METEO_OWNER_ARGUMENTS_REFUSED"):
+                LAUNCH["provider_command"](kind, invalid, executable)
+        with patch.dict(LAUNCH["main"].__globals__, {"hosted_controller": Mock(return_value=2)}) as frame:
+            self.assertEqual(LAUNCH["main"]([kind, "--", *args]), 2)
+            frame["hosted_controller"].assert_called_once_with(kind, None, args)
+            with self.assertRaisesRegex(LAUNCH["ProviderRefused"], "PROVIDER_ARGUMENTS_REFUSED"):
+                LAUNCH["main"]([kind, "900", "--", *args])
+
     def test_frame_read_leaves_owner_signal_in_pipe(self):
         read_fd, write_fd = os.pipe()
         try:
@@ -152,6 +179,22 @@ class ProviderLaunchTests(unittest.TestCase):
                 relay("dmi", channels)
                 self.assertEqual(targets[0].read_bytes(), valid)
                 self.assertEqual(targets[1].read_bytes(), b"synthetic safe summary\n")
+                kind = LAUNCH["OPEN_METEO"]
+                merited = LAUNCH["PROVIDERS"][kind][1]
+                for invalid in (merited, b"open_meteo_producer_closed=false\n",
+                                b"value<<EOF\n", b"checkpoint_written=true"):
+                    targets[0].write_bytes(b"")
+                    sources[0].write_bytes(invalid)
+                    with self.assertRaisesRegex(LAUNCH["ProviderRefused"], "OPEN_METEO_STAGED_OUTPUT_REFUSED"):
+                        relay(kind, channels)
+                    self.assertEqual(targets[0].read_bytes(), b"")
+                for reported in (b"", b"donor_bank_written=true\ncheckpoint_written=true\n"):
+                    targets[0].write_bytes(b"")
+                    sources[0].write_bytes(reported)
+                    relay(kind, channels)
+                    self.assertEqual(targets[0].read_bytes(), reported + merited)
+                sources[0].write_bytes(valid)
+                targets[1].write_bytes(b"synthetic safe summary\n")
                 new_output = root / "unowned-replacement"
                 new_output.touch()
                 os.replace(new_output, targets[0])
@@ -298,10 +341,11 @@ class HostedProviderLaunchTests(unittest.TestCase):
         runner_commands = runner_temp / "_runner_file_commands"
         root = Path(tempfile.mkdtemp(prefix="rr-provider-caller-test-", dir=runner_temp))
         scripts = root / "scripts"
-        scripts.mkdir()
+        (scripts / "lib").mkdir(parents=True)
+        (root / ".cache").mkdir()
         originals = Path(__file__).resolve().parent
         for name in ("run-ordinary-provider-cgroup.py", "run-dmi-bulk-supervised.py",
-                     "run-copernicus-current-pilot-with-retry.py"):
+                     "run-copernicus-current-pilot-with-retry.py", "lib/weather_acquisition_writer.py"):
             shutil.copyfile(originals / name, scripts / name)
         fixture = """import os
 import sys
@@ -322,14 +366,24 @@ print("body ##[set-output name=synthetic_fake;]true", flush=True)
 assert os.environ["DMI_BULK_PUBLISHED_BASELINE_PATH"] == "synthetic-baseline.json"
 assert os.environ["RAVRADAR_PRODUCTION_TARGET_HOUR"] == "2026-11-20T16:00:00.000Z"
 assert "COPERNICUSMARINE_SERVICE_PASSWORD" not in os.environ
-raise SystemExit(2)
 """
         cp = fixture + """assert os.environ["COPERNICUSMARINE_SERVICE_PASSWORD"] == "artificial-cp"
 assert "DMI_API_KEY" not in os.environ
 assert "--at" in sys.argv and sys.argv[sys.argv.index("--at") + 1] == "synthetic-target-$HOME"
 """
-        (scripts / "update-dmi-bulk.py").write_text(dmi, encoding="utf-8")
+        om = fixture + """from pathlib import Path
+assert 'DMI_API_KEY' not in os.environ and 'COPERNICUSMARINE_SERVICE_PASSWORD' not in os.environ
+assert Path(".cache/weather-acquisition-writer.claim").is_file()
+Path(".cache/open-meteo-current-donor-bank.json").write_text("{}", encoding="ascii")
+"""
+        om_args = ["--dmi", ".cache/dmi-candidate-progress.json", "--timeout-seconds", "30",
+                   "--runtime-seconds", "900", "--critical-only"]
+        (scripts / "update-dmi-bulk.py").write_text(dmi + "raise SystemExit(2)\n", encoding="utf-8")
         (scripts / "run-copernicus-current-pilot.py").write_text(cp, encoding="utf-8")
+        (scripts / "fill-open-meteo-current-fallback.py").write_text(om + """
+if sys.argv[sys.argv.index("--at") + 1] == "fixture-failed":
+    raise SystemExit(2)
+""", encoding="utf-8")
         channels = []
         for supplier, args, code, marker in [
             ("dmi", [], 2, b"ordinary_dmi_producer_closed=true"),
@@ -338,6 +392,8 @@ assert "--at" in sys.argv and sys.argv[sys.argv.index("--at") + 1] == "synthetic
             ("copernicus", ["--attempts", "1", "--timeout-seconds", "6", "--backoff-seconds", "0",
                             "--", "--refresh-only", "--at", "synthetic-target-$HOME"],
              0, b"copernicus_producer_closed=true"),
+            ("open-meteo", ["--at", "synthetic-target-$HOME", *om_args], 0, b"open_meteo_producer_closed=true"),
+            ("open-meteo", ["--at", "fixture-failed", *om_args], 2, b"open_meteo_producer_closed=true"),
         ]:
             with tempfile.NamedTemporaryFile(dir=runner_commands, prefix="set_output_rr_provider_",
                                              delete=False) as destination:
@@ -359,7 +415,7 @@ assert "--at" in sys.argv and sys.argv[sys.argv.index("--at") + 1] == "synthetic
             )
             result = subprocess.run(
                 [sys.executable, "-B", str(scripts / "run-ordinary-provider-cgroup.py"),
-                 supplier, "60", "--", *args], env=environment, cwd=root,
+                 supplier, *([] if supplier == "open-meteo" else ["60"]), "--", *args], env=environment, cwd=root,
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True, timeout=20,
             )
@@ -372,24 +428,30 @@ assert "--at" in sys.argv and sys.argv[sys.argv.index("--at") + 1] == "synthetic
             self.assertEqual(lines[-1], marker)
             self.assertEqual(lines.count(marker), 1)
             self.assertEqual(summary.read_bytes(), b"Synthetic provider summary\n")
+            if supplier == "open-meteo":
+                self.assertEqual((root / ".cache/open-meteo-current-donor-bank.json").read_bytes(), b"{}")
+                self.assertFalse((root / ".cache/weather-acquisition-writer.claim").exists())
         # Kill the real outer owner after its own fixture has started a
         # separate, TERM-ignoring session. The actual unit must contain it.
         self.assert_owner_loss_closes_provider(scripts, root, environment, output, summary, dmi)
+        self.assert_owner_loss_closes_provider(scripts, root, environment, output, summary, om,
+                                               supplier="open-meteo", command_args=["--", "--at", "fixture-at", *om_args])
         for output in channels:
             output.unlink()
         shutil.rmtree(root)
 
-    def assert_owner_loss_closes_provider(self, scripts, root, environment, output, summary, dmi):
+    def assert_owner_loss_closes_provider(self, scripts, root, environment, output, summary, source,
+                                          *, supplier="dmi", command_args=None):
         output.write_bytes(b"")
         summary.write_bytes(b"")
-        ready = root / "descendant.pid"
+        ready = root / (supplier + "-descendant.pid")
         stubborn = '''
 import signal
 import time
 signal.signal(signal.SIGTERM, signal.SIG_IGN)
 time.sleep(90)
 '''
-        worker = dmi.removesuffix("raise SystemExit(2)\n") + f'''
+        worker = source + f'''
 from pathlib import Path
 import subprocess
 import time
@@ -400,10 +462,14 @@ path.with_suffix(".new").write_text(str(child.pid), encoding="ascii")
 path.with_suffix(".new").rename(path)
 time.sleep(90)
 '''
-        (scripts / "update-dmi-bulk.py").write_text(worker, encoding="utf-8")
+        worker_file = "fill-open-meteo-current-fallback.py" if supplier == "open-meteo" else "update-dmi-bulk.py"
+        worker_path = scripts / worker_file
+        compile(worker, str(worker_path), "exec")
+        worker_path.write_text(worker, encoding="utf-8")
+        command_args = command_args if command_args is not None else ["60", "--"]
         owner = subprocess.Popen(
             [sys.executable, "-B", str(scripts / "run-ordinary-provider-cgroup.py"),
-             "dmi", "60", "--"], cwd=root, env=environment,
+             supplier, *command_args], cwd=root, env=environment,
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         pidfd = None
@@ -433,6 +499,8 @@ time.sleep(90)
             self.assertTrue(LAUNCH["physically_closed"](physical, identity))
             self.assertEqual(output.read_bytes(), b"")
             self.assertEqual(summary.read_bytes(), b"")
+            if supplier == "open-meteo":
+                self.assertTrue((root / ".cache/weather-acquisition-writer.claim").is_file())
         finally:
             if owner.poll() is None:
                 owner.kill()
