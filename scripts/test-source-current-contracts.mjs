@@ -81,12 +81,13 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],
   [modified(ownerHelpers[1]),modified(ownerHelpers[1])]])
   assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
 
-const cadenceReaderFixturePaths=['scripts/read-weather-cadence-github.mjs','scripts/test-weather-cadence-watchdog.mjs'];
+const cadenceFixturePaths=['scripts/check-weather-cadence-watchdog.mjs',
+  'scripts/read-weather-cadence-github.mjs','scripts/test-weather-cadence-watchdog.mjs'];
 
 // Præcise kataloginput vælger hele CURRENT/workflow/gate/cadence; standarden bevares.
 function assertPlannerControlCommandSelection(){
   const planner=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
-  const cadence=cadenceReaderFixturePaths;
+  const cadence=cadenceFixturePaths;
   const whole=[
     'node --test scripts/test-source-current-contracts.mjs',
     'node scripts/test-source-impact-workflow.mjs',
@@ -105,7 +106,7 @@ function assertPlannerControlCommandSelection(){
     const selected=sourceControlCommandsForChangedInputs(changes);
     assert.deepEqual(selected,whole);assert(Object.isFrozen(selected));passed++;
   }
-  for(const changes of [[modified(cadence[0])],[modified(cadence[1])],
+  for(const changes of [...cadence.map(file=>[modified(file)]),
     [...cadence.map(modified),modified('docs/rdks/10_DECISIONS/DEC-0259-EXTERNAL-FOUR-HOUR-WEATHER-CADENCE.md')]]){
     const selected=sourceControlCommandsForChangedInputs(changes);
     assert.deepEqual(selected,[whole[3]]);assert(Object.isFrozen(selected));passed++;
@@ -784,10 +785,11 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
     assert.deepEqual(Object.keys(singleton.areas),['core','sourceControls']);
     assert.deepEqual(singleton.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands]);
     assert.deepEqual(singleton.areas.sourceControls.changedPaths,[files[1]]);
-    const cadence=select('cadence-reader-only',cadenceReaderFixturePaths);
+    const cadence=select('cadence-controls-with-raw-caller',cadenceFixturePaths);
     assert.equal(cadence.selection,'CURRENT_CONTRACTS');assert.equal(cadence.controlQualificationRequired,true);
-    assert.deepEqual(cadence.commands,[...CURRENT_CONTRACT_COMMANDS.core,commands[7]]);
-    assert.deepEqual(cadence.areas.sourceControls.changedPaths,cadenceReaderFixturePaths);
+    assert.deepEqual(cadence.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.rawCacheRotation,commands[7]]);
+    assert.deepEqual(cadence.areas.sourceControls.changedPaths,cadenceFixturePaths);
+    assert.deepEqual(cadence.areas.rawCacheRotation.changedPaths,[cadenceFixturePaths[0]]);
     const selectorFiles=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
     const all=select('all-controller-owners-with-selector-and-docs',[...files,
       ...selectorFiles,'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
@@ -929,7 +931,7 @@ function collect(file){
 }
 for(const file of ['scripts/source-targeted-producer.mjs','scripts/source-targeted-consumer.mjs',
   'scripts/source-current-contract-receipt.mjs','scripts/source-current-contract-plan.mjs'])collect(file);
-const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,...cadenceReaderFixturePaths,
+const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,...cadenceFixturePaths,
   'scripts/test-owned-dmi-grib-save-native.py',
   '.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
   ...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
