@@ -1,3 +1,11 @@
+## 24. november — sammensatte spørgsmål og opfølgning om Raman
+
+Den offentlige assistent fik et valideret eksternt svar på et tysk spørgsmål om fluorescens og begrænsninger. Brugeren fik samme generiske afklaring på både spørgsmålet og opfølgningen. Den lokale app-rettelse forklarer fluorescensbaggrunden og spektroskopiens begrænsninger på dansk, tysk og engelsk. En kort, dækket opfølgning kan bruge den faste emnebetegnelse. Dialoglukning og sprogskift bryder sammenhængen. Ekstra led får den normale behandling af hele spørgsmålet.
+
+Fluorescens kan overdøve svage Raman-signaler. Forsøg med rav viser, at laserbølgelængden har betydning for baggrunden. Naturlig variation, forvitring og behandling kan give overlappende signaler. [Edwards m.fl.](https://pubmed.ncbi.nlm.nih.gov/17320468/) · [Kwaśny og Bombalska](https://pubmed.ncbi.nlm.nih.gov/40572580/)
+
+Den samme afgrænsede danske revleformulering accepterer også havstrøm. Den eksterne assistents generelle behandling af sammensatte spørgsmål og offentlig efterprøve udestår.
+
 ## 23. november — assistenten afventer den normale datastart
 
 Et prognosespørgsmål under den første indlæsning kunne blive afvist, selv om de almindelige filer senere kom korrekt ind. Den lokale rettelse lader kun datakrævende spørgsmål afvente det allerede aktive startsignal. Derefter bruges den sædvanlige autoritative evidenslæser. Kortets visningsview gives ikke til assistenten, og der startes ingen ekstra indlæsning.

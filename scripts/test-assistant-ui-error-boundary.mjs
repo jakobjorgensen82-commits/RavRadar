@@ -18,7 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261124-sandbar-transport&followup=daylight-20261122`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261124-raman-followup&followup=daylight-20261122`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -457,7 +457,7 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261124-sandbar-transport');
+    assert.equal(url.searchParams.get('assistant-help'), '20261124-raman-followup');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
     assert.equal(url.searchParams.get('assistant-ready'), '20261122');
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
@@ -967,9 +967,44 @@ test('app practical beach equipment composes approved whole use and precautions 
   assert.equal(fetchCalls,0,'Composed public facts are not external AI acceptance');
 });
 
+test('the public dialog answers Raman fluorescence and retains only the scoped followup topic',async()=>{
+  const rows=[
+    ['da','Hvordan påvirker fluorescens Raman-spektroskopi af rav, og hvilke begrænsninger er der?',
+      'Først fluorescensen.','og hvor finder jeg rav i Nibe i dag?',/skjuler svage Raman-toppe/iu,/præcis alder/iu],
+    ['de','Welchen Einfluss hat Fluoreszenz auf die Raman-Spektroskopie bei Bernstein, und welche Grenzen bleiben?',
+      'Zuerst die Fluoreszenz.','und wo finde ich heute in Nibe Bernstein?',/schwache Raman-Banden überdecken/iu,/genaue Alter/iu],
+    ['en','How does fluorescence interfere with Raman spectroscopy of amber, and what limitations remain?',
+      'What about the fluorescence?','and where can I find amber in Nibe today?',/obscures weak Raman bands/iu,/exact age/iu],
+  ];
+  for(const [locale,question,followup,unknown,effect,limit] of rows){
+    const ui=fixture(locale),routed=[];
+    ui.context.askRavRadar=async input=>{routed.push(input);return 'NORMAL_ASSISTANT_ROUTE';};
+    assert.equal(publicRavAssistantHelp(followup,locale),null);
+    await ui.submit(question);
+    assert.equal(ui.topic(),'public-knowledge:raman-fluorescence');
+    assert.match(ui.answers().at(-1),effect);
+    assert.match(ui.answers().at(-1),limit);
+    await ui.submit(followup);
+    assert.match(ui.answers().at(-1),effect);
+    assert.doesNotMatch(ui.answers().at(-1),limit);
+    assert.equal(ui.detailCalls(),0);
+    assert.deepEqual(routed,[]);
+    const mixed=question.replace(/\?$/u,', '+unknown);
+    await ui.submit(mixed);
+    assert.deepEqual(routed,[mixed]);
+    assert.equal(publicRavAssistantHelp(followup.replace(/[?.]$/u,', '+unknown),locale,
+      'public-knowledge:raman-fluorescence'),null);
+    await ui.submit(question);
+    ui.emit('dialog','close');
+    assert.equal(ui.topic(),null);
+    await ui.submit(followup);
+    assert.deepEqual(routed,[mixed,followup]);
+  }
+});
+
 test('the public dialog answers transport between sandbars and what can be seen from land',async()=>{
   const questions=[
-    ['da','Kan strømmen flytte rav mellem to revler?','Kan ravansamlinger flytte sig mellem to revler uden nyt opskyl, og hvad kan jeg se fra stranden?','Kan strømmen flytte rav mellem revler uden nyt opskyl?','og hvor finder jeg rav i Nibe i dag?',/revler/i,/fra stranden/i,/opskyl/i],
+    ['da','Kan strømmen flytte rav mellem to revler?','Kan ravansamlinger flytte sig mellem to revler uden nyt opskyl, og hvad kan jeg se fra stranden?','Kan havstrøm flytte rav mellem revler uden nyt opskyl, og hvad kan jeg se fra stranden?','og hvor finder jeg rav i Nibe i dag?',/revler/i,/fra stranden/i,/opskyl/i],
     ['de','Kann Bernstein zwischen zwei Sandbänken durch Strömung verlagert werden?','Können sich Bernsteinansammlungen zwischen zwei Sandbänken ohne neuen Spülsaum verlagern, und was kann ich vom Strand aus beobachten, um das zu erkennen?','Kann die Strömung Bernstein zwischen zwei Sandbänken ohne neuen Spülsaum verlagern?','und wo finde ich heute in Nibe Bernstein?',/sandbänken/i,/vom strand/i,/spülsaum/i],
     ['en','Can currents move amber between two sandbars?','Can amber accumulations shift between two sandbars without new wash, and what can I observe from the beach to notice it?','Can the current move amber between sandbars without fresh wash?','and where can I find amber in Nibe today?',/sandbars/i,/from the beach/i,/wash/i],
   ];
