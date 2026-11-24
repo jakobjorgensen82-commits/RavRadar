@@ -606,3 +606,17 @@ workflow eller beskyttede input gælder fortsat.
 Den korte vej giver den hele planlæggerprøve op til otte minutter.
 I den fulde kontrol #1694 bestod den efter 314 sekunder. Det tidligere
 maksimum på 300 sekunder kunne afbryde samme prøve på den korte vej.
+
+### Årsagstrin ved genbrug af databaseprøven
+
+Når det normale GitHub-job vælger en ny databaseprøve efter afvist
+genbrug, skriver det én fast kode for det senest påbegyndte kontroltrin
+eller for den overskredne læsefrist. Koden skelner mellem aktuelle input,
+runneren, GitHub-kørslen, oprindelsen og slutkontrollen. Loggen får ingen
+fejltekst, SQL, rådata eller adgangsoplysninger. Genbrug kræver fortsat
+samme bevis, og en afvisning fører stadig til den normale prøve.
+
+I den fulde #1694 tog en ny databaseprøve 49 minutter og 16 sekunder.
+Runnerens billedversion var ændret i forhold til den kendte tidligere
+oprindelse #1681. De registrerede PostgreSQL-programmer var byteidentiske.
+Kravet om identisk runner for netop den oprindelse var derfor ikke opfyldt.

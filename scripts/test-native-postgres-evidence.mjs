@@ -3044,11 +3044,23 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       return {options,calls,skippedRun:laterRun,fetches,historyCaptures:()=>historyCaptures};
     };
     const positive=makeAfter599Fixture();
+    const positiveRefusals=[];
+    positive.options.onRefusal=reason=>positiveRefusals.push(reason);
     const reused=await native.decideAssistantAfter599Reuse(positive.options);
     assert(reused,'The genuine after599 V1 phase survives its later national failure');
     assert.equal(reused.kind,native.ASSISTANT_AFTER599_REUSE_KIND);assert.equal(reused.status,'REUSED');
     assert.equal(reused.executedInThisRun,false);assert.equal(reused.origin.run,originRun.id);assert.equal(reused.origin.head,parentHead);
     assert.equal(reused.eligibleForReuse,false);assert.equal(JSON.stringify(originalReceipt),originalBytes);
+    assert.deepEqual(positiveRefusals,[]);
+    await t.test('after599 reports only fixed failure stages before the ordinary fallback',async()=>{
+      for(const [fault,stage] of [['unavailable','CURRENT_RUN'],['zip','ORIGIN_RECEIPT'],
+        ['runtime','MATCHING_ORIGIN_MISSING'],['finalArtifact','FINAL_REOBSERVATION']]){
+        const rejected=makeAfter599Fixture({mutate:{[fault]:true}}),refusals=[];
+        rejected.options.onRefusal=reason=>{refusals.push(reason);throw Error('SYNTHETIC_REPORTER_FAILURE');};
+        assert.equal(await native.decideAssistantAfter599Reuse(rejected.options),null);
+        assert.deepEqual(refusals,[stage],fault);
+      }
+    });
     await t.test('after599 genbruger den ældre præcise runner efter en nyere verificeret PostgreSQL-prøve',async()=>{
       const differentRunner=makeAfter599Fixture({differentRunner:true});
       const compatible=await native.decideAssistantAfter599Reuse(differentRunner.options);
@@ -3197,8 +3209,11 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     assert(unrelated,'A proved different77-SQL failure cannot invalidate the unchanged79-SQL phase');
     let clock=0;const clockMock=t.mock.method(performance,'now',()=>clock);
     try{const late=makeAfter599Fixture(),transport=late.options.get;
+      const refusals=[];
+      late.options.onRefusal=reason=>refusals.push(reason);
       late.options.get=async(...args)=>{const value=await transport(...args);clock=60001;return value;};
       assert.equal(await native.decideAssistantAfter599Reuse(late.options),null,'Expired qualification never grants reuse');
+      assert.deepEqual(refusals,['READ_DEADLINE']);
     }finally{clockMock.mock.restore();}
     for(const mutate of [r=>r.eligibleForReuse=true,r=>r.status='REUSED',r=>r.executedInThisRun=false,
       r=>r.report.assistantAfter599Successor.sqlExecuted=false,r=>r.report.accountErasure.sourceSqlFileCount=76,
