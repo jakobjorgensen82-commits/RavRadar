@@ -167,6 +167,7 @@ async function assertAppVersionPreservesHistoricalModelPolicies() {
   const I = await computeRavScoreModelBundle();
   const fixture = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-app-version-policy-'));
   try {
+    const handbookSync = 'scripts/sync-handbook-installation-copy.mjs';
     const fixed = [
       'scripts/set-version.mjs', 'scripts/validate-release-version.mjs',
       'scripts/lib/dmi-marine-zone-exclusions.json', 'scripts/lib/copernicus-component-spatial-policy.json',
@@ -199,10 +200,12 @@ async function assertAppVersionPreservesHistoricalModelPolicies() {
     await walk('js');
     for (const name of await fs.readdir(REPOSITORY_ROOT))
       if (/\.(?:js|html)$/.test(name) && !/^KYSTZONER-/.test(name)) browser.push(name);
-    // Copy the real two fixed programs' complete reviewed import closure.
+    // Copy the actual setter and checkers with their reviewed import closure.
     // This is source-only fixture setup, not model/source admission or a PG seed.
     const programQueue = ['scripts/set-version.mjs', 'scripts/validate-release-version.mjs'];
-    const programFiles = new Set();
+    // The synchronizer reads the fixed manifests and continuation implementation
+    // from the fixture root via file URLs. Those inputs are in the lists above.
+    const programFiles = new Set([handbookSync]);
     while (programQueue.length) {
       const relative = programQueue.shift();
       if (programFiles.has(relative)) continue;
@@ -231,6 +234,8 @@ async function assertAppVersionPreservesHistoricalModelPolicies() {
     const nextVersion = packageBefore.version.replace(/\d+$/, value => String(Number(value) + 1));
     const T = await ravScoreContinuationImplementationSha256({ repositoryRoot: fixture });
     execFileSync(process.execPath, ['scripts/set-version.mjs', nextVersion],
+      { cwd: fixture, timeout: 30000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    execFileSync(process.execPath, [handbookSync, '--check'],
       { cwd: fixture, timeout: 30000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     const nextC = await computeCandidateGRollbackBundle({ root: fixture });
     const nextI = await computeRavScoreModelBundle({ root: fixture });
