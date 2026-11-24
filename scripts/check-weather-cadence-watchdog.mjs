@@ -286,14 +286,18 @@ async function main() {
     const priorJobs = samePriorWorkflow
       ? await readWeatherCadenceGithub({ ...access, kind: 'recovery-jobs', recoveryRunId: String(prior.id) })
       : undefined;
-    const activity = await Promise.all(CADENCE_ACTIVE_STATES.map(activeRunStatus =>
-      readWeatherCadenceGithub({ ...access, kind: 'owner-active-runs', activeRunStatus })));
-    // After the potentially delayed inventory reads, recheck even completed
-    // ordinary starts. An active-only list can miss a quickly finished run.
-    [normalRuns, manualRuns] = await Promise.all([
+    // Wait for the unstable list before collecting the final set together.
+    // Earlier status snapshots could otherwise miss work queued during the wait.
+    await readWeatherCadenceGithub({ ...access, kind: 'owner-active-runs',
+      activeRunStatus: 'in_progress', waitForInProgress: true });
+    const [freshNormal, freshManual, ...activity] = await Promise.all([
       readWeatherCadenceGithub({ ...access, kind: 'normal' }),
       readWeatherCadenceGithub({ ...access, kind: 'manual' }),
+      ...CADENCE_ACTIVE_STATES.map(activeRunStatus =>
+        readWeatherCadenceGithub({ ...access, kind: 'owner-active-runs', activeRunStatus })),
     ]);
+    normalRuns = freshNormal;
+    manualRuns = freshManual;
     ownerOrder = { failedRunId, requestId, headSha, history, activity, priorJobs, samePriorWorkflow };
   }
   let recoveryHandoff;

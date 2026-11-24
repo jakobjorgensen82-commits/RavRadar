@@ -316,7 +316,7 @@ test('The owner waits through the observed in-progress count lag without trustin
   const waits = [];
   let reads = 0;
   assert.deepEqual(await readWeatherCadenceGithub({ ...readOptions, kind: 'owner-active-runs',
-    activeRunStatus: 'in_progress',
+    activeRunStatus: 'in_progress', waitForInProgress: true,
     request: async () => readResponse(200, ++reads === 6 ? document : incomplete),
     wait: async milliseconds => { waits.push(milliseconds); },
   }), document);

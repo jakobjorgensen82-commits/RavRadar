@@ -17,7 +17,7 @@ const fail = (code, routeLabel) => {
 export const CADENCE_ACTIVE_STATES = Object.freeze(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 
 export async function readWeatherCadenceGithub({ kind, repository, token, recoveryRunId,
-  ownerOrdersSince, activeRunStatus,
+  ownerOrdersSince, activeRunStatus, waitForInProgress = false,
   request = fetch, wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) }) {
   const recovery = kind === 'recovery-jobs';
   const ownerOrders = kind === 'owner-orders';
@@ -26,6 +26,7 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
     || (recovery ? !/^[1-9][0-9]{0,14}$/.test(recoveryRunId ?? '') : recoveryRunId !== undefined)
     || (ownerOrders ? !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(ownerOrdersSince ?? '') : ownerOrdersSince !== undefined)
     || (activeRuns ? !CADENCE_ACTIVE_STATES.includes(activeRunStatus) : activeRunStatus !== undefined)
+    || typeof waitForInProgress !== 'boolean' || (waitForInProgress && activeRunStatus !== 'in_progress')
     || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
     || typeof token !== 'string' || !token || typeof request !== 'function' || typeof wait !== 'function') {
     fail('WEATHER_CADENCE_READ_ARGUMENT_REJECTED');
@@ -39,7 +40,7 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
   const routeLabel = activeRuns ? `${kind}:${activeRunStatus}` : kind;
   const reject = code => fail(code, routeLabel);
   const counted = recovery || ownerOrders || activeRuns;
-  const inventoryDelays = activeRunStatus === 'in_progress' ? inProgressInventoryDelays : delays;
+  const inventoryDelays = waitForInProgress ? inProgressInventoryDelays : delays;
   // Owner inventory reads share their wait budget by running concurrently.
   // The separate single POST is bounded to 20s inside the unchanged 5min job.
   let retry = 0;
