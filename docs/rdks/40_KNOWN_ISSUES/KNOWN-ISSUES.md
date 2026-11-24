@@ -1,3 +1,9 @@
+## 24. november — spørgsmål om rav mellem revler
+
+I det offentlige tyske spørgeforløb kom et valideret svar fra den eksterne AI. Den bad om at få spørgsmålet delt op. Opfølgningen om transport mellem to revler fik i stedet den generelle forklaring af kortets strømpil.
+
+Den lokale hjælpetekst besvarer hele det praktiske spørgsmål på dansk, tysk og engelsk, også når spørgsmålet nævner manglende opskyl og tegn fra stranden. Brud i bølgemønstret og skum eller flydende tang beskrives som observationer ved overfladen med usikkerhed om bunden og ravets placering. Spørgsmål med yderligere sted- eller tidsled følger den almindelige rute. Teknisk grundlag i håndbog 89.265 og [NOAA om synlige tegn ved revler](https://www.weather.gov/safety/ripcurrent-faqs). Kildekvalifikation og offentlig efterprøve udestår.
+
 ## 22. november — verificering af kontoaktivitet før inaktivitetsvarsling
 
 Den eksisterende GitHub-arbejdsgang har en afgrænset læsning af Supabases indstilling for registrering af kontoaktivitet. Læsningen kræver verificeret hovedgren og en ledig kø. Den seneste skrivefrie kørsel viste, at Supabases automatiske registrering ved udstedelse af login-token er slået fra. Appen må fortsat ikke bruge manglende aktivitetsregistrering som bevis for inaktivitet.

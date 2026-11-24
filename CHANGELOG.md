@@ -1,3 +1,7 @@
+## 4.0.602 — rav mellem revler
+
+- Spørg RavRadar kan forklare, hvordan strøm kan flytte materiale mellem revler uden nyt opskyl, og hvad man kan se fra stranden. Svaret findes på dansk, tysk og engelsk.
+
 ## Drift — fast kategorilæsning efter assistentafslag
 
 - Lokal kandidat til en fast, skrivefri læsning af fejlkategorier omkring 21. november kl. 17.12 UTC. Den ændrer hverken assistentens Edge-kode, AI-kald eller svar. Kildekvalifikation og faktisk driftslæsning udestår.

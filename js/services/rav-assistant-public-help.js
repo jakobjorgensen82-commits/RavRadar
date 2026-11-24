@@ -46,6 +46,11 @@ const ANSWERS={
     da:'Mener du selve materialet rav, et fund af rav eller et bestemt navn på en app, hjemmeside eller gruppe? Skriv gerne lidt mere, så jeg ikke gætter på betydningen.',
     de:'Meinst du das Material Bernstein, einen Bernsteinfund oder den Namen einer App, Website oder Gruppe? Beschreibe bitte kurz, was du meinst, damit ich nicht rate.',
     en:'Do you mean amber itself, a find of amber, or the name of an app, website or group? Please add a little context so I do not guess what the name means.'
+  },
+  'sandbar-transport':{
+    da:'Ja. Når bølger sætter let materiale ved bunden i bevægelse, kan strømmen flytte det mellem revler og render. Det kan ske uden nyt opskyl på stranden. Fra stranden kan du holde øje med åbninger i rækken af brydende bølger og se, hvordan skum eller flydende tang bevæger sig dér. Det er spor om vandets bevægelse i overfladen. Ravets placering og strømmen ved bunden er stadig usikre.',
+    de:'Ja. Wenn Wellen leichtes Material am Boden aufwirbeln, kann die Strömung es zwischen Sandbänken und Rinnen verlagern. Das ist auch ohne neuen Spülsaum möglich. Vom Strand aus kannst du nach Lücken zwischen den brechenden Wellen schauen und beobachten, wie sich Schaum oder treibender Tang dort bewegt. Das sind Hinweise auf die Bewegung an der Oberfläche. Wo Bernstein liegt und wie das Wasser am Boden strömt, bleibt offen.',
+    en:'Yes. When waves stir up light material near the seabed, currents can move it between sandbars and channels. This can happen without fresh wash on the beach. From the beach, look for gaps in the line of breaking waves and watch how foam or floating seaweed moves there. These are clues to movement at the surface. Where the amber is and how the current flows near the seabed remain uncertain.'
   }
 };
 const FORMS={
@@ -57,6 +62,11 @@ const FORMS={
     da:/^hvor kommer rav(?:et)? fra(?:,? og |[?.] (?:og )?)kan (?:jeg|vi|man) (?:se|bestemme) alderen på et (?:rav)?fund$/iu,
     de:/^woher kommt bernstein(?:,? und |[?.] (?:und )?)kann (?:ich|man) das alter eines (?:bernstein)?fund(?:es|s) bestimmen$/iu,
     en:/^where does amber come from(?:,? and |[?.] (?:and )?)can (?:i|we|one) (?:tell|determine) the age of (?:a find|an amber find|a piece of amber)$/iu,
+  },
+  'sandbar-transport':{
+    da:/^(?:kan strøm(?:men)? flytte rav mellem (?:to )?revler|kan rav(?:ansamlinger)? (?:flytte sig|flyttes) mellem (?:to )?revler(?: uden nyt opskyl)?)(?:(?:,? og |[?.] )hvad kan jeg (?:se|observere) fra stranden)?$/iu,
+    de:/^(?:kann bernstein zwischen (?:zwei )?sandbänken durch (?:die )?strömung verlagert werden|können sich bernsteinansammlungen zwischen (?:zwei )?sandbänken(?: ohne neuen spülsaum)? verlagern)(?:(?:,? und |[?.] )was kann ich vom strand aus beobachten(?:,? um das zu erkennen)?)?$/iu,
+    en:/^(?:can (?:currents?|the current) move amber between (?:two )?sandbars|can amber(?: accumulations)? (?:shift|move) between (?:two )?sandbars(?: without (?:new|fresh) wash)?)(?:(?:,? and |[?.] )what can i (?:observe|see) from the beach(?: to notice it)?)?$/iu,
   },
 };
 const WATER={
