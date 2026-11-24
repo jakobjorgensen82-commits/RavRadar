@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { CADENCE_ACTIVE_STATES, readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
 import { WEATHER_FAILURE_OWNER } from './notify-weather-failure.mjs';
@@ -107,8 +108,29 @@ function verifiedRecoveryOwner(manualRuns, handoff, nowMs) {
   return owner;
 }
 
+function ownerOrders(history) {
+  return history.workflow_runs.filter(run => run?.display_title === OWNER_ORDER_TITLE
+    && run.actor?.login === WEATHER_FAILURE_OWNER);
+}
+
+function priorOrderStoppedBeforeDispatch(prior, request, failed, jobs, sameWorkflow) {
+  if (!sameWorkflow || prior.run_attempt !== 1
+    || prior.triggering_actor?.login !== WEATHER_FAILURE_OWNER
+    || !MAIN_HEAD.test(prior.head_sha ?? '') || prior.status !== 'completed' || prior.conclusion !== 'failure'
+    || !(Date.parse(prior.created_at) >= Date.parse(failed.updated_at)
+      && Date.parse(prior.updated_at) >= Date.parse(prior.created_at)
+      && Date.parse(prior.updated_at) <= Date.parse(request.created_at))
+    || !Array.isArray(jobs?.jobs) || jobs.total_count !== jobs.jobs.length || jobs.jobs.length > 100) return false;
+  const dispatchJobs = jobs.jobs.filter(job => job?.name === 'dispatch');
+  const [dispatch] = dispatchJobs;
+  return dispatchJobs.length === 1 && RUN_ID.test(String(dispatch.id)) && dispatch.run_id === prior.id
+    && dispatch.run_attempt === 1 && dispatch.head_branch === 'main' && dispatch.head_sha === prior.head_sha
+    && dispatch.status === 'completed' && dispatch.conclusion === 'skipped'
+    && Array.isArray(dispatch.steps) && dispatch.steps.length === 0;
+}
+
 function verifiedOwnerOrder(manualRuns, ownerOrder, slotMs, nowMs) {
-  const { failedRunId, requestId, headSha, history } = ownerOrder ?? {};
+  const { failedRunId, requestId, headSha, history, priorJobs, samePriorWorkflow } = ownerOrder ?? {};
   if (!RUN_ID.test(failedRunId ?? '') || !RUN_ID.test(requestId ?? '') || requestId === failedRunId
     || !MAIN_HEAD.test(headSha ?? '') || !Array.isArray(history?.workflow_runs)
     || history.total_count !== history.workflow_runs.length || history.total_count > 100) return null;
@@ -120,22 +142,35 @@ function verifiedOwnerOrder(manualRuns, ownerOrder, slotMs, nowMs) {
     || !ownRepository(failed.repository) || !ownRepository(failed.head_repository)
     || failed.status !== 'completed' || failed.conclusion !== 'failure'
     || !(Date.parse(failed.created_at) >= slotMs && Date.parse(failed.updated_at) <= nowMs)) return null;
-  // Workflow concurrency serializes the orders. Keep even a previous failed
-  // order occupied: the old POST's result can be unknown and invisible yet.
-  const requests = history.workflow_runs.filter(run => run?.display_title === OWNER_ORDER_TITLE
-    && run.actor?.login === WEATHER_FAILURE_OWNER);
+  // A failed POST can still create a run. Only a separately verified skipped
+  // dispatch job permits one replacement of a terminal, earlier owner order.
+  const requests = ownerOrders(history);
   if (requests.some(run => !RUN_ID.test(String(run.id)) || run.path !== WATCHDOG_PATH
     || run.head_branch !== 'main' || run.event !== 'workflow_dispatch'
     || !ownRepository(run.repository) || !ownRepository(run.head_repository)
     || !(Date.parse(run.created_at) >= slotMs && Date.parse(run.created_at) <= nowMs))) return null;
   const ownRequests = requests.filter(run => String(run.id) === requestId);
   const request = ownRequests[0];
+  const earlier = requests.filter(run => Number(run.id) < Number(requestId));
   if (ownRequests.length !== 1 || request.run_attempt !== 1 || request.status !== 'in_progress'
     || request.conclusion !== null || request.head_sha !== headSha
     || request.triggering_actor?.login !== WEATHER_FAILURE_OWNER
     || Date.parse(request.created_at) < Date.parse(failed.updated_at)
-    || requests.some(run => Number(run.id) < Number(requestId))) return null;
+    || earlier.length > 1
+    || (earlier.length === 1 && !priorOrderStoppedBeforeDispatch(earlier[0], request, failed,
+      priorJobs, samePriorWorkflow))) return null;
   return failed;
+}
+
+function sameOwnerWorkflow(priorHead, headSha) {
+  if (!MAIN_HEAD.test(priorHead ?? '') || !MAIN_HEAD.test(headSha ?? '')) return false;
+  try {
+    const git = args => execFileSync('git', args, { timeout: 3000, maxBuffer: 64 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, GIT_NO_REPLACE_OBJECTS: '1' } });
+    git(['merge-base', '--is-ancestor', priorHead, headSha]);
+    return git(['cat-file', 'blob', `${priorHead}:${WATCHDOG_PATH}`])
+      .equals(git(['cat-file', 'blob', `${headSha}:${WATCHDOG_PATH}`]));
+  } catch { return false; }
 }
 
 function ownerOrderReadersClear({ requestId, headSha, activity }) {
@@ -221,7 +256,7 @@ function parseArgs(argv) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const [normalRuns, manualRuns] = await Promise.all([
+  let [normalRuns, manualRuns] = await Promise.all([
     fs.readFile(options.normalRunsPath, 'utf8').then(JSON.parse),
     fs.readFile(options.manualRunsPath, 'utf8').then(JSON.parse),
   ]);
@@ -241,11 +276,25 @@ async function main() {
       throw new Error('WEATHER_OWNER_ORDER_REJECTED');
     }
     const access = { repository: REPOSITORY, token: env.GH_TOKEN };
-    const [history, ...activity] = await Promise.all([
-      readWeatherCadenceGithub({ ...access, kind: 'owner-orders', ownerOrdersSince: new Date(slotFor(nowMs)).toISOString() }),
-      ...CADENCE_ACTIVE_STATES.map(activeRunStatus => readWeatherCadenceGithub({ ...access, kind: 'owner-active-runs', activeRunStatus })),
+    const history = await readWeatherCadenceGithub({ ...access, kind: 'owner-orders',
+      ownerOrdersSince: new Date(slotFor(nowMs)).toISOString() });
+    const earlier = ownerOrders(history).filter(run => Number(run.id) < Number(requestId));
+    const [prior] = earlier;
+    const samePriorWorkflow = earlier.length === 1 && prior.status === 'completed'
+      && prior.conclusion === 'failure' && RUN_ID.test(String(prior.id))
+      && sameOwnerWorkflow(prior.head_sha, headSha);
+    const priorJobs = samePriorWorkflow
+      ? await readWeatherCadenceGithub({ ...access, kind: 'recovery-jobs', recoveryRunId: String(prior.id) })
+      : undefined;
+    const activity = await Promise.all(CADENCE_ACTIVE_STATES.map(activeRunStatus =>
+      readWeatherCadenceGithub({ ...access, kind: 'owner-active-runs', activeRunStatus })));
+    // After the potentially delayed inventory reads, recheck even completed
+    // ordinary starts. An active-only list can miss a quickly finished run.
+    [normalRuns, manualRuns] = await Promise.all([
+      readWeatherCadenceGithub({ ...access, kind: 'normal' }),
+      readWeatherCadenceGithub({ ...access, kind: 'manual' }),
     ]);
-    ownerOrder = { failedRunId, requestId, headSha, history, activity };
+    ownerOrder = { failedRunId, requestId, headSha, history, activity, priorJobs, samePriorWorkflow };
   }
   let recoveryHandoff;
   if (sourceId) {
@@ -262,7 +311,8 @@ async function main() {
       token: env.GH_TOKEN, recoveryRunId: sourceId });
     recoveryHandoff = { sourceId, recipientId, headSha, jobs };
   }
-  const result = assessWeatherCadenceWatchdog({ normalRuns, manualRuns, nowMs, recoveryHandoff, ownerOrder });
+  const result = assessWeatherCadenceWatchdog({ normalRuns, manualRuns,
+    nowMs: ownerOrder ? Date.now() : nowMs, recoveryHandoff, ownerOrder });
   if (options.githubOutput) {
     await fs.appendFile(options.githubOutput, `dispatch=${result.dispatch}\nreason=${result.reason}\n`);
   }
