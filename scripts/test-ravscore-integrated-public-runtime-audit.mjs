@@ -2059,6 +2059,24 @@ await assertBoundedAuditTextAndFailureReceipt();
   const report=projectLf7WaterRoutingAcceptance(full,diagnostics,routing);
   assert.equal(report.status,'OBSERVED_CONFORMANT');assert.equal(report.counts.lfWaterHours,7*118);
   assert.equal(report.computedValuesMatch,true);assert.equal(report.allRoutedT3Comparable,true);
+  assert.deepEqual(report.unknownT3Reasons, {
+    missingVerifiedFutureEndpointHours: 0, nonComparableFutureSeriesHours: 0,
+  });
+  const legacy = structuredClone(diagnostics);
+  legacy.lf7WaterRouting.schemaVersion = 1;
+  delete legacy.lf7WaterRouting.unknownT3Reasons;
+  const legacyReport = projectLf7WaterRoutingAcceptance(full, legacy, routing);
+  assert.equal(legacyReport.status, 'OBSERVED_CONFORMANT');
+  assert.equal(Object.hasOwn(legacyReport, 'unknownT3Reasons'), false);
+
+  const wrongTotal = structuredClone(diagnostics);
+  wrongTotal.lf7WaterRouting.unknownT3Reasons.nonComparableFutureSeriesHours = 1;
+  assert.equal(projectLf7WaterRoutingAcceptance(full, wrongTotal, routing).reason, 'TREND_REASON_COUNTS_INVALID');
+  const privateReason = structuredClone(diagnostics);
+  privateReason.lf7WaterRouting.unknownT3Reasons.nativeEndpoint = 'SYNTHETIC_PRIVATE_SENTINEL';
+  const rejectedReasons = projectLf7WaterRoutingAcceptance(full, privateReason, routing);
+  assert.equal(rejectedReasons.reason, 'TREND_REASON_COUNTS_INVALID');
+  assert.equal(JSON.stringify(rejectedReasons).includes('SYNTHETIC_PRIVATE_SENTINEL'), false);
   assert.equal(JSON.stringify(report).includes('SYNTHETIC_PRIVATE_SENTINEL'),false);
   assert.equal(projectLf7WaterRoutingAcceptance(full,null,routing).status,'UNKNOWN');
   assert.equal(projectLf7WaterRoutingAcceptance(full,{},routing).reason,'NOT_RECORDED');
