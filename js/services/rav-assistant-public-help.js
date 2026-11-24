@@ -64,9 +64,9 @@ const FORMS={
     en:/^where does amber come from(?:,? and |[?.] (?:and )?)can (?:i|we|one) (?:tell|determine) the age of (?:a find|an amber find|a piece of amber)$/iu,
   },
   'sandbar-transport':{
-    da:/^(?:kan strøm(?:men)? flytte rav mellem (?:to )?revler|kan rav(?:ansamlinger)? (?:flytte sig|flyttes) mellem (?:to )?revler(?: uden nyt opskyl)?)(?:(?:,? og |[?.] )hvad kan jeg (?:se|observere) fra stranden)?$/iu,
-    de:/^(?:kann bernstein zwischen (?:zwei )?sandbänken durch (?:die )?strömung verlagert werden|können sich bernsteinansammlungen zwischen (?:zwei )?sandbänken(?: ohne neuen spülsaum)? verlagern)(?:(?:,? und |[?.] )was kann ich vom strand aus beobachten(?:,? um das zu erkennen)?)?$/iu,
-    en:/^(?:can (?:currents?|the current) move amber between (?:two )?sandbars|can amber(?: accumulations)? (?:shift|move) between (?:two )?sandbars(?: without (?:new|fresh) wash)?)(?:(?:,? and |[?.] )what can i (?:observe|see) from the beach(?: to notice it)?)?$/iu,
+    da:/^(?:kan strøm(?:men)? flytte rav|kan rav(?:ansamlinger)? (?:flytte sig|flyttes)) mellem (?:to )?revler(?: uden nyt opskyl)?(?:(?:,? og |[?.] )hvad kan jeg (?:se|observere) fra stranden)?$/iu,
+    de:/^(?:kann bernstein zwischen (?:zwei )?sandbänken durch (?:die )?strömung verlagert werden|(?:kann die strömung bernstein|können sich bernsteinansammlungen) zwischen (?:zwei )?sandbänken(?: ohne neuen spülsaum)? verlagern)(?:(?:,? und |[?.] )was kann ich vom strand aus beobachten(?:,? um das zu erkennen)?)?$/iu,
+    en:/^(?:can (?:currents?|the current) move amber|can amber(?: accumulations)? (?:shift|move)) between (?:two )?sandbars(?: without (?:new|fresh) wash)?(?:(?:,? and |[?.] )what can i (?:observe|see) from the beach(?: to notice it)?)?$/iu,
   },
 };
 const WATER={

@@ -969,12 +969,12 @@ test('app practical beach equipment composes approved whole use and precautions 
 
 test('the public dialog answers transport between sandbars and what can be seen from land',async()=>{
   const questions=[
-    ['da','Kan strømmen flytte rav mellem to revler?','Kan ravansamlinger flytte sig mellem to revler uden nyt opskyl, og hvad kan jeg se fra stranden?','og hvor finder jeg rav i Nibe i dag?',/revler/i,/fra stranden/i,/opskyl/i],
-    ['de','Kann Bernstein zwischen zwei Sandbänken durch Strömung verlagert werden?','Können sich Bernsteinansammlungen zwischen zwei Sandbänken ohne neuen Spülsaum verlagern, und was kann ich vom Strand aus beobachten, um das zu erkennen?','und wo finde ich heute in Nibe Bernstein?',/sandbänken/i,/vom strand/i,/spülsaum/i],
-    ['en','Can currents move amber between two sandbars?','Can amber accumulations shift between two sandbars without new wash, and what can I observe from the beach to notice it?','and where can I find amber in Nibe today?',/sandbars/i,/from the beach/i,/wash/i],
+    ['da','Kan strømmen flytte rav mellem to revler?','Kan ravansamlinger flytte sig mellem to revler uden nyt opskyl, og hvad kan jeg se fra stranden?','Kan strømmen flytte rav mellem revler uden nyt opskyl?','og hvor finder jeg rav i Nibe i dag?',/revler/i,/fra stranden/i,/opskyl/i],
+    ['de','Kann Bernstein zwischen zwei Sandbänken durch Strömung verlagert werden?','Können sich Bernsteinansammlungen zwischen zwei Sandbänken ohne neuen Spülsaum verlagern, und was kann ich vom Strand aus beobachten, um das zu erkennen?','Kann die Strömung Bernstein zwischen zwei Sandbänken ohne neuen Spülsaum verlagern?','und wo finde ich heute in Nibe Bernstein?',/sandbänken/i,/vom strand/i,/spülsaum/i],
+    ['en','Can currents move amber between two sandbars?','Can amber accumulations shift between two sandbars without new wash, and what can I observe from the beach to notice it?','Can the current move amber between sandbars without fresh wash?','and where can I find amber in Nibe today?',/sandbars/i,/from the beach/i,/wash/i],
   ];
-  for(const [locale,simple,mixed,location,bars,observations,wash] of questions){
-    for(const question of [simple,mixed]){
+  for(const [locale,simple,mixed,variant,location,bars,observations,wash] of questions){
+    for(const question of [simple,mixed,variant]){
       const ui=fixture(locale);
       ui.context.askRavRadar=async()=>{throw Error('SAND_BAR_HELP_MUST_NOT_FETCH');};
       await ui.submit(question);
