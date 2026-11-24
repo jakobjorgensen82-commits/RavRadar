@@ -15039,8 +15039,55 @@ def write_failure_summary(error: Exception) -> None:
             handle.write(f"- Opstartsfejl: `{safe_error_message(error)}`\n")
 
 
+def ordinary_wave_first_turn_gap_summary(
+    evidence: dict[str, Any], reference: datetime, isolated_times: set[str],
+    primary_run: str | None, assets: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Project the first native gaps and the queue returned for those hours."""
+    try:
+        hours = operational_current_valid_times(reference)
+        missing_by_hour = dict.fromkeys(hours, 0)
+        isolated_by_hour = dict.fromkeys(hours, 0)
+        neighbors = {
+            valid: (before, after)
+            for before, valid, after in zip(hours, hours[1:], hours[2:])
+        }
+        verified = evidence["verifiedPairKeys"]
+        for part, valid in evidence["targetPairKeys"] - verified:
+            if valid not in missing_by_hour or part.startswith("PROXY_SOURCE::"):
+                continue
+            missing_by_hour[valid] += 1
+            if valid in neighbors and all((part, neighbor) in verified for neighbor in neighbors[valid]):
+                isolated_by_hour[valid] += 1
+        primary_assets = {
+            asset["valid"]: asset for asset in assets
+            if primary_run is not None and asset.get("modelRun") == primary_run
+            and asset.get("operationalWavePhaseRank") == 0
+        }
+        return {
+            "publicAxisHourCount": len(hours),
+            "primaryModelRun": canonical_time(primary_run),
+            "hours": [
+                {
+                    "validAt": valid,
+                    "missingNativePartCount": missing_by_hour[valid],
+                    "isolatedNativePartCount": isolated_by_hour[valid],
+                    "isolatedRepairRequested": valid in isolated_times,
+                    "primaryExactAssetSelected": valid in primary_assets,
+                    "isolatedRepairSelected": primary_assets.get(valid, {}).get(
+                        "operationalWaveIsolatedRepair"
+                    ) is True,
+                }
+                for valid in hours if missing_by_hour[valid] or valid in isolated_times
+            ],
+        }
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+
+
 def write_ordinary_wave_acquisition_report(
     result: dict[str, Any], reference: datetime,
+    *, first_turn_gaps: dict[str, Any] | None = None,
 ) -> bool:
     """Report what happened to WAM data without exporting raw or per-point input."""
     if os.getenv("DMI_BULK_REQUIRE_ORDINARY_CLOSURE") != "true" or FINALIZE_ONLY:
@@ -15088,6 +15135,7 @@ def write_ordinary_wave_acquisition_report(
                 "selectedModelRun": canonical_time(stac.get("selectedRun")),
                 "catalogueResolvesAxis": catalogue_resolves_axis if type(catalogue_resolves_axis) is bool else None,
                 "activeModelRun": canonical_time(result["runs"].get(collection, {}).get("referenceTime")),
+                "firstTurnNativeGaps": (first_turn_gaps or {}).get(collection),
                 "firstUnresolvedHour": canonical_time(progress.get("firstUnresolvedHour")),
                 "remainingPairCount": count(progress, "remainingClosurePairCount"),
                 "assetCoverage": {name: count(coverage, name) for name in coverage_counts},
@@ -15101,7 +15149,7 @@ def write_ordinary_wave_acquisition_report(
                 }),
             }
         report = {
-            "schemaVersion": 1, "productionReferenceAt": canonical_time(reference),
+            "schemaVersion": 2, "productionReferenceAt": canonical_time(reference),
             "publicWeatherCoverageProved": False, "collections": collections,
         }
         path = ROOT / "data/diagnostics/dmi-wave-acquisition-safe.json"
@@ -15190,6 +15238,9 @@ def first_marine_tail_catalogue(
     pending_reserve, preserves_plan,
 ):
     """Offer a newer catalogue once, before this collection changes any rows."""
+    def refuse(reason: str) -> None:
+        progress(f"DMI_FIRST_MARINE_TAIL_CATALOGUE {collection} {reason}")
+
     old_run, old_assets, old_stats = old_catalogue
     old_times = set(old_stats.get("officialRequiredValidTimes") or ())
     old_support = marine_catalogue_support_times(old_assets, required_times)
@@ -15199,18 +15250,25 @@ def first_marine_tail_catalogue(
     }
     now = time.monotonic()
     reserve = DKSS_FIRST_TURN_CATALOGUE_MAX_SECONDS
+    if collection not in MARINE_COLLECTIONS:
+        return None
     if (
-        collection not in MARINE_COLLECTIONS
-        or not old_run
+        not old_run
         or old_stats.get("catalogInventoryComplete") is not True
         or old_stats.get("selectedNativeRunComplete") is not True
         or not old_times
-        or not uncovered_tail
-        or now - observed_at < DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS
-        or remaining_bytes <= 0
-        or not checkpoint_controller.can_start_asset(pending_reserve + reserve, cost_family=collection)
     ):
-        return None
+        return refuse("PREVIOUS_CATALOGUE_UNQUALIFIED")
+    if not uncovered_tail:
+        return refuse("NO_QUALIFIED_TAIL")
+    if now - observed_at < DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS:
+        return refuse("PREFETCH_TOO_RECENT")
+    if remaining_bytes <= 0:
+        return refuse("BYTE_BUDGET_EMPTY")
+    if not checkpoint_controller.can_start_asset(pending_reserve + reserve, cost_family=collection):
+        return refuse("RESERVE_BEFORE")
+
+    phase = "CATALOGUE"
     try:
         with asset_download_work_deadline(now + reserve):
             offer = list_operational_marine_assets(
@@ -15225,25 +15283,38 @@ def first_marine_tail_catalogue(
                 asset["size"] if asset.get("size") is not None else known_asset_bytes
                 for asset in assets if asset["valid"] in extra_tail
             )
-            if (
-                not run or not epoch(old_run) < epoch(run) <= reference.timestamp()
-                or stats.get("catalogInventoryComplete") is not True
+            if not run or not epoch(old_run) < epoch(run) <= reference.timestamp():
+                reason = (
+                    "NO_NEWER_COMPLETE_RUN" if stats.get("catalogInventoryComplete") is True
+                    else "CATALOGUE_INCOMPLETE"
+                )
+            elif (
+                stats.get("catalogInventoryComplete") is not True
                 or stats.get("requiredWindowInventoryComplete") is not True
                 or stats.get("selectedNativeRunComplete") is not True
                 or stats.get("requiredRowsTruncatedByAssetLimit") != 0
-                or not old_times <= new_times or not old_support <= new_support
-                or not extra_tail
-                or not any(type(size) is int and 0 < size <= remaining_bytes for size in sizes)
-                or not preserves_plan(offer)
             ):
-                return None
+                reason = "CATALOGUE_INCOMPLETE"
+            elif not old_times <= new_times or not old_support <= new_support:
+                reason = "CATALOGUE_LOSES_EXISTING_TIMES"
+            elif not extra_tail:
+                reason = "NO_QUALIFIED_TAIL_IN_OFFER"
+            elif not any(type(size) is int and 0 < size <= remaining_bytes for size in sizes):
+                reason = "TAIL_ASSET_OUTSIDE_BYTE_BUDGET"
+            else:
+                phase = "EVIDENCE"
+                reason = None if preserves_plan(offer) else "EVIDENCE_NOT_PRESERVED"
     except AssetDownloadCleanupUnproven:
         raise
+    except AssetDownloadRuntimeBudget:
+        return refuse(f"{phase}_TIMEOUT")
     except (OSError, RuntimeError, ValueError, TypeError, KeyError):
-        return None
-    if checkpoint_controller.can_start_asset(pending_reserve, cost_family=collection):
-        return offer
-    return None
+        return refuse(f"{phase}_ERROR")
+    if reason is not None:
+        return refuse(reason)
+    if not checkpoint_controller.can_start_asset(pending_reserve, cost_family=collection):
+        return refuse("RESERVE_AFTER")
+    return offer
 
 
 def main() -> int:
@@ -15727,6 +15798,8 @@ def main() -> int:
     # Copernicus gap. A mature run may have an internal, explicitly observed
     # STAC hole, but a latest run whose tail is still publishing is deferred.
     prefetched_marine: dict[str, tuple[str | None, list[dict[str, Any]], dict[str, Any]]] = {}
+    # Keep report-only evidence outside result so checkpoints and caches keep their shape.
+    first_wave_turn_gaps: dict[str, Any] = {}
     research_replay_catalog: dict[str, dict[str, Any]] = {}
     required_current_valid_times = set(
         operational_current_valid_times(locked_production_reference)
@@ -16461,23 +16534,21 @@ def main() -> int:
                 else (previous.get("runs") or {}).get(collection)
             ) or {}
             bootstrap_operational_wam = collection in WAVE_BOOTSTRAP_COLLECTIONS
+            wave_active_evidence: dict[str, Any] = {}
             wave_missing_valid_times: tuple[str, ...] = ()
-            if collection in prefetched_marine:
-                run, assets, stac_stats = prefetched_marine[collection]
-            elif bootstrap_operational_wam:
-                active_wave_evidence = operational_wave_collection_evidence(
+            if bootstrap_operational_wam:
+                wave_active_evidence = operational_wave_collection_evidence(
                     result,
                     active_zones_config,
                     locked_production_reference,
                     collection,
                     exact_required_times=operational_wave_exact_required_times,
                 )
-                wave_missing_valid_times = active_wave_evidence["missingValidTimes"]
+                wave_missing_valid_times = wave_active_evidence["missingValidTimes"]
                 isolated_wave_gap_times = isolated_operational_wave_gap_times(
-                    active_wave_evidence,
+                    wave_active_evidence,
                     locked_production_reference,
                 )
-                del active_wave_evidence
                 run, assets, stac_stats = list_latest_assets(
                     collection,
                     None,
@@ -16494,6 +16565,15 @@ def main() -> int:
                     include_operational_wave_fallback_phases=True,
                     isolated_wave_gap_times=isolated_wave_gap_times,
                 )
+                if (not CACHE_ONLY and not FINALIZE_ONLY
+                        and os.getenv("DMI_BULK_REQUIRE_ORDINARY_CLOSURE") == "true"
+                        and result["diagnostics"]["collectionsAttempted"].count(collection) == 1):
+                    first_wave_turn_gaps[collection] = ordinary_wave_first_turn_gap_summary(
+                        wave_active_evidence, locked_production_reference, isolated_wave_gap_times,
+                        run, assets,
+                    )
+            elif collection in prefetched_marine:
+                run, assets, stac_stats = prefetched_marine[collection]
             elif collection_is_critical_atmosphere or collection_is_horizon:
                 run, assets, stac_stats = list_atmosphere_turn_assets(
                     collection, locked_production_reference,
@@ -17024,19 +17104,6 @@ def main() -> int:
                 build_operational_wave_collection_candidate(result)
                 if bootstrap_operational_wam
                 else result
-            )
-            wave_active_evidence = (
-                operational_wave_collection_evidence(
-                    result,
-                    active_zones_config,
-                    locked_production_reference,
-                    collection,
-                    exact_required_times=(
-                        operational_wave_exact_required_times
-                    ),
-                )
-                if bootstrap_operational_wam
-                else {}
             )
             wave_phase_deferred_quality_promotion = bool(
                 bootstrap_operational_wam
@@ -19120,7 +19187,7 @@ def main() -> int:
         diagnostics=diag,
     )
     wave_report_ready = not CACHE_ONLY and write_ordinary_wave_acquisition_report(
-        result, locked_production_reference,
+        result, locked_production_reference, first_turn_gaps=first_wave_turn_gaps,
     )
     write_github_outputs(
         result["refreshStatus"], fresh_successes, fresh_partials,
