@@ -2499,14 +2499,11 @@ jobs:
 
       - name: Download the immutable RAW rotation decision
         if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true' && steps.raw-rotation-decision-artifact.outputs.artifact_status == 'found'
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ steps.raw-rotation-decision-artifact.outputs.artifact_id }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.run_id }}
-          path: ${{ runner.temp }}/ravradar-raw-rotation-received
-          digest-mismatch: error
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAW_ROTATION_ARTIFACT_ID: ${{ steps.raw-rotation-decision-artifact.outputs.artifact_id }}
+          RAW_ROTATION_ARTIFACT_DIGEST: ${{ steps.raw-rotation-decision-artifact.outputs.artifact_digest }}
+        run: node scripts/find-raw-rotation-artifact.mjs --download-result
 
       - name: Require successful RAW rotation for this exact target
         if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'

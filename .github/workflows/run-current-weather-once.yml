@@ -1009,14 +1009,11 @@ jobs:
 
       - name: Download the verified RAW rotation handoff
         if: steps.raw-proof.outputs.artifact_status == 'found'
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ steps.raw-proof.outputs.artifact_id }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.run_id }}
-          path: ${{ runner.temp }}/ravradar-raw-rotation-received
-          digest-mismatch: error
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAW_ROTATION_ARTIFACT_ID: ${{ steps.raw-proof.outputs.artifact_id }}
+          RAW_ROTATION_ARTIFACT_DIGEST: ${{ steps.raw-proof.outputs.artifact_digest }}
+        run: node scripts/find-raw-rotation-artifact.mjs --download-proof
 
       - name: Confirm and retire only the verified older RAW archives
         id: raw-retirement
@@ -1210,14 +1207,11 @@ jobs:
 
       - name: Download the verified DMI RAW coverage receipt
         if: steps.saved-coverage.outputs.artifact_status == 'found'
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ steps.saved-coverage.outputs.artifact_id }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.run_id }}
-          path: ${{ runner.temp }}/ravradar-raw-rotation-received
-          digest-mismatch: error
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAW_ROTATION_ARTIFACT_ID: ${{ steps.saved-coverage.outputs.artifact_id }}
+          RAW_ROTATION_ARTIFACT_DIGEST: ${{ steps.saved-coverage.outputs.artifact_digest }}
+        run: node scripts/find-raw-rotation-artifact.mjs --download-saved-coverage
 
       - name: Retire the oldest DMI RAW copy after verified publication
         if: steps.saved-coverage.outputs.artifact_status == 'found'

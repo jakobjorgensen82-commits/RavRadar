@@ -1,4 +1,7 @@
-import { appendFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { appendFile, mkdir, realpath, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 import { readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
@@ -18,6 +21,8 @@ const TERMINAL_STEP = 'Summarize and require the complete normal production path
 const SHA40 = /^[a-f0-9]{40}$/;
 const ARTIFACT_DIGEST = /^sha256:[a-f0-9]{64}$/;
 const MAX_ARTIFACT_BYTES = 16 * 1024;
+const MAX_RECEIPT_BYTES = 1024;
+const RECEIPT_FILES = Object.freeze({ proof: 'handoff.json', result: 'decision.json', 'saved-coverage': 'coverage.json' });
 const POLL_MS = 3000;
 const MISSING_PROOF_PRODUCER_POLL_INTERVAL = 10;
 const DEADLINE_MS = { proof: 15 * 60_000, 'observe-proof': 90_000, result: 180_000, 'saved-coverage': 30_000 };
@@ -178,8 +183,80 @@ export async function findRawRotationArtifact({ pause = wait, signal, ...context
   return hold('artifact-not-ready');
 }
 
+// The finder already proved the artifact identity. Fetch its exact ZIP without
+// listing the run again, and verify the digest before opening the single file.
+export async function downloadRawRotationReceipt({ kind, artifactId, digest, token,
+  fetchImpl = fetch, python = 'python3' } = {}) {
+  if (!Object.hasOwn(RECEIPT_FILES, kind) || !positive(artifactId) || !ARTIFACT_DIGEST.test(digest ?? '')
+    || typeof token !== 'string' || !/^\S{1,4096}$/.test(token)) throw new Error('RAW_RECEIPT_IDENTITY');
+
+  const signal = AbortSignal.timeout(15_000);
+  const route = `https://api.github.com/repos/${REPOSITORY}/actions/artifacts/${artifactId}/zip`;
+  const response = await fetchImpl(route, { redirect: 'manual', cache: 'no-store', signal,
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2026-03-10' } });
+  await response.body?.cancel();
+  const location = response.headers.get('location');
+  if (response.status !== 302 || !location) throw new Error('RAW_RECEIPT_HTTP');
+  const storage = new URL(location);
+  if (storage.protocol !== 'https:' || storage.username || storage.password || storage.port || storage.hash
+    || !['.blob.core.windows.net', '.githubusercontent.com'].some(suffix => storage.hostname.endsWith(suffix))) {
+    throw new Error('RAW_RECEIPT_REDIRECT');
+  }
+
+  // The short-lived storage URL already authenticates this request.
+  const archive = await fetchImpl(storage.href, { redirect: 'error', cache: 'no-store', signal });
+  const contentLength = archive.headers.get('content-length');
+  if (archive.status !== 200 || !archive.body || ![null, 'identity'].includes(archive.headers.get('content-encoding'))
+    || (contentLength !== null && (!/^[1-9][0-9]*$/.test(contentLength) || Number(contentLength) > MAX_ARTIFACT_BYTES))) {
+    await archive.body?.cancel();
+    throw new Error('RAW_RECEIPT_HTTP');
+  }
+  const reader = archive.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_ARTIFACT_BYTES) throw new Error('RAW_RECEIPT_SIZE');
+      chunks.push(value);
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+  const zip = Buffer.concat(chunks, size);
+  if (!size || (contentLength !== null && size !== Number(contentLength))
+    || 'sha256:' + createHash('sha256').update(zip).digest('hex') !== digest) throw new Error('RAW_RECEIPT_DIGEST');
+
+  const name = RECEIPT_FILES[kind];
+  const extractor = [
+    'import io, sys, zipfile',
+    'archive = zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read()))',
+    'assert archive.namelist() == [sys.argv[1]]',
+    'member = archive.infolist()[0]',
+    'assert not member.is_dir() and not (member.flag_bits & 1) and 0 < member.file_size <= int(sys.argv[2])',
+    'data = archive.read(member)',
+    'assert len(data) == member.file_size',
+    'sys.stdout.buffer.write(data)',
+  ].join('\n');
+  try {
+    const bytes = execFileSync(python, ['-I', '-c', extractor, name, String(MAX_RECEIPT_BYTES)],
+      { input: zip, timeout: 3000, maxBuffer: 4096, windowsHide: true,
+        env: { PATH: process.env.PATH }, stdio: ['pipe', 'pipe', 'pipe'] });
+    if (!bytes.length || bytes.length > MAX_RECEIPT_BYTES) throw new Error();
+    return { name, bytes };
+  } catch {
+    throw new Error('RAW_RECEIPT_ZIP');
+  }
+}
+
 async function main(env, args) {
-  const kind = args.length === 1 && args[0].startsWith('--') ? args[0].slice(2) : '';
+  const option = args.length === 1 && args[0].startsWith('--') ? args[0].slice(2) : '';
+  const download = option.startsWith('download-');
+  const kind = download ? option.slice('download-'.length) : option;
   if (env.GITHUB_REPOSITORY !== REPOSITORY || env.GITHUB_API_URL !== 'https://api.github.com'
       || env.GITHUB_WORKFLOW_REF !== `${REPOSITORY}/${WORKFLOW}@refs/heads/main`
       || env.GITHUB_ACTIONS !== 'true' || env.RUNNER_ENVIRONMENT !== 'github-hosted'
@@ -188,7 +265,18 @@ async function main(env, args) {
       || !/^\S{1,4096}$/.test(env.GITHUB_TOKEN ?? '') || !env.GITHUB_OUTPUT
       || ![env.GITHUB_REPOSITORY_ID, env.GITHUB_RUN_ID, env.GITHUB_RUN_ATTEMPT]
         .every(value => /^[1-9][0-9]{0,15}$/.test(value ?? '')) || !Object.hasOwn(DEADLINE_MS, kind)) {
+    if (download) throw new Error('RAW_RECEIPT_CONTEXT');
     if (env.GITHUB_OUTPUT) await appendFile(env.GITHUB_OUTPUT, 'artifact_status=hold\nartifact_reason=invalid-context\n');
+    return;
+  }
+  if (download) {
+    const { name, bytes } = await downloadRawRotationReceipt({ kind,
+      artifactId: Number(env.RAW_ROTATION_ARTIFACT_ID), digest: env.RAW_ROTATION_ARTIFACT_DIGEST, token: env.GITHUB_TOKEN });
+    const parent = path.resolve(env.RUNNER_TEMP);
+    if (await realpath(parent) !== parent) throw new Error('RAW_RECEIPT_DIRECTORY');
+    const directory = path.join(parent, 'ravradar-raw-rotation-received');
+    await mkdir(directory, { mode: 0o700 });
+    await writeFile(path.join(directory, name), bytes, { flag: 'wx', mode: 0o600 });
     return;
   }
   const signal = AbortSignal.timeout(DEADLINE_MS[kind]);

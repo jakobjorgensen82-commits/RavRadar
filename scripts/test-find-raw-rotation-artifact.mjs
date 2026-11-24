@@ -1,12 +1,66 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
-import { findRawRotationArtifact, readRawRotationArtifactOnce } from './find-raw-rotation-artifact.mjs';
+import { downloadRawRotationReceipt, findRawRotationArtifact, readRawRotationArtifactOnce } from './find-raw-rotation-artifact.mjs';
 import { DMI_PRODUCER_JOB } from './lib/terminal-dmi-cache.mjs';
 
 const repository = 'jakobjorgensen82-commits/RavRadar';
 const head = 'a'.repeat(40);
 const digest = 'sha256:' + 'b'.repeat(64);
 const time = seconds => `2026-11-19T08:00:${String(seconds).padStart(2, '0')}Z`;
+const python = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+
+function receiptArchive(names) {
+  const program = [
+    'import io, sys, zipfile',
+    'output = io.BytesIO()',
+    'with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:',
+    '    for name in sys.argv[1:]: archive.writestr(name, b"{}")',
+    'sys.stdout.buffer.write(output.getvalue())',
+  ].join('\n');
+  return execFileSync(python, ['-I', '-c', program, ...names], { timeout: 3000, maxBuffer: 4096 });
+}
+
+function directReceipt(archive, { location = 'https://test.blob.core.windows.net/receipt?synthetic=1',
+  expectedDigest = 'sha256:' + createHash('sha256').update(archive).digest('hex') } = {}) {
+  let requests = 0;
+  return {
+    requests: () => requests,
+    download: kind => downloadRawRotationReceipt({ kind, artifactId: 14, digest: expectedDigest,
+      token: 'synthetic-token', python, fetchImpl: async (url, options) => {
+        if (++requests === 1) {
+          assert.equal(url, 'https://api.github.com/repos/' + repository + '/actions/artifacts/14/zip');
+          assert.equal(options.redirect, 'manual');
+          assert.equal(options.headers.Authorization, 'Bearer synthetic-token');
+          return new Response(null, { status: 302, headers: { location } });
+        }
+        assert.equal(url, location);
+        assert.equal(options.redirect, 'error');
+        assert.equal(options.headers, undefined);
+        return new Response(archive, { headers: { 'content-length': String(archive.length) } });
+      } }),
+  };
+}
+
+test('RAW receipts use their exact artifact endpoint and leave credentials at GitHub', async () => {
+  for (const [kind, name] of [['proof', 'handoff.json'], ['result', 'decision.json'], ['saved-coverage', 'coverage.json']]) {
+    const client = directReceipt(receiptArchive([name]));
+    const downloaded = await client.download(kind);
+    assert.deepEqual(downloaded, { name, bytes: Buffer.from('{}') });
+    assert.equal(client.requests(), 2);
+  }
+});
+
+test('RAW receipt refuses a wrong digest, extra member or untrusted redirect', async () => {
+  const archive = receiptArchive(['handoff.json']);
+  await assert.rejects(directReceipt(archive, { expectedDigest: digest }).download('proof'), /RAW_RECEIPT_DIGEST/);
+  await assert.rejects(directReceipt(receiptArchive(['handoff.json', 'extra.json'])).download('proof'), /RAW_RECEIPT_ZIP/);
+  const invalid = directReceipt(archive, { location: 'https://invalid.example/receipt' });
+  await assert.rejects(invalid.download('proof'), /RAW_RECEIPT_REDIRECT/);
+  assert.equal(invalid.requests(), 1);
+});
+
 const successful = (name, number, start, end) => ({ name, number, status: 'completed',
   conclusion: 'success', started_at: time(start), completed_at: time(end) });
 
