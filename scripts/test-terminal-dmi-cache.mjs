@@ -412,6 +412,24 @@ assert.deepEqual(await readActivity([ordinaryOwner], route => {
     return {total_count: 1, workflow_runs: []};
   }
 }), {status: 'HOLD', reason: 'possible-raw-reader-active-or-queued'});
+let activeReads = 0;
+assert.deepEqual(await readActivity([ordinaryOwner, queuedAudit], route => {
+  if (!route.includes('status=in_progress')) return;
+  activeReads += 1;
+  if (activeReads === 1) return {total_count: 1, workflow_runs: []};
+}), {status: 'HOLD', reason: 'possible-raw-reader-active-or-queued'});
+assert.equal(activeReads, 1);
+activeReads = 0;
+assert.deepEqual(await readActivity([ordinaryOwner, {...queuedAudit, id: ordinaryOwner.id}], route => {
+  if (!route.includes('status=in_progress')) return;
+  activeReads += 1;
+  return {total_count: 2, workflow_runs: [ordinaryOwner]};
+}), {status: 'HOLD', reason: 'incomplete-reader-inventory'});
+assert.equal(activeReads, 1);
+assert.deepEqual(await readActivity([], route =>
+  route.includes('status=pending') ? {total_count: 1, workflow_runs: []} : undefined), {
+  status: 'HOLD', reason: 'rotation-owner-unconfirmed',
+});
 assert.deepEqual(await readActivity([{...ordinaryOwner, run_attempt: 2}]), {
   status: 'HOLD', reason: 'rotation-owner-unconfirmed',
 });

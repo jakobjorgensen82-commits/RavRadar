@@ -245,32 +245,22 @@ function activeOrdinaryOwner(run, repository, sourceHead, ownerRunId) {
     && run.triggering_actor?.login === 'github-actions[bot]';
 }
 
-// The caller holds the production queue and supplies the exact running owner.
-// This is a read-only census. It cannot reserve a queued request or replace the
-// protected B/S and exact cache pin inventory. An uninspected input holds.
-export async function readRawCacheReaderActivity({repository, sourceHead, ownerRunId, getJson}) {
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
-      || !/^[a-f0-9]{40}$/.test(sourceHead ?? '')
-      || !Number.isSafeInteger(ownerRunId) || ownerRunId < 1 || typeof getJson !== 'function') {
-    throw new Error('RAW_CACHE_READER_ACTIVITY_INVALID');
-  }
+async function readRawCacheReaderCensus({repository, sourceHead, ownerRunId, getJson}) {
   const hold = reason => ({status: 'HOLD', reason});
   const actions = '/repos/' + repository + '/actions';
-  const readRequests = () => Promise.all(ACTIVE_ACTIONS_STATES.map(async status => ({
+  const requests = await Promise.all(ACTIVE_ACTIONS_STATES.map(async status => ({
     status, data: await getJson(actions + '/runs?status=' + status + '&per_page=100'),
   })));
-  let requests = await readRequests();
-  // GitHub can return a count and page computed at different times. Get one
-  // fresh census of every state and discard the incomplete census entirely.
-  if (requests.some(({data}) => Array.isArray(data?.workflow_runs)
-      && Number.isSafeInteger(data.total_count) && data.total_count >= 0 && data.total_count <= 100
-      && data.workflow_runs.length <= 100 && data.total_count !== data.workflow_runs.length)) {
-    requests = await readRequests();
-  }
   const runs = new Map();
+  let countMismatch = false;
+  let ownerPageIncomplete = false;
   for (const {status, data} of requests) {
-    if (!Array.isArray(data?.workflow_runs) || data.total_count !== data.workflow_runs.length
-        || data.total_count > 100) return hold('incomplete-reader-inventory');
+    if (!Array.isArray(data?.workflow_runs) || !Number.isSafeInteger(data.total_count)
+        || data.total_count < 0 || data.total_count > 100 || data.workflow_runs.length > 100) {
+      return hold('incomplete-reader-inventory');
+    }
+    if (data.total_count !== data.workflow_runs.length) countMismatch = true;
+    if (status === 'in_progress') ownerPageIncomplete = data.total_count > data.workflow_runs.length;
     for (const run of data.workflow_runs) {
       if (!Number.isSafeInteger(run?.id) || run.id < 1 || runs.has(run.id) || run.status !== status
           || run.conclusion !== null || run.repository?.full_name !== repository
@@ -282,7 +272,9 @@ export async function readRawCacheReaderActivity({repository, sourceHead, ownerR
       runs.set(run.id, run);
     }
   }
-  if (!activeOrdinaryOwner(runs.get(ownerRunId), repository, sourceHead, ownerRunId)) {
+  const owner = runs.get(ownerRunId);
+  if ((!owner && !ownerPageIncomplete)
+      || (owner && !activeOrdinaryOwner(owner, repository, sourceHead, ownerRunId))) {
     return hold('rotation-owner-unconfirmed');
   }
   const potentialLegacy = [];
@@ -301,7 +293,25 @@ export async function readRawCacheReaderActivity({repository, sourceHead, ownerR
   if (legacyJobs.some(jobs => jobs?.total_count !== 0 || !Array.isArray(jobs.jobs) || jobs.jobs.length !== 0)) {
     return hold('legacy-reader-not-proved-inert');
   }
+  if (countMismatch) return {status: 'COUNT_MISMATCH'};
   return {status: 'CLEAR', checkedRuns: runs.size, inertLegacy: potentialLegacy.length};
+}
+
+// The caller holds the production queue. A count/page race can be reread once
+// only when the rows already seen contain no separate reason to hold.
+export async function readRawCacheReaderActivity({repository, sourceHead, ownerRunId, getJson}) {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
+      || !/^[a-f0-9]{40}$/.test(sourceHead ?? '')
+      || !Number.isSafeInteger(ownerRunId) || ownerRunId < 1 || typeof getJson !== 'function') {
+    throw new Error('RAW_CACHE_READER_ACTIVITY_INVALID');
+  }
+  const scope = {repository, sourceHead, ownerRunId, getJson};
+  const first = await readRawCacheReaderCensus(scope);
+  if (first.status !== 'COUNT_MISMATCH') return first;
+  const updated = await readRawCacheReaderCensus(scope);
+  return updated.status === 'COUNT_MISMATCH'
+    ? {status: 'HOLD', reason: 'incomplete-reader-inventory'}
+    : updated;
 }
 
 // The caller supplies the locked, authenticated protected B/S and the full
