@@ -186,7 +186,7 @@ assert.equal((recoveryHandoffJob.match(/gh api --method POST/g) || []).length, 1
 assert.match(recoveryHandoffJob, /watch-missed-weather-schedule.yml\/dispatches[\s\S]*inputs\[recovery_source_run_id\]/);
 console.log('External four-hour weather cadence: one run per slot and fail-closed guards passed.');
 
-const readCode = code => error => error?.cadenceReadCode === code && error.message === code;
+const readCode = code => error => error?.cadenceReadCode === code;
 const readOptions = { kind: 'manual', repository: 'owner/repository', token: 'OFFLINE_SYNTHETIC_TOKEN' };
 const readResponse = (status, document = { workflow_runs: [old] }) => ({ status, json: async () => document });
 
@@ -246,7 +246,7 @@ test('The owner can order one normal retry after the latest failed bot attempt i
   assert.equal(evaluate({ activity: activeInventory().slice(1) }).dispatch, false);
 });
 
-test('Owner retry reads bounded exact GitHub metadata and refuses a truncated order or activity inventory', async () => {
+test('Owner admission re-reads incomplete GitHub inventories and accepts only complete snapshots', async () => {
   const variants = [
     { kind: 'owner-orders', ownerOrdersSince: '2026-09-28T00:17:00.000Z',
       route: 'workflows/watch-missed-weather-schedule.yml/runs?branch=main&event=workflow_dispatch&per_page=100&created=%3E%3D2026-09-28T00%3A17%3A00.000Z' },
@@ -254,13 +254,33 @@ test('Owner retry reads bounded exact GitHub metadata and refuses a truncated or
   ];
   for (const { route, ...options } of variants) {
     const document = ownerHistory(ownerRetryRequest);
+    const incomplete = { ...document, total_count: 2 };
     assert.deepEqual(await readWeatherCadenceGithub({ ...readOptions, ...options, request: async (url, request) => {
       assert.equal(url, 'https://api.github.com/repos/owner/repository/actions/' + route);
       assert.equal(request.method, 'GET');
       return readResponse(200, document);
     } }), document);
+    let reads = 0;
+    const waits = [];
+    assert.deepEqual(await readWeatherCadenceGithub({ ...readOptions, ...options,
+      request: async () => readResponse(200, ++reads === 1 ? incomplete : document),
+      wait: async milliseconds => { waits.push(milliseconds); },
+    }), document);
+    assert.equal(reads, 2);
+    assert.deepEqual(waits, [1000]);
+    waits.length = 0;
     await assert.rejects(() => readWeatherCadenceGithub({ ...readOptions, ...options,
-      request: async () => readResponse(200, { ...document, total_count: 2 }),
+      request: async () => readResponse(200, incomplete),
+      wait: async milliseconds => { waits.push(milliseconds); },
+    }), {
+      message: 'WEATHER_CADENCE_READ_INCOMPLETE ' + options.kind
+        + (options.activeRunStatus ? ':' + options.activeRunStatus : ''),
+      cadenceReadCode: 'WEATHER_CADENCE_READ_INCOMPLETE',
+    });
+    assert.deepEqual(waits, [1000, 2000]);
+    await assert.rejects(() => readWeatherCadenceGithub({ ...readOptions, ...options,
+      request: async () => readResponse(200, { ...document, total_count: 101 }),
+      wait: async () => assert.fail('Impossible to admit more than 100 rows'),
     }), readCode('WEATHER_CADENCE_READ_METADATA_REJECTED'));
   }
 });
@@ -398,7 +418,7 @@ process.on('exit',()=>fs.writeFileSync(process.env.RR_CADENCE_CALLS,JSON.stringi
       assert.equal((result.stdout + result.stderr).includes('PRIVATE_RESPONSE_CANARY'), false);
       assert.equal(JSON.parse(await fs.readFile(callsFile, 'utf8')).calls, count);
       if (status === 0) { assert.deepEqual(JSON.parse(result.stdout), { workflow_runs: [] }); assert.equal(result.stderr, ''); }
-      else { assert.equal(result.stdout, ''); assert.equal(result.stderr.trim(), code); }
+      else { assert.equal(result.stdout, ''); assert.equal(result.stderr.trim(), `${code} manual`); }
     }
   } finally {
     for (const file of [hookFile, callsFile]) await fs.unlink(file);

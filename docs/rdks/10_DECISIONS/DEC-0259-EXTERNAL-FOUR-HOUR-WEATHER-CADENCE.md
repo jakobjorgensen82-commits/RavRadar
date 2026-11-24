@@ -76,6 +76,13 @@ exact-main kildekvalifikation genlæses oplysningerne umiddelbart før højst
 normale skrive-, RAW-, B/S-, artifact- og deploykontroller. Cron-posten og
 tidsplanen ændres ikke.
 
+De skrivefri GitHub-læsninger af ejerbestillinger og aktive kørsler kan
+læses op til tre gange med de eksisterende korte pauser, hvis svarets
+gyldige optælling og antal rækker er forskellige. Et nyt svar skal være
+fuldstændigt i sig selv. Fejl angiver læsningens navn og eventuelt
+statusfilter. Vagtens adgangsregler og antal tilladte bestillinger gælder
+fortsat.
+
 Dette er en eksplicit ejerbeslutning om en ny ordinær kørsel. Bestillingen
 gør ingen antagelse om, at den foregående kørsel var uden HTTP-kald, og
 leverer ingen genoptagelses- eller udsagnsret om tidligere writes.
