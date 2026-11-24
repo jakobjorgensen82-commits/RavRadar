@@ -584,7 +584,10 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   [WEATHER_BUILD]:[...COMMANDS.pages,...COMMANDS.pagesArtifact,RAW_CACHE_ROTATION_SOURCE_COMMAND],
   'scripts/run-copernicus-current-pilot-with-retry.py':COMMANDS.dmiCollectionRecovery,
   'scripts/run-dmi-bulk-supervised.py':[...COMMANDS.dmiBudget,...COMMANDS.dmiCollectionRecovery],
-  'scripts/run-ordinary-provider-cgroup.py':COMMANDS.dmiCollectionRecovery,
+  'scripts/run-ordinary-provider-cgroup.py':[
+    ...COMMANDS.dmiCollectionRecovery,
+    'node --test scripts/test-weather-component-progress-workflow.mjs',
+  ],
   'scripts/test-copernicus-bounded-retry-4.0.289.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test-dmi-bulk-supervised.py':COMMANDS.dmiCollectionRecovery,
   'scripts/test-dmi-supervisor-parent-loss.py':COMMANDS.dmiCollectionRecovery,
