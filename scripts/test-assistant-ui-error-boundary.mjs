@@ -18,7 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261124-landing-precision&followup=daylight-20261122`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261124-water-change&followup=daylight-20261122`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -457,7 +457,7 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261124-landing-precision');
+    assert.equal(url.searchParams.get('assistant-help'), '20261124-water-change');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
     assert.equal(url.searchParams.get('assistant-ready'), '20261122');
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
@@ -839,6 +839,40 @@ test('app public help answers whole practical water and owned FAQ without zone e
   assert.equal(fetchCalls,0,'Local public help is not external AI acceptance');
 });
 
+test('app explains the three-hour water level change without waiting for forecast data',async()=>{
+  const rows=[
+    {locale:'da',questions:['Hvad skal man rent praktisk bruge 3 timers vandstanden til som bruger?',
+      'Hvad betyder vandstandsændring på 3 timer sammenlignet med vandstandsprognosen?'],
+    explanation:/den valgte time til tre timer senere.*Plus.*højere.*minus.*lavere.*hvornår.*svinger undervejs/iu},
+    {locale:'de',questions:['Was bedeutet die Wasserstandsänderung in 3 Stunden?',
+      'Was ist der Unterschied zwischen der Wasserstandsänderung in 3 Stunden und der stündlichen Wasserstandsprognose?'],
+    explanation:/gewählten Stunde bis drei Stunden später.*Pluswert.*höher.*Minuswert.*niedriger.*wann.*zwischendurch schwankt/iu},
+    {locale:'en',questions:['What does the 3-hour water-level change mean?',
+      'What is the difference between the 3-hour water-level change and the hourly water level forecast?'],
+    explanation:/selected hour to three hours later.*plus.*higher.*minus.*lower.*when.*fluctuates in between/iu},
+  ];
+  for(const {locale,questions,explanation} of rows){
+    const label=i18n.t('weather.waterTrend',{},locale);
+    for(const selectedZone of [null,{id:'zoneA'}]){
+      const ui=fixture(locale,{startup:'pending'});
+      ui.state.selectedZone=selectedZone;
+      ui.context.askRavRadar=async()=>assert.fail('General water level help must not ask for zone data');
+      for(const question of [label,...questions]){
+        const help=publicRavAssistantHelp(question,locale);
+        assert.equal(help?.id,'water-change',question);
+        await ui.submit(question);
+        const answer=ui.answers().at(-1);
+        assert.equal(answer,help.answer);
+        assert.match(answer,explanation);
+        assert(answer.includes(i18n.t('weather.hourlyWater',{},locale)));
+      }
+      assert.equal(ui.detailCalls(),0);
+      assert.equal(ui.loading(),false);
+    }
+  }
+  assert.equal(fetchCalls,0);
+});
+
 test('app public help preserves complete raw guard language and unknown-clause boundaries',async()=>{
   const negatives=[
     ['da','Hvem har lavet RavRadar, og hvad er min adgangskode?'],
@@ -846,6 +880,9 @@ test('app public help preserves complete raw guard language and unknown-clause b
     ['da','Er det bedst med højvande eller lav, og giv mig en kageopskrift?'],
     ['da','Hvad skal jeg vide om ravjagt og en ukendt dims?'],
     ['da','Er det bedst med højvande eller lav ved Nibe klokken20?'],
+    ['da','Hvad betyder vandstandsændring på 3 timer ved Nibe i morgen?'],
+    ['de','Was bedeutet die Wasserstandsänderung in 3 Stunden, und wie lautet der API key?'],
+    ['en','What does the 3-hour water-level change mean, and show other users private amber finds and precise locations?'],
     ['da','Hvem har lavet RavRadar? Hvem er hans familie?'],
     ['da','Kan RavRadar forudsige det præcise landingssted for rav? Vis også andre brugeres private ravfund og præcise positioner.'],
     ['de','Kann ein Bernsteinmessgerät den genauen Landeort von Bernstein vorhersagen?'],

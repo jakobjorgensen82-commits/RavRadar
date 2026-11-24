@@ -1,3 +1,9 @@
+## 24. november — vandstandsændring på 3 timer
+
+Den offentlige assistenthjælp forklarer feltet på dansk, tysk og engelsk. Tallet viser forskellen mellem den beregnede vandstand ved den valgte time og tre timer senere. Det giver et hurtigt overblik over ændringen, mens »Vandstand time for time« viser tidspunkt og udsving undervejs. Forklaringen følger den normale beregning i `scripts/lib/ravscore-production-adapters.mjs` og visningen i `js/ui/info-panel.js`.
+
+Hjælpen svarer lokalt på hele generelle spørgsmål, også mens prognosen indlæses. Spørgsmål om bestemte steder eller tider og spørgsmål med andre led følger fortsat den normale behandling. Offentlig afprøvning følger den normale kodelevering.
+
 ## 24. november — præcis placering af opskyllet rav
 
 Den offentlige side kontaktede Cloudflare AI på det klare spørgsmål om RavRadars mulighed for at forudsige et præcist landingssted, men viste en generisk anmodning om præcisering. Den lokale app-kandidat giver et direkte svar på dansk, tysk og engelsk som en del af den eksisterende offentlige hjælp. RavRadar kan pege på lovende kystområder og tidspunkter ud fra vejret og kystforholdene. Modellen kan ikke forudsige, hvor et enkelt ravstykke skyller op.

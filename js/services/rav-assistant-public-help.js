@@ -24,6 +24,11 @@ const ANSWERS={
     de:'Weder Hochwasser noch Niedrigwasser ist immer am besten für die Bernsteinsuche. Höheres oder steigendes Wasser kann den Spülsaum weiter den Strand hinauf verlagern. Niedrigeres oder fallendes Wasser kann bereits abgelagertes Material freilegen und eine kleinere Suchfläche zugänglich machen. Das beweist nicht, dass der Rückgang Bernstein gesammelt hat. Vergleiche Spülsäume und örtliche Taschen; Wetterverlauf und Küste sind wichtiger als eine feste Wasserstandsregel. Der Wasserstand allein garantiert weder Funde noch Sicherheit.',
     en:'Neither high tide nor low tide is always best for amber hunting. Higher or rising water can move the wash line farther up the beach. Lower or falling water may expose material already delivered and make a smaller area easier to search. That does not prove the fall concentrated amber. Compare wash lines and local pockets; the preceding weather and the coast matter more than one fixed rule about water level. Water level alone guarantees neither finds nor safety.'
   },
+  'water-change':{
+    da:'Tallet viser i centimeter, hvor meget den beregnede vandstand ændrer sig fra den valgte time til tre timer senere. Plus betyder, at vandstanden er højere tre timer senere, og minus, at den er lavere. Brug tallet som et hurtigt overblik. Under »Vandstand time for time« kan du se, hvornår niveauet ændrer sig, og om det svinger undervejs.',
+    de:'Der Wert zeigt in Zentimetern, wie stark sich der vorhergesagte Wasserstand von der gewählten Stunde bis drei Stunden später ändert. Ein Pluswert bedeutet, dass der Wasserstand dann höher liegt, ein Minuswert, dass er niedriger liegt. So siehst du die Änderung auf einen Blick. Unter „Wasserstand stündlich“ siehst du, wann sich der Pegel ändert und ob er zwischendurch schwankt.',
+    en:'This value shows in centimetres how much the forecast water level changes from the selected hour to three hours later. A plus sign means the level will be higher at the later hour and a minus sign means it will be lower. Use it for a quick overview. In “Hourly water level” you can see when the level changes and whether it fluctuates in between.'
+  },
   creator:{
     da:'RavRadar er lavet af Jakob Jørgensen. Projektets egen side fortæller om ideen og arbejdet bag: '+PUBLIC_ABOUT,
     de:'Hinter RavRadar steht Jakob Jørgensen. Die eigene Projektseite erklärt die Idee und die Arbeit dahinter: '+PUBLIC_ABOUT,
@@ -71,6 +76,11 @@ const ANSWERS={
   }
 };
 const FORMS={
+  'water-change':{
+    da:/^(?:(?:hvad (?:betyder|viser) )?vandstandsændring(?:en)? på (?:3|tre) timer(?: sammenlignet med vandstandsprognosen)?|hvad er forskellen (?:på|mellem) vandstandsændring(?:en)? på (?:3|tre) timer og (?:vandstand(?:en)? time for time|vandstandsprognosen)|hvad skal (?:jeg|vi|man) (?:rent praktisk )?bruge (?:(?:3|tre)[- ]timers vandstanden|vandstandsændring(?:en)? på (?:3|tre) timer) til(?: som bruger)?)$/iu,
+    de:/^(?:(?:was (?:bedeutet|zeigt) die )?wasserstandsänderung in (?:3|drei) stunden|was ist der unterschied zwischen der wasserstandsänderung in (?:3|drei) stunden und (?:der stündlichen wasserstands(?:vorhersage|prognose)|dem stündlichen wasserstand))$/iu,
+    en:/^(?:(?:3|three)[- ]hour water[- ]level change|what does (?:the )?(?:3|three)[- ]hour water[- ]level change (?:mean|show)|what is the difference between the (?:3|three)[- ]hour water[- ]level change and the hourly water[- ]level(?: forecast)?)$/iu,
+  },
   creator:{da:/^(?:hvem (?:har )?(?:lavet|udviklet|skabt) ravradar|hvem står bag ravradar)$/iu,de:/^(?:wer (?:hat ravradar (?:entwickelt|gemacht|erstellt)|steht hinter ravradar))$/iu,en:/^(?:who (?:created|made|developed) ravradar|who is behind ravradar)$/iu},
   group:{da:/^(?:har ravradar en facebook[- ]?gruppe|har ravradar en gruppe på facebook|hvor finder (?:jeg|vi) ravradars facebook[- ]?gruppe)$/iu,de:/^(?:hat ravradar eine facebook[- ]?gruppe|gibt es eine facebook[- ]?gruppe für ravradar|wo finde ich die facebook[- ]?gruppe von ravradar)$/iu,en:/^(?:does ravradar have a facebook group|is there a facebook group for ravradar|where can i find ravradar(?:’s|'s) facebook group)$/iu},
   project:{da:/^hvad er ravradar$/iu,de:/^was ist ravradar$/iu,en:/^what is ravradar$/iu},
@@ -158,7 +168,11 @@ function publicHelpText(question, language, contextualForm = null) {
   if (!raw || raw.length > 600 || !['da', 'de', 'en'].includes(language)) return null;
   const text = raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?!.]{1,3}$/u, '');
   // A complete, authored followup may name its subject only through the established topic.
-  return contextualForm?.test(text) || routeRavQuestion(raw) !== 'fixed-refusal' ? text : null;
+  // The English UI label hyphenates "water level". Use the usual scope guard
+  // on the same words for these complete public questions.
+  const scopeText = language === 'en' && FORMS['water-change'].en.test(text)
+    ? text.replace(/\bwater-level\b/giu, 'water level') : raw;
+  return contextualForm?.test(text) || routeRavQuestion(scopeText) !== 'fixed-refusal' ? text : null;
 }
 
 export function publicRavAssistantEquipmentFollowup(question,topic,language) {
