@@ -4,6 +4,7 @@ import { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptMigrati
 export { readFixedNativeActivityReceiptSource, fixedNativeActivityReceiptMigration, fixedNativeActivityReceiptArmQuery };
 
 const AUTH_CONFIG_URL = 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/config/auth';
+const DATABASE_QUERY_URL = 'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query';
 const ACTIVITY_HOOK_URI = 'pg-functions://postgres/public/account_native_activity_token_hook';
 const REPOSITORY = 'jakobjorgensen82-commits/RavRadar';
 const MAX_RESPONSE_BYTES = 64 * 1024;
@@ -183,6 +184,7 @@ export function createFixedAccountActivityHookController({ accessToken, fetchImp
 const WRITE_CONFIRMATIONS = Object.freeze({
   enable: 'ENABLE-FIXED-ACCOUNT-ACTIVITY-HOOK',
   disable: 'DISABLE-FIXED-ACCOUNT-ACTIVITY-HOOK',
+  arm: 'ARM-FIXED-ACCOUNT-ACTIVITY-RECEIPT',
 });
 
 export function isFixedActivityHookWriteOwner(env, operation) {
@@ -322,8 +324,50 @@ export async function readFixedAccountActivityHookCatalog({ accessToken, fetchIm
   }
 }
 
+async function armFixedNativeActivityReceipt({ accessToken, fetchImpl }) {
+  const before = await readFixedNativeActivityReceiptState({ accessToken, fetchImpl });
+  if (['NATIVE_RECEIPT_ARMED', 'NATIVE_CAPTURE_OBSERVED'].includes(before.status)) {
+    return { status: 'NATIVE_RECEIPT_ARM_PRECONDITION_REFUSED', receiptStatus: before.status };
+  }
+  if (before.status !== 'NATIVE_RECEIPT_UNARMED') return { status: before.status };
+  const hook = await readFixedAccountActivityHookProjection({ accessToken, fetchImpl });
+  if (hook.status !== 'HOOK_DISABLED' || hook.disabledHookUri !== 'EMPTY') {
+    return { status: 'NATIVE_RECEIPT_ARM_AUTH_DISABLED_EMPTY_REQUIRED' };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let acknowledged = false;
+  try {
+    const response = await fetchImpl(DATABASE_QUERY_URL, {
+      method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+      headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: fixedNativeActivityReceiptArmQuery, read_only: false }),
+    });
+    if (!response.redirected && (response.status === 401 || response.status === 403)) {
+      return { status: 'NATIVE_RECEIPT_ARM_PERMISSION_REFUSED' };
+    }
+    acknowledged = !response.redirected && response.status === 201;
+  } catch {
+    // The transaction may still commit after an interrupted request.
+  } finally {
+    clearTimeout(timeout);
+    controller.abort();
+  }
+
+  const { policyEpochSha256, ...after } = await readFixedNativeActivityReceiptState({ accessToken, fetchImpl });
+  if (!acknowledged || after.status !== 'NATIVE_RECEIPT_ARMED'
+    || after.armEpochSha256 !== before.armEpochSha256
+    || policyEpochSha256 !== before.policyEpochSha256
+    || after.coverageEpochSha256 !== policyEpochSha256 || after.armedAt <= before.observedAt) {
+    return { status: 'NATIVE_RECEIPT_ARM_WRITE_UNRESOLVED', receiptStatus: after.status };
+  }
+  return { ...after, status: 'NATIVE_RECEIPT_ARMED_VERIFIED' };
+}
+
 export async function runFixedAccountActivityHookOperation({ operation, env, accessToken, fetchImpl = globalThis.fetch }) {
   if (!isFixedActivityHookWriteOwner(env ?? {}, operation)) return { status: 'OWNER_REQUIRED' };
+  if (operation === 'arm') return armFixedNativeActivityReceipt({ accessToken, fetchImpl });
   if (operation === 'enable') {
     // SQL80 extends the token-hook body. Verify the exact installed append,
     // receipt table and existing OFF/ACL contract instead of the legacy body.
@@ -416,14 +460,14 @@ async function nativeReceiptQueryAndSource() {
   return { base, append, query, source: { ...source, bodies: { ...source.bodies, account_native_activity_token_hook: append.hookBodySha256 } } };
 }
 
-export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = globalThis.fetch, expectedCheckReference }) {
+async function readFixedNativeActivityReceiptState({ accessToken, fetchImpl = globalThis.fetch, expectedCheckReference }) {
   if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const { base, append, query, source } = await nativeReceiptQueryAndSource();
     if(expectedCheckReference!==undefined)base.verifyAccountInactivityCheckReference(expectedCheckReference);
-    const response = await fetchImpl('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query', {
+    const response = await fetchImpl(DATABASE_QUERY_URL, {
       method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
       headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, read_only: true }),
@@ -472,6 +516,7 @@ export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = 
     return { status: captured ? 'NATIVE_CAPTURE_OBSERVED' : receipt.armedAt === null ? 'NATIVE_RECEIPT_UNARMED' : 'NATIVE_RECEIPT_ARMED',
       observedAt: rows[0].observedAt, armedAt: receipt.armedAt, nativeStartedAt: receipt.nativeStartedAt, nativeCapturedAt: receipt.nativeCapturedAt,
       armEpochSha256: createHash('sha256').update(receipt.armEpoch,'utf8').digest('hex'),
+      policyEpochSha256: createHash('sha256').update(rows[0].policyEpoch,'utf8').digest('hex'),
       coverageEpochSha256: receipt.coverageEpoch === null ? null : createHash('sha256').update(receipt.coverageEpoch,'utf8').digest('hex'),
       appendSha256: append.sha256, sourceBodyAndAclVerified: true, checkExpressionSemanticsVerified: false, nativeCaptureObserved: captured,
       authResponseObserved: false, activityEligibility: 'HOLD', coverageStartAuthority: false,
@@ -482,6 +527,11 @@ export async function readFixedNativeActivityReceipt({ accessToken, fetchImpl = 
   } finally {
     clearTimeout(timeout); controller.abort();
   }
+}
+
+export async function readFixedNativeActivityReceipt(options) {
+  const { policyEpochSha256, ...result } = await readFixedNativeActivityReceiptState(options);
+  return result;
 }
 
 // Installation readback only; no SQL write, arm, Auth PATCH or policy start.
@@ -535,7 +585,8 @@ export async function readFixedAccountActivityHook(options) {
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const operation = process.argv.length === 3 && process.argv[2] === '--enable' ? 'enable'
-    : process.argv.length === 3 && process.argv[2] === '--disable' ? 'disable' : null;
+    : process.argv.length === 3 && process.argv[2] === '--disable' ? 'disable'
+      : process.argv.length === 3 && process.argv[2] === '--arm' ? 'arm' : null;
   if (process.argv.length === 3 && process.argv[2] === '--catalog') {
     const result = await runFixedAccountActivityCatalogRead({ env: process.env, accessToken: process.env.SUPABASE_ACCESS_TOKEN });
     console.log(JSON.stringify(result));
@@ -547,7 +598,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   } else if (operation !== null) {
     const result = await runFixedAccountActivityHookOperation({ operation, env: process.env, accessToken: process.env.SUPABASE_ACCESS_TOKEN });
     console.log(JSON.stringify(result));
-    if (!['HOOK_ENABLED_VERIFIED', 'HOOK_DISABLED_VERIFIED'].includes(result.status)) process.exitCode = 1;
+    if (!['HOOK_ENABLED_VERIFIED', 'HOOK_DISABLED_VERIFIED', 'NATIVE_RECEIPT_ARMED_VERIFIED'].includes(result.status)) process.exitCode = 1;
   } else {
     const permitted = process.argv.length === 2 && isFixedActivityHookReadOwner(process.env);
     const { status, disabledHookUri } = permitted

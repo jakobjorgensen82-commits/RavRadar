@@ -1,3 +1,9 @@
+## 24. november — aktivitetskvittering og Auth
+
+- [x] SQL80 installeret med OFF, og den normale kataloglæsning har bekræftet den uarmerede kvittering.
+- [ ] Lever og verificer engangstrinnet, der klargør den installerede kvittering med Auth slået fra. Kandidaten skal kvalificeres før kvitteringen kan armeres i drift.
+- [ ] Verificer Auth, faktisk loginopsamling og kontinuitet, før der kan startes dækning eller varsling.
+
 ## 23. november — lokal finite receipt80-installation med OFF-readback
 
 - [x] Klargør ét særskilt default-false valg i den eksisterende backend-installationsworkflow; kun den eksakte append må være pending efter alle installerede forgængere. Allerede installeret SQL genlæses uden push, og normale efterfølgere bevarer dens faktiske kilde.
