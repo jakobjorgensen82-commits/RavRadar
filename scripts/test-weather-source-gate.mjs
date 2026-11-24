@@ -4,6 +4,7 @@ import {
   decideSourceGate,
   discoverPullRequestSourceGate,
   discoverMainSourceGate,
+  finishLaterMainSourceInspection,
   inspectSourceProofRenewalMetadata,
   MAIN_SOURCE_JOB,
   MAIN_SOURCE_STEP,
@@ -241,6 +242,44 @@ for (const [stepStatus, stepConclusion, expectedReason, wrongJob] of [
 }
 
 console.log('Source gate reuses only live-verified, SHA-256-identical PR or exact-main content.');
+
+for (const [outcomes, expected, expectedWaits, laterListing] of [
+  [[null, 'skipped'], null, 1, 'success'],
+  [[null, 'failure'], 'later-source-not-green', 1],
+  [['failure'], 'later-source-not-green', 0],
+  [[null, null, null, null], 'later-source-unresolved', 3],
+  [[null], 'later-source-inspection-changed', 1, 'omitted'],
+  [[null], 'later-source-inspection-changed', 1, 'another-attempt'],
+]) {
+  const runId = 351;
+  let reads = 0;
+  const waits = [];
+  const jobs = async route => {
+    if (route.includes('/actions/runs/351/attempts/1/jobs')) {
+      const conclusion = outcomes[reads++];
+      return { total_count: 1, jobs: [makeMainJob(ordinaryContract, { id: 103, run_id: runId,
+        steps: [{ name: ordinaryContract.step, number: 24, conclusion,
+          status: conclusion === null ? 'pending' : 'completed',
+          completed_at: conclusion === null ? null : '2026-09-12T02:00:00Z' }] })] };
+    }
+    const afterWait = waits.length > 0;
+    const rows = route.includes('/actions/workflows/run-current-weather-once.yml/runs')
+      && !(afterWait && laterListing === 'omitted')
+      ? [makeMainRun(ordinaryContract, { id: runId,
+        run_attempt: afterWait && laterListing === 'another-attempt' ? 2 : 1,
+        conclusion: afterWait && laterListing === 'success' ? 'success' : null,
+        updated_at: '2026-09-12T02:00:00Z' })] : [];
+    return { total_count: rows.length, workflow_runs: rows };
+  };
+  const result = await finishLaterMainSourceInspection({
+    env, proofTime: Date.parse(proofTime), record: proof, getJson: jobs,
+  }, async milliseconds => {
+    waits.push(milliseconds);
+  });
+  assert.equal(result?.reason ?? null, expected);
+  assert.equal(reads, outcomes.length);
+  assert.deepEqual(waits, [10_000, 15_000, 25_000].slice(0, expectedWaits));
+}
 
 // The mandatory native SQL leaf is part of the live immutable PR proof.
 // Outer success, absence, pending or SKIP cannot substitute for its real run.

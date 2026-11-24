@@ -585,3 +585,6 @@ Den valgte samlede progressprøve bruger allerede den normale CP-fixture. Produc
 ### Historisk workflowinput og faktisk aktuelle kodeblokke
 
 Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fastlagte, autentiske workflowgrundlag. De aktuelle workflowkaldere og alle udførte Node-, Python- og Bash-blokke læses særskilt fra den aktuelle kilde. Historisk testinput giver ingen drifts- eller genbrugsautoritet. Det gamle orakel og alle sikkerhedsasserter bevares; der ændres ingen workflow, CLI, model, kvote eller produktionspolitik. Præcis kildekvalifikation og reel Linux-/Bash-afprøvning kræves fortsat.
+## 24. november – kort afventning af en igangværende kildeafgørelse
+
+I første kørsel for #1058 bestod alle 13 mål, mens den samtidige vejrhentnings kildeafgørelse stadig var uafklaret. Det udløste endnu en gennemgang af de samme mål. Ved afsluttende kvalifikation genlæser den lokale efterfølger den kendte afgørelse op til tre gange efter 10, 25 og 50 sekunder. De nye opslag bruger samme afgrænsede læsebudget og skal genfinde samme kørsel, forsøg, job og trin. Aktuelle afslag, manglende eller ændret identitet og fortsat uafsluttet kildeevidens spærrer stadig for kvitteringen. PR og gennemgang genlæses efter venten. Målingen på en almindelig GitHub-kørsel afventer.
