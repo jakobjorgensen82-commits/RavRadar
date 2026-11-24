@@ -30,6 +30,23 @@ function step(source, name) {
   return found[0];
 }
 
+test('verified RAW handoffs use the same authenticated GitHub API for discovery and download', () => {
+  const current = read('.github/workflows/run-current-weather-once.yml');
+  for (const [workflow, name, finder] of [
+    [current, 'Download the verified RAW rotation handoff', 'raw-proof'],
+    [actualNormalWorkflow, 'Download the immutable RAW rotation decision', 'raw-rotation-decision-artifact'],
+    [current, 'Download the verified DMI RAW coverage receipt', 'saved-coverage'],
+  ]) {
+    const download = step(workflow, name);
+    assert.ok(download.includes(`steps.${finder}.outputs.artifact_status == 'found'`), name);
+    assert.ok(download.includes(`artifact-ids: \${{ steps.${finder}.outputs.artifact_id }}`), name);
+    assert.ok(download.includes('github-token: ${{ github.token }}'), name);
+    assert.ok(download.includes('repository: ${{ github.repository }}'), name);
+    assert.ok(download.includes('run-id: ${{ github.run_id }}'), name);
+    assert.match(download, /^          digest-mismatch: error$/m, name);
+  }
+});
+
 test('legacy weather dispatch stops before fresh work when the protected RAW caller is required', () => {
   const readiness = orchestrator.split('\n  current-hour-readiness:\n')[1].split('\n  trip-storage-readiness:\n')[0];
   const guard = step(readiness, 'Require the protected RAW caller for fresh ordinary weather');

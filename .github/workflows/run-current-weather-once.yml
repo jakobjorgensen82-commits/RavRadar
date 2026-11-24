@@ -1012,6 +1012,9 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           artifact-ids: ${{ steps.raw-proof.outputs.artifact_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
           path: ${{ runner.temp }}/ravradar-raw-rotation-received
           digest-mismatch: error
 
@@ -1210,6 +1213,9 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           artifact-ids: ${{ steps.saved-coverage.outputs.artifact_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
           path: ${{ runner.temp }}/ravradar-raw-rotation-received
           digest-mismatch: error
 
