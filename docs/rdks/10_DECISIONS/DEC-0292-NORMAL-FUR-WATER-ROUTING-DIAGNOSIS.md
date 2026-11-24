@@ -1,3 +1,9 @@
+## Årsager til manglende T+3 i LF7
+
+Den private observation tæller særskilt, om mindst én af de valgte kilder mangler en verificeret vandstand tre timer frem, eller om alle værdier findes, men tilhører en anden kilde, samling, modelkørsel eller et andet gitter. Den første kategori omfatter også frasorterede værdier. Hver kystdelstime tælles én gang, og årsagstallene skal summere til antallet af ukendte T+3-par.
+
+Ældre observationer vises med deres hidtidige totaler. De nye felter indeholder kun tællere. Årsagsfordelingen kræver en ny ordinær observation. Tællerne beskriver de valgte rækker og siger ikke, om en sammenlignelig, fravalgt kilderække fandtes før kildevalget.
+
 ## Skrivefri opfølgning på de resterende huller i #361
 
 Den offentligt verificerede #361 viste vandstandsændringen ved kl. 02 dansk tid for 586 af 673 kystdele. Begge niveauer var tilgængelige for alle. Ved syv udvalgte timer viser jobloggen, at de relevante DMI-samlinger i samme kørsel kun gennemførte den ene af de to timer. Loggen beviser ikke det faktisk valgte endepunkt hos hver kystdel.

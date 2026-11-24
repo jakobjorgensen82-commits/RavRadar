@@ -876,6 +876,22 @@ console.log('SOURCE_SPLIT_BANK_T3: complete and selected same-series endpoints r
   assert.equal(gap.hourly[115].waterLevelTrendCm3h,null);
   assert.equal(gap.waterRoutingObservation.counts.unknownT3Hours,1);
   assert.equal(gap.waterRoutingObservation.counts.invalidTrendHours,0);
+  assert.deepEqual(gap.waterRoutingObservation.unknownT3Reasons, {
+    missingVerifiedFutureEndpointHours: 1, nonComparableFutureSeriesHours: 0,
+  });
+
+  const differentSeries = new Map(lfIndex), mixedRecord = structuredClone(lfIndex.get(source.sourceKey));
+  mixedRecord.hourly.find(row => row.time === input[118].time).sources.waterLevel.collection = 'dkss_nsbs';
+  differentSeries.set(source.sourceKey, mixedRecord);
+  const incompatible = applyVerifiedWaterSourceRoutingToPartHourly({ ...args, index: differentSeries });
+  assert.equal(incompatible.hourly[115].waterLevelTrendCm3h, null);
+  assert.equal(incompatible.hourly[115].waterLevelCm, observed.hourly[115].waterLevelCm);
+  assert.equal(incompatible.waterRoutingObservation.counts.unknownT3Hours, 1);
+  assert.deepEqual(incompatible.waterRoutingObservation.unknownT3Reasons, {
+    missingVerifiedFutureEndpointHours: 0, nonComparableFutureSeriesHours: 1,
+  });
+  assert.deepEqual(incompatible.hourly,
+    applyVerifiedWaterSourceRoutingToPartHourly({ ...args, index: differentSeries, diagnosticReferenceAt: null }).hourly);
   const dirty = structuredClone(input);
   dirty[0].currentProvenance={status:'verified',collection:'dkss_lf'};
   dirty[0].waterTemperatureC=9;dirty[0].waterTemperatureProvenance={collection:'dkss_lf'};

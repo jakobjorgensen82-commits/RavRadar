@@ -429,6 +429,9 @@ export const LF7_WATER_ROUTING_COUNTERS = Object.freeze([
   'comparableT3Hours', 'unknownT3Hours', 'invalidTrendHours',
   'forbiddenLfCurrentHours', 'forbiddenLfTemperatureHours',
 ]);
+export const LF7_UNKNOWN_T3_REASONS = Object.freeze([
+  'missingVerifiedFutureEndpointHours', 'nonComparableFutureSeriesHours',
+]);
 export function lf7WaterOnlyZone(zoneId) {
   return !dmiMarineCollectionAllowedForZone('dkss_lf', zoneId)
     && dmiMarineCollectionAllowedForZone('dkss_lf', zoneId, 'waterLevel');
@@ -441,6 +444,7 @@ function observeLf7Routing({ part, zoneId, hourly, routedHourly, rows, method,
   routing, referenceAt, decisions }) {
   if (!lf7WaterOnlyZone(zoneId) || !exactHour(referenceAt) || rows.length > 16) return null;
   const counts = Object.fromEntries(LF7_WATER_ROUTING_COUNTERS.map(key => [key, 0]));
+  const unknownT3Reasons = Object.fromEntries(LF7_UNKNOWN_T3_REASONS.map(key => [key, 0]));
   const start = Date.parse(referenceAt), seen = new Set();
   for (let i = 0; i < hourly.length; i++) {
     const before = hourly[i], after = routedHourly[i], time = before?.time;
@@ -454,6 +458,11 @@ function observeLf7Routing({ part, zoneId, hourly, routedHourly, rows, method,
       counts.routedHours++;
       counts.comparableT3Hours += Number(decision.trendKnown);
       counts.unknownT3Hours += Number(!decision.trendKnown);
+      if (!decision.trendKnown) {
+        const reason = decision.futureEndpointsVerified
+          ? 'nonComparableFutureSeriesHours' : 'missingVerifiedFutureEndpointHours';
+        unknownT3Reasons[reason]++;
+      }
       counts.invalidTrendHours += Number(!decision.trendKnown && finite(after.waterLevelTrendCm3h) !== null);
       counts.lfWaterHours += Number(decision.lfWater);
     } else if (valuePresent) {
@@ -469,7 +478,7 @@ function observeLf7Routing({ part, zoneId, hourly, routedHourly, rows, method,
   }
   return { referenceAt, configurationSha256: waterRoutingConfigurationSha256(routing),
     selectionSha256: sourceDigest(Buffer.from(JSON.stringify([part.partId, zoneId, part.waterPoint,
-      method, rows.map(row => [sourceKey(row), row.point, row.weight])]))), counts };
+      method, rows.map(row => [sourceKey(row), row.point, row.weight])]))), counts, unknownT3Reasons };
 }
 export function summarizeLf7WaterRouting(partRows, contract, referenceAt) {
   const expected = Object.entries(contract?.zones ?? {}).filter(([zone]) => lf7WaterOnlyZone(zone))
@@ -477,15 +486,17 @@ export function summarizeLf7WaterRouting(partRows, contract, referenceAt) {
   if (!exactHour(referenceAt) || !expected.length || expected.length > 673
     || new Set(expected.map(part => part.partId)).size !== expected.length) return null;
   const counts = Object.fromEntries([...LF7_WATER_ROUTING_COUNTERS, 'computedValueMismatchHours'].map(key => [key, 0]));
+  const unknownT3Reasons = Object.fromEntries(LF7_UNKNOWN_T3_REASONS.map(key => [key, 0]));
   const selections = [], computedValues = [], configurations = new Set(); let observedPartCount = 0;
   for (const part of expected) {
     const matches = partRows.filter(row => row.partId === part.partId && row.zoneId === part.zoneId);
     if (matches.length !== 1) continue;
     const row = matches[0], observation = row.waterRoutingObservation;
-    if (!observation || observation.referenceAt !== referenceAt) continue;
+    if (!observation || observation.referenceAt !== referenceAt || !observation.unknownT3Reasons) continue;
     observedPartCount++; configurations.add(observation.configurationSha256);
     selections.push([part.partId, observation.selectionSha256]);
     for (const key of LF7_WATER_ROUTING_COUNTERS) counts[key] += observation.counts[key];
+    for (const key of LF7_UNKNOWN_T3_REASONS) unknownT3Reasons[key] += observation.unknownT3Reasons[key];
     const routed = new Map(row.record.hourly.map(hour => [hour.time, hour]));
     const computed = new Map(row.scores.map(hour => [hour.time, hour.weather]));
     for (let offset = 0; offset < 118; offset++) {
@@ -496,11 +507,11 @@ export function summarizeLf7WaterRouting(partRows, contract, referenceAt) {
         || (left.waterLevelTrendCm3h ?? null) !== (right.waterLevelTrendCm3h ?? null)) counts.computedValueMismatchHours++;
     }
   }
-  return { schemaVersion: 1, kind: 'LF7_WATER_ROUTING_OBSERVATION', referenceAt,
+  return { schemaVersion: 2, kind: 'LF7_WATER_ROUTING_OBSERVATION', referenceAt,
     expectedPartCount: expected.length, observedPartCount, expectedPartHours: expected.length * 118,
     configurationSha256: configurations.size === 1 ? [...configurations][0] : null,
     selectionSha256: sourceDigest(Buffer.from(JSON.stringify(selections.sort((a,b) => a[0].localeCompare(b[0]))))),
-    computedValuesSha256: sourceDigest(Buffer.from(JSON.stringify(computedValues.sort((a,b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))))), counts };
+    computedValuesSha256: sourceDigest(Buffer.from(JSON.stringify(computedValues.sort((a,b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))))), counts, unknownT3Reasons };
 }
 
 function routedWaterLevelSource(sourceRows,rows,method,referenceAt=null){
@@ -593,8 +604,10 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     const futureRows = sourceMaps.map(map => map.get(futureTime));
     const trendKnown = verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId);
     observeRomoSourceDecision(romoWaterTrendObservation, hour.time, sourceRows, futureRows, trendKnown);
-    // Record the predicate actually used above, without calculating another trend.
+    // Classify a missing trend using the same verified endpoint rows, without
+    // evaluating a different set of sources or changing the routed result.
     if (lf7WaterOnlyZone(zoneId)) decisions.set(hour.time, { trendKnown,
+      futureEndpointsVerified: trendKnown || futureRows.every(row => finite(row?.waterLevelCm) !== null),
       lfWater: sourceRows.some(row => row.sources.waterLevel.collection === 'dkss_lf') });
     const futureValue = trendKnown ? round(futureRows.reduce((sum, sourceRow, i) =>
       sum + sourceRow.waterLevelCm * rows[i].weight, 0), 0) : null;
