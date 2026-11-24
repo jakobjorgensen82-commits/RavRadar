@@ -655,8 +655,10 @@ function fileMetrics(files, names) {
   }
   return { fileCount: files.length, bytes, largestFileBytes, named, otherFiles, otherBytes };
 }
+const DMI_CHECKPOINT_SAMPLE_GZIP_LEVEL = 1;
+
 async function measureDmiCheckpointInputs(payloadRoot, files) {
-  const result = {};
+  const result = { gzipLevel: DMI_CHECKPOINT_SAMPLE_GZIP_LEVEL };
   for (const [role, id] of [['forecast', 'dmi-forecast-cache'], ['bulk', 'dmi-bulk-cache']]) {
     const expected = PRIVATE_RUNTIME_BASE_FILES.find(file => file.id === id);
     const entry = files.find(file => file.id === id && file.relativePath === expected.relativePath);
@@ -675,7 +677,7 @@ async function measureDmiCheckpointInputs(payloadRoot, files) {
         yield chunk;
       }
     }
-    await pipeline(createReadStream(file), countSource, createGzip(), new Writable({
+    await pipeline(createReadStream(file), countSource, createGzip({ level: DMI_CHECKPOINT_SAMPLE_GZIP_LEVEL }), new Writable({
       write(chunk, _encoding, done) { gzipBytes += chunk.length; done(); },
     }));
     if (rawBytes !== entry.bytes || hash.digest('hex') !== entry.sha256) fail('BUNDLE_IDENTITY_MISMATCH');
