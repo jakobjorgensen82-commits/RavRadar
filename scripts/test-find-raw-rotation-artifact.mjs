@@ -90,9 +90,17 @@ function fixture(kind = 'proof') {
   const calls = [];
   let onPause;
   let nextJobReadError;
+  let nextListingReadError;
   const getJson = async path => {
     calls.push(path);
-    if (path === `${route}/artifacts?name=${name}&per_page=2`) return listing;
+    if (path === `${route}/artifacts?name=${name}&per_page=2`) {
+      if (nextListingReadError) {
+        const error = nextListingReadError;
+        nextListingReadError = undefined;
+        throw error;
+      }
+      return listing;
+    }
     if (path === `${route}/attempts/1`) return run;
     assert.equal(path, `${route}/attempts/1/jobs?per_page=100`);
     if (nextJobReadError) {
@@ -102,9 +110,10 @@ function fixture(kind = 'proof') {
     }
     return jobs;
   };
-  const find = () => findRawRotationArtifact({...context, getJson, pause: async () => onPause?.()});
+  const find = () => findRawRotationArtifact({...context, getJson, pause: async delay => onPause?.(delay)});
   const recheck = expected => readRawRotationArtifactOnce({...context, getJson, ...expected});
   return { find, recheck, calls, run, job, jobs, artifact, listing, afterPause: callback => { onPause = callback; },
+    failNextListingRead: error => { nextListingReadError = error; },
     failNextJobRead: (error = new Error('Synthetic job metadata timeout')) => { nextJobReadError = error; } };
 }
 
@@ -204,7 +213,8 @@ test('result retries temporary metadata requests and refuses permission or contr
   }
   const forbidden = fixture('result');
   forbidden.failNextJobRead(Object.assign(new Error('Forbidden'), { statusCode: 403 }));
-  assert.deepEqual(await forbidden.find(), { status: 'HOLD', reason: 'metadata-unavailable' });
+  assert.deepEqual(await forbidden.find(), { status: 'HOLD', reason: 'metadata-unavailable',
+    metadataEndpoint: 'jobs', metadataCode: 'http-403', retryDelayMs: 0 });
   assert.equal(forbidden.calls.length, 3);
 
   for (const [change, reason] of [
@@ -219,6 +229,49 @@ test('result retries temporary metadata requests and refuses permission or contr
     subject.afterPause(() => { throw new Error('Contradictory result should not be retried'); });
     assert.deepEqual(await subject.find(), { status: 'HOLD', reason });
   }
+});
+
+test('the initial RAW handoff recovers a transient listing read before the builder publishes', async () => {
+  const subject = fixture();
+  subject.listing.total_count = 0;
+  subject.listing.artifacts = [];
+  subject.failNextListingRead(Object.assign(new Error('Briefly unavailable'), { name: 'TimeoutError' }));
+  let polls = 0;
+  subject.afterPause(() => {
+    if (++polls !== 2) return;
+    subject.listing.total_count = 1;
+    subject.listing.artifacts = [subject.artifact];
+  });
+  assert.deepEqual(await subject.find(), { status: 'FOUND', artifactId: 14, digest });
+  assert.equal(polls, 2);
+});
+
+test('the initial handoff honours read backoff and checks the exact waiting producer again', async () => {
+  const subject = fixture();
+  const limited = Object.assign(new Error('Limited'), { statusCode: 403, rateLimited: true, retryDelayMs: 60_000 });
+  subject.failNextJobRead(limited);
+  subject.afterPause(delay => {
+    assert.equal(delay, 60_000);
+    subject.job.status = 'completed';
+    subject.job.conclusion = 'failure';
+  });
+  assert.deepEqual(await subject.find(), { status: 'HOLD', reason: 'publisher-not-successful' });
+
+  const forbidden = fixture();
+  forbidden.failNextListingRead(Object.assign(new Error('Access denied'), { statusCode: 403 }));
+  assert.deepEqual(await forbidden.find(), { status: 'HOLD', reason: 'metadata-unavailable',
+    metadataEndpoint: 'artifact-list', metadataCode: 'http-403', retryDelayMs: 0 });
+  assert.equal(forbidden.calls.length, 1);
+});
+
+test('a transient low-level proof read does not authorize retirement or poll on its own', async () => {
+  const subject = fixture();
+  subject.failNextListingRead(Object.assign(new Error('Temporary'), { statusCode: 503 }));
+  assert.deepEqual(await subject.recheck({ expectedArtifactId: 14, expectedDigest: digest }), {
+    status: 'HOLD', reason: 'metadata-temporarily-unavailable', metadataEndpoint: 'artifact-list',
+    metadataCode: 'http-503', retryDelayMs: 0,
+  });
+  assert.equal(subject.calls.length, 1);
 });
 
 test('a result still awaiting successful publication is held at the existing deadline', async () => {
