@@ -8,6 +8,7 @@ const ACTIVITY_HOOK_URI = 'pg-functions://postgres/public/account_native_activit
 const REPOSITORY = 'jakobjorgensen82-commits/RavRadar';
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const REQUEST_TIMEOUT_MS = 12000;
+const VERIFIED_NATIVE_RECEIPT_STATES = new Set(['NATIVE_RECEIPT_UNARMED', 'NATIVE_RECEIPT_ARMED', 'NATIVE_CAPTURE_OBSERVED']);
 
 export function isFixedActivityHookReadOwner(env) {
   return env.GITHUB_ACTIONS === 'true'
@@ -328,7 +329,7 @@ export async function runFixedAccountActivityHookOperation({ operation, env, acc
     // receipt table and existing OFF/ACL contract instead of the legacy body.
     // Receipt state is no Auth-response or coverage-start authority; never arm here.
     const receipt = await readFixedNativeActivityReceipt({ accessToken, fetchImpl });
-    if (!['NATIVE_RECEIPT_UNARMED', 'NATIVE_RECEIPT_ARMED', 'NATIVE_CAPTURE_OBSERVED'].includes(receipt.status)) {
+    if (!VERIFIED_NATIVE_RECEIPT_STATES.has(receipt.status)) {
       return { status: receipt.status };
     }
   }
@@ -512,6 +513,22 @@ export async function verifyFixedNativeActivityReceiptInstallState({phase,access
     activityEligibility:'HOLD',coverageStarted:false,noticesEnabled:false,automaticDeletionEnabled:false,activationAuthority:false};
 }
 
+// The hosted catalogue command reads the installed append. The pre-install
+// catalogue oracle remains used exclusively by its existing callers.
+export async function runFixedAccountActivityCatalogRead({ env, accessToken, fetchImpl = globalThis.fetch }) {
+  if (!isFixedActivityHookCatalogReadOwner(env)) return { status: 'OWNER_REQUIRED' };
+  const result = await readFixedNativeActivityReceipt({ accessToken, fetchImpl });
+  if (!VERIFIED_NATIVE_RECEIPT_STATES.has(result.status)) return { status: result.status };
+  const {
+    status, sourceBodyAndAclVerified, nativeCaptureObserved, authResponseObserved,
+    activityEligibility, coverageStartAuthority, noticesEnabled, automaticDeletionEnabled,
+  } = result;
+  return {
+    status, sourceBodyAndAclVerified, nativeCaptureObserved, authResponseObserved,
+    activityEligibility, coverageStartAuthority, noticesEnabled, automaticDeletionEnabled,
+  };
+}
+
 export async function readFixedAccountActivityHook(options) {
   return (await readFixedAccountActivityHookProjection(options)).status;
 }
@@ -520,11 +537,9 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const operation = process.argv.length === 3 && process.argv[2] === '--enable' ? 'enable'
     : process.argv.length === 3 && process.argv[2] === '--disable' ? 'disable' : null;
   if (process.argv.length === 3 && process.argv[2] === '--catalog') {
-    const result = isFixedActivityHookCatalogReadOwner(process.env)
-      ? await readFixedAccountActivityHookCatalog({ accessToken: process.env.SUPABASE_ACCESS_TOKEN })
-      : { status: 'OWNER_REQUIRED' };
+    const result = await runFixedAccountActivityCatalogRead({ env: process.env, accessToken: process.env.SUPABASE_ACCESS_TOKEN });
     console.log(JSON.stringify(result));
-    if (result.status !== 'HOOK_CATALOG_VERIFIED') process.exitCode = 1;
+    if (!VERIFIED_NATIVE_RECEIPT_STATES.has(result.status)) process.exitCode = 1;
   } else if (process.argv.length === 3 && process.argv[2] === '--manual-catalog-diagnose') {
     const result = await diagnoseFixedManualAccountErasureCatalog({ env: process.env, accessToken: process.env.SUPABASE_ACCESS_TOKEN });
     console.log(JSON.stringify(result));
