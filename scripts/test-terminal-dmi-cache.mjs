@@ -264,6 +264,9 @@ checkHold({ after: { ...plan.after, inventory: { ...plan.after.inventory, total_
 checkHold(sameSnapshots([...rawCaches, rawCaches[0]]), 'incomplete-cache-inventory');
 checkHold({ after: snapshot([...rawCaches, { ...otherRefCache, size_in_bytes: 1 }]) }, 'cache-inventory-changed');
 checkHold({ after: { ...plan.after, protection: { caches: [] } } }, 'incomplete-raw-cache-protection');
+checkHold({ after: { ...plan.after, protection: {
+  complete: false, reason: 'possible-raw-reader-active-or-queued', caches: [],
+} } }, 'possible-raw-reader-active-or-queued');
 checkHold({ after: snapshot(undefined, []) }, 'raw-cache-protection-changed');
 
 checkHold(sameSnapshots(rawCaches, [rawIdentity(rawCaches[0])]), 'protected-raw-cache-outside-newest-two');
@@ -388,6 +391,27 @@ assert.deepEqual(await readActivity([ordinaryOwner], route =>
   route.includes('status=pending') ? {total_count: 1, workflow_runs: []} : undefined), {
   status: 'HOLD', reason: 'incomplete-reader-inventory',
 });
+let incompleteCensus = true;
+const checkedStates = new Map();
+assert.deepEqual(await readActivity([ordinaryOwner], route => {
+  const status = new URL(route, 'https://example.invalid').searchParams.get('status');
+  checkedStates.set(status, (checkedStates.get(status) ?? 0) + 1);
+  if (status === 'in_progress' && incompleteCensus) {
+    incompleteCensus = false;
+    return {total_count: 1, workflow_runs: []};
+  }
+}), {status: 'CLEAR', checkedRuns: 1, inertLegacy: 0});
+assert.deepEqual([...checkedStates.values()], [2, 2, 2, 2, 2]);
+incompleteCensus = true;
+assert.deepEqual(await readActivity([ordinaryOwner], route => {
+  if (route.includes('status=queued') && !incompleteCensus) {
+    return {total_count: 1, workflow_runs: [queuedAudit]};
+  }
+  if (route.includes('status=in_progress') && incompleteCensus) {
+    incompleteCensus = false;
+    return {total_count: 1, workflow_runs: []};
+  }
+}), {status: 'HOLD', reason: 'possible-raw-reader-active-or-queued'});
 assert.deepEqual(await readActivity([{...ordinaryOwner, run_attempt: 2}]), {
   status: 'HOLD', reason: 'rotation-owner-unconfirmed',
 });

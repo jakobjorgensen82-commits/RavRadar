@@ -184,7 +184,11 @@ export function planRawDmiCacheRotation({
   if (JSON.stringify(original) !== JSON.stringify(latest)) return hold('cache-inventory-changed');
   const originalProtection = completeProtectedCaches(before?.protection);
   const latestProtection = completeProtectedCaches(after?.protection);
-  if (!originalProtection || !latestProtection) return hold('incomplete-raw-cache-protection');
+  if (!originalProtection || !latestProtection) {
+    const refusedProtection = !originalProtection ? before?.protection : after?.protection;
+    return hold((refusedProtection?.complete === false && refusedProtection.reason)
+      || 'incomplete-raw-cache-protection');
+  }
   if (JSON.stringify(originalProtection) !== JSON.stringify(latestProtection)) return hold('raw-cache-protection-changed');
 
   const raw = latest.filter(row => row.key.startsWith('dmi-grib-'));
@@ -252,9 +256,17 @@ export async function readRawCacheReaderActivity({repository, sourceHead, ownerR
   }
   const hold = reason => ({status: 'HOLD', reason});
   const actions = '/repos/' + repository + '/actions';
-  const requests = await Promise.all(ACTIVE_ACTIONS_STATES.map(async status => ({
+  const readRequests = () => Promise.all(ACTIVE_ACTIONS_STATES.map(async status => ({
     status, data: await getJson(actions + '/runs?status=' + status + '&per_page=100'),
   })));
+  let requests = await readRequests();
+  // GitHub can return a count and page computed at different times. Get one
+  // fresh census of every state and discard the incomplete census entirely.
+  if (requests.some(({data}) => Array.isArray(data?.workflow_runs)
+      && Number.isSafeInteger(data.total_count) && data.total_count >= 0 && data.total_count <= 100
+      && data.workflow_runs.length <= 100 && data.total_count !== data.workflow_runs.length)) {
+    requests = await readRequests();
+  }
   const runs = new Map();
   for (const {status, data} of requests) {
     if (!Array.isArray(data?.workflow_runs) || data.total_count !== data.workflow_runs.length

@@ -112,6 +112,8 @@
 - [x] Lokalt afprøvet kontrol af det samlede behov for originaler til den låste time og senere genoptagelse.
 - [ ] Verificér originalerne og første overgang til to kopier i et ledigt ordinært vejrvindue før en ny upload.
 - [ ] Verificér faktisk overgang til to kopier, gentagen rotation og margin under målt almindelig drift.
+- [x] Lokalt afprøvet én ny læsning ved uoverensstemmelse mellem GitHubs antal aktive kørsler og den viste liste. Ved fortsat uoverensstemmelse eller en anden mulig læser holder rotationen stadig.
+- [ ] Kvalificér den snævre læserettelse og verificér både afgørelsen før hentning og automatisk oprydning efter offentlig levering.
 
 - [x] Verificér eksternt AI-svar for afgrænset identifikationsspørgsmål på dansk, tysk og engelsk gennem den normale brugerflade på 4.0.601.
 - [x] Reproducér generisk svar på den danske opfølgning og afgræns den længere tyske fejl til udlæsning af svaret.

@@ -119,7 +119,9 @@ async function main(mode, env) {
     await writeFile(path.join(env.RUNNER_TEMP, 'ravradar-raw-rotation-received', 'decision.json'),
       JSON.stringify(receipt), {mode: 0o600, flag: 'wx'});
   }
-  console.log(decision.status === 'READY' ? 'RAW_CACHE_ROTATION_TWO_COPIES_CONFIRMED' : 'RAW_CACHE_ROTATION_HELD');
+  console.log(decision.status === 'READY'
+    ? 'RAW_CACHE_ROTATION_TWO_COPIES_CONFIRMED'
+    : 'RAW_CACHE_ROTATION_HELD ' + decision.reason);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

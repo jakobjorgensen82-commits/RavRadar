@@ -9,6 +9,7 @@
 
 ## Drift — rotation af DMI-råcacher
 
+- Ved modstrid mellem GitHubs antal aktive kørsler og den viste liste læser cachekontrollen hele listen én gang til. Ved fortsat afslag viser GitHub-jobbet den konkrete fejlkategori.
 - Cachekontrollen angiver nu trin og fejlkategori. Oprydningsjobbet stopper med at vente, når det tilhørende byggejob er afsluttet uden at udgive et bevis.
 - Før oprydning kontrolleres både den næste låste times behov og de originaler, en senere genoptagelse kan kræve. Filer med samme fysiske identitet tælles én gang. En ældre kopi fjernes først efter verificeret genlæsning.
 - Når en normal kørsel har gemt og verificeret den nye kopi og udgivet prognosen, kan den afslutte rotationen samme gang. En gyldig genoptagelse, som bruger den ældste kopi, bevarer den.

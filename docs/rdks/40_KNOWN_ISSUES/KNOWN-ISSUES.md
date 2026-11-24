@@ -1,3 +1,9 @@
+## 24. november — råcacherotation stoppede vejr #381
+
+#380 udgav prognosen, mens to andre GitHub-kørsler stadig var aktive. Oprydningen returnerede HOLD, så tre råkopier var stadig til stede ved #381. #381 fik også HOLD, før DMI startede, og fjernede ingen kopier. GitHub returnerede kort efter antal én og en tom liste over aktive kørsler. Den daværende log skrev kun HOLD, så det enkelte svar kan ikke knyttes til #381s afgørelse.
+
+Den lokale ændring læser alle aktive tilstande igen én gang ved modstrid mellem et gyldigt antal og listen. Resultatet skal stadig være fuldstændigt, og alt bevis før og efter en sletning kræves som før. Jobloggen angiver den faste kategori ved afslag. GitHub-kvalifikation og første almindelige driftsbevis udestår.
+
 ## 22. november — verificering af kontoaktivitet før inaktivitetsvarsling
 
 Den eksisterende GitHub-arbejdsgang har en afgrænset læsning af Supabases indstilling for registrering af kontoaktivitet. Læsningen kræver verificeret hovedgren og en ledig kø. Den seneste skrivefrie kørsel viste, at Supabases automatiske registrering ved udstedelse af login-token er slået fra. Appen må fortsat ikke bruge manglende aktivitetsregistrering som bevis for inaktivitet.
