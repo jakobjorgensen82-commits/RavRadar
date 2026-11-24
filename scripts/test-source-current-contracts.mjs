@@ -81,10 +81,12 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],
   [modified(ownerHelpers[1]),modified(ownerHelpers[1])]])
   assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
 
+const cadenceReaderFixturePaths=['scripts/read-weather-cadence-github.mjs','scripts/test-weather-cadence-watchdog.mjs'];
+
 // Præcise kataloginput vælger hele CURRENT/workflow/gate/cadence; standarden bevares.
 function assertPlannerControlCommandSelection(){
   const planner=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
-  const cadence=['scripts/read-weather-cadence-github.mjs','scripts/test-weather-cadence-watchdog.mjs'];
+  const cadence=cadenceReaderFixturePaths;
   const whole=[
     'node --test scripts/test-source-current-contracts.mjs',
     'node scripts/test-source-impact-workflow.mjs',
@@ -782,11 +784,10 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
     assert.deepEqual(Object.keys(singleton.areas),['core','sourceControls']);
     assert.deepEqual(singleton.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands]);
     assert.deepEqual(singleton.areas.sourceControls.changedPaths,[files[1]]);
-    const cadenceFiles=['scripts/read-weather-cadence-github.mjs','scripts/test-weather-cadence-watchdog.mjs'];
-    const cadence=select('cadence-reader-only',cadenceFiles);
+    const cadence=select('cadence-reader-only',cadenceReaderFixturePaths);
     assert.equal(cadence.selection,'CURRENT_CONTRACTS');assert.equal(cadence.controlQualificationRequired,true);
     assert.deepEqual(cadence.commands,[...CURRENT_CONTRACT_COMMANDS.core,commands[7]]);
-    assert.deepEqual(cadence.areas.sourceControls.changedPaths,cadenceFiles);
+    assert.deepEqual(cadence.areas.sourceControls.changedPaths,cadenceReaderFixturePaths);
     const selectorFiles=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
     const all=select('all-controller-owners-with-selector-and-docs',[...files,
       ...selectorFiles,'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
@@ -928,7 +929,7 @@ function collect(file){
 }
 for(const file of ['scripts/source-targeted-producer.mjs','scripts/source-targeted-consumer.mjs',
   'scripts/source-current-contract-receipt.mjs','scripts/source-current-contract-plan.mjs'])collect(file);
-const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,
+const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,...cadenceReaderFixturePaths,
   'scripts/test-owned-dmi-grib-save-native.py',
   '.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
   ...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
