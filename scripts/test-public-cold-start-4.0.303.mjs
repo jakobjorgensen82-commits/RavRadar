@@ -122,6 +122,8 @@ const workerAssets = worker.replaceAll('${APP_VERSION}', releaseVersion)
   .replaceAll('${COMPACT_MAP}', workerMapTag).replaceAll('${PUBLIC_JSON_TRANSPORT}', workerTransportTag);
 assert.ok(workerAssets.includes(`./bootstrap.js${suffix}`));
 assert.ok(workerAssets.includes(`./app.js${suffix}`));
+assert.ok(workerAssets.includes(`./js/ui/account-panel.js?v=${releaseVersion}&ui=account-20261006`));
+assert.ok(workerAssets.includes(`./js/i18n.js?v=${releaseVersion}`));
 assert.ok(workerAssets.includes(`./js/ui/admin-dashboard.js${adminEntrypointSuffix}`));
 assert.ok(workerAssets.includes(`./js/services/visitor-report-service.js${visitorReportSuffix}`));
 assert.ok(worker.replaceAll('${APP_VERSION}',releaseVersion).includes(`./js/ui/admin-private-trip-study.js${adminStudySuffix}`),
