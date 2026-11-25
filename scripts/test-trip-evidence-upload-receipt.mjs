@@ -534,6 +534,7 @@ for (const kind of ['other-owner new login', 'same-owner new login', 'logout', '
         assert.ok(panel.content.innerHTML.includes(t('account.reportRemote')));
         await panel.showTripHistory(panel.dialog, {});
         assert.equal((panel.content.innerHTML.match(/class="trip-log-row"/g) || []).length, 1);
+        assert.doesNotMatch(panel.content.innerHTML, /<span>Testtur<\/span>/);
       }
     } finally { form.resolve(null); if (operation) await operation; h.finish(); }
   });
@@ -1515,6 +1516,8 @@ test('manual row receipt: marked test trip stays marked across retry',async()=>{
     assert.deepEqual(h.state.submits,[first,first]);
     assert.equal(h.service.getObservationSyncStatus().pending,0);
     assert.equal(h.service.getLocalObservations()[0].observation_origin,'synthetic-test');
+    await panel.showTripHistory(panel.dialog, {});
+    assert.match(panel.content.innerHTML, /<span>Testtur<\/span>/);
   }finally{h.finish();}
 });
 
