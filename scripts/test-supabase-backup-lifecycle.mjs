@@ -81,6 +81,9 @@ test('a due backup that loses its weather window during setup leaves exact proof
   assert.equal(plan.action,'capture');
   assert.equal(privateCalls,2);
   clock+=1000;
+  const closedPlan=await runAutonomousDatabaseBackup({phase:'plan'},dependencies);
+  assert.equal(databaseBackupWorkflowOutputs('plan',closedPlan),'proceed=false\naction=none\nplan_outcome=window-closed\n');
+  assert.equal(closedPlan.privateAccessStarted,false);
   const execute=await runAutonomousDatabaseBackup({phase:'execute'},dependencies);
   assert.equal(execute.status,'DATABASE_BACKUP_SKIPPED_ORIGINAL_WEATHER_WINDOW');
   assert.equal(privateCalls,2);
@@ -124,6 +127,7 @@ test('a due backup that loses its weather window during setup leaves exact proof
   }
   const workflow=fs.readFileSync(new URL('../.github/workflows/maintain-admin-document-history.yml',import.meta.url),'utf8');
   assert.match(workflow,/id: backup-execute[\s\S]*--execute[\s\S]*- name: Confirm backup stopped before private access\s+if: steps\.backup-execute\.outputs\.no_private_access == 'true'/);
+  assert.match(workflow,/plan_outcome == 'not-due' && 'Database backup plan - current archive not due'[\s\S]*plan_outcome == 'window-closed' && 'Database backup plan - weather window closed before private access'[\s\S]*plan_outcome == 'retention-held' && 'Database backup plan - rotation held'[\s\S]*if: steps\.backup-plan\.outputs\.proceed == 'false'/);
 });
 test('manual archive execution blocks when unresolved while the same job positively skips capture on a diagnosis', () => {
   const current={completedAt:'2026-11-01T00:00:00.000Z',context:{runId:'90'},restoreRunIds:[]};
@@ -195,12 +199,16 @@ test('normal coordinator is disabled before IO, restores before rotation and cap
   assert.equal(disabled.backupBucketStock,undefined);
   const restorePlan=await runAutonomousDatabaseBackup({phase:'plan'},dependencies);
   assert.equal(restorePlan.action,'restore');
+  assert.equal(databaseBackupWorkflowOutputs('plan',restorePlan),'proceed=true\naction=restore\nplan_outcome=due\n');
   assert.deepEqual(restorePlan.backupBucketStock,{usedBytes:250_000_000,policyLimitBytes:2_000_000_000});
   assert.equal(captures+restores+rotations+receipts,0);
   assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).action,'restore');
   assert.equal(captures,0);assert.equal(restores,1);assert.equal(receipts,1);
   assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).action,'rotate');assert.equal(captures,0);
   current.rotationHeld=true;assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).retentionReady,false);
+  const heldPlan=await runAutonomousDatabaseBackup({phase:'plan'},dependencies);
+  assert.equal(databaseBackupWorkflowOutputs('plan',heldPlan),'proceed=false\naction=none\nplan_outcome=retention-held\n');
+  assert.equal(heldPlan.privateAccessStarted,true);
   assert.equal(captures,0);current.rotationHeld=false;
   assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).status,'DATABASE_BACKUP_WEEKLY_CAPTURE_CREATED_RESTORE_PENDING');
   assert.equal(captures,1);assert.equal(current.restoreVerified,false);
@@ -210,6 +218,8 @@ test('normal coordinator is disabled before IO, restores before rotation and cap
   const afterRotation=await runAutonomousDatabaseBackup({phase:'plan'},dependencies);
   assert.equal(afterRotation.status,'DATABASE_BACKUP_SKIPPED_NOT_DUE');
   assert.equal(afterRotation.proceed,false);
+  assert.equal(databaseBackupWorkflowOutputs('plan',afterRotation),'proceed=false\naction=none\nplan_outcome=not-due\n');
+  assert.throws(()=>databaseBackupWorkflowOutputs('plan',{...afterRotation,status:'OTHER'}),{code:'DATABASE_BACKUP_PLAN_OUTCOME'});
   assert.deepEqual(afterRotation.backupBucketStock,{usedBytes:195_000_000,policyLimitBytes:2_000_000_000});
   const unknownStock=await runAutonomousDatabaseBackup({phase:'plan'},{
     ...dependencies,inspectCurrent:async()=>({...current,usedBytes:undefined}),
