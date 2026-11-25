@@ -47,7 +47,7 @@ for (const definition of ['let assistantTurn = 0;', 'function resetAssistantTopi
   assert.ok(actualUi.includes(definition), `Actual UI extraction must include its lexical dependency: ${definition}`);
 }
 
-function fixture(locale, { manifest, load = data.loadConditionDetails, now, startup = 'ready' } = {}) {
+function fixture(locale, { manifest, load = data.loadConditionDetails, now, startup = 'ready', pageLanguage = locale } = {}) {
   language = locale;
   const messages = [];
   const listeners = new Map();
@@ -68,6 +68,7 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now, star
     conditionDetailsPromise: null, pendingZoneDetails: new Map(),
     activeLandingView: null, fullEvidencePending: null, mapForecast: { committed: null },
     document: {
+      documentElement: { lang: pageLanguage },
       querySelectorAll(selector) { assert.equal(selector, '.mode-button'); return []; },
       querySelector(selector) {
         if (selector === '#assistantForm') return assistantForm;
@@ -85,7 +86,7 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now, star
     zoneCondition: zone => state.conditions.zones[zone?.id] || {},
     currentDisplayFor: () => ({ weather: {}, result: null }),
     getLanguage: () => locale,
-    t: (key, params) => i18n.t(key, params, locale),
+    t: (key, params, requestedLanguage = locale) => i18n.t(key, params, requestedLanguage),
     askRavRadar: now === undefined ? assistant.askRavRadar : (question, context) => {
       asked.push(question);
       return assistant.askRavRadar(question, context, { language: locale, now, localOnly: true });
@@ -245,7 +246,7 @@ test('local UV daylight scope preserves whole extra requests, unknown referents 
     for(const reset of ['close','cancel','reset','mode','language','zone']){
       const ui=fixture(locale);await ui.submit(first);assert.equal(ui.topic(),topic);
       if(reset==='mode')ui.state.mode='beach';
-      else if(reset==='language')ui.context.getLanguage=()=>locale==='da'?'de':'da';
+      else if(reset==='language')ui.context.document.documentElement.lang=locale==='da'?'de':'da';
       else if(reset==='zone')ui.state.selectedZone={id:'OTHER_SYNTHETIC_ZONE'};
       else ui.emit(reset==='reset'?'form':'dialog',reset);
       const forwarded=[];ui.context.askRavRadar=async question=>{forwarded.push(question);return 'NO_BORROWED_UV_REFERENT';};
@@ -280,7 +281,7 @@ test('public knowledge followups preserve raw guards, unknown IDs, reset/languag
     for(const reset of ['close','cancel','reset','mode','language']){
       const ui=fixture(locale);await ui.submit(first);assert.equal(ui.topic(),topic);
       if(reset==='mode')ui.state.mode='beach';
-      else if(reset==='language')ui.context.getLanguage=()=>locale==='da'?'de':'da';
+      else if(reset==='language')ui.context.document.documentElement.lang=locale==='da'?'de':'da';
       else ui.emit(reset==='reset'?'form':'dialog',reset);
       const asked=[];ui.context.askRavRadar=async question=>{asked.push(question);return 'SYNTHETIC_NO_BORROWED_TOPIC';};
       await ui.submit(next);assert.deepEqual(asked,[next]);assert.equal(ui.topic(),null);
@@ -441,7 +442,7 @@ test('assistant header waits for its handler, independently of forecast readines
   assert.equal(fetchCalls, 0);
 });
 
-test('forecast cache identity reaches actual index, bootstrap and app without changing the model service URL', async () => {
+test('assistant locale cache identity updates the app while retaining the model service', async () => {
   const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
   const boot = await fs.readFile(new URL('../bootstrap.js', import.meta.url), 'utf8');
   const bootMatches = [...html.matchAll(/<script type="module" src="(bootstrap\.js\?[^"<>]+)"><\/script>/gu)];
@@ -465,6 +466,7 @@ test('forecast cache identity reaches actual index, bootstrap and app without ch
     assert.equal(url.searchParams.getAll('assistant-followup').length, 1);
     assert.equal(url.searchParams.get('assistant-data'), 'ready-20261123');
     assert.equal(url.searchParams.getAll('assistant-data').length, 1);
+    assert.deepEqual(url.searchParams.getAll('assistant-locale'), ['tab-20261125']);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
   assert.equal(serviceImports.length, 1);
@@ -642,7 +644,7 @@ test('pending startup keeps local answers immediate and cancels stale data turns
     if(interrupt==='reset')ui.emit('form','reset');
     if(interrupt==='mode')vm.runInContext("setMode('beach',{render:false})",ui.context);
     if(interrupt==='zone'){ui.state.selectedZone={id:'another-zone'};ui.emit('form','reset');}
-    if(interrupt==='language')ui.context.getLanguage=()=> 'de';
+    if(interrupt==='language')ui.context.document.documentElement.lang='de';
     if(interrupt==='new-turn')await ui.submit('Hvem har lavet RavRadar?');
     ui.hydrate();await pending;
     assert.equal(ui.fullCalls(),0,interrupt);
@@ -772,7 +774,7 @@ test('forecast followups preserve frame resets and reject late intent restoratio
   for (const change of [ui => ui.emit('dialog', 'close'), ui => ui.emit('dialog', 'cancel'), ui => ui.emit('form', 'reset'),
     ui => { ui.state.conditions = { ...ui.state.conditions }; }, ui => { ui.state.zones = { ...ui.state.zones }; },
     ui => { ui.state.mode = 'beach'; }, ui => { ui.state.selectedZone = { id: 'zoneA' }; },
-    ui => { ui.context.getLanguage = () => 'de'; }]) {
+    ui => { ui.context.document.documentElement.lang = 'de'; }]) {
     const ui = await forecastFixture(); await ui.submit(forecastForms.da.first); change(ui); await ui.submit(forecastForms.da.monday);
     assert.equal(ui.asked().at(-1), forecastForms.da.monday);
     assert.doesNotMatch(ui.answers().at(-1), /Zone A|Zone B/);
@@ -962,6 +964,27 @@ test('app answers complete daylight and named equipment questions in the selecte
       assert.equal(forwarded.at(-1),question, 'Whole original question is preserved');
     }
   }
+  assert.equal(fetchCalls,0);
+});
+
+test('assistant follows the visible tab language after another tab changes the stored preference',async()=>{
+  const ui=fixture('da',{pageLanguage:'de'});
+  await ui.submit('Wer ist Michael Bay?');
+  assert.equal(ui.answers().at(-1),i18n.t('assistant.refusal',{},'de'));
+
+  const question='Warum kann UV-Licht allein Bernstein nicht sicher identifizieren, und warum ist die Fluoreszenz bei Tageslicht schlechter zu erkennen?';
+  ui.context.askRavRadar=async()=>{throw Error('COMPLETE_PUBLIC_HELP_MUST_NOT_FETCH');};
+  await ui.submit(question);
+  assert.equal(ui.answers().at(-1),publicRavAssistantHelp(question,'de').answer);
+
+  const serviceLocales=[];
+  ui.context.askRavRadar=async(question,context)=>{
+    serviceLocales.push(context.locale);
+    return assistant.askRavRadar(question,context,{localOnly:true});
+  };
+  await ui.submit('Was ist Bernstein?');
+  assert.deepEqual(serviceLocales,['de']);
+  assert.equal(ui.answers().at(-1),i18n.t('assistant.local.origin',{},'de'));
   assert.equal(fetchCalls,0);
 });
 
