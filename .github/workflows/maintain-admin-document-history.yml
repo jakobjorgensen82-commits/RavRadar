@@ -608,3 +608,11 @@ jobs:
       - name: Confirm backup stopped before private access
         if: steps.backup-execute.outputs.no_private_access == 'true'
         run: echo 'The original weather window closed before private backup access.'
+      - name: >-
+          ${{ steps.backup-plan.outputs.plan_outcome == 'not-due' && 'Database backup plan - current archive not due'
+            || steps.backup-plan.outputs.plan_outcome == 'window-closed' && 'Database backup plan - weather window closed before private access'
+            || steps.backup-plan.outputs.plan_outcome == 'retention-held' && 'Database backup plan - rotation held'
+            || steps.backup-plan.outputs.plan_outcome == 'disabled' && 'Database backup plan - automation disabled'
+            || 'Database backup plan - no skip disposition' }}
+        if: steps.backup-plan.outputs.proceed == 'false'
+        run: echo 'The plan did not start a backup action.'

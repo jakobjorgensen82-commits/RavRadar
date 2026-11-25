@@ -91,8 +91,20 @@ export async function runAutonomousDatabaseBackup({phase='plan'}={},dependencies
     archiveWrittenThisOperation:captured.archiveWrittenThisOperation,centralLocatorVerified:captured.centralLocatorVerified,
     fullDatabaseBackupVerified:false,freeReady:false,automaticRetry:false};
 }
+const backupPlanOutcomes = Object.freeze({
+  DATABASE_BACKUP_AUTOMATION_DISABLED: 'disabled',
+  DATABASE_BACKUP_SKIPPED_ORIGINAL_WEATHER_WINDOW: 'window-closed',
+  DATABASE_BACKUP_RETENTION_HELD: 'retention-held',
+  DATABASE_BACKUP_SKIPPED_NOT_DUE: 'not-due',
+  DATABASE_BACKUP_MAINTENANCE_DUE: 'due',
+});
+
 export function databaseBackupWorkflowOutputs(phase, result) {
-  if (phase === 'plan') return 'proceed='+String(result.proceed)+'\n'+'action='+(result.action??'none')+'\n';
+  if (phase === 'plan') {
+    need(Object.hasOwn(backupPlanOutcomes, result.status), 'DATABASE_BACKUP_PLAN_OUTCOME');
+    return 'proceed='+String(result.proceed)+'\n'+'action='+(result.action??'none')+'\n'
+      +'plan_outcome='+backupPlanOutcomes[result.status]+'\n';
+  }
   if (phase === 'execute' && result.status === 'DATABASE_BACKUP_SKIPPED_ORIGINAL_WEATHER_WINDOW'
     && result.privateAccessStarted === false) return 'no_private_access=true\n';
   return '';
