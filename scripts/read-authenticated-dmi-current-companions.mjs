@@ -13,32 +13,11 @@ import { unpackPrivateWeatherComponentCompanions, privateWeatherPackJsonReadsClo
   from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE }
   from './lib/private-weather-component-inventory.mjs';
-import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot}
-  from './lib/authenticated-frozen586-predecessor.mjs';
-import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot}
-  from './lib/authenticated-frozen586-predecessor.mjs';
-import {readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot}
-  from './lib/authenticated-frozen586-predecessor.mjs';
-import {readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot,
-  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot}
-  from './lib/authenticated-frozen586-predecessor.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
-import {readAssistantLaterH0RetentionInput,assistantAfter597RuntimePredecessor,assistantAfter598RuntimePredecessor,assistantAfter599RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599RuntimePredecessor():
-  ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598RuntimePredecessor():
-  ACTIVE.sourcePhase==='assistant-mixed-after597-successor'?assistantAfter597RuntimePredecessor():
-  ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'?Object.freeze({
-  read:readAuthenticatedSource594Predecessor,snapshot:assertAuthenticatedSource594Snapshot,
-}):['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({
-  read:readAuthenticatedFrozen591Predecessor,snapshot:assertAuthenticatedFrozen591Snapshot,
-}):ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
-  read:readAuthenticatedFrozen590Predecessor,snapshot:assertAuthenticatedFrozen590Snapshot,
-}):ACTIVE.sourcePhase==='assistant-public588-successor'?Object.freeze({
-  read:readAuthenticatedFrozen588Predecessor,snapshot:assertAuthenticatedFrozen588Snapshot,
-}):Object.freeze({
-  read:readAuthenticatedFrozen587Predecessor,snapshot:assertAuthenticatedFrozen587Snapshot,
-});
+import {readAssistantLaterH0RetentionInput,activeAssistantRuntimePredecessor}
+  from './assistant-later-h0-runtime-transition.mjs';
+const ACTIVE_PREDECESSOR=activeAssistantRuntimePredecessor();
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function refuse(reason) {

@@ -134,6 +134,22 @@ if(AFTER601_SETUP_MODE){
     assert.throws(()=>sync.checkpointMetadataCasBlock(canonicalSource,ravScoreModelBinding(),candidateBinding(),currentSource.ASSISTANT_AFTER601_BEFORE.T),
       /one exact C\/I\/T source family/);
   });
+  test('after601 CAS digest uses the two bare PostgreSQL catalog bodies',async()=>{
+    const {canonicalSource}=await currentSource.readAssistantAfter601CanonicalSource();
+    const {expectedCheckpointCasContract}=await import('./integrated-cutover-readiness.mjs');
+    const {definition}=await expectedCheckpointCasContract({sourcePhase:'assistant-after601-successor'});
+    const catalogBodies=currentSource.ASSISTANT_AFTER601_ALIASES.map((alias,index)=>{
+      const start=canonicalSource.indexOf('create or replace function public.'+alias.name+'(');
+      assert(start>=0);
+      const [header]=canonicalSource.slice(start).split('\n');
+      assert(header.includes(alias.name));
+      const body=/\bas \$\$([\s\S]*?)\$\$;/iu.exec(canonicalSource.slice(start));
+      assert(body,'SQL alias must have a literal catalog body');
+      const label=index===0?'state':'payload';
+      return '\n-- assistant-later-h0-original601-'+label+'-validator --\n'+body[1].replace(/\r\n?/g,'\n').trim();
+    });
+    assert(definition.endsWith(catalogBodies.join('')),'CAS digest must exclude SQL dollar delimiters');
+  });
   test('after601 seven-consumer setup is deterministic and rejects damaged original alias before writing',async()=>{
     await verifySevenConsumerSync('supabase/migrations/'+currentSource.assistantAfter601Migration().filename,
       currentSource.ASSISTANT_AFTER601_ALIASES[0]);

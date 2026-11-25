@@ -651,6 +651,8 @@ export async function buildAssistantAfter601BindingSuccessor(options){
 
 async function main(){
   const args=process.argv.slice(2);
+  if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor')
+    args[0]='--assistant-after601';
   if(args[0]==='--assistant-after601'){
     assert.equal(args.length,2);assert(['--check','--write'].includes(args[1]));
     const result=await buildAssistantAfter601BindingSuccessor({version:ASSISTANT_AFTER601_BINDING.version});
