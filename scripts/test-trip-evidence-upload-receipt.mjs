@@ -7,7 +7,7 @@ import * as quality from '../js/services/calibration-eligibility.js';
 import * as model from '../js/core/ravscore-model-contract.js';
 import * as account from '../js/services/account-trip-report-contract.js';
 import * as store from '../js/services/trip-evidence-store.js';
-import { formatDateTime, formatNumber, t } from '../js/i18n.js';
+import { formatDateTime, formatNumber, getLanguage, t } from '../js/i18n.js';
 import { openTripEvidenceDialog } from '../js/ui/trip-evidence-dialog.js';
 import { listPendingTripEvidence, tripEvidenceStorageKeys } from '../js/services/trip-evidence-store.js';
 import { collectOwnTripExport } from '../js/services/own-trip-export.js';
@@ -494,7 +494,7 @@ function ui(h, form) {
     close() { this.open = false; events.dispatchEvent(new Event('close')); },
     showModal() { this.open = true; } };
   (h.state.dialogs ??= []).push(dialog);
-  const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, t, ...quality, ...model, crypto,
+  const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, getLanguage, t, ...quality, ...model, crypto,
     openAccountTripReportDialog: () => form.promise };
   vm.runInNewContext(`${accountBody}\nthis.api={openAccountDialog,showAccountTripReport,showTripHistory};`, scope);
   return { dialog, content, ...scope.api };
@@ -588,10 +588,11 @@ for (const changeOwner of [false, true]) {
       h.state.failWrite = null;
       if (changeOwner) await h.login(B);
       panel.openAccountDialog(panel.dialog);
-      assert.equal(panel.content.innerHTML.includes(t('account.previousReportUnconfirmed')), !changeOwner);
+      const unconfirmed = 'Vi kunne ikke bekræfte en tidligere indberetning.';
+      assert.equal(panel.content.innerHTML.includes(unconfirmed), !changeOwner);
       assert.equal(panel.content.innerHTML.includes(t('account.reportRemote')), false);
       panel.openAccountDialog(panel.dialog);
-      assert.equal(panel.content.innerHTML.includes(t('account.previousReportUnconfirmed')), false);
+      assert.equal(panel.content.innerHTML.includes(unconfirmed), false);
     } finally {
       h.state.failWrite = null;
       body.resolve({ stored: true });

@@ -2,7 +2,7 @@ import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagic
 import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.602";
 import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.602";
 import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.602";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.602";
+import { formatDateTime, formatNumber, getLanguage, t } from "../i18n.js?v=4.0.602";
 import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.602";
 import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.602";
 
@@ -13,6 +13,11 @@ function stopHistoryView(dialog) { pendingHistoryViews.get(dialog)?.dispose(); }
 
 const pendingReportViews = new WeakMap();
 const deferredReportFailures = new WeakMap();
+const unconfirmedTripReportCopy = {
+  da: 'Vi kunne ikke bekræfte en tidligere indberetning. Se Mine ture og fund, før du prøver igen.',
+  de: 'Eine frühere Meldung konnte nicht bestätigt werden. Prüfe Meine Touren und Funde, bevor du es erneut versuchst.',
+  en: 'We could not confirm an earlier trip report. Check My trips and finds before trying again.',
+};
 
 const pendingStatisticsViews = new WeakMap();
 function stopStatisticsView(dialog) { pendingStatisticsViews.get(dialog)?.dispose(); }
@@ -230,7 +235,7 @@ function renderAccount(dialog, context, message = '') {
     <p>${t('account.signedIn',{email:session.user?.email ? t('account.asEmail',{email:`<strong>${escapeHtml(session.user.email)}</strong>`}) : ''})}</p>
     <p>${t('account.signedInBody')}</p>
     ${message ? `<p class="notice" role="status">${escapeHtml(message)}</p>` : ''}
-    ${previousReportUnconfirmed ? `<p class="notice" role="status">${t('account.previousReportUnconfirmed')}</p>` : ''}
+    ${previousReportUnconfirmed ? `<p class="notice" role="status">${unconfirmedTripReportCopy[getLanguage()]}</p>` : ''}
     <a id="accountTripReportLink" class="account-feature-link" href="#indberet-tur">${t('account.report')} <span aria-hidden="true">→</span></a>
     <a id="tripHistoryLink" class="account-feature-link" href="#mine-ture">${t('account.history')} <span aria-hidden="true">→</span></a>
     <button id="tripExportButton" class="account-feature-link" type="button">${t('account.exportTrips')}</button>

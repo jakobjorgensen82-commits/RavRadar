@@ -286,7 +286,6 @@ const DA = {
   'account.binding.current-eligible':'Aktuel model · kan indgå i senere analyse', 'account.binding.current-ineligible':'Aktuel model · ikke kalibreringsegnet', 'account.binding.historical-model-bound':'Tidligere model · kun historik', 'account.binding.unbound':'Uden modelbinding · kun historik',
   'account.reportRemote':'Tak. Turen er sendt til RavRadar og kan nu ses under Mine ture og fund.',
   'account.reportQueued':'Turen er gemt på denne enhed og sendes automatisk, når forbindelsen er tilbage.',
-  'account.previousReportUnconfirmed':'Vi kunne ikke bekræfte en tidligere indberetning. Se Mine ture og fund, før du prøver igen.',
   'account.reportFailed':'Turen kunne ikke indsendes. Prøv igen.'
 };
 
@@ -569,7 +568,6 @@ const DE = {
   'account.binding.current-eligible':'Aktuelles Modell · für spätere Analyse geeignet', 'account.binding.current-ineligible':'Aktuelles Modell · nicht kalibrierungsgeeignet', 'account.binding.historical-model-bound':'Früheres Modell · nur Verlauf', 'account.binding.unbound':'Ohne Modellbindung · nur Verlauf',
   'account.reportRemote':'Danke. Die Tour wurde an RavRadar gesendet und ist jetzt unter Meine Touren und Funde sichtbar.',
   'account.reportQueued':'Die Tour ist auf diesem Gerät gespeichert und wird automatisch gesendet, sobald die Verbindung wieder da ist.',
-  'account.previousReportUnconfirmed':'Eine frühere Meldung konnte nicht bestätigt werden. Prüfe Meine Touren und Funde, bevor du es erneut versuchst.',
   'account.reportFailed':'Die Tour konnte nicht gesendet werden. Bitte erneut versuchen.'
 };
 
@@ -852,7 +850,6 @@ const EN = {
   'account.binding.current-eligible':'Current model · eligible for later analysis', 'account.binding.current-ineligible':'Current model · not calibration eligible', 'account.binding.historical-model-bound':'Earlier model · history only', 'account.binding.unbound':'No model binding · history only',
   'account.reportRemote':'Thank you. The trip was sent to RavRadar and is now available under My trips and finds.',
   'account.reportQueued':'The trip is stored on this device and will be sent automatically when the connection returns.',
-  'account.previousReportUnconfirmed':'We could not confirm an earlier trip report. Check My trips and finds before trying again.',
   'account.reportFailed':'The trip could not be submitted. Please try again.'
 };
 
