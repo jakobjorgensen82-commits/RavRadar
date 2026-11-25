@@ -274,7 +274,7 @@ export async function withAuthenticatedReceipt80Source(callback){
   const [{execFileSync},{tmpdir},{fileURLToPath}]=await Promise.all([
     import('node:child_process'),import('node:os'),import('node:url')]);
   const repository=fileURLToPath(new URL('../../',import.meta.url));
-  const git=args=>execFileSync('git',['-c','protocol.allow=never',...args],{
+  const git=args=>execFileSync('git',['-c','protocol.allow=never','-c','core.autocrlf=false','-c','core.eol=lf',...args],{
     cwd:repository,encoding:'utf8',timeout:30000,maxBuffer:2*1024*1024,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}});
   const head=AUTHENTIC_RECEIPT80_SOURCE_HEAD;
