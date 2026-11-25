@@ -1,14 +1,18 @@
 """Offline direct-current audit tests using a tiny synthetic ecCodes interface."""
 import copy
+from contextlib import contextmanager
 import hashlib
 import json
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from lib.dmi_native_provenance import canonical_current_source_asset, CURRENT_VECTOR_SELECTION, haversine_point_km
 from lib.dkss_current_raw_audit import (
     check_accepted_dkss_hour, check_dkss_current_original, summarize_dkss_current_outcomes,
 )
+from lib.dkss_current_raw_cache import _check_cached_dkss_originals, check_cached_dkss_originals
 
 
 PART = {"partId": "fixture", "zoneId": "fixture-zone", "waterPoint": [12.0, 55.0]}
@@ -152,6 +156,56 @@ class DkssCurrentRawAuditTests(unittest.TestCase):
         self.assertEqual(check_accepted_dkss_hour(PART, exact, rows[:1], outcomes[:1]), "MATCH")
         self.assertEqual(summarize_dkss_current_outcomes(["MATCH", "MATCH", "private-canary"]),
                          {"MATCH": 2, "UNCLASSIFIED": 1})
+
+    def test_cache_groups_once_and_maps_results_to_interleaved_endpoint_order(self):
+        left = endpoint(1, 0.2, -0.6)
+        same_file_wrong_vector = {**left, "uMps": 0.5}
+        right = endpoint(3, 0.6, -0.2)
+        rows = [left, right, same_file_wrong_vector]
+        opened = []
+        manifests = []
+        attested_manifest = b"fixture manifest"
+
+        def resolve(producer, jobs):
+            manifests.append(len(jobs))
+            for job in jobs:
+                job["path"] = job["capture"]
+            return attested_manifest
+
+        @contextmanager
+        def read_owned(capture, collection, run, valid):
+            opened.append(valid)
+            record = next(row for row in rows if row["time"] == valid)
+            native = SyntheticGrib(int(valid[11:13]), record["uMps"], record["vMps"])
+            for operation in ("codes_grib_new_from_file", "codes_get", "codes_get_elements", "codes_release"):
+                setattr(producer, operation, getattr(native, operation))
+            with tempfile.TemporaryFile() as file:
+                file.write(b"UV")
+                file.flush()
+                reader = SimpleNamespace(handle=file, capture=capture, check=lambda: None,
+                                         physically_closed=False, retained=False)
+                yield reader
+            reader.physically_closed = True
+
+        producer = SimpleNamespace(_grib_read_scope=read_owned, _UNSETTLED_GRIB_READS=[],
+                                   _UNSETTLED_ASSET_DOWNLOADS=[],
+                                   _legacy_current_fixed_bytes=lambda *_args, **_kw: attested_manifest)
+        decoder = SimpleNamespace(raw_inventory=resolve, check_budget=lambda *_args: None,
+                                  MAX_CAPTURES=4096, MAX_BYTES=4096, MANIFEST_RELATIVE="fixture")
+        self.assertEqual(_check_cached_dkss_originals(rows, decoder, producer),
+                         ("MATCH", "MATCH", "NATIVE_VECTOR_MISMATCH"))
+        self.assertEqual(manifests, [2])
+        self.assertEqual(opened, [left["time"], right["time"]])
+        producer._legacy_current_fixed_bytes = lambda *_args, **_kw: b"changed during read"
+        self.assertEqual(_check_cached_dkss_originals(rows, decoder, producer), ("RAW_MANIFEST_CHANGED",) * 3)
+
+    def test_non_linux_returns_typed_unavailability_before_loading_decoder(self):
+        with patch("lib.dkss_current_raw_cache.sys.platform", "win32"), patch(
+            "lib.dkss_current_raw_cache.importlib.util.spec_from_file_location"
+        ) as loader:
+            self.assertEqual(check_cached_dkss_originals([endpoint(1, 0.2, -0.6)]),
+                             ("OWNED_READER_UNAVAILABLE",))
+        loader.assert_not_called()
 
 
 if __name__ == "__main__":
