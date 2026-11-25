@@ -5,7 +5,7 @@ import json
 import tempfile
 import unittest
 
-from lib.dmi_native_provenance import canonical_current_source_asset, CURRENT_VECTOR_SELECTION
+from lib.dmi_native_provenance import canonical_current_source_asset, CURRENT_VECTOR_SELECTION, haversine_point_km
 from lib.dkss_current_raw_audit import (
     check_accepted_dkss_hour, check_dkss_current_original, summarize_dkss_current_outcomes,
 )
@@ -50,7 +50,7 @@ def endpoint(lead, u, v, raw=b"UV"):
         "coordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1",
         "gridIndexIdentitySha256": digest(("grid-native-index-order-v1", GRID_SECTION, *GRID.values())),
     }
-    return {"source": source, "time": time, "uMps": u, "vMps": v}
+    return {"source": source, "time": time, "uMps": u, "vMps": v, "waterPoint": PART["waterPoint"]}
 
 
 class SyntheticGrib:
@@ -105,6 +105,22 @@ class DkssCurrentRawAuditTests(unittest.TestCase):
                 self.assertEqual(verify(row, reader, raw), expected)
         self.assertEqual(verify(endpoint(1, 0.2, -0.6, b"UUV"), SyntheticGrib(1, 0.2, -0.6), b"UUV"),
                          "FIELD_AMBIGUOUS")
+
+    def test_distance_uses_full_registry_and_raw_cell_precision(self):
+        row = endpoint(1, 0.2, -0.6)
+        row["waterPoint"] = [12.003456749, 55.00000002]
+        raw_longitude = 12.00000004
+        raw_grid = {**GRID, "longitudeOfLastGridPointInDegrees": raw_longitude}
+        row["source"]["gridDefinitionSha256"] = digest(raw_grid.values())
+        sample = row["source"]["nativeGridSampling"]
+        sample["gridDefinitionSha256"] = row["source"]["gridDefinitionSha256"]
+        sample["gridIndexIdentitySha256"] = digest(("grid-native-index-order-v1", GRID_SECTION, *raw_grid.values()))
+        row["source"]["distanceKm"] = round(haversine_point_km(row["waterPoint"], [raw_longitude, 55]), 5)
+        reader = SyntheticGrib(1, 0.2, -0.6, {b"U": raw_grid, b"V": raw_grid})
+        self.assertEqual(sample["gridPoint"], [12.0, 55.0])
+        self.assertEqual(verify(row, reader), "MATCH")
+        row["source"]["distanceKm"] += 0.00001
+        self.assertEqual(verify(row, reader), "WATER_DISTANCE_MISMATCH")
 
     def test_original_ends_bind_the_verified_h0_water_point_and_interpolation(self):
         left = endpoint(1, 0.2, -0.6)

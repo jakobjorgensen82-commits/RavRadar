@@ -256,6 +256,45 @@ function fixture({ partId = 'SYNTHETIC-PART', nativeHours = [0, 3], target = 1, 
 const bankFor = fixture => buildProtectedDmiNativeCurrentProofs({ selections: [fixture], contexts: [fixture.bulk] });
 const inspect = (fixture, contexts = [fixture.bulk]) => createProtectedDmiNativeCurrentInspector({ contexts }).inspect(fixture);
 
+test('offline DKSS audit input uses the normal admitted H0 row and exact native endpoints', async () => {
+  const { prepareDkssCurrentRawAuditInput } = await import('./lib/dkss-current-raw-audit-input.mjs');
+  const f = fixture({ target: 1, collection: 'dkss_nsbs' });
+  f.part.onshoreDirectionDeg = 90;
+  const identity = dmiExpectedIdentityForPart(f.part);
+  const raw = Object.values(f.bulk.zones[identity.entityId].hourly);
+  for (const native of raw) {
+    const source = native.sources.current;
+    source.contentLengthBytes = 1234;
+    source.nativeGridSampling = { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: 'e'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [] };
+  }
+  f.row = buildDmiForecastHourly({ generatedAt: at(1), startAt: at(1), hours: 1,
+    ocean: raw.map(native => ({ step: native.time, 'current-u': native['current-u'],
+      'current-v': native['current-v'], provenance: native.sources })) }).hourly[0];
+  const hour = verifiedIntegratedPartHourly({ hourly: [f.row] }, f.bulk, identity.entityId, f.part)[0];
+  const input = { part: f.part, hour, referenceAt: at(1), publicBank: bankFor(f), publicContexts: [f.bulk] };
+  const before = JSON.stringify(input);
+  const ready = prepareDkssCurrentRawAuditInput(input);
+  assert.equal(ready.outcome, 'READY');
+  assert.deepEqual(ready.privateInput.nativeRows.map(row => row.time), raw.map(row => row.time));
+  assert.equal(JSON.stringify(input), before);
+  assert.deepEqual(prepareDkssCurrentRawAuditInput({ ...input, referenceAt: at(0) }), { outcome: 'H0_UNPROVED' });
+  assert.deepEqual(prepareDkssCurrentRawAuditInput({ ...input, hour: f.row }), { outcome: 'OTHER_OR_MISSING_SOURCE' });
+  const replaced = { ...hour, currentProvenance: { ...hour.currentProvenance, distanceKm: 0.01 } };
+  assert.deepEqual(prepareDkssCurrentRawAuditInput({ ...input, hour: replaced }), { outcome: 'ACCEPTED_SOURCE_MISMATCH' });
+
+  // Actual normal JS projection into the Python comparison schema. This
+  // fixture has no GRIB. The separate raw-reader tests supply that seam.
+  const { spawnSync } = await import('node:child_process');
+  const python = spawnSync(process.env.PYTHON ?? (process.platform === 'win32' ? 'python' : 'python3'), ['-B', '-c',
+    'import json,sys; sys.path.insert(0,"scripts"); from lib.dkss_current_raw_audit import check_accepted_dkss_hour; v=json.load(sys.stdin); print(check_accepted_dkss_hour(v["part"],v["hour"],v["nativeRows"],["MATCH","MATCH"]))'],
+  { input: JSON.stringify(ready.privateInput), encoding: 'utf8', timeout: 20_000 });
+  assert.equal(python.status, 0, 'Python comparison of the normal fixture must finish');
+  assert.equal(python.stdout.trim(), 'MATCH');
+});
+
 test('normal original-wire identity uses exact Python round seven with measured IEEE parity', async () => {
   const round = productionAdapters.pythonRoundDmiSamplingCoordinate;
   const matches = productionAdapters.dmiOriginalWireIdentityMatchesCentralIdentity;

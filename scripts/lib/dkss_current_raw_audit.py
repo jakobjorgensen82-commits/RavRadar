@@ -18,7 +18,7 @@ import stat
 from .dmi_grid_vector import vector_vertical_layer
 from .dmi_native_provenance import (
     CURRENT_VECTOR_SEMANTICS_VERSION, canonical_current_source_asset, canonical_time,
-    complete_native_source_for_hour, inspect_native_grid_sampling, same_point, sampling_identity,
+    complete_native_source_for_hour, haversine_point_km, inspect_native_grid_sampling, same_point, sampling_identity,
 )
 
 GRID_KEYS = (
@@ -34,10 +34,11 @@ ORIGINAL_OUTCOMES = frozenset({
     "CAPTURE_UNPROVED", "NATIVE_GRID_UNPROVED", "ORIGINAL_BYTES_MISMATCH", "MESSAGE_BOUND",
     "ORIGINAL_HEADER_MISMATCH", "RAW_DECODE_INVALID", "ORIGINAL_EOF_UNPROVED", "ORIGINAL_CHANGED",
     "FIELD_LAYER_OR_GRID_MISSING", "FIELD_AMBIGUOUS", "CELL_MASKED", "CELL_OR_LAYER_MISMATCH",
-    "NATIVE_VECTOR_MISMATCH", "MATCH",
+    "WATER_DISTANCE_MISMATCH", "NATIVE_VECTOR_MISMATCH", "MATCH",
 })
 HOUR_OUTCOMES = ORIGINAL_OUTCOMES | {
-    "OTHER_OR_MISSING_SOURCE", "ORIGINAL_UNAVAILABLE", "WATER_POINT_MISMATCH",
+    "H0_UNPROVED", "OTHER_OR_MISSING_SOURCE", "ORIGINAL_UNAVAILABLE", "WATER_POINT_MISMATCH",
+    "ACCEPTED_SOURCE_MISMATCH",
     "TEMPORAL_SOURCE_MISMATCH", "NATIVE_SOURCE_MISMATCH", "ACCEPTED_CAPTURE_MISMATCH",
     "ACCEPTED_VECTOR_MISMATCH",
 }
@@ -68,8 +69,8 @@ def _coordinates(grid, scan, index):
     span = (lon1 - lon0) % 360 if not scan & 128 else -((lon0 - lon1) % 360)
     if not 0 < abs(span) < 180:
         return None
-    longitude = lon1 if column == ni - 1 else lon0 + column * span / (ni - 1)
-    latitude = lat1 if row == nj - 1 else lat0 + row * (lat1 - lat0) / (nj - 1)
+    longitude = lon1 if column == ni - 1 else lon0 + column * (span / (ni - 1))
+    latitude = lat1 if row == nj - 1 else lat0 + row * ((lat1 - lat0) / (nj - 1))
     longitude %= 360
     return [longitude - 360 if longitude > 180 else longitude, latitude]
 
@@ -168,16 +169,24 @@ def check_dkss_current_original(handle, capture, native_rows, eccodes):
             outcomes.append("FIELD_AMBIGUOUS")
         elif u[0][2] is None or v[0][2] is None:
             outcomes.append("CELL_MASKED")
-        elif any(rank != source["verticalLayerRankM"]
-                 or any(not math.isclose(a, b, rel_tol=0, abs_tol=1e-9)
-                        for a, b in zip(point, source["gridPoint"]))
+        elif any(rank != source["verticalLayerRankM"] or [round(n, 7) for n in point] != source["gridPoint"]
                  for point, rank, _ in (u[0], v[0])):
             outcomes.append("CELL_OR_LAYER_MISMATCH")
+        elif any(not _matches_distance(row.get("waterPoint"), point, source["distanceKm"])
+                 for point, _, _ in (u[0], v[0])):
+            outcomes.append("WATER_DISTANCE_MISMATCH")
         elif (u[0][2], v[0][2]) != (row["uMps"], row["vMps"]):
             outcomes.append("NATIVE_VECTOR_MISMATCH")
         else:
             outcomes.append("MATCH")
     return tuple(outcomes)
+
+
+def _matches_distance(water_point, original_grid_point, saved_distance):
+    # The producer measures between the unrounded inputs, then writes 5 decimals.
+    # The independently decoded cell supplies the coordinate here.
+    distance = haversine_point_km(water_point, original_grid_point)
+    return distance is not None and round(distance, 5) == saved_distance
 
 
 def check_accepted_dkss_hour(part, hour, native_rows, original_outcomes):
@@ -191,6 +200,7 @@ def check_accepted_dkss_hour(part, hour, native_rows, original_outcomes):
     identity = sampling_identity({"id": "PART::" + part["partId"], "parentZoneId": part["zoneId"],
                                   "lon": part["waterPoint"][0], "lat": part["waterPoint"][1]})
     if (not identity or not same_point(source.get("samplingPoint"), identity["samplingPoint"])
+            or any(native.get("waterPoint") != part["waterPoint"] for native in native_rows)
             or any(source.get(key) != value for key, value in identity.items() if key != "samplingPoint")):
         return "WATER_POINT_MISMATCH"
     times = [_utc(row["time"]) for row in native_rows]
