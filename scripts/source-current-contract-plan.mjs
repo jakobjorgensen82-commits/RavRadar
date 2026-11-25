@@ -623,6 +623,10 @@ const SOURCE_EXECUTION_TARGETS=freeze({
     'python -B scripts/test-dmi-native-chain-continuity.py FirstTurnMarineCatalogueTests',
   ],
   'scripts/test-dmi-native-provenance.py':COMMANDS.dmiCollectionRecovery,
+  'scripts/lib/dmi_wave_history_bootstrap.py':[
+    'python -B scripts/test_dmi_wave_history_bootstrap.py',
+    'python -B scripts/test_dmi_wave_bootstrap_update_integration.py OperationalWaveClosureTests',
+  ],
   'scripts/test_dmi_wave_bootstrap_update_integration.py':[
     'python -B scripts/test_dmi_wave_bootstrap_update_integration.py',
   ],
