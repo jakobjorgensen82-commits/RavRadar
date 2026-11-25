@@ -3,10 +3,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import { createPagesDeploymentRequest, classifyPagesPriorStatus } from './lib/pages-per-artifact-identity.mjs';
-import { runSealedPagesDeployment, postJsonOnce, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesCreateRejectionEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
+import { runSealedPagesDeployment, postJsonOnce, MINIMUM_ADAPTIVE_FIRST_PAGES_POLL_MS,
+  hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesCreateRejectionEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
 import { selectSealedPagesRecovery, getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS,
-  NORMAL_PAGES_COMPLETION_RESERVE_MS, ORDINARY_PAGES_CLEANUP_RESERVE_MS, hasOrdinaryPagesWriteBudget } from './lib/pages-sealed-retry-decision.mjs';
+  NORMAL_PAGES_COMPLETION_RESERVE_MS, ORDINARY_PAGES_CLEANUP_RESERVE_MS, ORDINARY_PAGES_FIRST_COMPLETION_RESERVE_MS,
+  hasOrdinaryPagesWriteBudget } from './lib/pages-sealed-retry-decision.mjs';
 
 const binding = Object.fromEntries([
   'modelId', 'stateSchemaVersion', 'variantId', 'profileId', 'componentSchemaId',
@@ -45,6 +47,7 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
   admitCreate = () => true, cancellation = null, priorStatus = 404, immediateFirst = false,
   returnedId = null, createReplyExtra = {}, priorReplyExtra = {}, statusReplyExtra = {}, legacyStatusUrl = false, createHttp = 200,
   deadlineMs = 35 * 60_000, admitDelayMs = 0, statusIdentityFields = false,
+  completionReserveMs = NORMAL_PAGES_COMPLETION_RESERVE_MS, fitFirstPollToDeadline = false,
   oidcHttp = 200, artifactListHttp = 200, cancellationWaitMs = 30_000,
   perReadMs = 0, perPostMs = 0, perCancelMs = 0, terminalAfterMs = null,
   frozenPauseClock = false, finalWaitOvershootMs = 0, postClockError = null,
@@ -120,7 +123,8 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
   const deploy = deliveryOrdinal => runSealedPagesDeployment({
     env: currentEnv, seal: localSeal, expectedBaseUrl: host, deliveryOrdinal, fetchImpl, postImpl,
     waitMs: deliveryOrdinal === 1 ? 600_000 : 360_000,
-    absoluteDeadlineMs: deadlineMs, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,
+    absoluteDeadlineMs: deadlineMs, completionReserveMs,
+    fitFirstPollToDeadline,
     beforeCreate: async intent => { intents.push(intent); clock += admitDelayMs; return admitCreate(intent); },
     ...(readPublicTarget === undefined ? {} : { readPublicTarget: async () => {
       assert.equal(posts.length, 1, 'public observation requires this acknowledged CREATE');
@@ -404,6 +408,29 @@ test('both write ordinals honor the original absolute deadline and visible thirt
     assert.equal(late.outcome, 'UNKNOWN'); assert.equal(late.code, 'CREATE_BUDGET_EXPIRED');
     assert.equal(moved.posts.length, 0);
   }
+});
+
+test('a late first Pages publish can use its remaining window without changing the retry budget', async () => {
+  const remainingMs = Date.parse('2026-11-25T00:19:00Z') - Date.parse('2026-11-25T00:03:07Z');
+  const completionReserveMs = ORDINARY_PAGES_FIRST_COMPLETION_RESERVE_MS;
+  assert.equal(hasOrdinaryPagesWriteBudget(remainingMs, 600_000), false);
+  assert.equal(hasOrdinaryPagesWriteBudget(remainingMs, MINIMUM_ADAPTIVE_FIRST_PAGES_POLL_MS, completionReserveMs), true);
+  const firstOptions = { deadlineMs: remainingMs, cancellation: 'readback', cancellationWaitMs: 600_000,
+    completionReserveMs, fitFirstPollToDeadline: true };
+  const quick = fakeService({ ...firstOptions, admitDelayMs: 60_000, terminalAfterMs: 90_000 });
+  assert.equal((await quick.deploy(1)).outcome, 'SUCCEEDED');
+  assert.equal(quick.posts.length, 1);
+
+  const retry = fakeService({ deadlineMs: remainingMs, cancellation: 'readback', cancellationWaitMs: 360_000 });
+  assert.equal((await retry.deploy(2)).code, 'CREATE_BUDGET_UNAVAILABLE');
+  assert.equal(retry.posts.length, 0);
+
+  const expired = fakeService({ ...firstOptions, deadlineMs: 689_999 });
+  assert.equal((await expired.deploy(1)).code, 'CREATE_BUDGET_UNAVAILABLE');
+  assert.equal(expired.posts.length, 0);
+  const late = fakeService({ ...firstOptions, admitDelayMs: 270_000 });
+  assert.equal((await late.deploy(1)).code, 'CREATE_BUDGET_EXPIRED');
+  assert.equal(late.posts.length, 0);
 });
 
 test('a caller-supplied PENDING flag cannot forge the executor retry witness', async () => {

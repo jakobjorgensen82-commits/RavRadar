@@ -16,6 +16,7 @@ const positive = /^[1-9]\d{0,15}$/;
 const maxAttempts = 121;
 const requestTimeoutMs = 12_000;
 const cancellationChecks = 7;
+export const MINIMUM_ADAPTIVE_FIRST_PAGES_POLL_MS = 60_000;
 
 const transportFailures = new WeakMap();
 const retryEvidence = new WeakSet();
@@ -132,6 +133,7 @@ async function executeSealedPagesDeployment({
   beforeCreate, fetchImpl = fetch, postImpl = postJsonOnce, cancelImpl = cancelPagesOnce, pause = wait, clock = Date.now,
   readPublicTarget,
   waitMs = maxWaitMs, cancelAtDeadline = false, absoluteDeadlineMs, completionReserveMs,
+  fitFirstPollToDeadline = false,
 } = {}, markPostAttempted) {
   require(env?.GITHUB_REPOSITORY === repo && env.GITHUB_API_URL === api
     && env.GITHUB_REF === 'refs/heads/main' && hex40.test(env.GITHUB_SHA ?? '')
@@ -149,7 +151,9 @@ async function executeSealedPagesDeployment({
     'PAGES_TRANSPORT_PUBLIC_OBSERVER_INVALID');
   require(Number.isSafeInteger(waitMs) && waitMs >= intervalMs && waitMs <= maxWaitMs
     && typeof cancelAtDeadline === 'boolean' && Number.isSafeInteger(absoluteDeadlineMs)
-    && Number.isSafeInteger(completionReserveMs) && completionReserveMs >= 0, 'PAGES_TRANSPORT_TIME_BUDGET');
+    && Number.isSafeInteger(completionReserveMs) && completionReserveMs >= 0
+    && typeof fitFirstPollToDeadline === 'boolean'
+    && (!fitFirstPollToDeadline || (deliveryOrdinal === 1 && cancelAtDeadline)), 'PAGES_TRANSPORT_TIME_BUDGET');
 
   const oidcUrl = new URL(env.ACTIONS_ID_TOKEN_REQUEST_URL);
   require(oidcUrl.protocol === 'https:' && oidcUrl.hostname.endsWith('.actions.githubusercontent.com')
@@ -197,9 +201,12 @@ async function executeSealedPagesDeployment({
   // Latest GET + one CANCEL + seven terminal GETs, including all six pauses.
   const cleanupReserveMs = cancelAtDeadline
     ? (2 + cancellationChecks) * requestTimeoutMs + (cancellationChecks - 1) * intervalMs : 0;
-  const hasWriteBudget = () => clock() + requestTimeoutMs
-    + waitMs + cleanupReserveMs <= operationDeadline;
-  if (!hasWriteBudget()) return deliveryResult({ outcome: 'UNKNOWN', code: 'CREATE_BUDGET_UNAVAILABLE', request });
+  const minimumPollMs = fitFirstPollToDeadline ? MINIMUM_ADAPTIVE_FIRST_PAGES_POLL_MS : waitMs;
+  const remainingBeforePoll = () => operationDeadline - clock() - requestTimeoutMs - cleanupReserveMs;
+  const pollingWindowMs = () => fitFirstPollToDeadline
+    ? Math.min(waitMs, remainingBeforePoll() - intervalMs) : waitMs;
+  const hasWriteBudget = duration => duration >= minimumPollMs && duration <= remainingBeforePoll();
+  if (!hasWriteBudget(pollingWindowMs())) return deliveryResult({ outcome: 'UNKNOWN', code: 'CREATE_BUDGET_UNAVAILABLE', request });
 
   const intent = Object.freeze({
     repository: seal.repository, headSha: seal.headSha, runId: seal.runId,
@@ -215,7 +222,8 @@ async function executeSealedPagesDeployment({
   const uniqueIntentReserved = request.buildVersion === seal.headSha
     && /^[a-f0-9]{64}$/.test(request.clientIntentSha256);
   require(uniqueIntentReserved, 'PAGES_TRANSPORT_UNIQUE_INTENT_UNPROVED');
-  if (!hasWriteBudget()) return deliveryResult({ outcome: 'UNKNOWN', code: 'CREATE_BUDGET_EXPIRED', request });
+  const pollMs = pollingWindowMs();
+  if (!hasWriteBudget(pollMs)) return deliveryResult({ outcome: 'UNKNOWN', code: 'CREATE_BUDGET_EXPIRED', request });
 
   // This is the only POST call in this invocation. Unknown writes are returned
   // as HOLD and never switch to another artifact or deployment ID.
@@ -266,7 +274,7 @@ async function executeSealedPagesDeployment({
       return { response, decision: Object.freeze({ outcome: 'UNKNOWN', code: 'STATUS_SHARED_ALIAS_UNPROVED' }) };
     return { response, decision };
   };
-  const deadline = Math.min(clock() + waitMs, operationDeadline - cleanupReserveMs);
+  const deadline = Math.min(clock() + pollMs, operationDeadline - cleanupReserveMs);
   let nextPublicObservationMs = 0;
   try {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
