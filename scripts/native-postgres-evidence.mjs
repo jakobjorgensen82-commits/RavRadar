@@ -16,7 +16,8 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
   requireAssistantAfter597Output,requireAssistantAfter597Release,requireAssistantAfter597Binding,
   readScalar597LaterH0CanonicalSource,readAssistantAfter597CanonicalSource,assistantLaterH0Definition,
   INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,ASSISTANT_AFTER598_BEFORE,ASSISTANT_AFTER598_ALIASES,
-  requireAssistantAfter598Output,requireAssistantAfter598Release,requireAssistantAfter598Binding,readAssistantAfter598CanonicalSource,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,ASSISTANT_AFTER599_BEFORE,ASSISTANT_AFTER599_ALIASES,requireAssistantAfter599Output,requireAssistantAfter599Release,requireAssistantAfter599Binding,readAssistantAfter599CanonicalSource} from './lib/assistant-later-h0-successor-source.mjs';
+  requireAssistantAfter598Output,requireAssistantAfter598Release,requireAssistantAfter598Binding,readAssistantAfter598CanonicalSource,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,ASSISTANT_AFTER599_BEFORE,ASSISTANT_AFTER599_ALIASES,requireAssistantAfter599Output,requireAssistantAfter599Release,requireAssistantAfter599Binding,readAssistantAfter599CanonicalSource,
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR} from './lib/assistant-later-h0-successor-source.mjs';
 
 import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,assistantAfter599RequiredMigrations} from './integrated-cutover-readiness.mjs';
 import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
@@ -83,14 +84,19 @@ export const ASSISTANT_AFTER599_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES
 export const ASSISTANT_AFTER599_REUSE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES_REUSE_V2';
 export const ASSISTANT_AFTER599_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after599-successor']);
 export const ASSISTANT_AFTER599_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER599_COMMANDS.join('\n')+'\n';
-export const ACTIVE_COMMANDS=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_COMMANDS
+export const ASSISTANT_AFTER601_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER601_POSTGRES_PHASE_V1';
+const ASSISTANT_AFTER601_PHASE=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.sourcePhase;
+const AFTER601_RESULT='ASSISTANT_AFTER601_SUCCESSOR';
+const ASSISTANT_AFTER601_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after601-successor']);
+const ASSISTANT_AFTER601_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER601_COMMANDS.join('\n')+'\n';
+export const ACTIVE_COMMANDS=ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE?ASSISTANT_AFTER601_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_COMMANDS
   :ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE
   ?SCALAR597_LATER_H0_COMMANDS:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
   ?INSTALLED593_ORIGINAL591_COMMANDS:ACTIVE.sourcePhase==='assistant-public591-successor'
   ?ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public588-successor'
   ?ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS:ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS;
-export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_SCRIPT
+export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE?ASSISTANT_AFTER601_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_SCRIPT:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_SCRIPT
   :ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE
   ?SCALAR597_LATER_H0_SCRIPT:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
   ?INSTALLED593_ORIGINAL591_SCRIPT:ACTIVE.sourcePhase==='assistant-public591-successor'
@@ -2668,13 +2674,104 @@ export async function executeAssistantAfter599Native(){
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
 }
 
+const after601ReportFields=Object.freeze([
+  'sqlExecuted','wholeMigrationExecuted','exactCheckpointContract','exactTripContract',
+  'oldFunctionsAndOidsPreserved','allOriginalDefinitionsPreserved','originalDigestsPreserved',
+  'trueOld601Fixtures','old601ModelNotRetagged','currentNormalFixtures','wholeMetadataInverse',
+  'strictlyLater601ToNextOnly','accountOffCatalogPreserved',
+]);
+function after601ReportProjection(report){
+  const profile=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
+  profile.requireOutput();
+  const expectations={
+    kind:AFTER601_RESULT,
+    sourceMigrationInventory:70,
+    databaseBeforeVersion:profile.databaseBefore.version,
+    originalStateRelease:601,
+    migrationVersion:profile.migration().version,
+    partCount:673,
+    installedLedgerBeforeRows:69,
+    installedLedgerAfterRows:70,
+    beforeGuardCases:17,
+    allHistoricalMigrationsExecuted:false,
+    productionInstalledHistoryEvidence:false,
+    productionSeedAuthenticated:false,
+    sqlIsNotOriginAuthentication:true,
+  };
+  for(const [key,value] of Object.entries(expectations))assert.equal(report?.[key],value);
+  for(const key of after601ReportFields)assert.equal(report[key],true,'Missing measured 601 property '+key);
+  const intermediate=report.intermediateRuntime;
+  assert.equal(intermediate?.old601ActiveAfterSql,true);
+  assert.equal(intermediate?.old601RefusedAfterCompletion,true);
+  assert.equal(intermediate?.nextRefusedBeforeActivation,true);
+  assert.equal(intermediate?.pendingBothRefused,true);
+  assert.equal(intermediate?.nextActiveAfterCompletion,true);
+  assert.equal(intermediate?.activeDocumentsUnchangedBySql,true);
+  return {...expectations,...Object.fromEntries(after601ReportFields.map(key=>[key,true])),
+    intermediateRuntime:{
+      old601ActiveAfterSql:true,old601RefusedAfterCompletion:true,nextRefusedBeforeActivation:true,
+      pendingBothRefused:true,nextActiveAfterCompletion:true,activeDocumentsUnchangedBySql:true,
+    }};
+}
+
+function after601PhaseReceipt(current,runtime,report){
+  const profile=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
+  assert.match(current.head,/^[a-f0-9]{40}$/);
+  assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+  assert(Number.isSafeInteger(current.attempt)&&current.attempt>0);
+  assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+  assert(typeof current.branch==='string'&&current.branch.length>0&&current.branch.length<=255);
+  verifyAssistantPublic591Runtime(runtime);
+  return {
+    schemaVersion:1,kind:ASSISTANT_AFTER601_PHASE_KIND,phase:AFTER601_RESULT,sourcePhase:ASSISTANT_AFTER601_PHASE,
+    current,commands:ASSISTANT_AFTER601_COMMANDS,status:'EXECUTED',executedInThisRun:true,origin:null,
+    eligibleForReuse:false,binding:profile.requireBinding(),output:profile.requireOutput(),runtime,
+    report:after601ReportProjection(report),
+  };
+}
+export function verifyAssistantAfter601PhaseReceipt(native,current){
+  assert.deepEqual(native,after601PhaseReceipt(current,native.runtime,native.report));
+  return native;
+}
+
+async function executeAssistantAfter601Native(){
+  assert.equal(ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
+  ACTIVE.requireOutput();
+  const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;
+  assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+  const verifyCheckout=()=>{
+    assert.match(head,/^[a-f0-9]{40}$/);
+    assert.equal(git(['rev-parse','HEAD^{commit}']).trim(),head);
+    assert.equal(git(['status','--porcelain','--untracked-files=no']).trim(),'');
+    assert.equal(git(['for-each-ref','refs/replace']).trim(),'');
+    assert.equal(git(['rev-parse','--is-shallow-repository']).trim(),'false');
+  };
+  verifyCheckout();
+  const current={run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+    pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+  const runtime=await assistantPublic591Runtime();
+  for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
+  const report=await executeMarkedNative(env,ASSISTANT_AFTER601_SCRIPT,nativeMarkerCollector(SCALAR597_REPORT_MARKER,65536));
+  if(!report)return;
+  assert.equal(report.kind,SCALAR597_REPORT_MARKER);
+  assert.equal(report.sqlExecuted,true);assert.equal(report.migrationExecuted,true);
+  assert.equal(report.tcpEnabled,false);assert.equal(report.normalModelPartCount,673);
+  assert.equal(report.postgresMajorVersion,runtime.selectedPrograms.majorVersion);
+  assert.deepEqual(report.nativeProgramIdentity,runtime.selectedPrograms);
+  for(const key of ['assistantAfter597Successor','assistantAfter598Successor','assistantAfter599Successor',
+    'accountErasure','accountInactivity','accountNativeReceipt'])assert(!Object.hasOwn(report,key));
+  verifyCheckout();verifyAssistantPublic591Runtime(runtime,await assistantPublic591Runtime());
+  await record(after601PhaseReceipt(current,runtime,report.assistantAfter601Successor));
+}
+
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
   assert.equal(proof.headSha,git(['rev-parse','HEAD^{commit}']).trim()); assert.equal(proof.repository,ORIGIN.repository);
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
-  if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE){
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE)verifyAssistantAfter601PhaseReceipt(receipt,current);
+  else if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE){
     await assertCurrentAccountErasureNativeReport(receipt.report);
     await assertCurrentAccountInactivityNativeReport(receipt.report);
     await assertCurrentAccountNativeReceiptNativeReport(receipt.report);
@@ -2699,7 +2796,7 @@ async function record(receipt) {
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
   const phaseProof={
     schemaVersion:receipt.schemaVersion===2?2:1,
-    kind:receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND||receipt.kind===ASSISTANT_AFTER599_PHASE_KIND?receipt.kind:
+    kind:receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND||receipt.kind===ASSISTANT_AFTER599_PHASE_KIND||receipt.kind===ASSISTANT_AFTER601_PHASE_KIND?receipt.kind:
       receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR'?INSTALLED593_ORIGINAL591_PHASE_KIND:
       receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR'?ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND:
@@ -2709,10 +2806,11 @@ async function record(receipt) {
     repository:proof.repository,headSha:proof.headSha,sourceTreeSha256:proof.sourceTreeSha256,
     privatePayloadIncluded:false,nativePostgres:receipt,
   };
-  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND||receipt.kind===ASSISTANT_AFTER599_PHASE_KIND)assert(Buffer.byteLength(raw)<=32768);
+  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===ASSISTANT_AFTER598_PHASE_KIND||receipt.kind===ASSISTANT_AFTER599_PHASE_KIND||receipt.kind===ASSISTANT_AFTER601_PHASE_KIND)assert(Buffer.byteLength(raw)<=32768);
   await fs.writeFile(CURRENT586_PHASE_FILE,raw,{flag:'wx'});
 }
 async function main() {
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE)return executeAssistantAfter601Native();
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE)return executeAssistantAfter599Native();
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)return executeAssistantAfter598Native();
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)return executeAssistantAfter597Native();

@@ -40,6 +40,13 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 
 // Each new native phase refuses before fixture construction or a PG host.
+const assistantAfter601Native=process.argv.includes('--assistant-after601-successor');
+if(assistantAfter601Native){
+  const {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  assert.deepEqual(process.argv.slice(2),['--assistant-after601-successor'],'The fixed native phase cannot combine with another flag');
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,'ASSISTANT_AFTER601_NATIVE_SOURCE_INACTIVE');
+  ACTIVE_ASSISTANT_SUCCESSOR.requireOutput();
+}
 const assistantAfter599Native=process.argv.includes('--assistant-after599-successor');
 if(assistantAfter599Native){
   const {requireAssistantAfter599Output,ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -572,6 +579,14 @@ if (process.argv.includes('--native-identity-source-only')) {
     newPartCount: 673, genuineFixed37: true, normalSavers: true, oldSqlPreserved: true,
     sourceUnchanged: true, ownedCleanup: true, sqlExecuted: false, nativePostgres: 'UNRUN' }));
   process.exit(0);
+}
+
+if(assistantAfter601Native){
+  const {runAssistantAfter601NativeCheckpointSqlComparison}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const report=await runAssistantAfter601NativeCheckpointSqlComparison({
+    repositoryRoot:path.resolve('.'),sourceDocumentAt,atHour,saveCheckpoint:saveRavScoreContinuationCheckpoint,
+  });
+  console.log(JSON.stringify(report));process.exit(0);
 }
 
 if(assistantAfter599Native){
