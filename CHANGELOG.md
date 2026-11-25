@@ -1,3 +1,7 @@
+## 4.0.603 — samtalens sprog i Spørg RavRadar
+
+- Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog, den åbne fane viser. Et opfølgende spørgsmål om en anden dag bruger samme samtale og søger i prognosen for den nye dag.
+
 ## Drift — versionsværktøj og håndbog
 
 - Versionsværktøjet opdaterer håndbogens aktuelle modelfakta og installationskopien i samme kørsel. Den separate kontrol kan derefter læse det færdige resultat.

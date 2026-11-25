@@ -1,3 +1,9 @@
+## 25. november — fanens sprog og den normale modelovergang
+
+- [x] Ret den åbne fanes emnevalg og saml de fem aktuelle kilde-/releaseprøver.
+- [x] Afled og genlæs lokalt den ene 601-efterfølgermigration og synkronisér releaseversionen.
+- [ ] Kvalificér den eksakte kandidat på GitHub, kør den afgrænsede installation og verificér det almindelige forløb med en senere offentlig prognose og samtaler på dansk, tysk og engelsk.
+
 ## 24. november — aktivitetskvittering og Auth
 
 - [x] SQL80 installeret med OFF, og den normale kataloglæsning har bekræftet den uarmerede kvittering.

@@ -313,13 +313,13 @@ Dette er en forberedt kildeændring. Kodekvalifikation, faktisk fjernelse, maila
 Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens præcise head. Før tidligere godkendte områder kan genbruges, kvalificerer den den mergede bases faktiske producent, job, hele typede kvittering, træ og afsluttende upload samt senere negativ evidens. Den normale forbruger udføres på basens rigtige Git-checkout; kandidaten gendannes og kontrolleres bagefter. En verificeret direkte sammenfatning hindrer rekursiv genåbning af hele forfaderkæden. V3 beholder sin oprindelige kumulative betydning. Manglende eller udløbet basekvittering vælger kendte kumulative mål; konkret FAIL, modstrid eller ukendt kvalifikation stopper. PostgreSQL og C/I/T kvalificeres fortsat selvstændigt mod deres autentiske, uændrede input; ingen ny databaseprøve påstås.
 
 <!-- ravradar-derived-source-bindings-v1:begin -->
-## Afledt kildeidentitet — RavScore 4.0.602
+## Afledt kildeidentitet — RavScore 4.0.603
 
-4.0.602 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+4.0.603 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f` over 92 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
 
-Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076` over 101 transitive filer.
+Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d9a31d8fd49c4e6455894756354a7dbcd0be2ae3f4f176fbcfcf6246e6b45c7e` over 93 transitive filer.
 
-Fortsættelse: `continuationStateContractSha256=e1eb1f8e40b33ec3ab6c7459a7fb43d0eb369a1f0dd6aa8a867c65da7f0a5b34` (`e1eb1f8e…`) over 12 normaliserede kildefiler med `utf8-bomless-lf-v2`.
+Fortsættelse: `continuationStateContractSha256=5727f060e28abce3a95082a4f969422e147d9804b909b764df892b9d36ea0fb9` (`5727f060…`) over 12 normaliserede kildefiler med `utf8-bomless-lf-v2`.
 
 Autoriteten er version.json.releaseContract.modelBindings og de aktuelle genererede manifester. Dette er afledt kildeidentitet. Identiteten beviser ikke i sig selv PostgreSQL-kvalifikation, installation eller offentlig levering. Tidligere daterede oplysninger nedenfor er historik.
 <!-- ravradar-derived-source-bindings-v1:end -->
@@ -1678,6 +1678,8 @@ Prioriteten DMI → Copernicus → Open-Meteo, scoreformel, administratorpunkter
 
 ## 89.279 Præcise spørgsmål og tydelige scoretal i Spørg RavRadar
 
+Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog, den åbne fane viser. Et opfølgende spørgsmål om en anden dag bruger samme samtale og søger i prognosen for den nye dag.
+
 **Kort fortalt: Spørg RavRadar skal genkende almindelige ord og formuleringer, være ærlig om ukendt udstyr og vise tydeligt, hvilket scoretal der menes.**
 
 Du kan spørge om en ravkese på dansk, tysk eller engelsk og få forklaringen fra RavRadars eksisterende viden. Spørgsmål som »Hvad kan RavRadar hjælpe mig med?« skal give en oversigt over hjælpen til ravjagt og prognosen. Et ukendt instrumentnavn er ikke bevis for, at udstyret findes eller virker; assistenten skal bede om en præcisering frem for at gætte.
@@ -2670,7 +2672,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.602
+**Håndbogsversion:** 4.0.603
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

@@ -160,7 +160,7 @@ if(AFTER601_PREDECESSOR_MODE){
     import('./lib/authenticated-frozen586-predecessor.mjs'),
   ]);
   test('601 normal predecessor rejects caller overrides and fabricated snapshot and freshness handles',async()=>{
-    assert.equal(currentSource.ACTIVE_ASSISTANT_SUCCESSOR,currentSource.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR);
+    assert.equal(currentSource.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.originalStateFamily,'601');
     await assert.rejects(reader.withSource(()=>{}, {head:profile.head}));
     await assert.rejects(reader.read({family:'599'}),/SOURCE601_PREDECESSOR_ARGUMENTS/);
     for(const foreign of [null,Object.freeze({}),{descriptor:{sourceHead:profile.head},family:'601'}]){

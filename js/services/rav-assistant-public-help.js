@@ -1,8 +1,8 @@
 // App-owned public help for complete questions. Mixed questions keep the
 // existing whole-question path.
-import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.602&locale=topic-tab-20261125';
-import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.602';
-import {t} from '../i18n.js?v=4.0.602';
+import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.603&locale=topic-tab-20261125';
+import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.603';
+import {t} from '../i18n.js?v=4.0.603';
 
 const PUBLIC_ABOUT='https://ravradar.dk/about.html';
 const PUBLIC_GROUP='https://www.facebook.com/groups/1849354103138911/';

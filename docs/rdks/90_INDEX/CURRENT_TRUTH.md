@@ -1,3 +1,9 @@
+## 25. november — Spørg RavRadars lokale sprogkandidat
+
+Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog, den åbne fane viser. Et opfølgende spørgsmål om en anden dag bruger samme samtale og søger i prognosen for den nye dag.
+
+Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. Den aktuelle kvalifikation kræver sin egen PostgreSQL-kvittering på GitHub. Derefter følger genlæsning af den installerede overgang og verifikation på den første nye, senere ordinære vejrprognose.
+
 ## 24. november — særskilt klargøring af aktivitetskvitteringen
 
 SQL80 er installeret, og den faste kataloglæsning på main har bekræftet kildekroppen, adgangene og den uarmerede kvittering. Engangstrinnet til klargøring ligger på main. Det kræver deaktiveret Auth med tom URI og verificerer den samme kvittering med en frisk databasedato efter skrivning. Et ukendt skriveudfald afklares gennem den eksisterende kataloglæser. Første Auth-aktivering kræver en armeret kvittering for den aktuelle dækningsperiode uden tidligere loginopsamling. Akut frakobling er mulig uden opslag i databasen. Selve klargøringen i drift, konfigurationen af Auth, påvisning af loginopsamling, dækningsstart, varsling og sletning er separate udeståender.

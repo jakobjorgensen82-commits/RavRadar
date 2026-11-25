@@ -1,3 +1,7 @@
+## 25. november — opfølgning efter sprogskift i en anden fane
+
+Den lokale rettelse til den tyske formular bruger fanens aktive sprog, når et emne til opfølgning vælges. Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. Den aktuelle kvalifikation kræver sin egen PostgreSQL-kvittering på GitHub. Derefter følger genlæsning af den installerede overgang og verifikation på den første nye, senere ordinære vejrprognose.
+
 ## 24. november — råcacherotation stoppede vejr #381
 
 #380 udgav prognosen, mens to andre GitHub-kørsler stadig var aktive. Oprydningen returnerede HOLD, så tre råkopier var stadig til stede ved #381. #381 fik også HOLD, før DMI startede, og fjernede ingen kopier. GitHub returnerede kort efter antal én og en tom liste over aktive kørsler. Den daværende log skrev kun HOLD, så det enkelte svar kan ikke knyttes til #381s afgørelse.
