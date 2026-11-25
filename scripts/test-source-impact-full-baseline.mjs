@@ -5,6 +5,9 @@ import {execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import test from 'node:test';
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {withAuthenticatedReceipt80Source} from './lib/account-statistics-assistant-package-review.mjs';
 import {OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as ISSUED598,
   INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as CURRENT599} from './lib/assistant-later-h0-successor-source.mjs';
@@ -630,10 +633,11 @@ if(ACTIVE.sourcePhase==='assistant-after598-successor'){
 
 // Current80 DATA for protocol tests only. The original79 DATA below is kept;
 // only an actual owned PG run can supply this facet in a real source receipt.
-async function currentNativeReceiptProtocolData(){
- const files=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql'));
+const localSource=new URL('../',import.meta.url);
+async function currentNativeReceiptProtocolData(sourceRoot=localSource){
+ const files=(await fs.readdir(new URL('supabase/migrations/',sourceRoot))).filter(file=>file.endsWith('.sql'));
  if(!files.includes('20261122200000_account_native_activity_receipt_off.sql'))return null;
- const {currentNativeActivityReceiptSourceContext}=await import('./lib/account-native-activity-receipt-source.mjs');
+ const {currentNativeActivityReceiptSourceContext}=await import(new URL('scripts/lib/account-native-activity-receipt-source.mjs',sourceRoot).href);
  const identity=currentNativeActivityReceiptSourceContext();
  return {kind:'ACCOUNT_NATIVE_ACTIVITY_RECEIPT_NATIVE_SQL_CASES',sqlExecuted:true,...identity,
   cases:9,appendSha256:identity.migrationSQLSha256,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,realAuthResponse:false,
@@ -643,8 +647,8 @@ async function currentNativeReceiptProtocolData(){
 
 // Synthetic typed DATA for the separately required current79 OFF phase; never
 // a replay/retag of the old77 PostgreSQL execution or a new SQL execution claim.
-async function currentInactivityOffProtocolData(postgresMajor){
- const schema=await import('./verify-account-erasure-schema.mjs'),{createHash}=await import('node:crypto');
+async function currentInactivityOffProtocolData(postgresMajor,sourceRoot){
+ const schema=await import(new URL('scripts/verify-account-erasure-schema.mjs',sourceRoot).href),{createHash}=await import('node:crypto');
  const source=schema.readAccountInactivitySource(),counts={account_inactivity_policy:4,account_lifecycle_activity:2,account_inactivity_notices:11};
  const definitions=Object.entries(counts).flatMap(([name,count])=>Array.from({length:count},(_,i)=>[name+'.'+name+'_check'+String(i).padStart(2,'0'),'CHECK (SYNTHETIC_CURRENT79)'])).sort((a,b)=>a[0].localeCompare(b[0]));
  const checkReference=schema.verifyAccountInactivityCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor,definitions,
@@ -654,17 +658,19 @@ async function currentInactivityOffProtocolData(postgresMajor){
   providerDeliverySynthetic:true,positiveRpcCancellation:true,defaultOff:true,automaticDeletion:false,realAuth:false,realMail:false};
 }
 
-// Current601 protocol DATA only. The source inventory is really77; this fixture
-// neither executes PostgreSQL nor reuses the old76-source qualification.
-async function synthetic601FullFixture(){
-  assert.equal(ACTIVE.sourcePhase,'assistant-after599-successor');
-  const native=await import('./native-postgres-evidence.mjs'),national=await import('./national584-source-evidence.mjs');
-  const source=await import('./lib/assistant-later-h0-successor-source.mjs');
-  const frozen=await import('./run-frozen586-assistant-later-h0-postgres-source.mjs');
-  const ready=await import('./integrated-cutover-readiness.mjs');
+// Original 601 protocol data. Use the matching source tree and qualifiers for
+// the 79- or 80-file inventory. No PostgreSQL runs in this fixture.
+async function synthetic601FullFixture(sourceRoot=localSource){
+  const load=file=>import(new URL('scripts/'+file,sourceRoot).href);
+  const [native,national,source,frozen,ready,release,baseline]=await Promise.all([
+    load('native-postgres-evidence.mjs'),load('national584-source-evidence.mjs'),
+    load('lib/assistant-later-h0-successor-source.mjs'),load('run-frozen586-assistant-later-h0-postgres-source.mjs'),
+    load('integrated-cutover-readiness.mjs'),load('lib/release-contract-metadata.mjs'),load('source-impact-full-baseline.mjs')]);
+  assert.equal(source.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-after599-successor');
   const f=fixture({installed594V2:true}),prior=f.full.nativePostgres;
+  f.qualify=()=>baseline.qualifySourceImpactFullBaseline({reference:f.reference,candidateCommit:candidate},f.dependencies);
   use597Package(f,{candidateVersion:'4.0.601',producerVersion:'4.0.601'});
-  f.applicationMetadata={version:'4.0.601',releaseContract:buildReleaseContractMetadata({releaseVersion:'4.0.601'})};
+  f.applicationMetadata={version:'4.0.601',releaseContract:release.buildReleaseContractMetadata({releaseVersion:'4.0.601'})};
   f.applicationMetadataReads=[];const ordinaryReadGit=f.dependencies.readGit;
   f.dependencies.readGit=(args,options)=>{
     if(args[0]==='cat-file'&&args[1]==='blob'&&args[2]===head+':version.json'){
@@ -674,17 +680,17 @@ async function synthetic601FullFixture(){
   };
     // Public schema expressions only, reused as SYNTHETIC protocol data.
     // Their old76-source qualification is never a qualification of this77-source receipt.
-    const schema=await import('./verify-account-erasure-schema.mjs');
+    const schema=await load('verify-account-erasure-schema.mjs');
     const checkReference=schema.accountErasureCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor:16,
       definitions:[["account_erasure_operations_auth_attempt_ids_check", "CHECK (((COALESCE(array_ndims(auth_attempt_ids), 1) = 1) AND (COALESCE(array_lower(auth_attempt_ids, 1), 1) = 1) AND (array_position(auth_attempt_ids, NULL::uuid) IS NULL) AND (NOT ('00000000-0000-0000-0000-000000000000'::uuid = ANY (auth_attempt_ids)))))"], ["account_erasure_operations_auth_user_created_at_check", "CHECK (((auth_user_created_at IS NULL) OR (auth_user_created_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$'::text)))"], ["account_erasure_operations_check", "CHECK ((target_user_id <> requested_by))"], ["account_erasure_operations_check1", "CHECK (((activity_first IS NULL) = (activity_last IS NULL)))"], ["account_erasure_operations_check10", "CHECK (((auth_user_created_at IS NOT NULL) = (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check11", "CHECK (((state <> 'AUTH_ATTEMPTED'::text) OR (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check12", "CHECK (((auth_claimed_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND isfinite(auth_claimed_at) AND (auth_claimed_at >= pg_staged_at))))"], ["account_erasure_operations_check13", "CHECK (((state = ANY (ARRAY['AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (auth_absent_at IS NOT NULL)))"], ["account_erasure_operations_check14", "CHECK (((auth_absent_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND (d1_owner_subject IS NOT NULL) AND isfinite(auth_absent_at) AND (auth_absent_at >= COALESCE(auth_claimed_at, pg_staged_at)))))"], ["account_erasure_operations_check15", "CHECK (((state = 'COMPLETE'::text) = (d1_ack_at IS NOT NULL)))"], ["account_erasure_operations_check16", "CHECK (((d1_ack_at IS NOT NULL) = (d1_deleted_count IS NOT NULL)))"], ["account_erasure_operations_check17", "CHECK (((d1_ack_at IS NULL) OR (isfinite(d1_ack_at) AND (d1_ack_at >= auth_absent_at))))"], ["account_erasure_operations_check18", "CHECK (((auth_attempt_id IS NULL) OR ((pg_staged_at IS NOT NULL) AND (d1_owner_subject IS NOT NULL))))"], ["account_erasure_operations_check2", "CHECK (((activity_first IS NULL) OR (isfinite(activity_first) AND isfinite(activity_last) AND (activity_first <= activity_last))))"], ["account_erasure_operations_check3", "CHECK ((isfinite(prepared_at) AND isfinite(updated_at) AND (prepared_at <= updated_at)))"], ["account_erasure_operations_check4", "CHECK (((state = ANY (ARRAY['PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (pg_staged_at IS NOT NULL)))"], ["account_erasure_operations_check5", "CHECK (((pg_staged_at IS NULL) OR (isfinite(pg_staged_at) AND (pg_staged_at >= prepared_at))))"], ["account_erasure_operations_check6", "CHECK (((state <> ALL (ARRAY['HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text])) OR (hold_reason IS NOT NULL)))"], ["account_erasure_operations_check7", "CHECK (((state <> ALL (ARRAY['PREPARED'::text, 'COMPLETE'::text])) OR (hold_reason IS NULL)))"], ["account_erasure_operations_check8", "CHECK (((pg_staged_at IS NOT NULL) OR (pg_rows_removed = 0)))"], ["account_erasure_operations_check9", "CHECK ((NOT (auth_attempt_id IS DISTINCT FROM auth_attempt_ids[cardinality(auth_attempt_ids)])))"], ["account_erasure_operations_d1_deleted_count_check", "CHECK (((d1_deleted_count >= 0) AND (d1_deleted_count <= '9007199254740991'::bigint)))"], ["account_erasure_operations_d1_owner_subject_check", "CHECK (((d1_owner_subject IS NULL) OR (d1_owner_subject ~ '^usr_v1_[A-Za-z0-9_-]{43}$'::text)))"], ["account_erasure_operations_hold_reason_check", "CHECK ((hold_reason = ANY (ARRAY['ACTIVITY_CHANGED'::text, 'PRIVILEGED_TARGET'::text, 'REFERENCE_POLICY'::text, 'REFERENCE_CATALOG_UNKNOWN'::text, 'TARGET_MISSING'::text, 'STORAGE_CATALOG_UNKNOWN'::text, 'STORAGE_POLICY_UNQUALIFIED'::text, 'STORAGE_OWNERSHIP'::text, 'AUTH_GENERATION_CHANGED'::text])))"], ["account_erasure_operations_mode_check", "CHECK ((mode = 'MANUAL_OWNER'::text))"], ["account_erasure_operations_operation_id_check", "CHECK ((operation_id <> '00000000-0000-0000-0000-000000000000'::uuid))"], ["account_erasure_operations_pg_rows_removed_check", "CHECK (((pg_rows_removed >= 0) AND (pg_rows_removed <= '9007199254740991'::bigint)))"], ["account_erasure_operations_state_check", "CHECK ((state = ANY (ARRAY['PREPARED'::text, 'HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text, 'PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])))"]]});
-    const receipt80=await currentNativeReceiptProtocolData();
-    const wholeSqlFileCount=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).length;
+    const receipt80=await currentNativeReceiptProtocolData(sourceRoot);
+    const wholeSqlFileCount=(await fs.readdir(new URL('supabase/migrations/',sourceRoot))).filter(file=>file.endsWith('.sql')).length;
     // Preserve original79 DATA/oracles; the mandatory current80 facet binds the new append.
     const sourceSqlFileCount=wholeSqlFileCount-Number(receipt80!==null);
     assert.equal(wholeSqlFileCount,receipt80===null?79:80,'Exact original79 scope plus only the current receipt append');
     assert.equal(sourceSqlFileCount-schema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS.length,77,'Whole original77 prefix remains');
     assert.equal(sourceSqlFileCount,79,'Original OFF pair retains its own79-source proof');
-    const accountInactivity=await currentInactivityOffProtocolData(16);
+    const accountInactivity=await currentInactivityOffProtocolData(16,sourceRoot);
     const accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
       migrationVersion:'20261116181500',migrationSQLSha256:schema.readAccountErasureSource().sha256,sourceSqlFileCount,
       passed:true,cases:49,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
@@ -699,7 +705,7 @@ async function synthetic601FullFixture(){
   const contract=source.assistantLaterH0Definition(canonical.canonicalSource,'ravradar_ravscore_checkpoint_contract');
   const array=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contract);assert(array);
   const inventory=await Promise.all(rows.map(async row=>({version:row.version,filename:row.filename,
-    sha256:hash(await fs.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)))})));
+    sha256:hash(await fs.readFile(new URL('supabase/migrations/'+row.filename,sourceRoot)))})));
   const observed={kind:'ASSISTANT_AFTER599_SUCCESSOR',sourceMigrationInventory:66,databaseBeforeVersion:databaseBefore.version,
     originalStateRelease:599,migrationVersion:binding.version,partCount:673,
     checkpointOidSlots:(array[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,
@@ -818,18 +824,28 @@ if(ACTIVE.sourcePhase==='assistant-after599-successor'){
 }
 
 
-test('current80 FULL refuses original79 alone and damaged or unexecuted receipt SQL',async()=>{
- const receipt80=await currentNativeReceiptProtocolData();assert(receipt80,'This current source includes its explicit80 append');
+test('current80 FULL refuses original79 alone and damaged or unexecuted receipt SQL',()=>withAuthenticatedReceipt80Source(async root=>{
+ const sourceRoot=pathToFileURL(root+path.sep);
+ const baseline=await import(new URL('scripts/source-impact-full-baseline.mjs',sourceRoot).href);
+ const receipt80=await currentNativeReceiptProtocolData(sourceRoot);assert(receipt80);
+ const f=await synthetic601FullFixture(sourceRoot),native=copy(f.full.nativePostgres);
+ const accepted=await f.qualify();
+ assert.equal(accepted.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+ assert.deepEqual(baseline.qualifiedAccountNativeReceipt(accepted).receipt,receipt80);
  for(const mutate of [
   r=>delete r.accountNativeReceipt,
   r=>r.accountNativeReceipt.sourceSqlFileCount=79,
+  r=>r.accountNativeReceipt.sourceSqlFileCount=81,
   r=>r.accountNativeReceipt.cases=8,
   r=>r.accountNativeReceipt.sqlExecuted=false,
   r=>r.accountNativeReceipt.migrationSQLSha256='0'.repeat(64),
   r=>r.accountNativeReceipt.browserRpcCannotWitness=false,
   r=>r.accountNativeReceipt.realAuthResponse=true,
  ]){
-  const f=await synthetic601FullFixture();mutate(f.full.nativePostgres.report);f.rebuild();
-  assert.notEqual((await f.qualify()).kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+  f.full.nativePostgres=copy(native);
+  mutate(f.full.nativePostgres.report);
+  f.phase.nativePostgres=copy(f.full.nativePostgres);
+  f.rebuild();
+  assert.equal((await f.qualify()).status,'REFUSED');
  }
-});
+}));
