@@ -482,8 +482,12 @@ test('write owner requires exact purpose, hosted first main attempt and the actu
   }
   for (const operation of ['rollback', 'unknown', undefined]) assert.equal(isFixedActivityHookWriteOwner(owner, operation), false);
 });
-test('normal enable orders catalog, fresh state, one exact PATCH, independent readback', async () => {
-  for (const state of ['UNARMED', 'ARMED', 'CAPTURED']) {
+test('normal enable requires an armed receipt before fresh Auth state, one exact PATCH and readback', async () => {
+  for (const [state, status, methods] of [
+    ['UNARMED', 'NATIVE_RECEIPT_UNARMED', ['POST']],
+    ['ARMED', 'HOOK_ENABLED_VERIFIED', ['POST', 'GET', 'PATCH', 'GET']],
+    ['CAPTURED', 'NATIVE_CAPTURE_OBSERVED', ['POST']],
+  ]) {
     const calls = [];
     const result = await runFixedAccountActivityHookOperation({
       operation: 'enable', env: hostedHookOwner('enable'), accessToken: 'test',
@@ -502,8 +506,8 @@ test('normal enable orders catalog, fresh state, one exact PATCH, independent re
         return configResponse(true, expectedUri);
       },
     });
-    assert.deepEqual(result, { status: 'HOOK_ENABLED_VERIFIED' });
-    assert.deepEqual(calls, ['POST', 'GET', 'PATCH', 'GET']);
+    assert.deepEqual(result, { status });
+    assert.deepEqual(calls, methods);
   }
 });
 test('explicit disable remains possible if the database or coverage is invalid', async () => {
