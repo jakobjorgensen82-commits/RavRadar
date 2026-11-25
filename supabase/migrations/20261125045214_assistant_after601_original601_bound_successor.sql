@@ -2062,7 +2062,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198'
+      is distinct from '256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -2851,7 +2851,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      '9492548a5a6dc5cf5a0b8aa89ba0b118d86670e93a58229e7452fe09edcee6f2'
+      '5727f060e28abce3a95082a4f969422e147d9804b909b764df892b9d36ea0fb9'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -2900,7 +2900,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198"
+    "modelBundleSha256": "256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f"
   }'::jsonb then
     return false;
   end if;
@@ -2981,7 +2981,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "1a15ea2de34ef75e992c548897ba2dfab2c53306c50fef0ee8e63493f0b8a789"
+    "modelBundleSha256": "d9a31d8fd49c4e6455894756354a7dbcd0be2ae3f4f176fbcfcf6246e6b45c7e"
   }'::jsonb then
     return false;
   end if;
@@ -3076,7 +3076,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198'
+      is distinct from '256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_DIAGNOSTIC_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -3865,7 +3865,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_DIAGNOSTIC_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      '9492548a5a6dc5cf5a0b8aa89ba0b118d86670e93a58229e7452fe09edcee6f2'
+      '5727f060e28abce3a95082a4f969422e147d9804b909b764df892b9d36ea0fb9'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_DIAGNOSTIC_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -3914,7 +3914,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198"
+    "modelBundleSha256": "256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f"
   }'::jsonb then
     return 'P03'; /* source line 1508 */
   end if;
@@ -3995,7 +3995,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "1a15ea2de34ef75e992c548897ba2dfab2c53306c50fef0ee8e63493f0b8a789"
+    "modelBundleSha256": "d9a31d8fd49c4e6455894756354a7dbcd0be2ae3f4f176fbcfcf6246e6b45c7e"
   }'::jsonb then
     return 'P05'; /* source line 1589 */
   end if;
@@ -4069,7 +4069,7 @@ as $$
         'f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1',
         'd8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9',
         '8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313',
-        '825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198'
+        '256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -4112,7 +4112,7 @@ as $$
         '239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a',
         'faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d',
         '2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076',
-        '1a15ea2de34ef75e992c548897ba2dfab2c53306c50fef0ee8e63493f0b8a789'
+        'd9a31d8fd49c4e6455894756354a7dbcd0be2ae3f4f176fbcfcf6246e6b45c7e'
       )
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -4264,7 +4264,7 @@ begin
     then
       v_central_is_compatible_predecessor := true;
     elsif p_target_reference > v_central_reference
-      and p_payload ->> 'continuationStateContractSha256' = '9492548a5a6dc5cf5a0b8aa89ba0b118d86670e93a58229e7452fe09edcee6f2'
+      and p_payload ->> 'continuationStateContractSha256' = '5727f060e28abce3a95082a4f969422e147d9804b909b764df892b9d36ea0fb9'
       and public.ravradar_ravscore_checkpoint_ask601_payload_valid(v_payload,v_central_reference)
     then
       -- Authenticated immutable601 predecessor; only a strictly LATER ordinary generation.
@@ -5030,7 +5030,7 @@ $assistant_later_h0_ddl_11$;
     and p.prosecdef=false and p.provolatile='i'
     and not p.proisstrict and not p.proleakproof and p.provariadic=0 and p.pronargdefaults=0
     and array(select unnest(p.proconfig) order by 1)=array['search_path=pg_catalog, public']::text[]
-    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='b67743cf4de1add317417f4fa74ff1feefeb52cbd03696ff53ceab785b1c2a42'
+    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='06ed0cdc4a13cf05fc9d5b298a6377eeb91ec90f22797f9528711e83f8a990b3'
     and not pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
     and not pg_catalog.has_function_privilege('authenticated',p.oid,'EXECUTE')
     and not exists(select 1 from pg_catalog.aclexplode(coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) a
@@ -5657,7 +5657,7 @@ $assistant_later_h0_ddl_11$;
     and p.prosecdef=false and p.provolatile='s'
     and not p.proisstrict and not p.proleakproof and p.provariadic=0 and p.pronargdefaults=0
     and array(select unnest(p.proconfig) order by 1)=array['search_path=pg_catalog, public']::text[]
-    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='75870da019c31396614462cff7cc12d0831c2f0d1dd4059a351a5d91a17e32a5'
+    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='f8a878beb49a9cded9bee68df49c74fd448b15ed2295e0277827268d83ae77a6'
     and not pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
     and not pg_catalog.has_function_privilege('authenticated',p.oid,'EXECUTE')
     and not exists(select 1 from pg_catalog.aclexplode(coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) a
@@ -5687,7 +5687,7 @@ $assistant_later_h0_ddl_11$;
     and p.prosecdef=false and p.provolatile='s'
     and not p.proisstrict and not p.proleakproof and p.provariadic=0 and p.pronargdefaults=0
     and array(select unnest(p.proconfig) order by 1)=array['search_path=pg_catalog, public']::text[]
-    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='e4ab11dd2b6b22eb4023b7cdb34355dfb12d5fcfc5d6269ac05b4b75109ce77e'
+    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='e80476fb1b98daf5151c9e9a55ba556d8b89b7ba34e031563016c88577a8664f'
     and not pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
     and not pg_catalog.has_function_privilege('authenticated',p.oid,'EXECUTE')
     and not exists(select 1 from pg_catalog.aclexplode(coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) a
@@ -5807,7 +5807,7 @@ $assistant_later_h0_ddl_11$;
     and p.prosecdef=true and p.provolatile='v'
     and not p.proisstrict and not p.proleakproof and p.provariadic=0 and p.pronargdefaults=0
     and array(select unnest(p.proconfig) order by 1)=array['search_path=pg_catalog, public','statement_timeout=55s']::text[]
-    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='2a137296865ccc87e71bb594680973fa8e470f056abbf8207e764a476e873b54'
+    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='6fb28fde0bba89c04a68e6cc0afc1ba620d39be4673288922076f0d519bd7bf7'
     and not pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
     and not pg_catalog.has_function_privilege('authenticated',p.oid,'EXECUTE')
     and not exists(select 1 from pg_catalog.aclexplode(coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) a
@@ -5837,7 +5837,7 @@ $assistant_later_h0_ddl_11$;
     and p.prosecdef=false and p.provolatile='s'
     and not p.proisstrict and not p.proleakproof and p.provariadic=0 and p.pronargdefaults=0
     and array(select unnest(p.proconfig) order by 1)=array['search_path=pg_catalog, public']::text[]
-    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='832838a6eb4907f20bb97dfe5a92db6ffb249606bb123703597173d6222c9c82'
+    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='bf05144020e1ab1b6ea16d2fae73bbeabd3b9af74286d541dbc9fcba0cd55da3'
     and not pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
     and not pg_catalog.has_function_privilege('authenticated',p.oid,'EXECUTE')
     and not exists(select 1 from pg_catalog.aclexplode(coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) a
@@ -5852,7 +5852,7 @@ $assistant_later_h0_ddl_11$;
     and p.prosecdef=false and p.provolatile='s'
     and not p.proisstrict and not p.proleakproof and p.provariadic=0 and p.pronargdefaults=0
     and array(select unnest(p.proconfig) order by 1)=array['search_path=pg_catalog, public']::text[]
-    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='c24f2b0f1bdddc6b9086a6291742ea5bfab988a3cd69fe0ae00a4855ea26b3da'
+    and pg_catalog.encode(extensions.digest(pg_catalog.convert_to(pg_catalog.btrim(p.prosrc,E' \n\r\t'),'UTF8'),'sha256'),'hex')='ac03d95347a9815b328c06ee354159be5b10835016dbb1ce19e38a4da5deb314'
     and not pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
     and not pg_catalog.has_function_privilege('authenticated',p.oid,'EXECUTE')
     and not exists(select 1 from pg_catalog.aclexplode(coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) a

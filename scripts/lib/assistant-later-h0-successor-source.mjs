@@ -1251,15 +1251,15 @@ export function assistantAfter601CheckpointContractFromBase(source,base){
 
 export const ASSISTANT_AFTER601_BINDING=Object.freeze({
   "version": "20261125045214",
-  "C": "1a15ea2de34ef75e992c548897ba2dfab2c53306c50fef0ee8e63493f0b8a789",
-  "I": "825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198",
-  "T": "9492548a5a6dc5cf5a0b8aa89ba0b118d86670e93a58229e7452fe09edcee6f2"
+  "C": "d9a31d8fd49c4e6455894756354a7dbcd0be2ae3f4f176fbcfcf6246e6b45c7e",
+  "I": "256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f",
+  "T": "5727f060e28abce3a95082a4f969422e147d9804b909b764df892b9d36ea0fb9"
 });
 export const ASSISTANT_AFTER601_OUTPUT=Object.freeze({
-  "migrationSha256": "ed1eb1f680b5b896a0500af6a261309af7bab8e65bff04680f13c392a5e3d46c",
-  "canonicalSha256": "a669a279ca0bb6fe30e56019534303d2b2c5ef16872b703bd9694a33fbb9243f",
-  "checkpointContractSha256": "0e444943da4e96b1f1bd6fcfef1fc0e7861f0a16f864fe2ad04646bef9158d31",
-  "tripBindingPolicySha256": "b58258d1588ada629159190347eddec1f648ae2a6f6e7505517c9221710a82b7"
+  "migrationSha256": "51d1a6f90be2d0ba969bd248f3026891e78bacee56e6d1d20b2110114d967427",
+  "canonicalSha256": "d7a4d88cd9a013e2f8301fcb5cd5ea35438cc52223208304a3e500410a2bf0b3",
+  "checkpointContractSha256": "6866020b2f8805013d8f7f4deab8cda6f806faa8a9c7fe439926cb5fb3328026",
+  "tripBindingPolicySha256": "66da0c085db886cbd9a6643c344456604c5f73994ccda74a5242946f40f8239a"
 });
 export function requireAssistantAfter601Binding(){
   assert.equal(arguments.length,0,'No caller-selected assistant binding');

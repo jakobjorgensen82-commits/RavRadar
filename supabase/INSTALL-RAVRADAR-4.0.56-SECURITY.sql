@@ -678,7 +678,7 @@ as $$
         'f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1',
         'd8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9',
         '8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313',
-        '825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198'
+        '256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -721,7 +721,7 @@ as $$
         '239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a',
         'faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d',
         '2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076',
-        '1a15ea2de34ef75e992c548897ba2dfab2c53306c50fef0ee8e63493f0b8a789'
+        'd9a31d8fd49c4e6455894756354a7dbcd0be2ae3f4f176fbcfcf6246e6b45c7e'
       )
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -20151,7 +20151,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198'
+      is distinct from '256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -21129,7 +21129,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      '9492548a5a6dc5cf5a0b8aa89ba0b118d86670e93a58229e7452fe09edcee6f2'
+      '5727f060e28abce3a95082a4f969422e147d9804b909b764df892b9d36ea0fb9'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -21178,7 +21178,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198"
+    "modelBundleSha256": "256a750c1b04207d2d494afe3657bf3eb2d611e142a00ab6d125b79bc44b040f"
   }'::jsonb then
     return false;
   end if;
@@ -21259,7 +21259,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "1a15ea2de34ef75e992c548897ba2dfab2c53306c50fef0ee8e63493f0b8a789"
+    "modelBundleSha256": "d9a31d8fd49c4e6455894756354a7dbcd0be2ae3f4f176fbcfcf6246e6b45c7e"
   }'::jsonb then
     return false;
   end if;
@@ -21789,7 +21789,7 @@ begin
     then
       v_central_is_compatible_predecessor := true;
     elsif p_target_reference > v_central_reference
-      and p_payload ->> 'continuationStateContractSha256' = '9492548a5a6dc5cf5a0b8aa89ba0b118d86670e93a58229e7452fe09edcee6f2'
+      and p_payload ->> 'continuationStateContractSha256' = '5727f060e28abce3a95082a4f969422e147d9804b909b764df892b9d36ea0fb9'
       and public.ravradar_ravscore_checkpoint_ask601_payload_valid(v_payload,v_central_reference)
     then
       -- Authenticated immutable601 predecessor; only a strictly LATER ordinary generation.
