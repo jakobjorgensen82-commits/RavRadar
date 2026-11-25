@@ -49,7 +49,8 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   assistantAfter599CheckpointContractFromBase,requireAssistantAfter599Binding,
   requireAssistantAfter599Output,requireAssistantAfter599Release,assistantAfter599Migration,
   ASSISTANT_AFTER601_BEFORE,ASSISTANT_AFTER601_ALIASES,readAssistantAfter599CanonicalSource,assistantAfter601CheckpointContractFromBase,
-  ASSISTANT_AFTER601_BINDING,ASSISTANT_AFTER601_OUTPUT,assistantAfter601Migration,readAssistantAfter601CanonicalSource}
+  ASSISTANT_AFTER601_BINDING,ASSISTANT_AFTER601_OUTPUT,assistantAfter601Migration,readAssistantAfter601CanonicalSource,
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -492,20 +493,18 @@ function assistantAfter599InstalledLedgerGuard(){
   ];
 }
 
-const AFTER601_ACCOUNT_LEDGER=Object.freeze([
-  ['20261117180000','37a8d38041b9d04ebb1f72ed4dfb95df8d72ada071fff2a88d8a04a0fc782bd3'],
-  ['20261117180100','1612acb8b50e4bad1532f0543df0fd148d417bb4e58816761f62944594ebe0b4'],
-  ['20261122200000','5b8197f95afd8a2896cba7f0d8cfacb0b4db85d0d847bd129e748a342453c6b6'],
-]);
 function assistantAfter601InstalledLedgerGuard(version){
   const current=assistantAfter599RequiredMigrations();
   assert.equal(current.length,66);
   assert.equal(current.at(-1).version,ASSISTANT_AFTER601_BEFORE.version);
-  assert.equal(readAccountErasureSource().sha256,ASSISTANT_AFTER599_DATABASE_LEDGER.appMigrationSha256);
-  const account=readAccountInactivitySource().migrations.map(row=>[row.version,row.sha256]);
-  account.push([fixedNativeActivityReceiptMigration.slice(0,14),readFixedNativeActivityReceiptSource().sha256]);
-  assert.deepEqual(account,AFTER601_ACCOUNT_LEDGER,'Exact installed 601 application migration sources');
-  const versions=[...current.map(row=>row.version),...account.map(([value])=>value)];
+  const account=[
+    {version:ASSISTANT_AFTER599_DATABASE_LEDGER.maximumVersion,sha256:readAccountErasureSource().sha256},
+    ...readAccountInactivitySource().migrations.map(({version,sha256})=>({version,sha256})),
+    {version:fixedNativeActivityReceiptMigration.slice(0,14),sha256:readFixedNativeActivityReceiptSource().sha256},
+  ];
+  assert.deepEqual(account,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.installedAppMigrations,
+    'Exact installed 601 application migration sources');
+  const versions=[...current.map(row=>row.version),...account.slice(1).map(row=>row.version)];
   assert.equal(new Set(versions).size,69);
   assert.deepEqual(versions,[...versions].sort());
   assert(version>versions.at(-1),'Successor must append after the existing 601 application ledger');

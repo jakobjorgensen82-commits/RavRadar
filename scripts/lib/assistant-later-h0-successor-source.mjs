@@ -1227,6 +1227,12 @@ export const INACTIVE_ASSISTANT_AFTER599_SUCCESSOR=Object.freeze({
 // Source-only successor of the issued 601 model. Production selection remains independent.
 export const ASSISTANT_AFTER601_BEFORE=Object.freeze({...ASSISTANT_AFTER599_BINDING,
   canonicalSha256:ASSISTANT_AFTER599_OUTPUT.canonicalSha256});
+const ASSISTANT_AFTER601_APPLIED_APP=Object.freeze([
+  Object.freeze({version:ASSISTANT_AFTER599_DATABASE_LEDGER.maximumVersion,sha256:ASSISTANT_AFTER599_DATABASE_LEDGER.appMigrationSha256}),
+  Object.freeze({version:'20261117180000',sha256:'37a8d38041b9d04ebb1f72ed4dfb95df8d72ada071fff2a88d8a04a0fc782bd3'}),
+  Object.freeze({version:'20261117180100',sha256:'1612acb8b50e4bad1532f0543df0fd148d417bb4e58816761f62944594ebe0b4'}),
+  Object.freeze({version:'20261122200000',sha256:'5b8197f95afd8a2896cba7f0d8cfacb0b4db85d0d847bd129e748a342453c6b6'}),
+]);
 export const ASSISTANT_AFTER601_ALIASES=Object.freeze([
   Object.freeze({name:'ravradar_ravscore_checkpoint_ask601_state_valid',signature:'(jsonb,text)'}),
   Object.freeze({name:'ravradar_ravscore_checkpoint_ask601_payload_valid',signature:'(jsonb,timestamptz)'}),
@@ -1293,7 +1299,9 @@ export async function readAssistantAfter601CanonicalSource(options){
 
 export const INACTIVE_ASSISTANT_AFTER601_SUCCESSOR=Object.freeze({
   sourcePhase:'assistant-after601-successor',
-  before:ASSISTANT_AFTER601_BEFORE,databaseBefore:ASSISTANT_AFTER601_BEFORE,originalStateFamily:'601',
+  before:ASSISTANT_AFTER601_BEFORE,
+  databaseBefore:Object.freeze({...ASSISTANT_AFTER601_BEFORE,version:ASSISTANT_AFTER601_APPLIED_APP.at(-1).version}),
+  installedAppMigrations:ASSISTANT_AFTER601_APPLIED_APP,originalStateFamily:'601',
   binding:ASSISTANT_AFTER601_BINDING,output:ASSISTANT_AFTER601_OUTPUT,
   requireBinding:requireAssistantAfter601Binding,requireOutput:requireAssistantAfter601Output,
   migration:assistantAfter601Migration,readCanonicalSource:readAssistantAfter601CanonicalSource,

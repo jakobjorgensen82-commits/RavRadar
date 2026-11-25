@@ -715,6 +715,8 @@ export function assistantAfter601RequiredMigrations(){
   assert.equal(previous.at(-1).version,profile.before.version);
   const applied=[...previous,...ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION];
   assert.equal(applied.length,69);
+  assert.equal(applied.at(-1).version,profile.databaseBefore.version);
+  assert.deepEqual(applied.slice(-3).map(row=>row.version),profile.installedAppMigrations.slice(1).map(row=>row.version));
   assert.deepEqual(applied.map(row=>row.version),[...new Set(applied.map(row=>row.version))].sort());
   const next=profile.migration();
   assert(next.version>applied.at(-1).version);
@@ -798,7 +800,7 @@ const ASSISTANT_AFTER599_ROWS=Object.freeze({
   required:assistantAfter599RequiredMigrations,before:ASSISTANT_AFTER599_BEFORE});
 const ASSISTANT_AFTER601_ROWS=Object.freeze({
   required:assistantAfter601RequiredMigrations,before:INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.before,
-  latestBefore:ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.version});
+  latestBefore:INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.databaseBefore.version});
 function assistantLaterH0Rows(migrationListText){
   return fixedAssistantRows(migrationListText,ISSUED_ASSISTANT587_ROWS);
 }
@@ -1434,16 +1436,15 @@ export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS
       `required cutover migration is missing or renamed: ${migration.filename}`);
   }
   if(sourcePhase==='assistant-after601-successor'){
-    const receipt=readFixedNativeActivityReceiptSource();
-    const expected=[{...ACCOUNT_ERASURE_APP_MIGRATION,sql:accountErasureSchema.readAccountErasureSource().sql},
-      ...accountErasureSchema.readAccountInactivitySource().migrations,
-      {...ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION,sql:receipt.sql}];
-    for(const row of expected){
-      const file=path.join(migrationsDirectory,row.filename);
+    for(const {version,sha256:expected} of INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.installedAppMigrations){
+      const file=path.join(migrationsDirectory,versionToFilename.get(version));
       const stat=await fs.lstat(file);
-      assert(stat.isFile()&&!stat.isSymbolicLink(),'Installed account migration must be a regular original source');
-      assert.equal((await fs.readFile(file,'utf8')).replaceAll('\r\n','\n'),row.sql,
-        'Installed account migration bytes do not match the exact source');
+      assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>0&&stat.size<=65_536,
+        'Installed account migration must be a bounded regular original source');
+      const bytes=await fs.readFile(file);
+      assert.equal(bytes.length,stat.size);
+      const sql=new TextDecoder('utf-8',{fatal:true}).decode(bytes).replaceAll('\r\n','\n');
+      assert.equal(sha256(sql),expected,'Installed account migration bytes do not match the exact source');
     }
   }
   return Object.freeze({
