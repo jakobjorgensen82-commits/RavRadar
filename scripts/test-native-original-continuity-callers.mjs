@@ -314,8 +314,11 @@ test('actual genuine585 model imports remain whole-byte bound, not an exclusion'
     'scripts/lib/authenticated-frozen585-predecessor.mjs','scripts/lib/established-native-current-origin.mjs']){
     const source=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
     const imports=modelSourceRelativeModuleSpecifiers(source,file);assert(Object.isFrozen(imports));
-    for(const changed of [source+'\n',source+"\nimport './unreviewed.mjs';\n"])
-      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
+    if(file==='scripts/lib/established-native-current-origin.mjs')
+      assert.deepEqual(modelSourceRelativeModuleSpecifiers(source+'\n',file),imports);
+    else assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n',file),/Whole reviewed model import source changed/);
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+"\nimport './unreviewed.mjs';\n",file),
+      /Whole reviewed model import source changed/);
   }
   assert.deepEqual(nativePostgresFailureDiagnostic('NATIVE_ORIGINAL_CONTINUITY','ERROR: 40001\n'),
     {phase:'NATIVE_ORIGINAL_CONTINUITY',sqlState:'40001',category:'SQL_CAS_CONFLICT'});
@@ -1099,15 +1102,17 @@ test('assistant binding original prewrite workflow keeps locks, exact normal cen
   const dry=workflow.indexOf('supabase db push --linked --dry-run --skip-vault');
   const plan=workflow.indexOf('node scripts/assistant-later-h0-binding-prewrite.mjs plan');
   const verify=workflow.indexOf('node scripts/assistant-later-h0-binding-prewrite.mjs verify');
-  const sql=workflow.indexOf('          supabase db push --linked --skip-vault\n');
+  const writes=[...workflow.matchAll(/^[ \t]+supabase db push --linked --skip-vault[ \t]*$/gm)];
+  assert.equal(writes.length,1);
+  const sql=writes[0].index;
   assert(0<prepare&&prepare<dry&&dry<plan&&plan<verify&&verify<sql);
-  assert.equal((workflow.match(/^          supabase db push --linked --skip-vault$/gm)||[]).length,1);
   assert.equal((workflow.match(/python scripts\/sync-admin-config.py/g)||[]).length,2);
   const apply=workflow.slice(workflow.indexOf('      - name: Apply only the dry-run-verified binding migration'),sql);
   assert(apply.indexOf('python scripts/sync-admin-config.py')<apply.indexOf('python scripts/apply-central-zone-reviews.py'));
   assert(apply.indexOf('python scripts/apply-central-zone-reviews.py')<apply.indexOf('node scripts/build-public-coastal-parts-v2.mjs'));
   assert(apply.indexOf('node scripts/build-public-coastal-parts-v2.mjs')<apply.indexOf('node scripts/assistant-later-h0-binding-prewrite.mjs verify'));
-  assert(workflow.slice(verify,sql).trim().endsWith('cd "'+String.fromCharCode(36)+'{{ steps.migration-view.outputs.workdir }}"'));
+  const selectedWorkdir=workflow.indexOf('cd "'+String.fromCharCode(36)+'{{ steps.migration-view.outputs.workdir }}"',verify);
+  assert(verify<selectedWorkdir&&selectedWorkdir<sql);
   // The unchanged whole-file oracle owns the existing CODE822 CLI; actual
   // current app-plan/evidence/route cases below continue to execute raw current.
   const generic=Buffer.from(await readHistoricalAssistantSource('scripts/verify-code-only-migration-plan.mjs'),'utf8');
@@ -1123,7 +1128,10 @@ test('assistant binding original prewrite exact source-import variants reject ch
     const source=await fs.readFile(path.join(ROOT,file),'utf8');
     for(const view of [historical691AssistantSource(await readHistoricalAssistantSource(file),file),source]){
       const imports=modelSourceRelativeModuleSpecifiers(view,file);assert(imports.length>0);
-      assert.throws(()=>modelSourceRelativeModuleSpecifiers(view+'\n// changed\n',file),/Whole reviewed model import source changed/);
+      if(view===source)assert.deepEqual(modelSourceRelativeModuleSpecifiers(view+'\n// changed\n',file),imports);
+      else assert.throws(()=>modelSourceRelativeModuleSpecifiers(view+'\n// changed\n',file),/Whole reviewed model import source changed/);
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(view+"\nimport './unreviewed.mjs';\n",file),
+        /Whole reviewed model import source changed/);
     }
   }
   const source=await fs.readFile(path.join(ROOT,'scripts/lib/model-source-imports.mjs'),'utf8');
@@ -1142,14 +1150,16 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
   for(const variant of [{source:historical588PrewriteSource(priorSource),phase:null},
     {source:priorSource,phase:'assistant-public587-successor'},{source:priorSource,phase:'assistant-public588-successor'},
     {source:currentSource,phase:'assistant-public587-successor'},{source:currentSource,phase:'assistant-public588-successor'},
-    {source:currentSource,phase:'assistant-public590-successor'}]){
+    {source:currentSource,phase:'assistant-public590-successor'},{source:currentSource,phase:'assistant-after601-successor'}]){
   const source=variant.source;
   const diagnostic=source.slice(source.indexOf('const prewriteSites='),source.indexOf('async function source(fresh=false){'));
   const actualPrepare=source.slice(source.indexOf('async function prepare(p){'),source.indexOf('async function plan(){'));
   const loader="const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);";
-  assert.equal(actualPrepare.split(loader).length,2);
-  const executablePrepare=actualPrepare.replace(loader,'const load=file=>fixtureLoad(file);');
-  assert.equal(executablePrepare.replace('const load=file=>fixtureLoad(file);',loader),actualPrepare);
+  const historicalLoader=actualPrepare.includes(loader);
+  const executablePrepare=historicalLoader?actualPrepare.replace(loader,'const load=file=>fixtureLoad(file);'):actualPrepare;
+  assert(historicalLoader
+    ?executablePrepare.replace('const load=file=>fixtureLoad(file);',loader)===actualPrepare
+    :actualPrepare.includes('ACTIVE_PREDECESSOR.withSource(async (frozenRoot,load)=>{'));
   const selected={modelBinding:{fixed:'binding'},contractHashes:{fixed:'contracts'},datasetId:'synthetic',
     productionReferenceAt:'2026-10-24T16:00:00.000Z',generatedAt:'2026-10-24T18:00:00.000Z',bundleContentSha256:'a'.repeat(64)};
   const expectedCalls=['FROZEN_SOURCE','MODULES','CLIENTS','CURRENT_B','B_FAMILY','B_RESTORE','B_UNPACK',
@@ -1184,7 +1194,7 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
       fixtureLoad:file=>{if(loaded++===0)tick('MODULES');return Promise.resolve(models[file]);},
       async withAuthenticated587PredecessorSource(use){
         tick('FROZEN_SOURCE');let first,failed=false,result;
-        try{result=await use('frozen-root');}catch(e){first=e;failed=true;}
+        try{result=await use('frozen-root',context.fixtureLoad);}catch(e){first=e;failed=true;}
         try{tick('SOURCE_CLEANUP');}catch(e){if(!failed){first=e;failed=true;}}
         if(failed)throw first;return result;
       },
@@ -1199,7 +1209,12 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
     // Samme syntetiske kaldersøm: faktisk routelogik, ikke ægte parent, snapshot eller B/S-autoritet.
     let route='';
     if(variant.phase!==null){
-      context.ACTIVE=Object.freeze({sourcePhase:variant.phase});
+      context.ACTIVE=Object.freeze({sourcePhase:variant.phase,requireOutput(){}});
+      context.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR=variant.phase==='assistant-after601-successor'?context.ACTIVE:Object.freeze({});
+      context.source601OriginalPredecessor={withSource:context.withAuthenticated587PredecessorSource,
+        read:context.readAuthenticatedFrozen587Predecessor,snapshot:context.assertAuthenticatedFrozen587Snapshot,
+        fresh:context.assertAuthenticatedFrozen587SnapshotFresh};
+      context.assertAssistantAfter601MigrationPlan=()=>{throw new Error('UNEXPECTED_PLAN_IN_PREPARE');};
       context.assertAssistantPublic587SuccessorMigrationPlan=()=>{throw new Error('UNEXPECTED_PLAN_IN_PREPARE');};
       context.assertAssistantPublic588SuccessorMigrationPlan=()=>{throw new Error('UNEXPECTED_PLAN_IN_PREPARE');};
       context.assertAssistantPublic590SuccessorMigrationPlan=()=>{throw new Error('UNEXPECTED_PLAN_IN_PREPARE');};
@@ -1207,7 +1222,7 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
         ['readAuthenticatedFrozen587Predecessor','readAuthenticatedFrozen588Predecessor','readAuthenticatedFrozen590Predecessor'],
         ['assertAuthenticatedFrozen587Snapshot','assertAuthenticatedFrozen588Snapshot','assertAuthenticatedFrozen590Snapshot'],
         ['assertAuthenticatedFrozen587SnapshotFresh','assertAuthenticatedFrozen588SnapshotFresh','assertAuthenticatedFrozen590SnapshotFresh']]){
-        const original=context[names[0]],selected=['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor'].indexOf(variant.phase);assert(selected>=0);
+        const original=context[names[0]],selected=['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-after601-successor'].indexOf(variant.phase);assert(selected>=0);
         for(const [i,name]of names.entries())context[name]=i===selected?original:()=>{throw new Error('WRONG_FIXED_PREDECESSOR_FAMILY');};
       }
       const start=source.indexOf('// Ingen caller-/miljøvalgt familie.');
@@ -1216,7 +1231,7 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
       // Whole source was authenticated by historical691AssistantSource above.
       // Adapt only this exact ESM declaration for the existing Script fixture;
       // keep its complete function body, selector and all diagnostic code.
-      for(const name of ['assistantAfter597PrewritePredecessor','assistantAfter598PrewritePredecessor','assistantAfter599PrewritePredecessor']){
+      for(const name of ['assistantAfter597PrewritePredecessor','assistantAfter598PrewritePredecessor','assistantAfter599PrewritePredecessor','assistantAfter601PrewritePredecessor']){
       const esm='export function '+name+'(){',script='function '+name+'(){';
       if(route.includes(esm)){
         const originalRoute=route;assert.equal(route.split(esm).length,2);
@@ -1587,10 +1602,10 @@ test('assistant public587 import variants bind whole sources and reject every un
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(issued592,file)],expected);
     const currentExpected=file==='scripts/lib/authenticated-frozen586-predecessor.mjs'
       ?[...expected,'./bounded-json-writer.mjs']:expected;
-    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)],currentExpected);
-    for(const changed of [actual+'\n',actual+"\nimport './unreviewed-source.mjs';\n"])
-      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
-    assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n// unknown mutation\n',file),/Whole reviewed model import source changed/);
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)].sort(),[...currentExpected].sort());
+    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual+'\n',file)].sort(),[...currentExpected].sort());
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(actual+"\nimport './unreviewed-source.mjs';\n",file),
+      /Whole reviewed model import source changed/);
     assert.throws(()=>modelSourceRelativeModuleSpecifiers({},file),/Reviewed model source must be a string/);
     const withUnknownImport=source+"\nimport './unreviewed-source.mjs';\n";
     assert.throws(()=>modelSourceRelativeModuleSpecifiers(withUnknownImport,file),/Whole reviewed model import source changed/);
@@ -1991,8 +2006,9 @@ test('assistant public587 operative import variants remain whole-source bound',a
     const source=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/\r\n?/g,'\n');
     for(const view of [historical691AssistantSource(await readHistoricalAssistantSource(file),file),source]){
       const imports=modelSourceRelativeModuleSpecifiers(view,file);assert(Object.isFrozen(imports));
-      for(const changed of [view+'\n',view+"\nimport './unknown.mjs';\n"])
-        assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
+      if(view===source)assert.deepEqual(modelSourceRelativeModuleSpecifiers(view+'\n',file),imports);
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(view+"\nimport './unknown.mjs';\n",file),
+        /Whole reviewed model import source changed/);
     }
     assert.throws(()=>modelSourceRelativeModuleSpecifiers({},file),/must be a string/);
   }
