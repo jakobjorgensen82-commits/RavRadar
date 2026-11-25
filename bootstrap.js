@@ -1,13 +1,13 @@
 performance.mark?.('ravradar:bootstrap-start');
-import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.602";
-import { initialiseI18n, t } from "./js/i18n.js?v=4.0.602";
-import "./js/ui/ranking-copy.js?v=4.0.602";
-import "./js/ui/score-prognosis-copy.js?v=4.0.602";
-import "./js/ui/site-search-copy.js?v=4.0.602";
-import "./js/ui/map-tab-copy.js?v=4.0.602";
-import "./js/ui/map-timeline-copy.js?v=4.0.602";
+import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.603";
+import { initialiseI18n, t } from "./js/i18n.js?v=4.0.603";
+import "./js/ui/ranking-copy.js?v=4.0.603";
+import "./js/ui/score-prognosis-copy.js?v=4.0.603";
+import "./js/ui/site-search-copy.js?v=4.0.603";
+import "./js/ui/map-tab-copy.js?v=4.0.603";
+import "./js/ui/map-timeline-copy.js?v=4.0.603";
 
-import { installPublicAppUpdateFlow } from "./js/services/app-update-flow.js?v=4.0.602&transport=public-json-bridge-20261103";
+import { installPublicAppUpdateFlow } from "./js/services/app-update-flow.js?v=4.0.603&transport=public-json-bridge-20261103";
 
 let appImported = false;
 addEventListener('pageshow', event => {
@@ -24,9 +24,9 @@ installPublicAppUpdateFlow({
   version: String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '').trim(),
   translate: t,
 });
-await import("./app.js?v=4.0.602&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261125-uv-identification-daylight&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123&assistant-locale=tab-20261125");
+await import("./app.js?v=4.0.603&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261125-uv-identification-daylight&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123&assistant-locale=topic-tab-20261125");
 appImported = true;
 performance.mark?.('ravradar:app-imported');
-void import("./js/services/visit-counter.js?v=4.0.602")
+void import("./js/services/visit-counter.js?v=4.0.603")
   .then(({ schedulePublicPageView }) => schedulePublicPageView())
   .catch(() => {});

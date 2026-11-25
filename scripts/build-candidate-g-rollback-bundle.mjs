@@ -21,7 +21,7 @@ export const CANDIDATE_G_ROLLBACK_BUNDLE_ENTRYPOINTS = Object.freeze([
   'js/core/ravscore-public-model.js',
   'js/core/ravscore-public-runtime-contract.js',
   'js/core/score-presentation.js',
-  'js/services/rav-assistant.js',
+  'js/core/zone-ranking.js',
   'js/services/trip-evidence-public-adapter.js',
   'supabase/functions/_shared/trip-storage.js',
   'supabase/functions/submit-observation/index.ts',

@@ -1,4 +1,4 @@
-import {assertForecastShareDescriptor, FORECAST_SHARE_ZONE_MAX_BYTES} from './forecast-share-projection.js?v=4.0.602';
+import {assertForecastShareDescriptor, FORECAST_SHARE_ZONE_MAX_BYTES} from './forecast-share-projection.js?v=4.0.603';
 const HOUR=3600000, HOURS=118, ZONES=210, HASH=/^[a-f0-9]{64}$/;
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function need(ok,code){if(!ok)throw new Error(code);}

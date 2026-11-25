@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import { inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange, WEATHER_PUBLICATION_COMMANDS, WEATHER_PUBLICATION_PATHS } from './lib/private-weather-publication-workflow.mjs';
 import {analyzeSourceDomainInputs} from './source-impact-domain-inputs.mjs';
+import {releaseGateTestArguments} from './lib/release-gate-test-plan.mjs';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND} from './source-current-contract-receipt.mjs';
 import {isAdditiveOwnedCacheNativeWorkflowChange} from './lib/source-impact-workflow-review.mjs';
 
@@ -591,6 +592,12 @@ const PROTECTED_HANDBOOK_SOURCE_TESTS=[
   'node --test scripts/test-supabase-quota-controls.mjs',
 ];
 const SOURCE_EXECUTION_TARGETS=freeze({
+  'scripts/build-candidate-g-rollback-bundle.mjs':[
+    'node scripts/build-candidate-g-rollback-bundle.mjs --check',
+    'node --test scripts/test-model-source-imports.mjs',
+  ],
+  'scripts/build-ravscore-model-bundle.mjs':['node --test scripts/test-model-source-imports.mjs'],
+  'scripts/lib/static-module-closure.mjs':['node --test scripts/test-model-source-imports.mjs'],
   // The actual Node24 dependency and physical archive proofs run once in the
   // dedicated native phases. The Node22 source driver checks the normal callers.
   '.github/actions/save-owned-dmi-grib/action.yml':[RAW_CACHE_ROTATION_SOURCE_COMMAND],
@@ -650,7 +657,7 @@ export function currentSourceTargets(relative){
     return freeze({path:relative,owners:[{area:'sourceExecution',commands:[...SOURCE_EXECUTION_TARGETS[relative]]}]});
   let areas=pathAreas.get(relative);
   if(ASSISTANT_SUCCESSOR_TESTS.has(relative))
-    return freeze({path:relative,owners:[{area:'assistantSuccessor',commands:['node '+relative+' --after599-current']}]});
+    return freeze({path:relative,owners:[{area:'assistantSuccessor',commands:['node '+releaseGateTestArguments(relative).join(' ')]}]});
   if(['scripts/validate-source-once.mjs','scripts/source-critical-gate.mjs'].includes(relative))
     return freeze({path:relative,owners:[{area:'sourceDriver',commands:['node scripts/test-source-validation-once.mjs']}]});
   if(relative==='scripts/national584-source-evidence.mjs')areas=['sourceControls'];

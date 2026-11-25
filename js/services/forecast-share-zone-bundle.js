@@ -1,5 +1,5 @@
-import { FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.602';
-import { assertForecastShareTrustMetadata, assertForecastShareTrustEntry } from './forecast-share-trust-index.js?v=4.0.602';
+import { FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.603';
+import { assertForecastShareTrustMetadata, assertForecastShareTrustEntry } from './forecast-share-trust-index.js?v=4.0.603';
 
 export const FORECAST_SHARE_ZONE_BUNDLE_DIRECTORY = 'forecast-share-zones';
 export const FORECAST_SHARE_ZONE_BUNDLE_MAX_BYTES = FORECAST_SHARE_INDEX_MAX_BYTES + 2 * FORECAST_SHARE_ZONE_MAX_BYTES;

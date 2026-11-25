@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {
+  computeRavScoreModelBundle,
+  renderGeneratedBundleModule,
+} from './build-ravscore-model-bundle.mjs';
+import {
+  computeCandidateGRollbackBundle,
+  renderCandidateGRollbackGeneratedModule,
+} from './build-candidate-g-rollback-bundle.mjs';
+import { ravScoreModelBinding as rollbackBinding } from './rollback-assets/ravscore-model-contract.js';
+import {
   assertRavScorePublicBrowserClosure,
   computeRavScorePublicBrowserClosure,
 } from './lib/ravscore-public-browser-closure.mjs';
@@ -28,6 +37,57 @@ const integratedIdentity = computeSealedPublicImplementationClosureIdentity({
 });
 assert.match(integratedIdentity.implementationClosureSha256, /^[a-f0-9]{64}$/,
   'the actual integrated bundle must seal against the actual public browser closure');
+const assistantPath = 'js/services/rav-assistant.js';
+const assistantSource = await fs.readFile(assistantPath, 'utf8');
+const assistantOnlyChange = new Map([[assistantPath, `${assistantSource}\n// assistant-only change\n`]]);
+const [integrated, modifiedIntegrated, candidate, modifiedCandidate, modifiedBrowser] = await Promise.all([
+  computeRavScoreModelBundle(),
+  computeRavScoreModelBundle({ sourceOverrides: assistantOnlyChange }),
+  computeCandidateGRollbackBundle(),
+  computeCandidateGRollbackBundle({ sourceOverrides: assistantOnlyChange }),
+  computeRavScorePublicBrowserClosure({ sourceOverrides: assistantOnlyChange }),
+]);
+assert.ok(!integrated.manifest.files.some(({ path }) => path === assistantPath));
+assert.ok(!candidate.manifest.files.some(({ file }) => file === assistantPath));
+assert.equal(integrated.modelBundleSha256, modifiedIntegrated.modelBundleSha256);
+assert.equal(candidate.modelBundleSha256, modifiedCandidate.modelBundleSha256);
+assert.notEqual(baseline.publicBrowserClosureSha256, modifiedBrowser.publicBrowserClosureSha256);
+
+// Compute an unissued bundle in memory. The installed family above retains its historical seal.
+const candidateContractText = await fs.readFile('scripts/rollback-assets/ravscore-model-contract.js', 'utf8');
+const candidateBundleText = await fs.readFile('scripts/rollback-assets/ravscore-model-bundle.generated.js', 'utf8');
+const priorRollbackSeal = {
+  expectedModel: 'candidate-g',
+  expectedBinding: rollbackBinding(),
+  expectedContractText: candidateContractText,
+  expectedBundleText: candidateBundleText,
+  expectedPublicClosure: baseline.manifest,
+};
+assert.match(computeSealedPublicImplementationClosureIdentity(priorRollbackSeal).implementationClosureSha256, /^[a-f0-9]{64}$/);
+assert.match(computeSealedPublicImplementationClosureIdentity({
+  ...priorRollbackSeal,
+  expectedBinding: { ...priorRollbackSeal.expectedBinding, modelBundleSha256: candidate.modelBundleSha256 },
+  expectedBundleText: renderCandidateGRollbackGeneratedModule(candidate),
+}).implementationClosureSha256, /^[a-f0-9]{64}$/);
+
+const separatedInput = {
+  expectedModel: 'integrated',
+  expectedBinding: { ...ravScoreModelBinding(), modelBundleSha256: integrated.modelBundleSha256 },
+  expectedContractText: integratedContractText,
+  expectedBundleText: renderGeneratedBundleModule(integrated),
+};
+const separatedIdentity = computeSealedPublicImplementationClosureIdentity({
+  ...separatedInput, expectedPublicClosure: baseline.manifest,
+});
+const modifiedIdentity = computeSealedPublicImplementationClosureIdentity({
+  ...separatedInput, expectedPublicClosure: modifiedBrowser.manifest,
+});
+assert.notEqual(separatedIdentity.implementationClosureSha256, modifiedIdentity.implementationClosureSha256);
+assert.throws(() => computeSealedPublicImplementationClosureIdentity({
+  ...separatedInput,
+  expectedPublicClosure: { ...baseline.manifest, files: baseline.manifest.files.filter(({ path }) => path !== assistantPath) },
+}), /Sealed public browser closure omits js\/services\/rav-assistant\.js/);
+
 for (const file of [
   'app.js',
   'bootstrap.js',

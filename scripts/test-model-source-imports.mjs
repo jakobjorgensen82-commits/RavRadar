@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
 import * as currentImportContract from './lib/model-source-imports.mjs';
-import { SOURCE599_CODE_SOURCE_PROVENANCE } from './check-assistant-later-h0-predecessor-source.mjs';
+import { SOURCE599_CODE_SOURCE_PROVENANCE, SOURCE601_ORIGINAL_DATA_PROFILE } from './check-assistant-later-h0-predecessor-source.mjs';
 import { exactRelativeModuleSpecifiers } from './lib/static-module-closure.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
@@ -108,9 +108,12 @@ test('both normal builders differ only by the explicit shared import-inventory c
   for (const file of ['scripts/build-ravscore-model-bundle.mjs', 'scripts/build-candidate-g-rollback-bundle.mjs']) {
     const before = normalized(execFileSync('git', ['-C', ROOT, 'show', 'd7b31aa3c706e2f657fe5de99c56434f3cff260d:' + file],
       { encoding: 'utf8', timeout: 30000, maxBuffer: 1024 * 1024 }));
-    const after = normalized(await fs.readFile(path.join(ROOT, file), 'utf8'));
+    const after = qualifiedImportSource(SOURCE601_ORIGINAL_DATA_PROFILE.head,file);
+    const current = normalized(await fs.readFile(path.join(ROOT, file), 'utf8'));
     const declaration = "import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';";
     assert.equal(after.split(declaration).length, 2);
+    assert.equal(current.split(declaration).length, 2);
+    assert.equal(current.split('modelSourceRelativeModuleSpecifiers(').length, 2);
     let inverse = after.replace(declaration, "import { exactRelativeModuleSpecifiers } from './lib/static-module-closure.mjs';");
     assert.equal(inverse.split('modelSourceRelativeModuleSpecifiers(').length, 2);
     inverse = inverse.replace('modelSourceRelativeModuleSpecifiers(', 'exactRelativeModuleSpecifiers(');
@@ -127,17 +130,17 @@ const current599ImportOwners = Object.freeze([
   'scripts/lib/established-native-current-origin.mjs',
   'scripts/assistant-later-h0-binding-prewrite.mjs',
 ]);
-function qualified599ImportBefore(file) {
+function qualifiedImportSource(head,file) {
   return normalized(execFileSync('git', ['-C', ROOT, 'cat-file', 'blob',
-    SOURCE599_CODE_SOURCE_PROVENANCE.head + ':' + file], {encoding:'utf8',timeout:30000,
+    head + ':' + file], {encoding:'utf8',timeout:30000,
       maxBuffer:2*1024*1024,env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',
         GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}}));
 }
 
 test('genuine599 registry reconstructs the whole existing after598 source and import rule', async () => {
   for (const file of current599ImportOwners) {
-    const source=normalized(await fs.readFile(path.join(ROOT,file),'utf8'));
-    const original=qualified599ImportBefore(file);
+    const source=qualifiedImportSource(SOURCE601_ORIGINAL_DATA_PROFILE.head,file);
+    const original=qualifiedImportSource(SOURCE599_CODE_SOURCE_PROVENANCE.head,file);
     const expected=modelSourceRelativeModuleSpecifiers(original,file);
     // This is the actual old failing normal call, before using the projection.
     const actual=modelSourceRelativeModuleSpecifiers(source,file);
@@ -153,7 +156,7 @@ test('genuine599 registry reconstructs the whole existing after598 source and im
 test('genuine599 registry rejects missing duplicate wrong register imports and loader drift', async () => {
   let checked=0;
   for (const file of current599ImportOwners.slice(0,2)) {
-    const source=normalized(await fs.readFile(path.join(ROOT,file),'utf8'));
+    const source=qualifiedImportSource(SOURCE601_ORIGINAL_DATA_PROFILE.head,file);
     const isCode=file.startsWith('scripts/check-');
     const declaration=isCode?'const source599Code=fixedSource(SOURCE599_CODE_PROFILE);'
       :'const sourceSnapshot599=fixedSnapshot(SOURCE_FROZEN599);';
@@ -193,7 +196,7 @@ test('genuine599 registry rejects missing duplicate wrong register imports and l
 
 test('current registered import owners remain raw current inputs with their current guards', async () => {
   for(const file of [...pins.map(row=>row[0]),...current599ImportOwners]){
-    const source=normalized(await fs.readFile(path.join(ROOT,file),'utf8'));
+    const source=qualifiedImportSource(SOURCE601_ORIGINAL_DATA_PROFILE.head,file);
     const imports=modelSourceRelativeModuleSpecifiers(source,file);
     assert(Object.isFrozen(imports));assert.equal(new Set(imports).size,imports.length);
     assert(imports.every(value=>value.startsWith('./')||value.startsWith('../')));
@@ -202,9 +205,9 @@ test('current registered import owners remain raw current inputs with their curr
   }
 });
 
-test('genuine599 normal origin and prewrite reject missing duplicate foreign register and new imports',async()=>{
+test('genuine599 archived origin and prewrite reject missing duplicate foreign register and new imports',()=>{
   for(const file of current599ImportOwners.slice(2)){
-    const source=normalized(await fs.readFile(path.join(ROOT,file),'utf8'));
+    const source=qualifiedImportSource(SOURCE601_ORIGINAL_DATA_PROFILE.head,file);
     const declaration=file.endsWith('binding-prewrite.mjs')?'export function assistantAfter599PrewritePredecessor(){'
       :'const ASSISTANT_AFTER599_ORIGINAL599=Object.freeze({';
     assert.equal(source.split(declaration).length,2);
@@ -214,4 +217,66 @@ test('genuine599 normal origin and prewrite reject missing duplicate foreign reg
       source+"\nimport('node:fs');\n",source+'\n// unexplained control drift\n'];
     for(const changed of mutants)assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file));
   }
+});
+
+test('normal 601 capsule owners use the declared closure and reject extra runtime imports',async()=>{
+  const currentCapsuleOwners=current599ImportOwners.slice(0,3);
+  for(const file of currentCapsuleOwners){
+    const source=normalized(await fs.readFile(path.join(ROOT,file),'utf8'));
+    const archived=qualifiedImportSource(SOURCE601_ORIGINAL_DATA_PROFILE.head,file);
+    const expected=[...modelSourceRelativeModuleSpecifiers(archived,file)];
+    if(file===currentCapsuleOwners[2])expected.push('../check-assistant-later-h0-predecessor-source.mjs');
+    const actual=modelSourceRelativeModuleSpecifiers(source,file);
+    assert(Object.isFrozen(actual));
+    assert.deepEqual([...actual].sort(),[...expected].sort());
+    for(const extra of ["import(unknown.path);","import('./foreign-runtime.mjs');","import './foreign-runtime.mjs';","import 'file:///foreign-runtime.mjs';"]){
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n'+extra,file));
+    }
+    if(file===currentCapsuleOwners[0]){
+      const dynamic='import(verifiedLeafUrl.href)';
+      assert.equal(source.split(dynamic).length,2);
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n'+dynamic+';',file),/unparsed dynamic import/);
+      const substitutions=[
+        ['pathToFileURL(verifiedLeaf)','new URL("file:///overridden.mjs")'],
+        ['await exactTree(root,[...written].sort(),index,gitReference);',''],
+        ['DECLARED_MODULES.includes(file)&&written.has(file)','true'],
+        ['path.resolve(root,file)','path.resolve("unverified",file)'],
+      ];
+      for(const [before,after] of substitutions){
+        assert(source.includes(before));
+        assert.throws(()=>modelSourceRelativeModuleSpecifiers(source.replace(before,after),file),/unparsed dynamic import/);
+      }
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(source.replace(dynamic,'import(unverified.href)'),file),/unparsed dynamic import/);
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(source,'scripts/check-unreviewed-host.mjs'),/unparsed dynamic import/);
+    }
+    if(file===currentCapsuleOwners[2]){
+      const substitutions=[
+        ['path.join(sourceRoot, file)','path.join(process.cwd(), file)'],
+        [".includes(file), 'SEED_ARCHIVE_MODULE'",".includes(file) || true, 'SEED_ARCHIVE_MODULE'"],
+        ['withAuthenticated584PredecessorSource(async frozenRoot','withAuthenticated585PredecessorSource(async frozenRoot'],
+        ['established-native-current-origin-585-assertion.mjs','unknown-original-assertion.mjs'],
+        ['withAuthenticated585PredecessorSource } from','forgedArchiveHost as withAuthenticated585PredecessorSource } from'],
+        ["import('./ravscore-production-part-pipeline.mjs')","import('node:fs')"],
+      ];
+      for(const [before,after] of substitutions){
+        assert(source.includes(before));
+        assert.throws(()=>modelSourceRelativeModuleSpecifiers(source.replace(before,after),file));
+      }
+      const shadow="function unexpected(withAuthenticated585PredecessorSource) {}";
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n'+shadow,file),/shadowed verified archive owner/);
+      assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n'+shadow.replace('585','58\\u0035'),file),
+        /shadowed verified archive owner/);
+    }
+  }
+});
+
+test('current binding prewrite can use the declared capsule callback without an extra code edge',()=>{
+  const file=current599ImportOwners[3],archived=qualifiedImportSource(SOURCE601_ORIGINAL_DATA_PROFILE.head,file);
+  const oldCallback=`ACTIVE_PREDECESSOR.withSource(async frozenRoot=>{
+    const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);`;
+  assert.equal(archived.split(oldCallback).length,2);
+  const current=archived.replace(oldCallback,'ACTIVE_PREDECESSOR.withSource(async (frozenRoot,load)=>{');
+  assert.deepEqual([...modelSourceRelativeModuleSpecifiers(current,file)].sort(),
+    [...modelSourceRelativeModuleSpecifiers(archived,file)].sort());
+  assert.throws(()=>modelSourceRelativeModuleSpecifiers(current+"\nimport(unknown.path);",file));
 });

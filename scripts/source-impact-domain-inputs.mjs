@@ -5,7 +5,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {ASSISTANT_AFTER599_BINDING as FAMILY601} from './lib/assistant-later-h0-successor-source.mjs';
+import {
+  ASSISTANT_AFTER599_BINDING as FAMILY601,
+  ASSISTANT_AFTER601_BINDING,
+  ASSISTANT_AFTER601_OUTPUT,
+  assistantAfter601Migration,
+} from './lib/assistant-later-h0-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 // Known issued model family, not an application-version range or gate authority.
@@ -16,6 +21,7 @@ const TEMPLATE598=Object.freeze({head:'bd9cf518fe798ddea45d2b835f324f6e2bea06fc'
 const FACTORY598=Object.freeze({head:'82200280c42b9060f14be2721ba7b766e0ede5a6',tree:'c69c1beed4275fb02af216a1c4741410555e2675'});
 const PROFILE599_ID='DERIVED_599_DOMAIN_INPUTS_C101_I100_T12';
 const PROFILE601_ID='DERIVED_601_DOMAIN_INPUTS_C101_I100_T12';
+const ASSISTANT_BROWSER_PROFILE_ID='DERIVED_ASSISTANT_BROWSER_SEPARATION_INPUTS';
 const FACTORY599=Object.freeze({head:'9d67207fbbec0f6bcf7819048f72e57535e9615d',tree:'a1a76ef3b38885ba46f3422ee287fe1b1c581363'});
 // One semantic ancillary app schema after issued599, never a per-head profile.
 const ERASURE_SQL='supabase/migrations/20261116181500_account_erasure_outbox_off.sql';
@@ -269,11 +275,24 @@ export function analyzeSourceDomainInputs(input){
         assert.equal(modelData.get(ref).I.contractSha256,expected.modelBindings.integrated.modelContractSha256,'DOMAIN_AFTER598_RELEASE_METADATA');
       }
     }
-    const family601=refs.map(ref=>FAMILY601!==null&&modelData.get(ref).C.bundleSha256===FAMILY601.C
-      &&modelData.get(ref).I.bundleSha256===FAMILY601.I);
-    if(family601.some(Boolean)){
-      assert(family601.every(Boolean),'DOMAIN_RELEASE_PROFILE_MISMATCH');
+    const matchesFamily=(ref,binding)=>binding!==null&&modelData.get(ref).C.bundleSha256===binding.C
+      &&modelData.get(ref).I.bundleSha256===binding.I;
+    const family601=refs.map(ref=>matchesFamily(ref,FAMILY601));
+    const detachedAssistant=refs.map(ref=>matchesFamily(ref,ASSISTANT_AFTER601_BINDING));
+    const usesAssistantBrowserProfile=detachedAssistant.every(Boolean);
+    if(family601.some(Boolean)||detachedAssistant.some(Boolean)){
+      assert(usesAssistantBrowserProfile||family601.every(Boolean),'DOMAIN_RELEASE_PROFILE_MISMATCH');
+      const binding=usesAssistantBrowserProfile?ASSISTANT_AFTER601_BINDING:FAMILY601;
       const previousModels=p.models;p=profile601();assert.deepEqual(p.models,previousModels);
+      if(usesAssistantBrowserProfile){
+        p={...p,id:ASSISTANT_BROWSER_PROFILE_ID,derivedFrom:{...p.derivedFrom,family:binding}};
+        const migration='supabase/migrations/'+assistantAfter601Migration().filename;
+        load(refs.map(ref=>trees.get(ref).get(migration)?.blob),'INPUT');
+        for(const ref of refs){
+          assert(record(ref,migration).sha256===ASSISTANT_AFTER601_OUTPUT.migrationSha256,
+            'DOMAIN_ASSISTANT_SEPARATION_MIGRATION_MISMATCH');
+        }
+      }
       const origins=[FACTORY599];
       load(origins.flatMap(origin=>[origin.head,origin.tree]),'ANCHOR');
       for(const origin of origins){
@@ -303,8 +322,8 @@ export function analyzeSourceDomainInputs(input){
         assert.equal(pkg.type,'module','DOMAIN_AFTER599_RELEASE_METADATA');assert.match(pkg.version,/^4\.0\.[0-9]+$/);
         assert.equal(version.version,pkg.version,'DOMAIN_AFTER599_RELEASE_METADATA');
         const expected=structuredClone(template.releaseContract);expected.releaseVersion=pkg.version;
-        expected.modelBindings.candidateGRollback.modelBundleSha256=FAMILY601.C;
-        expected.modelBindings.integrated.modelBundleSha256=FAMILY601.I;
+        expected.modelBindings.candidateGRollback.modelBundleSha256=binding.C;
+        expected.modelBindings.integrated.modelBundleSha256=binding.I;
         assert.deepEqual(version.releaseContract,expected,'DOMAIN_AFTER599_RELEASE_METADATA');
         assert.equal(modelData.get(ref).C.contractSha256,expected.modelBindings.candidateGRollback.modelContractSha256,'DOMAIN_AFTER599_RELEASE_METADATA');
         assert.equal(modelData.get(ref).I.contractSha256,expected.modelBindings.integrated.modelContractSha256,'DOMAIN_AFTER599_RELEASE_METADATA');
@@ -316,22 +335,27 @@ export function analyzeSourceDomainInputs(input){
     for(const module of p.postgresModules)for(let directory=path.posix.dirname(module);directory!=='.';directory=path.posix.dirname(directory))
       scopePaths.add(directory+'/package.json');
     const sql=ref=>[...trees.get(ref).keys()].filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')).sort();
-    const offPresent=ref=>(is599||is601)&&trees.get(ref).has(ERASURE_SQL);
+    const has601AppSchema=is601||usesAssistantBrowserProfile;
+    const offPresent=ref=>(is599||has601AppSchema)&&trees.get(ref).has(ERASURE_SQL);
     const noticePresent=ref=>{
       const count=INACTIVITY_OFF_SQL.filter(file=>trees.get(ref).has(file)).length;
-      assert(count===0||(is601&&count===2),'DOMAIN_PARTIAL_OR_WRONG_FAMILY_NOTICE_SQL');
+      assert(count===0||(has601AppSchema&&count===2),'DOMAIN_PARTIAL_OR_WRONG_FAMILY_NOTICE_SQL');
       return count===2;
     };
     const receiptPresent=ref=>{
       const present=trees.get(ref).has(NATIVE_RECEIPT_SQL);
       assert.equal(trees.get(ref).has(NATIVE_RECEIPT_SOURCE),present,'DOMAIN_PARTIAL_NATIVE_RECEIPT_SOURCE');
-      if(present)assert(is601&&offPresent(ref)&&noticePresent(ref)&&sql(ref).length===80,'DOMAIN_NATIVE_RECEIPT_REQUIRES_WHOLE80');
+      if(usesAssistantBrowserProfile)assert(present,'DOMAIN_ASSISTANT_SEPARATION_REQUIRES_FULL_PREDECESSOR_SQL');
+      if(present)assert(has601AppSchema&&offPresent(ref)&&noticePresent(ref)&&
+        sql(ref).length===80+Number(usesAssistantBrowserProfile),'DOMAIN_NATIVE_RECEIPT_REQUIRES_WHOLE80');
       return present;
     };
     const pgModules=ref=>{noticePresent(ref);const receipt=receiptPresent(ref);return offPresent(ref)
       ?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER,...(receipt?[NATIVE_RECEIPT_SOURCE]:[])]:p.postgresModules;};
     // All SQL stays in the real PG inventory; the known76th row grants no reuse.
-    assert.equal(sql(input.baselineCommit).length,is601?77+2*Number(noticePresent(input.baselineCommit))+Number(receiptPresent(input.baselineCommit)):is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
+    assert.equal(sql(input.baselineCommit).length,has601AppSchema
+      ?77+2*Number(noticePresent(input.baselineCommit))+Number(receiptPresent(input.baselineCommit))+Number(usesAssistantBrowserProfile)
+      :is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
       'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
     if(is597||is598||is599||is601){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
       assert.equal(modelData.get(input.baselineCommit).I.manifest.files.length,100,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');}
@@ -382,15 +406,20 @@ export function analyzeSourceDomainInputs(input){
     const beforeT=continuation(input.baselineCommit),afterT=continuation(input.candidateCommit);
     models.T={before:beforeT,after:afterT,unchanged:JSON.stringify(beforeT)===JSON.stringify(afterT)};
     if(is599)for(const value of [beforeT,afterT])assert.equal(value.implementationSha256,FAMILY599.T,'DOMAIN_AFTER598_FAMILY_T_MISMATCH');
-    if(is601)for(const value of [beforeT,afterT])assert.equal(value.implementationSha256,FAMILY601.T,'DOMAIN_AFTER599_FAMILY_T_MISMATCH');
+    if(has601AppSchema){
+      const binding=usesAssistantBrowserProfile?ASSISTANT_AFTER601_BINDING:FAMILY601;
+      for(const value of [beforeT,afterT])
+        assert.equal(value.implementationSha256,binding.T,'DOMAIN_AFTER599_FAMILY_T_MISMATCH');
+    }
     const control=(files,optional=false)=>comparison(rows(input.baselineCommit,files,!optional),rows(input.candidateCommit,files,!optional));
     const inventoryRaw=git(['diff-tree','-r','--raw','-z','--no-abbrev','--no-renames','--no-ext-diff','--no-textconv',
       '--no-commit-id',input.baselineCommit,input.candidateCommit,'--']);
     const inventory=diffInventory(inventoryRaw);
     exactHead();assert.equal(text(['for-each-ref','refs/replace']),'');
     return freeze({schemaVersion:1,status:SOURCE_DOMAIN_ANALYSIS_STATUS,analysis:'COMPLETE',...authority,
-      profile:{id:p.id,sha256:is601||is599?sha(JSON.stringify(canonical(p))):is598?'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0':is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
-        scope:is601?'DERIVED_601_INPUT_INVENTORY_ONLY':is599?'DERIVED_599_INPUT_INVENTORY_ONLY':is598?'REVIEWED_598_INPUT_INVENTORY_ONLY':is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
+      profile:{id:p.id,sha256:has601AppSchema||is599?sha(JSON.stringify(canonical(p))):is598?'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0':is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
+        scope:usesAssistantBrowserProfile?'DERIVED_ASSISTANT_BROWSER_INPUT_INVENTORY_ONLY':
+          is601?'DERIVED_601_INPUT_INVENTORY_ONLY':is599?'DERIVED_599_INPUT_INVENTORY_ONLY':is598?'REVIEWED_598_INPUT_INVENTORY_ONLY':is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
       identity:{...input,actualHead:input.expectedHead,ancestorVerified:true,
         baselineTree:text(['rev-parse',input.baselineCommit+'^{tree}']),candidateTree:text(['rev-parse',input.candidateCommit+'^{tree}'])},
       completeGitDiff:{inventory,rawInventorySha256:sha(inventoryRaw),changedRows:inventory.length},

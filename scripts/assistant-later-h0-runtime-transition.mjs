@@ -4,9 +4,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import {createReadStream} from 'node:fs';
 import path from 'node:path';
-import {fileURLToPath,pathToFileURL} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import {isDeepStrictEqual as equal} from 'node:util';
-import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,assertScalar597LaterH0CheckpointInverse,
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,assertScalar597LaterH0CheckpointInverse,
   requireAssistantAfter597Output,assertAssistantAfter597CheckpointInverse,
   requireAssistantAfter598Output,assertAssistantAfter598CheckpointInverse,requireAssistantAfter599Output,assertAssistantAfter599CheckpointInverse} from './lib/assistant-later-h0-successor-source.mjs';
 const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,
@@ -18,7 +18,8 @@ import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapsh
   readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot,
   readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,
   readAuthenticatedSource597Predecessor,assertAuthenticatedSource597Snapshot,
-  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,readAuthenticatedSource599Predecessor,assertAuthenticatedSource599Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
+  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,readAuthenticatedSource599Predecessor,assertAuthenticatedSource599Snapshot,
+  source601OriginalPredecessor} from './lib/authenticated-frozen586-predecessor.mjs';
 import {describeCurrentProtectedPrivateProductionRuntime,describeTargetProtectedPrivateProductionRuntime,createProtectedPrivateRuntimeClients} from './protected-private-production-runtime.mjs';
 import {migratePostCutoverPrivateRuntime,assertMetadataOnlyMigrationResult,assertRestoredOriginalInventory,
   assertExactRuntimeInventory,validatePredecessorIdentity} from './migrate-post-cutover-private-runtime.mjs';
@@ -28,7 +29,7 @@ import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
 import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
 // Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
-assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase));
+assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE.sourcePhase));
 export function assistantAfter597RuntimePredecessor(){
   assert.equal(arguments.length,0,'Ingen caller-valgt originalfamilie');requireAssistantAfter597Output();
   return Object.freeze({withSource:withSource597OriginalDataSource,read:readAuthenticatedSource597Predecessor,
@@ -44,7 +45,13 @@ export function assistantAfter599RuntimePredecessor(){
   return Object.freeze({withSource:withSource599OriginalDataSource,read:readAuthenticatedSource599Predecessor,
     snapshot:assertAuthenticatedSource599Snapshot});
 }
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599RuntimePredecessor():
+export function assistantAfter601RuntimePredecessor(){
+  assert.equal(arguments.length,0,'Ingen caller-valgt originalfamilie');
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.requireOutput();
+  return source601OriginalPredecessor;
+}
+const ACTIVE_PREDECESSOR=ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR?assistantAfter601RuntimePredecessor():
+  ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599RuntimePredecessor():
   ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598RuntimePredecessor():
   ACTIVE.sourcePhase==='assistant-mixed-after597-successor'?assistantAfter597RuntimePredecessor():
   ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'?Object.freeze({
@@ -62,6 +69,10 @@ const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after599-successor'?ass
   withSource:withAuthenticated587PredecessorSource,read:readAuthenticatedFrozen587Predecessor,
   snapshot:assertAuthenticatedFrozen587Snapshot
 });
+export function activeAssistantRuntimePredecessor(){
+  assert.equal(arguments.length,0,'Ingen caller-valgt originalfamilie');
+  return ACTIVE_PREDECESSOR;
+}
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='.cache/ravscore-continuation-checkpoint/checkpoint.json';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const same=(a,b,label)=>assert(equal(a,b),label);
@@ -79,7 +90,7 @@ export function assertAssistantOriginalRuntimeContracts(previous,current){
     assert.equal(current?.continuationStateContractSha256,next.T);
     return assertFrozen591CompactRuntimeContracts(previous,current);
   }
-  if(['scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase)){
+  if(['scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE.sourcePhase)){
     assert.equal(previous?.continuationStateContractSha256,OLD.T);
     assert.equal(current?.continuationStateContractSha256,next.T);
   }
@@ -149,7 +160,9 @@ async function projectOriginal(p,snapshot,frozenRoot,outputRoot,reportPath,check
   // normal hourly/public-pack rebind and exact unchanged other-file inventory.
   await saveRavScoreContinuationCheckpoint({sourcePath:path.join(outputRoot,'data/live/conditions.json'),checkpointPath});
   const checkpoint=await json(checkpointPath);
-    if(ACTIVE.sourcePhase==='assistant-after599-successor')
+    if(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR)
+      ACTIVE.assertCheckpointInverse(snapshot.checkpoint,checkpoint,next);
+    else if(ACTIVE.sourcePhase==='assistant-after599-successor')
       assertAssistantAfter599CheckpointInverse(snapshot.checkpoint,checkpoint,next);
     else if(ACTIVE.sourcePhase==='assistant-after598-successor')
       assertAssistantAfter598CheckpointInverse(snapshot.checkpoint,checkpoint,next);
@@ -177,8 +190,7 @@ export async function prepareAssistantLaterH0Runtime(){
   assertActiveAssistantTarget(selected,target);
   await noLinks(p.privateRoot);assert(await absent(p.bundlePath)&&await absent(p.sourceRoot)&&await absent(p.workRoot)
     &&await absent(p.originalSPath)&&await absent(p.descriptorPath));
-  await ACTIVE_PREDECESSOR.withSource(async frozenRoot=>{
-    const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
+  await ACTIVE_PREDECESSOR.withSource(async (frozenRoot,load)=>{
     const old=await load('scripts/protected-private-production-runtime.mjs'),bundle=await load('scripts/private-production-runtime-bundle.mjs');
     const oldWorkflow=await load('scripts/private-production-runtime-workflow.mjs'),oldModel=await load('js/core/ravscore-model-contract.js');
     same(selected.modelBinding,oldModel.ravScoreModelBinding(),'Actual old model');

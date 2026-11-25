@@ -1,6 +1,6 @@
 // Explicit reviewed import inventories, never a scanner-error fallback.
 // Whole hashes use the model builders' existing UTF-8/no-BOM/LF source form.
-// A changed byte at one of these paths is rejected before any import choice.
+// Historic inventories preserve their original whole-file byte review.
 import crypto from 'node:crypto';
 import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 const REVIEWED = Object.freeze({
@@ -602,6 +602,25 @@ export function assistantAfter599RegisterImportBeforeSource(source,file){
   return original;
 }
 
+// Active capsule code uses the ordinary lexer; the original module closure is
+// unchanged, and both normal model manifests still seal each raw source byte.
+const CAPSULE_ROLES=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':'host',
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':'consumer',
+  'scripts/assistant-later-h0-binding-prewrite.mjs':'consumer',
+  'scripts/lib/established-native-current-origin.mjs':'origin',
+});
+function capsuleSourceImports(normalized,file){
+  const imports=exactRelativeModuleSpecifiers(normalized,file,CAPSULE_ROLES[file]);
+  const original=ASSISTANT_AFTER598_REVIEWED[file].imports;
+  const declared=CAPSULE_ROLES[file]==='origin'
+    ?[...original,'../check-assistant-later-h0-predecessor-source.mjs']:original;
+  if(imports.length!==declared.length||!imports.every(specifier=>declared.includes(specifier))){
+    throw new Error('Undeclared capsule module dependency: '+file);
+  }
+  return Object.freeze(imports);
+}
+
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -626,7 +645,13 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     if(Object.hasOwn(ASSISTANT_AFTER599_REGISTER_INVERSES,file)){
       let original;
       try{original=assistantAfter599RegisterImportBeforeSource(normalized,file);}
-      catch(cause){throw new Error('Whole reviewed model import source changed: '+file,{cause});}
+      catch(cause){
+        if(Object.hasOwn(CAPSULE_ROLES,file)){
+          try{return capsuleSourceImports(normalized,file);}
+          catch(rejected){throw new Error('Whole reviewed model import source changed: '+file+': '+rejected.message,{cause:rejected});}
+        }
+        throw new Error('Whole reviewed model import source changed: '+file,{cause});
+      }
       return modelSourceRelativeModuleSpecifiers(original,file);
     }
     throw new Error('Whole reviewed model import source changed: ' + file);

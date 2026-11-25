@@ -34,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'ASSISTANT_AFTER599_SUCCESSOR', 'ACCOUNT_ERASURE_APP', 'ACCOUNT_NATIVE_RECEIPT_APP80', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'ASSISTANT_AFTER599_SUCCESSOR', 'ASSISTANT_AFTER601_SUCCESSOR', 'ACCOUNT_ERASURE_APP', 'ACCOUNT_NATIVE_RECEIPT_APP80', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -678,6 +678,18 @@ export async function runAssistantAfter599NativeCheckpointSqlComparison(options)
     includeAccountStatisticsAssistant:true,includeAssistantAfter599Successor:true});
 }
 
+export async function runAssistantAfter601NativeCheckpointSqlComparison(options){
+  const {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR}=await import('./assistant-later-h0-successor-source.mjs');
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,'ASSISTANT_AFTER601_NATIVE_SOURCE_INACTIVE');
+  ACTIVE_ASSISTANT_SUCCESSOR.requireOutput();
+  assert.equal(arguments.length,1);
+  const {repositoryRoot,sourceDocumentAt,atHour,saveCheckpoint}=options;
+  return runNativeCheckpointSqlComparison({repositoryRoot,sourceDocumentAt,atHour,saveCheckpoint,
+    includeStatisticsRevision:true,includeNativeIdentity:true,includeCurrentMemoryWarmup:true,
+    includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,
+    includeAccountStatisticsAssistant:true,includeAssistantAfter601Successor:true});
+}
+
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
@@ -686,7 +698,19 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   includeAssistantPublic587Successor = false, includeAssistantPublic588Successor = false,
   includeAssistantPublic590Successor = false, includeAssistantPublic591Successor = false,
   includeInstalled593Original591Successor = false,includeScalar597LaterH0Successor=false,
-  includeAssistantAfter597Successor=false,includeAssistantAfter598Successor=false,includeAssistantAfter599Successor=false } = {}) {
+  includeAssistantAfter597Successor=false,includeAssistantAfter598Successor=false,includeAssistantAfter599Successor=false,
+  includeAssistantAfter601Successor=false } = {}) {
+  assert.equal(typeof includeAssistantAfter601Successor,'boolean');
+  if(includeAssistantAfter601Successor){
+    const {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR}=await import('./assistant-later-h0-successor-source.mjs');
+    assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,'ASSISTANT_AFTER601_NATIVE_SOURCE_INACTIVE');
+    ACTIVE_ASSISTANT_SUCCESSOR.requireOutput();
+    assert(includeAccountStatisticsAssistant&&!includeNativeOriginalContinuity&&!includeScalar597LaterH0Successor
+      &&!includeAssistantAfter599Successor&&!includeAssistantAfter598Successor&&!includeAssistantAfter597Successor
+      &&!includeAssistantLaterH0&&!includeAssistantPublic587Successor&&!includeAssistantPublic588Successor
+      &&!includeAssistantPublic590Successor&&!includeAssistantPublic591Successor&&!includeInstalled593Original591Successor,
+      'After601 uses the existing isolated 54 baseline and its exact installed ledger through entry 69');
+  }
   assert.equal(typeof includeAssistantAfter599Successor,'boolean');
   if(includeAssistantAfter599Successor){
     const {requireAssistantAfter599Output}=await import('./assistant-later-h0-successor-source.mjs');
@@ -780,7 +804,7 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
-  const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor
+  const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor||includeAssistantAfter601Successor
     ?await nativePostgresProgramIdentity(programs):null;
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
@@ -1078,7 +1102,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let accountStatisticsAssistant;
     if(includeAccountStatisticsAssistant){
       nativePhase='ACCOUNT_STATISTICS_ASSISTANT';
-      if(includeNativeOriginalContinuity||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor){
+      if(includeNativeOriginalContinuity||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor||includeAssistantAfter601Successor){
         const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-native-continuity-postgres-source.mjs');
         accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
           adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
@@ -1190,6 +1214,12 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const {compareAssistantAfter599Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter599Successor=await compareAssistantAfter599Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
+    let assistantAfter601Successor;
+    if(includeAssistantAfter601Successor){
+      nativePhase='ASSISTANT_AFTER601_SUCCESSOR';
+      const {compareAssistantAfter601Successor}=await import('./assistant-later-h0-postgres.mjs');
+      assistantAfter601Successor=await compareAssistantAfter601Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+    }
     let assistantAfter598Successor,accountErasure,accountInactivity,accountNativeReceipt;
     if(includeAssistantAfter598Successor){
       nativePhase='ASSISTANT_AFTER598_SUCCESSOR';
@@ -1251,6 +1281,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeAssistantAfter597Successor?{assistantAfter597Successor}:{}),
       ...(includeAssistantAfter598Successor?{assistantAfter598Successor}:{}),
       ...(includeAssistantAfter599Successor?{assistantAfter599Successor}:{}),
+      ...(includeAssistantAfter601Successor?{assistantAfter601Successor}:{}),
       ...(accountErasure?{accountErasure}:{}),
       ...(accountInactivity?{accountInactivity}:{}),
       ...(accountNativeReceipt?{accountNativeReceipt}:{}),

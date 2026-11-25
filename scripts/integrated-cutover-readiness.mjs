@@ -65,7 +65,8 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_BEFORE,assistantLaterH0Mig
   ASSISTANT_AFTER597_BINDING,ASSISTANT_AFTER597_BEFORE,requireAssistantAfter597Output,
   assistantAfter597Migration,readAssistantAfter597CanonicalSource,assistantAfter597CheckpointContractFromBase,
   ASSISTANT_AFTER598_BINDING,ASSISTANT_AFTER598_BEFORE,requireAssistantAfter598Output,
-  assistantAfter598Migration,readAssistantAfter598CanonicalSource,assistantAfter598CheckpointContractFromBase,ASSISTANT_AFTER599_BINDING,ASSISTANT_AFTER599_BEFORE,requireAssistantAfter599Output,assistantAfter599Migration,readAssistantAfter599CanonicalSource,assistantAfter599CheckpointContractFromBase}
+  assistantAfter598Migration,readAssistantAfter598CanonicalSource,assistantAfter598CheckpointContractFromBase,ASSISTANT_AFTER599_BINDING,ASSISTANT_AFTER599_BEFORE,requireAssistantAfter599Output,assistantAfter599Migration,readAssistantAfter599CanonicalSource,assistantAfter599CheckpointContractFromBase,
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,assistantAfter601CheckpointContractFromBase}
   from './lib/assistant-later-h0-successor-source.mjs';
 import {STATISTICS_REVISION_MIGRATION,STATISTICS_REVISION_PREDECESSOR,buildStatisticsPreferenceRevision}
   from './build-statistics-preference-revision.mjs';
@@ -357,9 +358,12 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
   ...(ASSISTANT_AFTER597_BINDING === null ? [] : [assistantAfter597Migration()]),
   ...(ASSISTANT_AFTER598_BINDING === null ? [] : [assistantAfter598Migration()]),
   ...(ASSISTANT_AFTER599_BINDING === null ? [] : [ACCOUNT_ERASURE_APP_MIGRATION,assistantAfter599Migration()]),
+  ...(ACTIVE === INACTIVE_ASSISTANT_AFTER601_SUCCESSOR
+    ? [...ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION,ACTIVE.migration()] : []),
 ]);
 function migrationsForSourcePhase(sourcePhase) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(sourcePhase));
+  if (sourcePhase === 'assistant-after601-successor') return assistantAfter601RequiredMigrations();
   if (sourcePhase === 'assistant-after599-successor') return assistantAfter599RequiredMigrations();
   if (sourcePhase === 'assistant-after598-successor') return assistantAfter598RequiredMigrations();
   if (sourcePhase === 'assistant-mixed-after597-successor') return assistantAfter597RequiredMigrations();
@@ -382,6 +386,7 @@ function migrationsForSourcePhase(sourcePhase) {
 }
 function canonicalForSourcePhase(sourcePhase,migrationsDirectory) {
   migrationsForSourcePhase(sourcePhase); // Unknown phases fail before filesystem access.
+  if(sourcePhase==='assistant-after601-successor')return INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.readCanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-after599-successor')return readAssistantAfter599CanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-after598-successor')return readAssistantAfter598CanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-mixed-after597-successor')return readAssistantAfter597CanonicalSource({migrationsDirectory});
@@ -701,6 +706,22 @@ export function assistantAfter599RequiredMigrations(){
   assert.equal(previous.at(-1).version,ASSISTANT_AFTER599_BEFORE.version);
   return Object.freeze([...previous,ACCOUNT_ERASURE_APP_MIGRATION,assistantAfter599Migration()]);
 }
+export function assistantAfter601RequiredMigrations(){
+  assert.equal(arguments.length,0);
+  const profile=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
+  profile.requireOutput();
+  const previous=assistantAfter599RequiredMigrations();
+  assert.equal(previous.length,66);
+  assert.equal(previous.at(-1).version,profile.before.version);
+  const applied=[...previous,...ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION];
+  assert.equal(applied.length,69);
+  assert.equal(applied.at(-1).version,profile.databaseBefore.version);
+  assert.deepEqual(applied.slice(-3).map(row=>row.version),profile.installedAppMigrations.slice(1).map(row=>row.version));
+  assert.deepEqual(applied.map(row=>row.version),[...new Set(applied.map(row=>row.version))].sort());
+  const next=profile.migration();
+  assert(next.version>applied.at(-1).version);
+  return Object.freeze([...applied,next]);
+}
 export function nativeOriginalContinuityRequiredMigrations(){
   requireNativeOriginalContinuityOutput(); // Explicit UNISSUED phase refuses before I/O.
   const previous=accountStatisticsAssistantRequiredMigrations();
@@ -777,11 +798,14 @@ const ASSISTANT_AFTER598_ROWS=Object.freeze({
   required:assistantAfter598RequiredMigrations,before:ASSISTANT_AFTER598_BEFORE});
 const ASSISTANT_AFTER599_ROWS=Object.freeze({
   required:assistantAfter599RequiredMigrations,before:ASSISTANT_AFTER599_BEFORE});
+const ASSISTANT_AFTER601_ROWS=Object.freeze({
+  required:assistantAfter601RequiredMigrations,before:INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.before,
+  latestBefore:INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.databaseBefore.version});
 function assistantLaterH0Rows(migrationListText){
   return fixedAssistantRows(migrationListText,ISSUED_ASSISTANT587_ROWS);
 }
 function fixedAssistantRows(migrationListText,profile){
-  assert(profile===ISSUED_ASSISTANT587_ROWS||profile===PUBLIC587_SUCCESSOR_ROWS||profile===PUBLIC588_SUCCESSOR_ROWS||profile===PUBLIC590_SUCCESSOR_ROWS||profile===PUBLIC591_SUCCESSOR_ROWS||profile===INSTALLED593_ORIGINAL591_ROWS||profile===SCALAR597_LATER_H0_ROWS||profile===ASSISTANT_AFTER597_ROWS||profile===ASSISTANT_AFTER598_ROWS||profile===ASSISTANT_AFTER599_ROWS);
+  assert(profile===ISSUED_ASSISTANT587_ROWS||profile===PUBLIC587_SUCCESSOR_ROWS||profile===PUBLIC588_SUCCESSOR_ROWS||profile===PUBLIC590_SUCCESSOR_ROWS||profile===PUBLIC591_SUCCESSOR_ROWS||profile===INSTALLED593_ORIGINAL591_ROWS||profile===SCALAR597_LATER_H0_ROWS||profile===ASSISTANT_AFTER597_ROWS||profile===ASSISTANT_AFTER598_ROWS||profile===ASSISTANT_AFTER599_ROWS||profile===ASSISTANT_AFTER601_ROWS);
   const required=profile.required();
   const rows=parseSupabaseMigrationList(migrationListText);
   const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
@@ -807,7 +831,7 @@ function fixedAssistantRows(migrationListText,profile){
       'Unknown post-cutover assistant later-H0 migration');
   const latest=[...remote].filter(version=>!offVersions.has(version))
     .sort((a,b)=>migrationChronologicalKey(a)<migrationChronologicalKey(b)?-1:1).at(-1);
-  assert.equal(latest,remote.has(next.version)?next.version:profile.before.version);
+  assert.equal(latest,remote.has(next.version)?next.version:(profile.latestBefore??profile.before.version));
   return {required,local,remote};
 }
 export function assertAssistantLaterH0MigrationsApplied(migrationListText){
@@ -1014,6 +1038,29 @@ export async function assertAssistantAfter599MigrationPlan(options){
   return Object.freeze({pendingVersions:Object.freeze(pending),
     alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
 }
+export function assertAssistantAfter601MigrationsApplied(migrationListText){
+  assert.equal(arguments.length,1);
+  const {required,local,remote}=fixedAssistantRows(migrationListText,ASSISTANT_AFTER601_ROWS);
+  assert(remote.has(required.at(-1).version),'ASSISTANT_AFTER601_PREWRITE_ROUTE_REQUIRED');
+  assert.deepEqual([...local].filter(version=>!remote.has(version)),[]);
+  return Object.freeze({appliedVersions:Object.freeze(required.map(row=>row.version))});
+}
+export async function assertAssistantAfter601MigrationPlan(options){
+  assert.equal(arguments.length,1);
+  const profile=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
+  profile.requireOutput();
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  const {migrationListText,dryRunText,migrationsDirectory=MIGRATIONS_DIRECTORY}=options;
+  const {required,local,remote}=fixedAssistantRows(migrationListText,ASSISTANT_AFTER601_ROWS);
+  await profile.readCanonicalSource({migrationsDirectory});
+  await inspectMigrationSources({migrationsDirectory,sourcePhase:profile.sourcePhase});
+  const next=required.at(-1),pending=[...local].filter(version=>!remote.has(version));
+  assert.deepEqual(pending,remote.has(next.version)?[]:[next.version],
+    'Kun den ene præcise assistentmigration må følge den installerede601');
+  assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
+  return Object.freeze({pendingVersions:Object.freeze(pending),
+    alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
+}
 export async function prepareAssistantAfter598CutoverWorkdir(options){
   requireAssistantAfter598Output();assert.equal(arguments.length,1);
   assert(options&&Object.getPrototypeOf(options)===Object.prototype);assert.deepEqual(Object.keys(options),['workdir']);
@@ -1133,7 +1180,9 @@ export async function expectedCheckpointCasContract({
 
 export function checkpointCasContractFromCanonicalSource(migration,{sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   assert.equal(typeof migration,'string');
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(sourcePhase));
+  if(sourcePhase==='assistant-after601-successor')return assistantAfter601CheckpointContractFromBase(migration,
+    checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'native-original-continuity'}));
   if(sourcePhase==='assistant-after599-successor')return assistantAfter599CheckpointContractFromBase(migration,
     checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'native-original-continuity'}));
   if(sourcePhase==='assistant-after598-successor')return assistantAfter598CheckpointContractFromBase(migration,
@@ -1385,6 +1434,18 @@ export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS
   for (const migration of requiredMigrations) {
     assert.equal(versionToFilename.get(migration.version), migration.filename,
       `required cutover migration is missing or renamed: ${migration.filename}`);
+  }
+  if(sourcePhase==='assistant-after601-successor'){
+    for(const {version,sha256:expected} of INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.installedAppMigrations){
+      const file=path.join(migrationsDirectory,versionToFilename.get(version));
+      const stat=await fs.lstat(file);
+      assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>0&&stat.size<=65_536,
+        'Installed account migration must be a bounded regular original source');
+      const bytes=await fs.readFile(file);
+      assert.equal(bytes.length,stat.size);
+      const sql=new TextDecoder('utf-8',{fatal:true}).decode(bytes).replaceAll('\r\n','\n');
+      assert.equal(sha256(sql),expected,'Installed account migration bytes do not match the exact source');
+    }
   }
   return Object.freeze({
     filenames: Object.freeze(filenames),
@@ -1701,6 +1762,8 @@ export async function assertSupabaseMigrationPlan({
       for(const row of required)assert(remote.has(row.version),'OFF installation requires installed601 and app600');
     }else assertAssistantAfter599MigrationsApplied(migrationListText);
   }
+  if(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR)
+    assertAssistantAfter601MigrationsApplied(migrationListText);
   if(ACTIVE.sourcePhase==='assistant-after598-successor'){
     assert.ok(remote.has(assistantAfter598Migration().version),'ASSISTANT_AFTER598_PREWRITE_ROUTE_REQUIRED');
     assertAssistantAfter598MigrationsApplied(migrationListText,{allowPendingAccountErasure:allowAccountErasurePlan});
@@ -1730,7 +1793,7 @@ export async function assertSupabaseMigrationPlan({
     assertAssistantPublic588SuccessorMigrationsApplied(migrationListText);
   }
   assert.ok(remote.has(assistantPublic587SuccessorMigration().version),'ASSISTANT_PUBLIC587_SUCCESSOR_PREWRITE_ROUTE_REQUIRED');
-  if(!['assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase))assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
+  if(!['assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE.sourcePhase))assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
   const plannedMigrations = allowAccountNativeReceiptPlan
     ? [...REQUIRED_CUTOVER_MIGRATIONS,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION]
     : allowAccountErasurePlan? [...REQUIRED_CUTOVER_MIGRATIONS,...selectedAppMigrations] : REQUIRED_CUTOVER_MIGRATIONS;
@@ -1791,6 +1854,7 @@ export function assertSupabaseMigrationsApplied(migrationListText,{requireAccoun
   assert.equal(typeof requireAccountErasure,'boolean');
   if(ACTIVE.sourcePhase==='assistant-after598-successor')assertAssistantAfter598MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-after599-successor')assertAssistantAfter599MigrationsApplied(migrationListText);
+  else if(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR)assertAssistantAfter601MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-mixed-after597-successor')assertAssistantAfter597MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor')assertScalar597LaterH0MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')assertInstalled593Original591MigrationsApplied(migrationListText);
@@ -1994,11 +2058,12 @@ export async function verifyIntegratedDatabaseReadback({
   tripBindingPolicy = null,
   tripActiveAdmissionPolicy = null, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(sourcePhase));
   if(sourcePhase === 'current-memory-warmup')requireCurrentMemoryWarmupOutput();
   if(sourcePhase === 'established-native-current-origin')requireEstablishedNativeCurrentOriginOutput();
   if(sourcePhase === 'assistant-after598-successor')requireAssistantAfter598Output();
   if(sourcePhase === 'assistant-after599-successor')requireAssistantAfter599Output();
+  if(sourcePhase === 'assistant-after601-successor')INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.requireOutput();
   if(sourcePhase === 'assistant-mixed-after597-successor')requireAssistantAfter597Output();
   if(sourcePhase === 'scalar597-later-h0-original594-successor')requireScalar597LaterH0Output();
   if(sourcePhase === 'assistant-installed593-origin591-successor')requireInstalled593Original591Output();

@@ -5,10 +5,10 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath,pathToFileURL} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual as equal} from 'node:util';
-import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,requireAssistantAfter597Output,requireAssistantAfter598Output,requireAssistantAfter599Output} from './lib/assistant-later-h0-successor-source.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,requireAssistantAfter597Output,requireAssistantAfter598Output,requireAssistantAfter599Output} from './lib/assistant-later-h0-successor-source.mjs';
 import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource,withSource594OriginalDataSource,withSource597OriginalDataSource,withSource598OriginalDataSource,withSource599OriginalDataSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
   assertAuthenticatedFrozen587SnapshotFresh,readAuthenticatedFrozen588Predecessor,
@@ -17,9 +17,10 @@ import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapsh
   assertAuthenticatedFrozen591Snapshot,assertAuthenticatedFrozen591SnapshotFresh,
   readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh,
   readAuthenticatedSource597Predecessor,assertAuthenticatedSource597Snapshot,assertAuthenticatedSource597SnapshotFresh,
-  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh,readAuthenticatedSource599Predecessor,assertAuthenticatedSource599Snapshot,assertAuthenticatedSource599SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';
+  readAuthenticatedSource598Predecessor,assertAuthenticatedSource598Snapshot,assertAuthenticatedSource598SnapshotFresh,readAuthenticatedSource599Predecessor,assertAuthenticatedSource599Snapshot,assertAuthenticatedSource599SnapshotFresh,
+  source601OriginalPredecessor} from './lib/authenticated-frozen586-predecessor.mjs';
 import {assertRestoredOriginalInventory} from './migrate-post-cutover-private-runtime.mjs';
-import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan,assertInstalled593Original591MigrationPlan,assertScalar597LaterH0MigrationPlan,assertAssistantAfter597MigrationPlan,assertAssistantAfter598MigrationPlan,assertAssistantAfter599MigrationPlan} from './integrated-cutover-readiness.mjs';
+import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan,assertInstalled593Original591MigrationPlan,assertScalar597LaterH0MigrationPlan,assertAssistantAfter597MigrationPlan,assertAssistantAfter598MigrationPlan,assertAssistantAfter599MigrationPlan,assertAssistantAfter601MigrationPlan} from './integrated-cutover-readiness.mjs';
 import {inspectDmiForecastFile,readDmiForecastRecord} from './lib/dmi-forecast-file.mjs';
 import {unpackDmiPartContinuity,assertDmiPartContinuityTotalSize} from './lib/dmi-part-continuity.mjs';
 import {createProtectedDmiNativeCurrentInspector} from './lib/protected-dmi-native-current-proofs.mjs';
@@ -30,7 +31,7 @@ import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravsco
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
 import {ownFileDescriptorIdentity,ownedFileDescriptorClosed} from './lib/private-weather-component-pack.mjs';
 // Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
-assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase));
+assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE.sourcePhase));
 export function assistantAfter597PrewritePredecessor(){
   assert.equal(arguments.length,0,'Ingen caller-valgt originalfamilie');
   requireAssistantAfter597Output(); // Uudstedt gren stopper før filer, B/S eller læseklienter.
@@ -52,7 +53,13 @@ export function assistantAfter599PrewritePredecessor(){
     snapshot:assertAuthenticatedSource599Snapshot,fresh:assertAuthenticatedSource599SnapshotFresh,
     plan:assertAssistantAfter599MigrationPlan});
 }
-const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599PrewritePredecessor():
+export function assistantAfter601PrewritePredecessor(){
+  assert.equal(arguments.length,0,'Ingen caller-valgt originalfamilie');
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.requireOutput();
+  return Object.freeze({...source601OriginalPredecessor,plan:assertAssistantAfter601MigrationPlan});
+}
+const ACTIVE_PREDECESSOR=ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR?assistantAfter601PrewritePredecessor():
+  ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599PrewritePredecessor():
   ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598PrewritePredecessor():
   ACTIVE.sourcePhase==='assistant-mixed-after597-successor'?assistantAfter597PrewritePredecessor():
   ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'?Object.freeze({
@@ -271,8 +278,7 @@ async function originalFiles(p,snapshot){
   same(await boundedJson(p.originalS,16*1024*1024),snapshot.checkpoint);
 }
 async function prepare(p){
-  await prewriteAt('PREPARE','FROZEN_SOURCE',()=>ACTIVE_PREDECESSOR.withSource(async frozenRoot=>{
-    const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
+  await prewriteAt('PREPARE','FROZEN_SOURCE',()=>ACTIVE_PREDECESSOR.withSource(async (frozenRoot,load)=>{
     const [b,bundle,workflow,model,s]=await prewriteAt('PREPARE','MODULES',()=>Promise.all([
       load('scripts/protected-private-production-runtime.mjs'),load('scripts/private-production-runtime-bundle.mjs'),
       load('scripts/private-production-runtime-workflow.mjs'),load('js/core/ravscore-model-contract.js'),
