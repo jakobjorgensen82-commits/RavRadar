@@ -615,13 +615,13 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
 
-      - name: Select only the exact issued after599 saved-weather pair
-        id: saved-after599-source
+      - name: Select only the exact active assistant saved-weather pair
+        id: saved-assistant-current-source
         if: (inputs.publish_newest_saved_weather == true) && (env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true') && (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true') && (env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true')
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
-        run: node scripts/reconcile-private-runtime-checkpoint.mjs select-after599-saved
+        run: node scripts/reconcile-private-runtime-checkpoint.mjs select-assistant-current-saved
 
       - name: Select only the exact installed last-mile saved-weather source
         id: saved-last-mile-source
@@ -1002,14 +1002,14 @@ jobs:
 
       - name: Select saved B-S reconciliation before any checkpoint restore
         id: saved-checkpoint-reconcile
-        if: (steps.saved-after599-source.outputs.required == 'true') || (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
+        if: (steps.saved-assistant-current-source.outputs.required == 'true') || (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
         run: |
           set -euo pipefail
-          if test "${{ steps.saved-after599-source.outputs.required }}" = true; then
-            node scripts/reconcile-private-runtime-checkpoint.mjs select-after599-saved
+          if test "${{ steps.saved-assistant-current-source.outputs.required }}" = true; then
+            node scripts/reconcile-private-runtime-checkpoint.mjs select-assistant-current-saved
           else
             node scripts/reconcile-private-runtime-checkpoint.mjs select-saved
             test "${{ steps.saved-last-mile-source.outputs.required }}" = true
@@ -1529,7 +1529,7 @@ jobs:
 
       - name: Reconcile saved last-mile CURRENT B with central S before public projection
         id: saved-checkpoint-paired
-        if: (steps.saved-after599-source.outputs.required == 'true') || (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
+        if: (steps.saved-assistant-current-source.outputs.required == 'true') || (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -1539,9 +1539,9 @@ jobs:
           set -euo pipefail
           test "${{ steps.current-private-install.outcome }}" = success
           test "${{ steps.saved-checkpoint-reconcile.outputs.required }}" = true
-          if test "${{ steps.saved-after599-source.outputs.required }}" = true; then
+          if test "${{ steps.saved-assistant-current-source.outputs.required }}" = true; then
             test "$RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE" = true
-            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-after599-saved
+            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-assistant-current-saved
           else
             if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true; then
               test "$RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE" = installed

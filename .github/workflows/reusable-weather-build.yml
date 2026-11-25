@@ -1065,7 +1065,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
           if test "$OPERATIONAL_ACTION" = integrated-historical-maintenance; then
-            node scripts/reconcile-private-runtime-checkpoint.mjs select-after599
+            node scripts/reconcile-private-runtime-checkpoint.mjs select-assistant-current
           else
             node scripts/reconcile-private-runtime-checkpoint.mjs select
           fi
@@ -1529,7 +1529,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
           if test "$OPERATIONAL_ACTION" = integrated-historical-maintenance; then
-            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-after599
+            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-assistant-current
           else
             node scripts/reconcile-private-runtime-checkpoint.mjs reconcile
           fi

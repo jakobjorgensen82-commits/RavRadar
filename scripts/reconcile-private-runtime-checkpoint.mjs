@@ -40,6 +40,7 @@ import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 
 import {withAuthenticated591PredecessorSource,withSource594OriginalDataSource,withSource597OriginalDataSource,withSource598OriginalDataSource,withSource599OriginalDataSource}
   from './check-assistant-later-h0-predecessor-source.mjs';
+import {source601OriginalPredecessor} from './lib/authenticated-frozen586-predecessor.mjs';
 import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as ASSISTANT_PUBLIC587_FAMILY,
   ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as ASSISTANT_PUBLIC588_FAMILY,
@@ -49,18 +50,31 @@ import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   SCALAR597_LATER_H0_BINDING as SCALAR597_FAMILY,
   ASSISTANT_AFTER597_BINDING as ASSISTANT_AFTER597_FAMILY,requireAssistantAfter597Output,
   ASSISTANT_AFTER598_BINDING as ASSISTANT_AFTER598_FAMILY,requireAssistantAfter598Output,
-  ASSISTANT_AFTER599_BINDING as ASSISTANT_AFTER599_FAMILY,requireAssistantAfter599Output}
+  ASSISTANT_AFTER599_BINDING as ASSISTANT_AFTER599_FAMILY,
+  ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = raw => crypto.createHash('sha256').update(raw).digest('hex');
 const need = (condition, code) => assert(condition, 'PAIRED_PUBLICATION_' + code);
+const AFTER599_PAIRED_ROUTE=Object.freeze({profile:INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,
+  withSource:withSource599OriginalDataSource,label:'599'});
+const AFTER601_PAIRED_ROUTE=Object.freeze({profile:INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,
+  withSource:source601OriginalPredecessor.withSource,label:'601'});
+const activeAssistantPairedRoute=[AFTER599_PAIRED_ROUTE,AFTER601_PAIRED_ROUTE]
+  .find(route=>route.profile===ACTIVE_ASSISTANT_SUCCESSOR);
+function requireActiveAssistantPairedRoute(){
+  need(activeAssistantPairedRoute!==undefined,'UNSUPPORTED_FAMILY');
+  return activeAssistantPairedRoute;
+}
 // Diagnostics never grant admission or alter the original thrown failure.
 const DIRECT_RECONCILE_CLI = Boolean(process.argv[1]
   && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url));
 const RECONCILE_DIAGNOSTIC_PHASES = new Set(["UNCLASSIFIED","CLI_REQUEST","CLI_MAIN_IDENTITY","CLI_COMMAND","CLI_SOURCE_SELECTION","CLI_OUTPUT","CURRENT_POINTER","CURRENT_IDENTITY","B_PATH","B_VERIFY","INSTALLED_SOURCE","LOCAL_S_ABSENT","DERIVE_S","RESTORE_S","S_RELATION_GUARD","CAS_STABILITY","CAS_PUBLISH","CAS_READBACK","FINAL_STABILITY","LOCAL_S_INSTALL","TEMP_CLEANUP"]);
 const RECONCILE_DIAGNOSTIC_MESSAGES = new Map([["PAIRED_PUBLICATION_B_IDENTITY","B_IDENTITY"],["PAIRED_PUBLICATION_B_PATH","B_PATH"],["PAIRED_PUBLICATION_B_S_DIFFER","B_S_DIFFER"],["PAIRED_PUBLICATION_CLOSE_UNPROVED","CLOSE_UNPROVED"],["PAIRED_PUBLICATION_COMMAND","COMMAND"],["PAIRED_PUBLICATION_CURRENT_IDENTITY","CURRENT_IDENTITY"],["PAIRED_PUBLICATION_DERIVED_REFERENCE","DERIVED_REFERENCE"],["PAIRED_PUBLICATION_FILE","FILE"],["PAIRED_PUBLICATION_FILE_CHANGED","FILE_CHANGED"],["PAIRED_PUBLICATION_GENUINE591_STRICTLY_OLDER","GENUINE591_STRICTLY_OLDER"],["PAIRED_PUBLICATION_GENUINE594_STRICTLY_OLDER","GENUINE594_STRICTLY_OLDER"],["PAIRED_PUBLICATION_INSTALLED_B_CHANGED","INSTALLED_B_CHANGED"],["PAIRED_PUBLICATION_INSTALLED_SOURCE_CHANGED","INSTALLED_SOURCE_CHANGED"],["PAIRED_PUBLICATION_LINK","LINK"],["PAIRED_PUBLICATION_MAIN","MAIN"],["PAIRED_PUBLICATION_METADATA_CURRENT_FAMILY","METADATA_CURRENT_FAMILY"],["PAIRED_PUBLICATION_METADATA_INSTALLED_CURRENT_REQUEST","METADATA_INSTALLED_CURRENT_REQUEST"],["PAIRED_PUBLICATION_METADATA_OPERATIONAL_ACTION","METADATA_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_NATIVE_METADATA_CURRENT_FAMILY","NATIVE_METADATA_CURRENT_FAMILY"],["PAIRED_PUBLICATION_NATIVE_METADATA_INSTALLED_CURRENT_REQUEST","NATIVE_METADATA_INSTALLED_CURRENT_REQUEST"],["PAIRED_PUBLICATION_NATIVE_METADATA_OPERATIONAL_ACTION","NATIVE_METADATA_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_NON_ORDINARY_REQUEST","NON_ORDINARY_REQUEST"],["PAIRED_PUBLICATION_OPERATIONAL_ACTION","OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_PARENT","PARENT"],["PAIRED_PUBLICATION_PARENT_CHANGED","PARENT_CHANGED"],["PAIRED_PUBLICATION_POINTER","POINTER"],["PAIRED_PUBLICATION_POINTER_CHANGED","POINTER_CHANGED"],["PAIRED_PUBLICATION_SAME_H0_METADATA_ORIGINALS","SAME_H0_METADATA_ORIGINALS"],["PAIRED_PUBLICATION_SAME_H0_NATIVE_METADATA_ORIGINALS","SAME_H0_NATIVE_METADATA_ORIGINALS"],["PAIRED_PUBLICATION_SAVED_MODE_COLLISION","SAVED_MODE_COLLISION"],["PAIRED_PUBLICATION_SAVED_OPERATIONAL_ACTION","SAVED_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_SAVED_REQUEST","SAVED_REQUEST"],["PAIRED_PUBLICATION_SAVED_WORK_PATH","SAVED_WORK_PATH"],["PAIRED_PUBLICATION_S_CHANGED_BEFORE_PUBLISH","S_CHANGED_BEFORE_PUBLISH"],["PAIRED_PUBLICATION_S_CHANGED_BEFORE_READ","S_CHANGED_BEFORE_READ"],["PAIRED_PUBLICATION_S_DISPOSITION","S_DISPOSITION"],["PAIRED_PUBLICATION_S_NOT_BEHIND","S_NOT_BEHIND"],["PAIRED_PUBLICATION_S_READBACK_DIFFER","S_READBACK_DIFFER"],["PAIRED_PUBLICATION_S_READBACK_MISSING","S_READBACK_MISSING"],["PAIRED_PUBLICATION_S_ROW","S_ROW"],["PAIRED_PUBLICATION_S_VERSION_CHANGED_BEFORE_PUBLISH","S_VERSION_CHANGED_BEFORE_PUBLISH"],["PAIRED_PUBLICATION_UNSUPPORTED_FAMILY","UNSUPPORTED_FAMILY"],["PAIRED_PUBLICATION_WORKFLOW","WORKFLOW"],["PAIRED_PUBLICATION_WORK_CHANGED","WORK_CHANGED"]]);
 RECONCILE_DIAGNOSTIC_MESSAGES.set('PAIRED_PUBLICATION_GENUINE597_STRICTLY_OLDER','GENUINE597_STRICTLY_OLDER');
-for(const code of ['GENUINE599_STRICTLY_OLDER','AFTER599_CURRENT_FAMILY','AFTER599_OPERATIONAL_ACTION','GENUINE598_STRICTLY_OLDER','AFTER598_CURRENT_FAMILY','AFTER598_OPERATIONAL_ACTION'])
+for(const code of ['GENUINE601_STRICTLY_OLDER','AFTER601_CURRENT_FAMILY','AFTER601_OPERATIONAL_ACTION',
+  'GENUINE599_STRICTLY_OLDER','AFTER599_CURRENT_FAMILY','AFTER599_OPERATIONAL_ACTION',
+  'GENUINE598_STRICTLY_OLDER','AFTER598_CURRENT_FAMILY','AFTER598_OPERATIONAL_ACTION'])
   RECONCILE_DIAGNOSTIC_MESSAGES.set('PAIRED_PUBLICATION_'+code,code);
 const RECONCILE_DIAGNOSTIC_FIXED_ERRORS = new Map([
   ['PRODUCTION_TARGET_TIME_INVALID', 'TARGET_TIME_INVALID'],
@@ -120,7 +134,8 @@ function reconcileFamily(descriptor) {
   return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY,
     ASSISTANT_LATER_FAMILY, ASSISTANT_PUBLIC587_FAMILY,
     ASSISTANT_PUBLIC588_FAMILY,ASSISTANT_PUBLIC590_FAMILY,ASSISTANT_PUBLIC591_FAMILY,
-    INSTALLED593_ORIGINAL591_FAMILY,SCALAR597_FAMILY,ASSISTANT_AFTER597_FAMILY,ASSISTANT_AFTER598_FAMILY,ASSISTANT_AFTER599_FAMILY].filter(Boolean).find(family =>
+    INSTALLED593_ORIGINAL591_FAMILY,SCALAR597_FAMILY,ASSISTANT_AFTER597_FAMILY,ASSISTANT_AFTER598_FAMILY,
+    ASSISTANT_AFTER599_FAMILY,activeAssistantPairedRoute?.profile.binding].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }
@@ -137,13 +152,20 @@ export function requiresAssistantAfter598CheckpointReconcile(descriptor) {
   need(integrated === continuation,'AFTER598_CURRENT_FAMILY');
   return integrated && continuation;
 }
-export function requiresAssistantAfter599CheckpointReconcile(descriptor) {
-  if(ASSISTANT_AFTER599_FAMILY === null) return false;
-  requireAssistantAfter599Output();
-  const integrated=descriptor?.modelBinding?.modelBundleSha256 === ASSISTANT_AFTER599_FAMILY.I;
-  const continuation=descriptor?.contractHashes?.continuationStateContractSha256 === ASSISTANT_AFTER599_FAMILY.T;
-  need(integrated === continuation,'AFTER599_CURRENT_FAMILY');
-  return integrated && continuation;
+function requiresAssistantCheckpointReconcile(route,descriptor){
+  if(route.profile.binding===null)return false;
+  route.profile.requireOutput();
+  const family=route.profile.requireBinding();
+  const integrated=descriptor?.modelBinding?.modelBundleSha256===family.I;
+  const continuation=descriptor?.contractHashes?.continuationStateContractSha256===family.T;
+  need(integrated===continuation,'AFTER'+route.label+'_CURRENT_FAMILY');
+  return integrated&&continuation;
+}
+export function requiresAssistantAfter599CheckpointReconcile(descriptor){
+  return requiresAssistantCheckpointReconcile(AFTER599_PAIRED_ROUTE,descriptor);
+}
+export function requiresActiveAssistantCheckpointReconcile(descriptor){
+  return requiresAssistantCheckpointReconcile(requireActiveAssistantPairedRoute(),descriptor);
 }
 export function assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, disposition) {
   if (requiresPrivateRuntimeCheckpointReconcile(descriptor)) need(
@@ -164,11 +186,14 @@ export function assertAssistantAfter598CheckpointReconcileRequest(env = process.
   // to this fixed family and rechecked against the fresh CURRENT below.
   assertOrdinaryReconcileExclusions(env);
 }
-export function assertAssistantAfter599CheckpointReconcileRequest(env = process.env) {
-  need(['integrated','integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION),'AFTER599_OPERATIONAL_ACTION');
+function assertAssistantPairedReconcileRequest(route,env) {
+  need(['integrated','integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION),'AFTER'+route.label+'_OPERATIONAL_ACTION');
   // Preserve every ordinary exclusion; the only additional action is confined
   // to this fixed family and rechecked against the fresh CURRENT below.
   assertOrdinaryReconcileExclusions(env);
+}
+export function assertAssistantAfter599CheckpointReconcileRequest(env = process.env) {
+  return assertAssistantPairedReconcileRequest(AFTER599_PAIRED_ROUTE,env);
 }
 export function assertSavedPrivateRuntimeCheckpointReconcileRequest(env = process.env) {
   need(['integrated', 'integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION), 'SAVED_OPERATIONAL_ACTION');
@@ -228,27 +253,37 @@ export function assistantAfter598ReconcileParent(rows,targetReference){
   }
   return old;
 }
-export function assistantAfter599ReconcileParent(rows,targetReference){
-  requireAssistantAfter599Output();assert.equal(arguments.length,2);
+function isOlderAssistantCheckpoint(route,rows,targetReference){
+  route.profile.requireOutput();
   const old=Array.isArray(rows)&&rows.length===1
-    &&rows[0].payload?.modelBinding?.modelBundleSha256===ASSISTANT_AFTER598_FAMILY.I
-    &&rows[0].payload?.continuationStateContractSha256===ASSISTANT_AFTER598_FAMILY.T;
+    &&rows[0].payload?.modelBinding?.modelBundleSha256===route.profile.before.I
+    &&rows[0].payload?.continuationStateContractSha256===route.profile.before.T;
   if(old){
     const earlier=rows[0].payload.productionReferenceAt;
+    const code='GENUINE'+route.label+'_STRICTLY_OLDER';
     for(const value of [earlier,targetReference])need(typeof value==='string'
       &&/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(value)&&Number.isFinite(Date.parse(value))
-      &&new Date(value).toISOString()===value,'GENUINE599_STRICTLY_OLDER');
-    need(Date.parse(earlier)<Date.parse(targetReference),'GENUINE599_STRICTLY_OLDER');
+      &&new Date(value).toISOString()===value,code);
+    need(Date.parse(earlier)<Date.parse(targetReference),code);
   }
   return old;
+}
+export function assistantAfter599ReconcileParent(rows,targetReference){
+  assert.equal(arguments.length,2);
+  return isOlderAssistantCheckpoint(AFTER599_PAIRED_ROUTE,rows,targetReference);
+}
+export function assistantAfter601ReconcileParent(rows,targetReference){
+  assert.equal(arguments.length,2);
+  return isOlderAssistantCheckpoint(AFTER601_PAIRED_ROUTE,rows,targetReference);
 }
 async function restoreReconcilePredecessor({ family, checkpointPath, targetReference, request }) {
   const rows = await readCheckpointRows(request);
   // Reader selection is NOT numerical admission. Normal current validation
   // remains unchanged. A 597 CURRENT B can advance strictly older genuine
   // 594 S, but can neither install that S nor perform a same-H0 transition.
-  const old599 = ASSISTANT_AFTER599_FAMILY!==null&&family===ASSISTANT_AFTER599_FAMILY
-    &&assistantAfter599ReconcileParent(rows,targetReference);
+  const assistantRoute=family===ASSISTANT_AFTER599_FAMILY?AFTER599_PAIRED_ROUTE
+    :activeAssistantPairedRoute?.profile.binding===family?activeAssistantPairedRoute:null;
+  const olderAssistant=assistantRoute&&isOlderAssistantCheckpoint(assistantRoute,rows,targetReference);
   const old598 = ASSISTANT_AFTER598_FAMILY!==null&&family===ASSISTANT_AFTER598_FAMILY
     &&assistantAfter598ReconcileParent(rows,targetReference);
   const old597 = ASSISTANT_AFTER597_FAMILY!==null&&family===ASSISTANT_AFTER597_FAMILY
@@ -277,8 +312,8 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   };
   const options = { checkpointPath, targetReference, request: checkedRequest };
   let restored;
-  if(old599) restored = await withSource599OriginalDataSource(async sourceRoot=>{
-    const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+  if(olderAssistant) restored = await assistantRoute.withSource(async (_root,load)=>{
+    const reader=await load('scripts/protected-ravscore-continuation-checkpoint.mjs');
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
   else if(old598) restored = await withSource598OriginalDataSource(async sourceRoot=>{
@@ -311,7 +346,8 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
   else restored = await restoreProtectedRavScoreContinuationCheckpoint(options);
-  return { restored, rows, predecessorFamily: old599 ? ASSISTANT_AFTER598_FAMILY : old598 ? ASSISTANT_AFTER597_FAMILY : old597 ? SCALAR597_FAMILY : old594 ? INSTALLED593_ORIGINAL591_FAMILY :
+  return { restored, rows, predecessorFamily: olderAssistant ? assistantRoute.profile.before
+    : old598 ? ASSISTANT_AFTER597_FAMILY : old597 ? SCALAR597_FAMILY : old594 ? INSTALLED593_ORIGINAL591_FAMILY :
     old591 ? ASSISTANT_PUBLIC590_FAMILY : old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
 }
 async function readPointer(request) {
@@ -431,12 +467,16 @@ export async function reconcileAssistantAfter598PrivateRuntimeCheckpoint(options
     'AFTER598_OPERATIONAL_ACTION');
   return reconcileAuthenticatedPrivateRuntimeCheckpoint(options,ASSISTANT_AFTER598_FAMILY);
 }
+async function reconcileAssistantPairedCheckpoint(route,options,savedWeather){
+  route.profile.requireOutput();
+  if(savedWeather)assertSavedPrivateRuntimeCheckpointReconcileRequest();
+  else assertAssistantPairedReconcileRequest(route,process.env);
+  need(options.operationalAction===undefined||options.operationalAction===process.env.OPERATIONAL_ACTION,
+    savedWeather?'SAVED_OPERATIONAL_ACTION':'AFTER'+route.label+'_OPERATIONAL_ACTION');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options,route.profile.requireBinding());
+}
 export async function reconcileAssistantAfter599PrivateRuntimeCheckpoint(options = {}) {
-  requireAssistantAfter599Output();
-  assertAssistantAfter599CheckpointReconcileRequest();
-  need(options.operationalAction === undefined || options.operationalAction === process.env.OPERATIONAL_ACTION,
-    'AFTER599_OPERATIONAL_ACTION');
-  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options,ASSISTANT_AFTER599_FAMILY);
+  return reconcileAssistantPairedCheckpoint(AFTER599_PAIRED_ROUTE,options,false);
 }
 export async function reconcileSavedAssistantAfter598PrivateRuntimeCheckpoint(options = {}) {
   requireAssistantAfter598Output();
@@ -446,11 +486,7 @@ export async function reconcileSavedAssistantAfter598PrivateRuntimeCheckpoint(op
   return reconcileAuthenticatedPrivateRuntimeCheckpoint(options,ASSISTANT_AFTER598_FAMILY);
 }
 export async function reconcileSavedAssistantAfter599PrivateRuntimeCheckpoint(options = {}) {
-  requireAssistantAfter599Output();
-  assertSavedPrivateRuntimeCheckpointReconcileRequest();
-  need(options.operationalAction === undefined || options.operationalAction === process.env.OPERATIONAL_ACTION,
-    'SAVED_OPERATIONAL_ACTION');
-  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options,ASSISTANT_AFTER599_FAMILY);
+  return reconcileAssistantPairedCheckpoint(AFTER599_PAIRED_ROUTE,options,true);
 }
 export async function reconcileAccountStatisticsAssistantPrivateRuntimeCheckpoint(options = {}) {
   assertAccountStatisticsAssistantPrewriteCaller(process.env);
@@ -503,7 +539,8 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
   markReconcilePhase('CURRENT_POINTER');
   const before = await readPointer(pointerRequest), current = before.pointer.current;
   const family = reconcileFamily(current); need(family !== null, 'UNSUPPORTED_FAMILY');
-  need(requiredFamily === null || family === requiredFamily,'AFTER598_CURRENT_FAMILY');
+  need(requiredFamily === null || family === requiredFamily,
+    requiredFamily===AFTER601_PAIRED_ROUTE.profile.binding?'AFTER601_CURRENT_FAMILY':'AFTER598_CURRENT_FAMILY');
   classifyProductionTargetFreshness({ target: current.productionReferenceAt, now, maximumAgeMinutes: 150 });
   markReconcilePhase('B_PATH');
   need(path.isAbsolute(privateRoot) && path.isAbsolute(bundlePath) && path.dirname(bundlePath) === privateRoot, 'B_PATH');
@@ -656,15 +693,19 @@ async function main() {
   need(process.env.GITHUB_REF === 'refs/heads/main' && process.env.GITHUB_EVENT_NAME === 'workflow_dispatch', 'WORKFLOW');
   const command = process.argv[2];
   const after599 = ['select-after599','reconcile-after599','select-after599-saved','reconcile-after599-saved'].includes(command);
-  if(after599) need(process.argv.length === 3,'COMMAND');
+  const assistantCurrent=['select-assistant-current','reconcile-assistant-current',
+    'select-assistant-current-saved','reconcile-assistant-current-saved'].includes(command);
+  if(after599||assistantCurrent)need(process.argv.length===3,'COMMAND');
   const after598 = ['select-after598','reconcile-after598','select-after598-saved','reconcile-after598-saved'].includes(command);
   if(after598) need(process.argv.length === 3,'COMMAND');
-  const savedWeather = ['select-saved', 'reconcile-saved','select-after599-saved','reconcile-after599-saved','select-after598-saved','reconcile-after598-saved'].includes(command);
+  const savedWeather = ['select-saved', 'reconcile-saved','select-after599-saved','reconcile-after599-saved',
+    'select-after598-saved','reconcile-after598-saved','select-assistant-current-saved','reconcile-assistant-current-saved'].includes(command);
   const metadata = command === 'reconcile-account-statistics-assistant';
   const nativeMetadata = command === 'reconcile-native-original-continuity';
   if (nativeMetadata) { requireNativeOriginalContinuityOutput(); assertNativeOriginalContinuityCodeOnlyCaller(process.env); }
   else if (metadata) assertAccountStatisticsAssistantPrewriteCaller(process.env);
   else if (savedWeather) assertSavedPrivateRuntimeCheckpointReconcileRequest();
+  else if(assistantCurrent)assertAssistantPairedReconcileRequest(requireActiveAssistantPairedRoute(),process.env);
   else if(after599) assertAssistantAfter599CheckpointReconcileRequest();
   else if(after598) assertAssistantAfter598CheckpointReconcileRequest();
   else assertOrdinaryPrivateRuntimeCheckpointReconcileRequest();
@@ -673,17 +714,22 @@ async function main() {
   const main = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: ROOT, encoding: 'utf8' }).trim();
   need(head === process.env.GITHUB_SHA && head === main, 'MAIN');
   markReconcilePhase('CLI_COMMAND');
-  if (['select','select-saved','select-after599','select-after599-saved','select-after598','select-after598-saved'].includes(command)) {
+  if (['select','select-saved','select-after599','select-after599-saved','select-after598','select-after598-saved',
+    'select-assistant-current','select-assistant-current-saved'].includes(command)) {
     markReconcilePhase('CLI_SOURCE_SELECTION');
     if (savedWeather) need(path.isAbsolute(process.env.RAVRADAR_OPERATIONAL_WORK ?? ''), 'SAVED_WORK_PATH');
     const source = await json(savedWeather
       ? path.join(process.env.RAVRADAR_OPERATIONAL_WORK, 'current-private-runtime-source.json')
       : path.join(process.env.RUNNER_TEMP, 'private-runtime-current-source.json'));
-    const required=after599 ? requiresAssistantAfter599CheckpointReconcile(source) : after598 ? requiresAssistantAfter598CheckpointReconcile(source) : requiresPrivateRuntimeCheckpointReconcile(source);
+    const required=assistantCurrent?requiresActiveAssistantCheckpointReconcile(source)
+      :after599?requiresAssistantAfter599CheckpointReconcile(source)
+      :after598?requiresAssistantAfter598CheckpointReconcile(source):requiresPrivateRuntimeCheckpointReconcile(source);
     await fs.appendFile(process.env.GITHUB_OUTPUT, `required=${required}\n`);
   } else {
-    need(['reconcile','reconcile-saved','reconcile-after599','reconcile-after599-saved','reconcile-after598','reconcile-after598-saved'].includes(command) || metadata || nativeMetadata, 'COMMAND');
+    need(['reconcile','reconcile-saved','reconcile-after599','reconcile-after599-saved','reconcile-after598','reconcile-after598-saved',
+      'reconcile-assistant-current','reconcile-assistant-current-saved'].includes(command)||metadata||nativeMetadata,'COMMAND');
     const reconcile = nativeMetadata ? reconcileNativeOriginalContinuityPrivateRuntimeCheckpoint : metadata ? reconcileAccountStatisticsAssistantPrivateRuntimeCheckpoint
+      : assistantCurrent ? options=>reconcileAssistantPairedCheckpoint(requireActiveAssistantPairedRoute(),options,savedWeather)
       : after599 ? (savedWeather ? reconcileSavedAssistantAfter599PrivateRuntimeCheckpoint : reconcileAssistantAfter599PrivateRuntimeCheckpoint)
       : after598 ? (savedWeather ? reconcileSavedAssistantAfter598PrivateRuntimeCheckpoint : reconcileAssistantAfter598PrivateRuntimeCheckpoint)
       : savedWeather ? reconcileSavedPrivateRuntimeCheckpoint : reconcilePrivateRuntimeCheckpoint;
