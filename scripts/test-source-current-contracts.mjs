@@ -249,6 +249,21 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
     assert.deepEqual(mixed.areas.publicUI.commands,CURRENT_CONTRACT_COMMANDS.publicUI);
     assert.deepEqual(mixed.commands,[...new Set([...CURRENT_CONTRACT_COMMANDS.core,...commands,...CURRENT_CONTRACT_COMMANDS.publicUI])]);
     assert.equal(mixed.commands.filter(command=>command===roundtrip).length,1);
+    const publicHelp='js/services/rav-assistant-public-help.js';
+    const publicCommands=[
+      'node --test scripts/test-assistant-ui-error-boundary.mjs',
+      'node scripts/test-rav-assistant-local-knowledge-4.0.293.mjs',
+      'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+      'node scripts/test-ravscore-public-browser-closure.mjs',
+    ];
+    assert.deepEqual(currentSourceTargets(publicHelp).owners,[{area:'assistantPublic',commands:publicCommands}]);
+    assert.deepEqual(currentSourceTargets('js/services/rav-assistant.js').owners,
+      [{area:'assistantPublic',commands:publicCommands}]);
+    const publicOnly=select('assistant-public-only',[publicHelp]);
+    assert.equal(publicOnly.selection,'CURRENT_CONTRACTS');
+    assert.deepEqual(Object.keys(publicOnly.areas),['core','assistantPublic']);
+    assert.deepEqual(publicOnly.commands,[...CURRENT_CONTRACT_COMMANDS.core,...publicCommands]);
+    assert.deepEqual(publicOnly.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
     const ui=select('public-ui-only',['app.js']);
     assert.equal(ui.selection,'CURRENT_CONTRACTS');assert.equal(ui.areas.assistantEdge,undefined);
     assert.deepEqual(ui.areas.publicUI.commands,CURRENT_CONTRACT_COMMANDS.publicUI);
