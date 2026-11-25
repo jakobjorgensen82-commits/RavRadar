@@ -990,6 +990,8 @@ jobs:
       needs.current-main-target.outputs.completed_private_runtime != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      raw_reader_hold: ${{ steps.raw-reader-hold.outputs.confirmed }}
     permissions:
       contents: read
       actions: write
@@ -1037,6 +1039,11 @@ jobs:
           path: ${{ runner.temp }}/ravradar-raw-rotation-received/decision.json
           if-no-files-found: error
           retention-days: 1
+
+      - name: Record exact RAW reader hold with zero retirements
+        id: raw-reader-hold
+        if: steps.raw-retirement.outputs.raw_reader_hold == 'true'
+        run: echo 'confirmed=true' >> "$GITHUB_OUTPUT"
 
   build-and-prepare:
     name: Build and prepare weather production through reusable workflow
@@ -1323,6 +1330,45 @@ jobs:
           echo "recipient_run_id=$recipient" >> "$GITHUB_OUTPUT"
 
       - name: Bind weather recovery recipient ${{ steps.dispatch.outputs.recipient_run_id }}
+        run: ':'
+
+  handoff-raw-reader-retry:
+    name: Hand off the pre-DMI RAW reader hold to the existing cadence watchdog
+    needs: [current-main-target, retire-dmi-raw-archives, terminal-outcome]
+    if: >-
+      always() && !cancelled() && needs.current-main-target.outputs.ordinary_scheduled == 'true' &&
+      needs.retire-dmi-raw-archives.result == 'success' &&
+      needs.retire-dmi-raw-archives.outputs.raw_reader_hold == 'true' &&
+      needs.terminal-outcome.result == 'failure' &&
+      github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+      github.ref == 'refs/heads/main' && github.run_attempt == '1' &&
+      github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch one bound watchdog for the RAW reader hold
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]{0,14}$ ]]
+          if ! ack="$(timeout --signal=KILL 20s gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/watch-missed-weather-schedule.yml/dispatches" \
+            -f ref=main -f "inputs[raw_reader_retry_source_run_id]=$GITHUB_RUN_ID" 2>/dev/null)" ||
+            ! recipient="$(jq -er '.workflow_run_id | numbers | tostring | select(test("^[1-9][0-9]{0,14}$"))' <<< "$ack" 2>/dev/null)" ||
+            [[ "$recipient" = "$GITHUB_RUN_ID" ]]; then
+            echo 'WEATHER_RAW_READER_WATCHDOG_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY' >&2
+            exit 1
+          fi
+          echo "recipient_run_id=$recipient" >> "$GITHUB_OUTPUT"
+
+      - name: Bind RAW reader retry recipient ${{ steps.dispatch.outputs.recipient_run_id }}
         run: ':'
 
   notify-owner-failure:

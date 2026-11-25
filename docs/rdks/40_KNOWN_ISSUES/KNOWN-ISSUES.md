@@ -1,6 +1,12 @@
 ## 25. november — opfølgning efter sprogskift i en anden fane
 
-Den lokale rettelse til den tyske formular bruger fanens aktive sprog, når et emne til opfølgning vælges. Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. Den aktuelle kvalifikation kræver sin egen PostgreSQL-kvittering på GitHub. Derefter følger genlæsning af den installerede overgang og verifikation på den første nye, senere ordinære vejrprognose.
+Den lokale rettelse til den tyske formular bruger fanens aktive sprog, når et emne til opfølgning vælges. Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. Den første kandidat bestod kildekontrol og PostgreSQL i #1720. Efter indarbejdelse af #1095 skal det aktuelle træ bestå sin egen kontrol. Derefter følger genlæsning af den installerede overgang og verifikation på den første nye, senere ordinære vejrprognose.
+
+## 25. november — en mulig råcachelæser stoppede ordinær vejrkørsel #393
+
+Efter #392 var tre komplette RAW-kopier bevaret. Den første rotation i #393 fandt den aktive kildekontrol #1719 og udstedte en kvittering med `HOLD` og nul slettede kopier. Byggeren modtog kvitteringen og stoppede kl. 08.31 UTC. De tre prognoseproducenter, den nye råcachelagring, B/S-publicering for den nye prognose og Pages blev sprunget over. Afstemningen af det eksisterende B/S-par var allerede afsluttet med `ALREADY_PAIRED_READBACK_PROVED` og nul CAS-publiceringer. Kataloglæsning hos DMI var en del af forberedelsen. [GitHub-kørsel #393](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45575517700)
+
+Rettelsen på main fra #1095 lader den eksisterende tidsvagt vente på resten af GitHub-køen uden at holde vejrlåsen. Den kræver præcis den kvitterede årsag i et afsluttet første forsøg på uændret main, bevis for de oversprungne produktionstrin, genbrugelig kildevalidering og en komplet genlæsning af GitHub umiddelbart før en enkelt almindelig start. Fristen er fortsat 90 minutter fra begyndelsen af det planlagte vindue. Ukendt udfald af en start blokkerer ny start. En ejeranmodning i samme kø kan overtage, når den automatiske start beviseligt er sprunget over. Den normale ejeradvarsel er bevaret. Kildekontrol #1724 bestod. Faktisk automatisk genoptagelse skal efterprøves ved den næste naturlige læserblokering.
 
 ## 24. november — råcacherotation stoppede vejr #381
 
