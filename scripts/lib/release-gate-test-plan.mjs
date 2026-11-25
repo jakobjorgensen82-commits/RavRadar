@@ -81,9 +81,17 @@ const AFTER601_RELEASE_CHECKS=Object.freeze({
   'scripts/test-assistant-after597-runtime-origin.mjs':['scripts/test-assistant-after597-runtime-origin.mjs','--after601-origin'],
   'scripts/test-assistant-after597-sync-binding.mjs':['scripts/test-assistant-after597-sync-binding.mjs','--after601-setup'],
 });
+export function assistantAfter601SourceArguments(file){
+  return Object.hasOwn(AFTER601_RELEASE_CHECKS,file)?[...AFTER601_RELEASE_CHECKS[file]]:undefined;
+}
+export const ASSISTANT_AFTER601_SOURCE_COMMANDS=Object.freeze(
+  Object.values(AFTER601_RELEASE_CHECKS).map(args=>['node',...args].join(' ')),
+);
 export function releaseGateTestArguments(file){
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor'&&Object.hasOwn(AFTER601_RELEASE_CHECKS,file))
-    return [...AFTER601_RELEASE_CHECKS[file]];
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor'){
+    const args=assistantAfter601SourceArguments(file);
+    if(args!==undefined)return args;
+  }
   // Closed argv mapping: the generic checkpoint target remains NON-PG.
   if(AFTER598_CURRENT_TEST_FILES.includes(file)&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor')
     return [file,'--after599-current'];
