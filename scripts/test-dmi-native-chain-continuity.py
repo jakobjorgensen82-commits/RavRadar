@@ -30,6 +30,7 @@ spec = importlib.util.spec_from_file_location("native_chain_continuity", ROOT / 
 producer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(producer)
 
+from lib import dmi_native_provenance
 from lib.dmi_bulk_storage import read_dmi_bulk_document, write_dmi_bulk_document
 from lib.weather_acquisition_plan import (
     _SNAPSHOT_RELATIVE_PATHS, build_current_acquisition_plan,
@@ -157,11 +158,39 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                     retain_preferred_run=False,
                 )
         self.assertEqual(set(catalogues[collection][2]["officialRequiredValidTimes"]), set(prefix))
-        original_ledger = producer.build_current_operational_ledger_result(
-            saved, targets, reference, catalogues, preserved,
-        )
-        self.assertTrue(original_ledger.validated)
-        self.assertEqual(original_ledger.attestation["verifiedPairCount"], 1)
+        original_hour = prefix[1]
+        registry = producer.target_fingerprint(targets)
+
+        def add_processed_original(snapshot, name):
+            official = next(
+                asset for asset in catalogues[name][2]["officialRequiredAssets"]
+                if asset["validTime"] == original_hour
+            )
+            native = producer.native_component_source(
+                name, official["modelRun"], original_hour, component="current", zone=ZONE,
+                grid_candidate=POINT, capture={**CAPTURE, **official},
+                spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["current"],
+                verticalLayer="depthbelowsea:1", verticalLayerRankM=1.0,
+                vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+                vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION,
+            )
+            self.assertIsNotNone(native)
+            snapshot["zones"][ZONE["id"]]["hourly"][original_hour] = {
+                "time": original_hour, "current-u": .1, "current-v": .2,
+                "sources": {"current": native},
+            }
+            snapshot["runs"][name]["processedSteps"][original_hour] = {
+                "complete": True, "recognizedParameters": ["current-u", "current-v"],
+                "zonesTouched": 1, "parserVersion": producer.PARSER_VERSION,
+                "processingSignature": processing, "sourceAsset": native,
+                "currentPartOutcomeProof": producer.build_current_part_outcome_proof(
+                    [], ["TEST"], registry, processing, native,
+                ),
+            }
+
+        alternate_snapshot = copy.deepcopy(saved)
+        add_processed_original(alternate_snapshot, collection)
+        add_processed_original(saved, "dkss_lf")
 
         main = next(node for node in ast.parse(Path(producer.__file__).read_text(encoding="utf-8")).body
                     if isinstance(node, ast.FunctionDef) and node.name == "main")
@@ -179,7 +208,7 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
         def execute(*, at=2235.5, name=collection, mode="native", offers=None, error=None,
                     time_available=True, bytes_left=4096, configuration="NOT_CONFIGURED",
                     covered=None, previous_attempt=False, scalar_plan=None, initial_catalogues=None,
-                    time_after_catalogue=None, expected_reason=None):
+                    time_after_catalogue=None, expected_reason=None, snapshot=None):
             reserve_checks = iter((time_available, time_available if time_after_catalogue is None else time_after_catalogue))
             original_catalogues = catalogues if initial_catalogues is None else initial_catalogues
             context = dict(vars(producer), allow_first_turn_catalogue=True, collection_turn=mode,
@@ -188,7 +217,8 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                                key: {"modelRun": run, "assets": copy.deepcopy(assets)}
                                for key, (run, assets, _stats) in original_catalogues.items()
                            }, qualified_scalar_gap_plan=scalar_plan, current_target_ids=["TEST"],
-                           prefetched_marine_at={name: 0.0}, result=copy.deepcopy(saved),
+                           prefetched_marine_at={name: 0.0},
+                           result=copy.deepcopy(saved if snapshot is None else snapshot),
                            retained_current_asset_proofs=copy.deepcopy(preserved),
                            locked_production_reference=reference, required_current_valid_times=hours,
                            current_part_zone_ids={ZONE["id"]}, active_operational_zones=[ZONE],
@@ -230,15 +260,43 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
             return context["prefetched_marine"], request.call_count
 
         new_page = page(collection, (old_model, 121), (next_model, 121))
-        selected, calls = execute(offers=new_page)
+        build_ledger = producer.build_current_operational_ledger_result
+        captured = []
+
+        def record_ledger(*args, **kwargs):
+            proof = build_ledger(*args, **kwargs)
+            captured.append(proof)
+            return proof
+
+        with patch.object(
+            dmi_native_provenance, "_matching_verified_part_current_rows",
+            wraps=dmi_native_provenance._matching_verified_part_current_rows,
+        ) as scan:
+            with patch.object(producer, "build_current_operational_ledger_result", side_effect=record_ledger):
+                selected, calls = execute(offers=new_page)
+            self.assertEqual(scan.call_count, len(targets))
+            scan.reset_mock()
+            original_ledger = build_ledger(saved, targets, reference, catalogues, preserved)
+            after = build_ledger(saved, targets, reference, selected, preserved)
+            self.assertEqual(scan.call_count, 4 * len(targets))
+        self.assertEqual(captured, [original_ledger, after])
+        self.assertTrue(original_ledger.validated)
+        self.assertEqual(original_ledger.attestation["verifiedPairCount"], 2)
+        self.assertEqual(original_ledger.ledger["retainedCurrentAssetProofCount"], 1)
         self.assertEqual(calls, 1)
         self.assertEqual(selected[collection][0], producer.canonical_time(next_model))
         self.assertTrue(selected[collection][2]["firstTurnCatalogueRefreshed"])
         self.assertEqual(set(selected[collection][2]["officialRequiredValidTimes"]), hours)
-        after = producer.build_current_operational_ledger_result(saved, targets, reference, selected, preserved)
         self.assertTrue(after.validated)
         self.assertEqual(after.attestation["verifiedPairSources"], original_ledger.attestation["verifiedPairSources"])
         self.assertEqual(after.ledger["retainedCurrentAssetProofs"], original_ledger.ledger["retainedCurrentAssetProofs"])
+        # The changed catalogue cannot borrow authorization for an original
+        # from its predecessor just because the cache row has already been read.
+        unchanged, attempts = execute(
+            offers=new_page, snapshot=alternate_snapshot, expected_reason="EVIDENCE_NOT_PRESERVED",
+        )
+        self.assertEqual(unchanged, catalogues)
+        self.assertEqual(attempts, 1)
         run, assets, _stats = selected[collection]
         requirements = {asset["valid"]: producer.classify_dkss_primary_asset(
             collection=collection, model_run=run, asset=asset, target_ids=["TEST"],
@@ -358,8 +416,8 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
         original_ledger_builder = producer.build_current_operational_ledger_result
 
         def refuse_current_evidence(reason):
-            def build(result, targets, reference, offered_catalogues, proofs):
-                outcome = original_ledger_builder(result, targets, reference, offered_catalogues, proofs)
+            def build(result, targets, reference, offered_catalogues, proofs, **kwargs):
+                outcome = original_ledger_builder(result, targets, reference, offered_catalogues, proofs, **kwargs)
                 if offered_catalogues[collection][0] != producer.canonical_time(old_model):
                     if reason == "EVIDENCE_TIMEOUT":
                         raise producer.AssetDownloadRuntimeBudget("synthetic expiry during proof comparison")

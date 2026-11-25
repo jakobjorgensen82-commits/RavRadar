@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import re
+from collections.abc import Iterator
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Any
@@ -1174,6 +1175,53 @@ def verified_part_current_pair_for_collection(
     return False
 
 
+_CurrentSourceCandidate = tuple[str, dict[str, Any], str]
+
+
+def _verified_current_source_candidates(
+    document: Any,
+    target: dict[str, Any],
+    start: datetime,
+    end: datetime,
+) -> Iterator[_CurrentSourceCandidate]:
+    for valid_time, row in _matching_verified_part_current_rows(document, target, start, end):
+        source = ((row.get("sources") or {}).get("current") or {})
+        source_asset = canonical_current_source_asset(source)
+        if source_asset is not None:
+            yield valid_time, source_asset, _canonical_json(source_asset)
+
+
+
+class CurrentAttestationRowCache:
+    """One read-only producer turn's candidates, before source authorization."""
+
+    def __init__(self) -> None:
+        self._rows: dict[
+            tuple[str, int, int, datetime, datetime],
+            tuple[Any, dict[str, Any], tuple[_CurrentSourceCandidate, ...]],
+        ] = {}
+
+    def candidates_for(
+        self,
+        document: Any,
+        part_id: str,
+        target: dict[str, Any],
+        start: datetime,
+        end: datetime,
+    ) -> tuple[_CurrentSourceCandidate, ...]:
+        zones = document.get("zones") if isinstance(document, dict) else None
+        zone = zones.get(f"PART::{part_id}") if isinstance(zones, dict) else None
+        key = (part_id, id(zone), id(target), start, end)
+        cached = self._rows.get(key)
+        if cached is None:
+            # Hold the actual input objects for the cache lifetime. This
+            # turn is read-only and ends before any producer row mutation.
+            candidates = tuple(_verified_current_source_candidates(document, target, start, end))
+            self._rows[key] = (zone, target, candidates)
+            return candidates
+        return cached[2]
+
+
 def canonical_verified_part_current_attestation(
     document: Any,
     targets: Any,
@@ -1181,8 +1229,14 @@ def canonical_verified_part_current_attestation(
     range_end: Any,
     allowed_source_assets: Any = None,
     allowed_retained_pair_sources: Any = None,
+    *,
+    row_cache: CurrentAttestationRowCache | None = None,
 ) -> dict[str, Any]:
-    """Build the one canonical, payload-free current proof used by every gate."""
+    """Build the canonical current proof with independent source authorization.
+
+    Optional candidates belong to one immutable document, target set and window.
+    They contain row verification only, before any catalogue authorizes a source.
+    """
     start, end = _exact_hour_bounds(range_start, range_end)
     if not isinstance(targets, (list, tuple)):
         raise ValueError("Current attestation targets must be an array")
@@ -1238,17 +1292,12 @@ def canonical_verified_part_current_attestation(
     verified_pair_sources: list[dict[str, Any]] = []
     source_times: set[tuple[str, str, str]] = set()
     for part_id, target in normalized_targets:
-        for valid_time, row in _matching_verified_part_current_rows(
-            document,
-            target,
-            start,
-            end,
-        ):
-            source = ((row.get("sources") or {}).get("current") or {})
-            source_asset = canonical_current_source_asset(source)
-            if source_asset is None:
-                continue
-            source_key = _canonical_json(source_asset)
+        candidates = (
+            _verified_current_source_candidates(document, target, start, end)
+            if row_cache is None
+            else row_cache.candidates_for(document, part_id, target, start, end)
+        )
+        for valid_time, source_asset, source_key in candidates:
             current_asset_allowed = bool(
                 allowed_asset_keys is not None and source_key in allowed_asset_keys
             )
@@ -1265,7 +1314,7 @@ def canonical_verified_part_current_attestation(
             verified_pair_sources.append({
                 "partId": part_id,
                 "validTime": valid_time,
-                "source": source_asset,
+                "source": source_asset if row_cache is None else source_asset.copy(),
             })
             source_times.add((source_asset["collection"], source_asset["modelRun"], valid_time))
     verified_pairs.sort(key=lambda row: (row["validTime"], row["partId"]))

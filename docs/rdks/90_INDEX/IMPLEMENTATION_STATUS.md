@@ -1,17 +1,25 @@
+## 26. november — vandstanden yderst i prognosen
+
+- [x] Sammenlign #398 og #396 på de samme 114 timer. Alle fem vejrkomponenter beholdt samme dækning. De fire nye timer manglede vandstand i alle zoner.
+- [x] Spor det faktiske stop. #398 valgte DMI-katalogerne fra 25. november kl. 12 UTC. Det nyere NSBS-katalog nåede bevisfasen, hvor den fælles 25-sekundersgrænse blev ramt. Katalogloggen dokumenterer mindst ét ekstra muligt tidspunkt. Den bekræfter endnu ikke vandstanden for alle fire timer.
+- [x] Genbrug den samme kvalificerede gennemgang af cache-rækker inden for før- og efterkontrollen. Kildeautorisation og beviser om bevarede originaler kontrolleres fortsat for hvert katalog. Den målrettede prøve viser identiske beviser og én gennemgang frem for fire.
+- [ ] Kvalificér den eksakte Linux-kilde og mål den fulde katalogkontrol i normal drift. Verificér vandstandsdata i de nye timer på det offentlige RavRadar.
+
 ## 25. november — fanens sprog og den normale modelovergang
 
 - [x] Ret den åbne fanes emnevalg og saml de fem aktuelle kilde-/releaseprøver.
 - [x] Afled og genlæs lokalt den ene 601-efterfølgermigration og synkronisér releaseversionen.
 - [x] Den første kandidat bestod kildekontrol og PostgreSQL i #1720.
 - [x] Den aktuelle #1093-kandidat efter #1095 bestod GitHub-kontrol #1726 med sin PostgreSQL-prøve.
-- [ ] Kontrollér den samlede kilde med Pages-rettelsen, kør den afgrænsede installation og verificér en senere offentlig prognose og samtaler på dansk, tysk og engelsk.
+- [x] Præcis kildekontrol #1732 bestod for #1103. Installationen gennemførte den ene migration og genlæste den i backendkørsel #24.
+- [ ] Verificér en senere offentlig prognose og samtaler på dansk, tysk og engelsk.
 
 ## 25. november — genlæsning af en ufuldstændig råcachekvittering
 
 - [x] Afgræns fejlen til den tidlige overlevering af råcachekvitteringen i #397.
 - [x] Brug den eksisterende ventetid ved et gyldigt antal på nul eller én, som afviger fra listen. Bevar den strenge genlæsning før sletning.
 - [x] Kildekontrol #1731 bestod på #1102, og rettelsen blev lagt på main.
-- [ ] Verificér en ordinær kørsel fra råcache til offentlig prognose.
+- [x] #398 bestod den tidlige råcachekontrol, udgav den eksakte prognose og fjernede den ældste kopi automatisk efter bekræftet udgivelse.
 
 ## 25. november — den offentlige læsekontrol tåler en midlertidig Pages-fejl
 

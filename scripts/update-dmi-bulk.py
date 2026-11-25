@@ -119,6 +119,7 @@ from lib.dmi_native_provenance import (
     CURRENT_PREFERRED_DISTANCE_KM,
     CURRENT_VECTOR_SELECTION,
     CURRENT_VECTOR_SEMANTICS_VERSION,
+    CurrentAttestationRowCache,
     DKSS_MAX_FORECAST_LEAD_HOURS,
     MARINE_COLLECTIONS,
     SPATIAL_PROVENANCE_VERSION,
@@ -13225,6 +13226,8 @@ def coastal_part_current_attestation(
     range_end: datetime,
     allowed_source_assets: list[dict[str, Any]] | None = None,
     allowed_retained_pair_sources: list[dict[str, Any]] | None = None,
+    *,
+    row_cache: CurrentAttestationRowCache | None = None,
 ) -> dict[str, Any]:
     """Attest the same structurally sanitized view before and after merge."""
     zones = document.get("zones") if isinstance(document, dict) else None
@@ -13269,6 +13272,7 @@ def coastal_part_current_attestation(
         range_end,
         allowed_source_assets,
         allowed_retained_pair_sources,
+        row_cache=row_cache,
     )
 
 
@@ -13278,6 +13282,8 @@ def current_operational_attestation(
     reference: datetime,
     allowed_source_assets: list[dict[str, Any]] | None = None,
     allowed_retained_pair_sources: list[dict[str, Any]] | None = None,
+    *,
+    row_cache: CurrentAttestationRowCache | None = None,
 ) -> dict[str, Any]:
     return coastal_part_current_attestation(
         document,
@@ -13286,6 +13292,7 @@ def current_operational_attestation(
         reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
         allowed_source_assets,
         allowed_retained_pair_sources,
+        row_cache=row_cache,
     )
 
 
@@ -13375,6 +13382,8 @@ def build_current_operational_ledger_result(
         tuple[str | None, list[dict[str, Any]], dict[str, Any]],
     ],
     retained_current_asset_proofs: list[dict[str, Any]] | None = None,
+    *,
+    row_cache: CurrentAttestationRowCache | None = None,
 ) -> CurrentOperationalLedgerResult:
     """Close every official DKSS asset/hour without inventing fallback gaps."""
     valid_times = operational_current_valid_times(reference)
@@ -13629,11 +13638,13 @@ def build_current_operational_ledger_result(
         reference,
         processed_assets,
         [],
+        row_cache=row_cache,
     )
     attestation = (
         current_operational_attestation(
             document, targets, reference, processed_assets,
             retained_authorization,
+            row_cache=row_cache,
         )
         if retained_authorization
         else current_attestation
@@ -16368,10 +16379,14 @@ def main() -> int:
 
     def first_turn_preserves_plan(collection, offer):
         proposed = {**prefetched_marine, collection: offer}
+        # Both builds read the same unchanged weather rows. Authorize those
+        # rows independently against each catalogue and its retained proofs.
+        row_cache = CurrentAttestationRowCache()
         before, after = (
             build_current_operational_ledger_result(
                 result, coastal_part_targets, locked_production_reference,
                 catalogues, retained_current_asset_proofs,
+                row_cache=row_cache,
             )
             for catalogues in (prefetched_marine, proposed)
         )
