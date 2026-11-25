@@ -211,7 +211,6 @@ for (const file of ['js/ui/account-panel.js', 'scripts/test-user-account-trip-lo
   assert.deepEqual(currentSourceTargets(file).owners,[{area:'accountTripUI',commands:[
     'node --test scripts/test-user-account-trip-log-4.0.264.mjs scripts/test-trip-evidence-upload-receipt.mjs',
   ]}]);
-  passed++;
 }
 
 // Assistant Edge scope: the same assertions run in the normal Git fixture.
