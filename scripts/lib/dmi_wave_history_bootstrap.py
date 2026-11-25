@@ -201,6 +201,9 @@ def parse_utc_hour(value: Any) -> datetime:
     if not isinstance(value, str) or _UTC_HOUR.fullmatch(value) is None:
         raise WaveBootstrapError("INVALID_TIME")
     try:
+        # The regex requires a UTC hour. Keep strptime for legacy non-ASCII inputs.
+        if value.isascii():
+            return datetime.fromisoformat(value)
         parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
         raise WaveBootstrapError("INVALID_TIME") from None
