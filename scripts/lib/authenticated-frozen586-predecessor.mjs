@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {fileURLToPath,pathToFileURL} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
 import {PRIVATE_CONDITIONS_MAX_BYTES} from './bounded-json-writer.mjs';
@@ -16,7 +16,8 @@ import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSou
   withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE,
   withSource597OriginalDataSource,assertSource597OriginalDataSourceSelected,SOURCE597_CODE_SOURCE_PROVENANCE,
   withSource598OriginalDataSource,assertSource598OriginalDataSourceSelected,SOURCE598_CODE_SOURCE_PROVENANCE,
-  withSource599OriginalDataSource,assertSource599OriginalDataSourceSelected,SOURCE599_CODE_SOURCE_PROVENANCE}
+  withSource599OriginalDataSource,assertSource599OriginalDataSourceSelected,SOURCE599_CODE_SOURCE_PROVENANCE,
+  withSource601OriginalDataSource,SOURCE601_ORIGINAL_DATA_PROFILE}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -24,7 +25,7 @@ const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599||profile===SOURCE_FROZEN601,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -117,13 +118,12 @@ async function fixedPaths(){
 }
 async function readAuthenticatedPredecessor(){
   need(arguments.length===0,'ARGUMENTS');
-  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599
+  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599||profile===SOURCE_FROZEN601
     ?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
   const paths=await fixedPaths();
-  return profile.withSource(async frozenRoot=>{
-    const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
+  return profile.withSource(async (frozenRoot,load)=>{
     const [protectedB,protectedS,bundle,normalS,workflow,model,dataAssertions,descriptorIO]=await Promise.all([
       load('scripts/protected-private-production-runtime.mjs'),load('scripts/protected-ravscore-continuation-checkpoint.mjs'),
       load('scripts/private-production-runtime-bundle.mjs'),load('scripts/ravscore-continuation-checkpoint.mjs'),
@@ -400,3 +400,19 @@ export async function readAuthenticatedSource599Predecessor(){
 }
 export function assertAuthenticatedSource599Snapshot(handle){return sourceSnapshot599.snapshot(...arguments);}
 export async function assertAuthenticatedSource599SnapshotFresh(handle){return sourceSnapshot599.fresh(...arguments);}
+
+const SOURCE_FROZEN601=Object.freeze({
+  sourceHead:SOURCE601_ORIGINAL_DATA_PROFILE.head,
+  requiredSha:Object.freeze([SOURCE601_ORIGINAL_DATA_PROFILE.originSha256,
+    SOURCE601_ORIGINAL_DATA_PROFILE.partPipelineSha256]),
+  withSource:withSource601OriginalDataSource,
+  assertionPath:SOURCE601_ORIGINAL_DATA_PROFILE.assertion,
+  assertionExport:'assertSource601OriginSnapshotData',
+  temporaryPrefix:'rr-source601-snapshot-',errorPrefix:'SOURCE601_PREDECESSOR_'});
+const snapshot601=fixedSnapshot(SOURCE_FROZEN601);
+
+// Both consumers retain the same reader, opaque snapshot and freshness check.
+export const source601OriginalPredecessor=Object.freeze({
+  withSource:withSource601OriginalDataSource,
+  read:snapshot601.read,snapshot:snapshot601.snapshot,fresh:snapshot601.fresh,
+});
