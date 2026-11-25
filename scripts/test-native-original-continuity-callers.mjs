@@ -1,4 +1,5 @@
-import {inverseReviewedAfter599PackageForHistoricalOracles} from './lib/account-statistics-assistant-package-review.mjs';
+import {inverseReviewedAfter599PackageForHistoricalOracles,readAuthenticatedAfter598PackageForHistoricalOracles}
+  from './lib/account-statistics-assistant-package-review.mjs';
 // Narrow normal caller/source/refusal targets. Not a positive B/S origin,
 // installed SQL, national capacity or production claim. No fabricated tuple.
 import assert from 'node:assert/strict';
@@ -836,7 +837,7 @@ async function readHistoricalAssistantSource(file){
   assert.equal(arguments.length,1,'No caller-selected historical source origin');
   assert(Object.hasOwn(reviewedIssued592Sources,file)||file==='scripts/verify-code-only-migration-plan.mjs',
     'Only the reviewed historical source owners and their original migration-plan CLI');
-  if(!['assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase))
+  if(!['assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase))
     return fs.readFile(path.join(ROOT,file),'utf8');
   const provenance=await import('./check-assistant-later-h0-predecessor-source.mjs');
   assert.equal(typeof provenance.assertSource598CodeSourceSelected,'function');
@@ -1842,7 +1843,8 @@ test('assistant public587 active facade is fixed and refuses UNISSUED before I/O
     PUBLIC590.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR,
     PUBLIC590.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR,
     PUBLIC590.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
-    PUBLIC590.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR].includes(ACTIVE_ASSISTANT_SUCCESSOR));
+    PUBLIC590.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,
+    PUBLIC590.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR].includes(ACTIVE_ASSISTANT_SUCCESSOR));
   assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase);
   const next=PUBLIC590.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR;
   assert.equal(next.sourcePhase,'assistant-public590-successor');
@@ -2000,8 +2002,10 @@ test('assistant public587 operative import variants remain whole-source bound',a
   const historicalCommand='node scripts/build-assistant-later-h0-successor.mjs --active --check';
   const scalarCommand=historicalCommand+' && node --test scripts/test-scalar597-later-h0-successor.mjs';
   const after597Command=historicalCommand+' && node scripts/national584-source-evidence.mjs assistant-after597-source';
+  const {ASSISTANT_AFTER601_SOURCE_COMMANDS}=await import('./lib/release-gate-test-plan.mjs');
   assert.equal(pkg.scripts['test:assistant-later-h0-source'],
-    ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'?(await import('./national584-source-evidence.mjs')).ASSISTANT_AFTER599_SOURCE_COMMAND
+    ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor'?ASSISTANT_AFTER601_SOURCE_COMMANDS.join(' && ')
+    :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'?(await import('./national584-source-evidence.mjs')).ASSISTANT_AFTER599_SOURCE_COMMAND
     :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after598-successor'?(await import('./national584-source-evidence.mjs')).ASSISTANT_AFTER598_SOURCE_COMMAND
       :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor'?after597Command
       :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor'?scalarCommand:historicalCommand);
@@ -2200,14 +2204,18 @@ test('assistant594 native evidence requires its own new commands and rejects old
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   const active=m.ACTIVE_ASSISTANT_SUCCESSOR,prior=m.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR;
   const scalar=active===m.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
-    after597=active===m.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR,after598=active===m.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,after599=active===m.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR;
-  const old598Package=after599?await inverseReviewedAfter599PackageForHistoricalOracles(pkg):after598?e.inverseAssistantAfter598Package(pkg):pkg;
-  const predecessorPackage=after597||after598||after599?e.inverseAssistantAfter597Package(old598Package):old598Package;
-  const historicalPackage=scalar||after597||after598||after599?e.inverseScalar597LaterH0Package(predecessorPackage):predecessorPackage;
+    after597=active===m.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR,after598=active===m.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,
+    after599=active===m.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,after601=active===m.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
+  const after597OrLater=after597||after598||after599||after601;
+  const old598Package=after601?await readAuthenticatedAfter598PackageForHistoricalOracles()
+    :after599?await inverseReviewedAfter599PackageForHistoricalOracles(pkg):after598?e.inverseAssistantAfter598Package(pkg):pkg;
+  const predecessorPackage=after597OrLater?e.inverseAssistantAfter597Package(old598Package):old598Package;
+  const historicalPackage=scalar||after597OrLater?e.inverseScalar597LaterH0Package(predecessorPackage):predecessorPackage;
   e.verifyInstalled593Original591Package(historicalPackage);
   assert.deepEqual(n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,[n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
   assert.deepEqual(n.INSTALLED593_ORIGINAL591_COMMANDS,[n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
-  assert.deepEqual(n.ACTIVE_COMMANDS,after599?n.ASSISTANT_AFTER599_COMMANDS:after598?n.ASSISTANT_AFTER598_COMMANDS:after597?n.ASSISTANT_AFTER597_COMMANDS
+  assert.deepEqual(n.ACTIVE_COMMANDS,after601?['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after601-successor']
+    :after599?n.ASSISTANT_AFTER599_COMMANDS:after598?n.ASSISTANT_AFTER598_COMMANDS:after597?n.ASSISTANT_AFTER597_COMMANDS
     :scalar?n.SCALAR597_LATER_H0_COMMANDS:n.INSTALLED593_ORIGINAL591_COMMANDS);
   assert.deepEqual(e.INSTALLED593_ORIGINAL591_NATIVE_COMMANDS,n.INSTALLED593_ORIGINAL591_COMMANDS);
   const current={run:1,attempt:1,head:'a'.repeat(40),pullRequest:1,branch:'codex/synthetic594'};
@@ -2216,6 +2224,7 @@ test('assistant594 native evidence requires its own new commands and rejects old
     releaseVersion:prior.requireRelease(),binding:prior.requireBinding(),
     output:prior.requireOutput(),databaseBefore:prior.databaseBefore,
     commands:n.INSTALLED593_ORIGINAL591_COMMANDS,current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};
+  if(after601)assert.throws(()=>n.verifyAssistantAfter601PhaseReceipt(receipt,current));
   if(after599){
     await assert.rejects(()=>e.verifyAssistantAfter599NativeContext(receipt,current,active.requireRelease()));
     assert.throws(()=>e.verifyCurrentNativeCommands(receipt.commands,active.requireRelease()));
@@ -2435,8 +2444,8 @@ test('current OFF app migration stages real source and preserves default refusal
   const os=await import('node:os');
   const {spawnSync}=await import('node:child_process');
   const off=current.ACCOUNT_ERASURE_APP_MIGRATION,required=current.REQUIRED_CUTOVER_MIGRATIONS;
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'){
-    // The current family already requires app600 before its own numerical append.
+  if(['assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)){
+    // Both current families require app600 before their own numerical append.
     assert.equal(required.filter(row=>row.id===off.id).length,1);
     assert.equal(required.at(-1).version,ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().version);
     const temporary=await fs.mkdtemp(path.join(os.tmpdir(),'rr-current-erasure-dependency-'));
