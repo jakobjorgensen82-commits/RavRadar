@@ -24,7 +24,7 @@ installPublicAppUpdateFlow({
   version: String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '').trim(),
   translate: t,
 });
-await import("./app.js?v=4.0.602&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261125-uv-identification-daylight&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123");
+await import("./app.js?v=4.0.602&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261125-uv-identification-daylight&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123&assistant-locale=tab-20261125");
 appImported = true;
 performance.mark?.('ravradar:app-imported');
 void import("./js/services/visit-counter.js?v=4.0.602")

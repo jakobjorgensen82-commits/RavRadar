@@ -95,7 +95,8 @@ const previousOriginHelpSuffix = previousPublishedHelpSuffix.replace('assistant-
 const previousRamanHelpSuffix = previousOriginHelpSuffix.replace('assistant-help=20261123-origin-and-net', 'assistant-help=20261124-raman-followup');
 const previousLandingHelpSuffix = previousRamanHelpSuffix.replace('assistant-help=20261124-raman-followup', 'assistant-help=20261124-landing-precision');
 const previousWaterChangeSuffix = previousLandingHelpSuffix.replace('assistant-help=20261124-landing-precision', 'assistant-help=20261124-water-change');
-const suffix = previousWaterChangeSuffix.replace('assistant-help=20261124-water-change', 'assistant-help=20261125-uv-identification-daylight');
+const previousUvSuffix = previousWaterChangeSuffix.replace('assistant-help=20261124-water-change', 'assistant-help=20261125-uv-identification-daylight');
+const suffix = `${previousUvSuffix}&assistant-locale=tab-20261125`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
@@ -154,7 +155,7 @@ const previousDeliveredAssets = [
   [previousFrameSuffix, 'data-ready'], [previousDataReadySuffix, 'previous-data-ready'],
   [previousPublishedHelpSuffix, 'previous-published-help'], [previousRamanHelpSuffix, 'previous-raman-help'],
   [previousLandingHelpSuffix, 'previous-landing-help'],
-  [previousWaterChangeSuffix, 'previous-water-change'],
+  [previousWaterChangeSuffix, 'previous-water-change'], [previousUvSuffix, 'previous-uv-identification'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));

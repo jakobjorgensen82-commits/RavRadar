@@ -1,3 +1,9 @@
+## 25. november — assistenten følger sproget i den åbne fane
+
+En tysk RavRadar-fane gav et dansk svar efter sprogskift til dansk i en anden fane. Det fælles sprogvalg blev læst ved indsendelsen, selv om den tyske fane stadig viste sin tidligere valgte oversættelse.
+
+Spørg RavRadar bruger nu sproget på den viste side til lokale svar, samtalens sammenhæng og det sprog, der sendes til den eksterne assistent. Sprogvælgeren gemmer stadig valget til næste indlæsning. Sprogskift i en anden fane afbryder ingen åben samtale. En målrettet prøve dækker situationen gennem den almindelige formular.
+
 ## 24. november — vandstandsændring på 3 timer
 
 Den offentlige assistenthjælp forklarer feltet på dansk, tysk og engelsk. Tallet viser forskellen mellem den beregnede vandstand ved den valgte time og tre timer senere. Det giver et hurtigt overblik over ændringen, mens »Vandstand time for time« viser tidspunkt og udsving undervejs. Forklaringen følger den normale beregning i `scripts/lib/ravscore-production-adapters.mjs` og visningen i `js/ui/info-panel.js`.

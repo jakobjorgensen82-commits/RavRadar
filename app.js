@@ -679,9 +679,13 @@ function assistantForecastQuestion(question, topic) {
   return null;
 }
 function resetAssistantTopic(){assistantTopicState=null;assistantTurn++;}
+function assistantLanguage(){
+  // A preference written by another tab applies when this page is reloaded.
+  return document.documentElement?.lang || getLanguage();
+}
 function assistantTopicFrame(){
   const context=assistantContext();
-  return {language:getLanguage(),mode:state.mode,zoneId:state.selectedZone?.id??null,
+  return {language:assistantLanguage(),mode:state.mode,zoneId:state.selectedZone?.id??null,
     zone:state.selectedZone,conditions:state.conditions,zones:state.zones,
     weatherTime:context.weather?.time??null,modelBinding:context.modelBinding};
 }
@@ -691,7 +695,7 @@ function sameAssistantTopicFrame(left,right){
 assistantDialog.addEventListener('close',resetAssistantTopic);
 assistantDialog.addEventListener('cancel',resetAssistantTopic);
 document.querySelector('#assistantForm').addEventListener('reset',resetAssistantTopic);
-function assistantContext(){const zone=state.selectedZone,condition=zoneCondition(zone),display=zone?currentDisplayFor(zone):null;return {locale:getLanguage(),modelBinding:state.conditions?.ravScoreRuntime?.modelBinding??null,zone,weather:display?.weather||{},history:condition.history||{},result:display?.result||null,mode:state.mode,zones:state.zones,conditions:state.conditions};}
+function assistantContext(){const zone=state.selectedZone,condition=zoneCondition(zone),display=zone?currentDisplayFor(zone):null;return {locale:assistantLanguage(),modelBinding:state.conditions?.ravScoreRuntime?.modelBinding??null,zone,weather:display?.weather||{},history:condition.history||{},result:display?.result||null,mode:state.mode,zones:state.zones,conditions:state.conditions};}
 function addAssistantMessage(text,who="assistant",loading=false){const box=document.querySelector("#assistantMessages");const div=document.createElement("div");div.className=`assistant-message ${who}${loading?" loading":""}`;const p=document.createElement("p");p.textContent=text;div.appendChild(p);box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
 async function submitAssistantQuestion(question){
   const clean=String(question||"").trim();if(!clean)return;
@@ -699,7 +703,7 @@ async function submitAssistantQuestion(question){
   const previous=sameAssistantTopicFrame(assistantTopicState?.frame,frame)?assistantTopicState.topic:null;
   assistantTopicState=null;
   addAssistantMessage(clean,"user");
-  const pending=addAssistantMessage(t('assistant.working'),"assistant",true);
+  const pending=addAssistantMessage(t('assistant.working',{},frame.language),"assistant",true);
   try{
     const publicHelp=publicRavAssistantHelp(clean,frame.language,previous);
     if(publicHelp){
@@ -721,7 +725,7 @@ async function submitAssistantQuestion(question){
     const zoneDataIntent=['current','waves','water','model','limitations'].includes(assistantIntent);
     if(followup===null&&!coreViewReady&&(forecast||needsDetails||(state.selectedZone&&zoneDataIntent))){
       const ready=await initialDataReady;
-      if(!ready||turn!==assistantTurn||frame.language!==getLanguage())throw new Error(t('data.loadError'));
+      if(!ready||turn!==assistantTurn||frame.language!==assistantLanguage())throw new Error(t('data.loadError',{},frame.language));
       frame=assistantTopicFrame();
     }
     const usesCurrentZone=activeLandingView&&state.selectedZone
@@ -744,7 +748,7 @@ async function submitAssistantQuestion(question){
     const findTopic=forecast||knowledgeQuestion||followup!==null?null:publicRavAssistantFindTopic(clean,frame.language);
     let topic=forecast?.topic??(knowledgeQuestion||followup!==null?previous:
       (findTopic??assistantTopicForQuestion(clean)));
-    if((knowledgeQuestion||findTopic)&&[t('assistant.refusal'),t('assistant.remoteUnavailable')].includes(answer))topic=null;
+    if((knowledgeQuestion||findTopic)&&[t('assistant.refusal',{},frame.language),t('assistant.remoteUnavailable',{},frame.language)].includes(answer))topic=null;
     if(!topic&&followup===null&&frame.language==='en'&&assistantIntent==='wind'&&clean.length<=600){
       // Keep the original first answer. The service still owns whole-question topic admission.
       const topicQuestion=clean.replace(/^(?:what|which)\s+wind\s+direction\s+is\s+(?:good|best)(?=\s|[?!.]|$)/iu,'which wind is best');
@@ -761,10 +765,10 @@ async function submitAssistantQuestion(question){
       assistantTopicState={topic,frame:nextFrame};
     }
   }catch{
-    pending.querySelector("p").textContent=t('data.loadError');pending.classList.remove("loading");
+    pending.querySelector("p").textContent=t('data.loadError',{},frame.language);pending.classList.remove("loading");
   }
 }
-const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions().map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));
+const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions(assistantLanguage()).map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));
 const assistantButton = document.querySelector("#assistantButton");
 assistantButton.addEventListener("click",()=>{resetAssistantTopic();assistantDialog.showModal();});
 assistantButton.disabled = false;

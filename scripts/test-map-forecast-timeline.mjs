@@ -721,6 +721,7 @@ try{
     const ctx=vm.createContext({
       state,coreViewReady:true,activeManifest:{detailDelivery:{mapHoursLandingSchema:1}},activeLandingView:{generation:'g1',time,
         compact:{untrusted:true}},fullEvidencePending:null,runtimeGeneration:1,assistantTurn:0,assistantTopicState:null,
+      document:{documentElement:{lang:'de'}},
       t:key=>key,getLanguage:()=> 'da',getLocale:()=> 'da-DK',currentAppVersion:()=> '4.0.594',
       localZoneScore:()=>state.conditions===full?{available:true,score:73,localPart:true,localPartId:'P1',localWeather:{waterLevelCm:25},time}:null,
       emergencySnapshotReferenceAt:()=>null,assertRavScoreModelBinding:binding=>assert.equal(binding,full.ravScoreRuntime.modelBinding),
@@ -745,6 +746,7 @@ try{
       fragment('function currentDisplayFor(zone)','function resultFor(zone)'),
       fragment('function currentScoreFor(zone)','function nationalRankingRow(row)'),
       fragment('function ensureFullEvidence()','function ensureConditionDetails('),
+      fragment('function assistantLanguage()','function assistantTopicFrame()'),
       fragment('function assistantContext()','function addAssistantMessage('),
       fragment('async function submitAssistantQuestion(','const quickBox='),
       fragment('function staticPublicCoastalParts()','function userDataContext()'),
@@ -756,6 +758,7 @@ try{
     assert.equal(weatherReads,0);
     assert.equal(observations[0].context.conditions,state.conditions);
     assert.equal(observations[0].context.modelBinding,null);
+    assert.equal(observations[0].context.locale,'de','Assistant uses the displayed locale for normal map context');
     assert.equal(observations[0].context.result.available,false,'Normal score cache starts with no admitted evidence');
     assert.throws(()=>ctx.publicTripEvidenceContext(),/Kystdelene/);
     active={tripId:'already-active'};
