@@ -3,11 +3,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
-import { runSealedPagesDeployment, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesCreateRejectionEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
+import { runSealedPagesDeployment, MINIMUM_ADAPTIVE_FIRST_PAGES_POLL_MS,
+  hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesCreateRejectionEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
 import { classifyPagesStatus } from './lib/pages-per-artifact-identity.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
 import { getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS, ORDINARY_PAGES_RETRY_POLL_MS,
-  NORMAL_PAGES_COMPLETION_RESERVE_MS, hasOrdinaryPagesWriteBudget } from './lib/pages-sealed-retry-decision.mjs';
+  NORMAL_PAGES_COMPLETION_RESERVE_MS, ORDINARY_PAGES_FIRST_COMPLETION_RESERVE_MS,
+  hasOrdinaryPagesWriteBudget } from './lib/pages-sealed-retry-decision.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
 import { createProtectedPrivateRuntimeClients } from './protected-private-production-runtime.mjs';
@@ -16,9 +18,8 @@ import { readProtectedPagesWriterSnapshot } from './protected-operational-reentr
 const api = 'https://api.github.com';
 const repo = 'jakobjorgensen82-commits/RavRadar';
 const publicBase = 'https://ravradar.dk/';
-const minute = 60_000;
+const firstPollMs = 10 * 60_000;
 const retryPollMs = ORDINARY_PAGES_RETRY_POLL_MS;
-const firstPollMs = 10 * minute;
 const fixedRunId = /^[1-9]\d{0,15}$/;
 const hex40 = /^[0-9a-f]{40}$/;
 
@@ -65,7 +66,7 @@ async function main(env) {
   const predecessorSha256 = sha256CanonicalJson(predecessor);
   const clients=createProtectedPrivateRuntimeClients({storageBackend:'supabase',supabaseUrl:env.SUPABASE_URL,
     serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl:(url,options={})=>{
-      const remaining=Math.floor(deadline-Date.now()-NORMAL_PAGES_COMPLETION_RESERVE_MS);
+      const remaining=Math.floor(deadline-Date.now()-ORDINARY_PAGES_FIRST_COMPLETION_RESERVE_MS);
       assert(remaining>0,'PAGES_RETRY_WRITER_FENCE_UNPROVED');
       return fetch(url,{...options,redirect:'error',signal:AbortSignal.timeout(Math.min(12_000,remaining))});
     }});
@@ -95,17 +96,20 @@ async function main(env) {
   const receiptDir = await fs.realpath(env.RUNNER_TEMP);
   const deliveries = [];
   const submit = async (expectedSeal, deliveryOrdinal) => {
+    const firstDelivery = deliveryOrdinal === 1;
+    const minimumPollMs = firstDelivery ? MINIMUM_ADAPTIVE_FIRST_PAGES_POLL_MS : retryPollMs;
+    const completionReserveMs = firstDelivery ? ORDINARY_PAGES_FIRST_COMPLETION_RESERVE_MS : NORMAL_PAGES_COMPLETION_RESERVE_MS;
     transportInvocations++;
     let delivery;
     try {
       delivery = await runSealedPagesDeployment({
     env, seal: expectedSeal, expectedBaseUrl: publicBase, deliveryOrdinal,
-    waitMs: deliveryOrdinal === 1 ? firstPollMs : retryPollMs,
-    cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,
+    waitMs: firstDelivery ? firstPollMs : retryPollMs,
+    fitFirstPollToDeadline: firstDelivery,
+    cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs,
     readPublicTarget: readPublic,
     beforeCreate: async intent => {
-      const pollMs = deliveryOrdinal === 1 ? firstPollMs : retryPollMs;
-      if (!hasOrdinaryPagesWriteBudget(timeRemainingMs(), pollMs)) return false;
+      if (!hasOrdinaryPagesWriteBudget(timeRemainingMs(), minimumPollMs, completionReserveMs)) return false;
       if (await readPublic() !== predecessorSha256) return false;
       if (deliveryOrdinal === 2) {
         const first = deliveries[0];
@@ -118,7 +122,7 @@ async function main(env) {
       const currentSeal = await readHandoff('pages-artifact-seal.json');
       if (sha256CanonicalJson(currentSeal) !== sha256CanonicalJson(expectedSeal)) return false;
       if (!await revalidateWriter()) return false;
-      if (!hasOrdinaryPagesWriteBudget(timeRemainingMs(), pollMs)) return false;
+      if (!hasOrdinaryPagesWriteBudget(timeRemainingMs(), minimumPollMs, completionReserveMs)) return false;
       const file = path.join(receiptDir, 'rr-pages-' + runId + '-' + deliveryOrdinal + '.json');
       await fs.writeFile(file, JSON.stringify(intent) + '\n', { flag: 'wx', mode: 0o600 });
       return true;

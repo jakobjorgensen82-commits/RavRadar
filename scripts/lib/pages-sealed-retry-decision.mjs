@@ -8,11 +8,16 @@ export const MINIMUM_RECOVERY_WINDOW_MS = 19 * minute;
 export const ORDINARY_PAGES_RETRY_POLL_MS = 6 * minute;
 // Existing planning reserve, not a proved maximum public/CAS execution time.
 export const NORMAL_PAGES_COMPLETION_RESERVE_MS = MINIMUM_RECOVERY_WINDOW_MS - ORDINARY_PAGES_RETRY_POLL_MS;
+// Four ordinary production jobs measured 94–131 seconds from Pages to terminal seal.
+export const ORDINARY_PAGES_FIRST_COMPLETION_RESERVE_MS = 8 * minute;
 // Latest GET + one CANCEL + seven terminal GETs and six pauses.
 export const ORDINARY_PAGES_CLEANUP_RESERVE_MS = (2 + 7) * 12_000 + (7 - 1) * 5_000;
-export function hasOrdinaryPagesWriteBudget(remainingMs, pollMs) {
+const ordinaryPagesTransportReserveMs = 12_000 + ORDINARY_PAGES_CLEANUP_RESERVE_MS;
+
+export function hasOrdinaryPagesWriteBudget(remainingMs, pollMs, completionReserveMs = NORMAL_PAGES_COMPLETION_RESERVE_MS) {
   return Number.isSafeInteger(remainingMs) && Number.isSafeInteger(pollMs) && pollMs >= 5_000
-    && remainingMs >= 12_000 + pollMs + ORDINARY_PAGES_CLEANUP_RESERVE_MS + NORMAL_PAGES_COMPLETION_RESERVE_MS;
+    && [ORDINARY_PAGES_FIRST_COMPLETION_RESERVE_MS, NORMAL_PAGES_COMPLETION_RESERVE_MS].includes(completionReserveMs)
+    && remainingMs >= pollMs + ordinaryPagesTransportReserveMs + completionReserveMs;
 }
 const MINIMUM_OBSERVATIONS = 2;
 const MAXIMUM_OBSERVATIONS = 121;
