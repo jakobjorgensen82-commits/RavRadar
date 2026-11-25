@@ -607,11 +607,15 @@ export function assistantAfter599RegisterImportBeforeSource(source,file){
 const CAPSULE_ROLES=Object.freeze({
   'scripts/check-assistant-later-h0-predecessor-source.mjs':'host',
   'scripts/lib/authenticated-frozen586-predecessor.mjs':'consumer',
+  'scripts/assistant-later-h0-binding-prewrite.mjs':'consumer',
+  'scripts/lib/established-native-current-origin.mjs':'origin',
 });
 function capsuleSourceImports(normalized,file){
   const imports=exactRelativeModuleSpecifiers(normalized,file,CAPSULE_ROLES[file]);
   const original=ASSISTANT_AFTER598_REVIEWED[file].imports;
-  if(imports.length!==original.length||!imports.every(specifier=>original.includes(specifier))){
+  const declared=CAPSULE_ROLES[file]==='origin'
+    ?[...original,'../check-assistant-later-h0-predecessor-source.mjs']:original;
+  if(imports.length!==declared.length||!imports.every(specifier=>declared.includes(specifier))){
     throw new Error('Undeclared capsule module dependency: '+file);
   }
   return Object.freeze(imports);
