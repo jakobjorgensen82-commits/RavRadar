@@ -46,14 +46,35 @@ if(AFTER599_CURRENT_MODE){
   await verifyAssistantAfter599SourceTarget();
 }
 async function verifyNormalContinuationData(t,{withSource,head,assertionPath,assertion,family}){
-  await withSource(async root=>{
-    const load=relative=>import(pathToFileURL(path.join(root,relative)).href);
+  let archivedLoader;
+  await withSource(async (root,load)=>{
+    archivedLoader=load;
+    const loadFixture=relative=>import(pathToFileURL(path.join(root,relative)).href);
+    if(family==='601'){
+      await assert.rejects(load(path.join(root,assertionPath)),/Undeclared or closed capsule module/);
+      const tempParent=await fs.realpath(os.tmpdir());
+      assert.equal(path.dirname(root),tempParent);
+      const moved=root+'-original';
+      await fs.rename(root,moved);
+      try{
+        await fs.mkdir(root);
+        try{await assert.rejects(load(assertionPath),/Invalid capsule host/);}
+        finally{await fs.rmdir(root);}
+      }finally{await fs.rename(moved,root);}
+      const unrelated='scripts/lib/ravscore-sampling-context.mjs';
+      await assert.rejects(load(unrelated),/Undeclared or closed capsule module/);
+      const leaf=path.join(root,unrelated),original=await fs.readFile(leaf);
+      try{
+        await fs.writeFile(leaf,Buffer.concat([original,Buffer.from('// altered capsule fixture')]));
+        await assert.rejects(load(assertionPath),/Fixed producer source changed/);
+      }finally{await fs.writeFile(leaf,original);}
+    }
     const [data,I,C,stateI,stateC,context,partContract,rollback,workflow,checkpoint,protectedB]=await Promise.all([
       load(assertionPath),
-      load('js/core/ravscore-model-contract.js'),load('scripts/rollback-assets/ravscore-model-contract.js'),
-      load('js/core/ravscore-integrated-state-pipeline.js'),load('js/core/ravscore-candidate-g-state-pipeline.js'),
-      load('scripts/lib/ravscore-sampling-context.mjs'),load('scripts/lib/coastal-point-staging-contract.mjs'),
-      load('scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'),load('scripts/private-production-runtime-workflow.mjs'),
+      load('js/core/ravscore-model-contract.js'),loadFixture('scripts/rollback-assets/ravscore-model-contract.js'),
+      loadFixture('js/core/ravscore-integrated-state-pipeline.js'),loadFixture('js/core/ravscore-candidate-g-state-pipeline.js'),
+      loadFixture('scripts/lib/ravscore-sampling-context.mjs'),loadFixture('scripts/lib/coastal-point-staging-contract.mjs'),
+      loadFixture('scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'),load('scripts/private-production-runtime-workflow.mjs'),
       load('scripts/ravscore-continuation-checkpoint.mjs'),load('scripts/protected-private-production-runtime.mjs'),
     ]);
     const assertSnapshotData=data[assertion];
@@ -130,6 +151,7 @@ async function verifyNormalContinuationData(t,{withSource,head,assertionPath,ass
     const changedAttestation=structuredClone(input);changedAttestation.conditions.privateEstablishedNativeCurrentOrigin.attestationSha256='0'.repeat(64);
     await assert.rejects(assertSnapshotData(changedAttestation),/ATTESTATION_HASH/);
   });
+  if(family==='601')await assert.rejects(archivedLoader(assertionPath),/Undeclared or closed capsule module/);
 }
 
 if(AFTER601_PREDECESSOR_MODE){

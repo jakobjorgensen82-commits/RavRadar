@@ -138,11 +138,35 @@ function statementEnd(items, start) {
   return items.length;
 }
 
-export function exactRelativeModuleSpecifiers(source, label = 'module') {
+// Contract of the one computed import owned by the verified archive host.
+const VERIFIED_CAPSULE_IMPORT=tokens(`
+  async function importCapsuleLeaf(file){
+    assert(importsOpen&&DECLARED_MODULES.includes(file)&&written.has(file),'Undeclared or closed capsule module');
+    const verifiedLeaf=path.resolve(root,file);
+    assert(inside(root,verifiedLeaf),'Invalid capsule module location');
+    await noLinks(root);
+    assert.deepEqual(identity(await fs.lstat(root,{bigint:true})),owned,'Invalid capsule host');
+    await exactTree(root,[...written].sort(),index,gitReference);
+    const verifiedLeafUrl=pathToFileURL(verifiedLeaf);
+    return import(verifiedLeafUrl.href);
+  }
+`);
+const CAPSULE_IMPORT_OFFSET=VERIFIED_CAPSULE_IMPORT.findIndex(token=>token.type==='id'&&token.value==='import');
+
+function matchesCapsuleImport(items,index){
+  const start=index-CAPSULE_IMPORT_OFFSET;
+  return start>=0&&VERIFIED_CAPSULE_IMPORT.every((token,offset)=>{
+    const actual=items[start+offset];
+    return token.type===actual?.type&&token.value===actual.value;
+  });
+}
+
+export function exactRelativeModuleSpecifiers(source, label = 'module', capsuleRole) {
   let items;
   try { items = tokens(source); }
   catch (error) { throw new Error(`${label}: ${error.message}`); }
   const values = new Set();
+  let capsuleImports = 0;
   for (let index = 0; index < items.length; index += 1) {
     const token = items[index];
     if (token.type !== 'id' || !['import', 'export'].includes(token.value)) continue;
@@ -151,7 +175,12 @@ export function exactRelativeModuleSpecifiers(source, label = 'module') {
     if (token.value === 'import' && next?.value === '(') {
       const specifier = items[index + 2];
       const close = items[index + 3];
-      if (specifier?.type !== 'string' || close?.value !== ')') {
+      if (capsuleRole === 'host' && matchesCapsuleImport(items,index)) {
+        capsuleImports += 1;
+        index += 5;
+        continue;
+      }
+      if (capsuleRole || specifier?.type !== 'string' || close?.value !== ')') {
         throw new Error(`${label} contains a non-literal or unparsed dynamic import`);
       }
       if (specifier.value.startsWith('./') || specifier.value.startsWith('../')) {
@@ -185,6 +214,9 @@ export function exactRelativeModuleSpecifiers(source, label = 'module') {
     } else if (token.value === 'import') {
       throw new Error(`${label} contains an unparsed import expression`);
     }
+  }
+  if (capsuleRole === 'host' && capsuleImports !== 1) {
+    throw new Error(label + ' must have exactly one verified capsule import');
   }
   return [...values];
 }

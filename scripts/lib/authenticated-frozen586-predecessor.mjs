@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {fileURLToPath,pathToFileURL} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import {execFile as callbackExec} from 'node:child_process';
 import {promisify,isDeepStrictEqual} from 'node:util';
 import {PRIVATE_CONDITIONS_MAX_BYTES} from './bounded-json-writer.mjs';
@@ -123,8 +123,7 @@ async function readAuthenticatedPredecessor(){
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
   const paths=await fixedPaths();
-  return profile.withSource(async frozenRoot=>{
-    const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
+  return profile.withSource(async (frozenRoot,load)=>{
     const [protectedB,protectedS,bundle,normalS,workflow,model,dataAssertions,descriptorIO]=await Promise.all([
       load('scripts/protected-private-production-runtime.mjs'),load('scripts/protected-ravscore-continuation-checkpoint.mjs'),
       load('scripts/private-production-runtime-bundle.mjs'),load('scripts/ravscore-continuation-checkpoint.mjs'),
