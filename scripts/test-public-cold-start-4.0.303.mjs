@@ -162,16 +162,25 @@ const previousDeliveredAssets = [
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
 }
-const fetched = [];
+const fetched = [], precached = [];
 vm.runInNewContext(worker, {
-  URL, Response,
+  URL, Response, Request: class extends Request {
+    constructor(url, options) { super(new URL(url, origin), options); }
+  },
   self: { location: {origin}, addEventListener: (event, handler) => handlers.set(event, handler) },
   caches: { open: async () => ({
     match: async request => cached.get(request.url),
     put: (request, response) => cached.set(request.url, response),
+    add: async request => { precached.push(request); },
   }) },
   fetch: async request => { fetched.push(request.url); return new Response(`new:${request.url}`); },
 });
+let installation;
+handlers.get('install')({waitUntil: promise => {installation=promise;}});
+await installation;
+const accountPanelUrl = new URL(`./js/ui/account-panel.js?v=${releaseVersion}&ui=account-20261006`, origin);
+assert.deepEqual(precached.filter(request => request instanceof Request).map(request => [request.url, request.cache]),
+  [[accountPanelUrl.href, 'reload']]);
 for (const file of ['bootstrap.js', 'app.js']) {
   let response;
   const request = {method:'GET',mode:'cors',url:`${origin}/${file}${suffix}`};

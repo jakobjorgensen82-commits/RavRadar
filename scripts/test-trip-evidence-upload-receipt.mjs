@@ -486,9 +486,18 @@ const reportAnswer = { startedAt: '2026-08-23T06:00:00.000Z', searchMinutes: 60,
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
 function ui(h, form) {
-  const content = { innerHTML: '', querySelector: () => null };
+  const noticeMarkup = '<p id="accountTripReportStatus" class="notice" role="status" hidden></p>';
+  let markup = '', notice;
+  const content = {
+    get innerHTML() { return notice?.textContent ? markup.replace(noticeMarkup, notice.textContent) : markup; },
+    set innerHTML(value) {
+      markup = value;
+      notice = markup.includes(noticeMarkup) ? { textContent: '', hidden: true } : null;
+    },
+    querySelector: selector => selector === '#accountTripReportStatus' ? notice : null,
+  };
   const events = new EventTarget();
-  const dialog = { open: true, querySelector: () => content,
+  const dialog = { open: true, querySelector: selector => selector === '.dialog-content' ? content : content.querySelector(selector),
     addEventListener: (...args) => events.addEventListener(...args),
     removeEventListener: (...args) => events.removeEventListener(...args),
     close() { this.open = false; events.dispatchEvent(new Event('close')); },
@@ -497,6 +506,7 @@ function ui(h, form) {
   const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, getLanguage, t, ...quality, ...model, crypto,
     openAccountTripReportDialog: () => form.promise };
   vm.runInNewContext(`${accountBody}\nthis.api={openAccountDialog,showAccountTripReport,showTripHistory};`, scope);
+  scope.api.openAccountDialog(dialog);
   return { dialog, content, ...scope.api };
 }
 
@@ -548,6 +558,24 @@ for (const kind of ['other-owner new login', 'same-owner new login', 'logout', '
     } finally { form.resolve(null); body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
   });
 }
+
+test('late manual report success updates its notice without replacing account controls', async () => {
+  const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();
+  let operation, reads = 0;
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
+    const notice = panel.content.querySelector('#accountTripReportStatus');
+    form.resolve(reportAnswer);
+    operation = panel.showAccountTripReport(panel.dialog, {});
+    await turn();
+    assert.equal(reads, 1);
+    body.resolve({ stored: true });
+    await operation;
+    assert.strictEqual(panel.content.querySelector('#accountTripReportStatus'), notice);
+    assert.equal(notice.textContent, t('account.reportRemote'));
+    assert.equal(notice.hidden, false);
+  } finally { form.resolve(null); body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+});
 
 test('late manual report success preserves the open trip history', async () => {
   const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();

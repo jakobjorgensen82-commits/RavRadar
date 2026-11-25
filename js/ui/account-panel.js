@@ -187,7 +187,13 @@ async function showAccountTripReport(dialog, context) {
   const view = {};
   pendingReportViews.set(dialog, view);
   const isCurrentView = () => pendingReportViews.get(dialog) === view;
+  const reportStatus = dialog.querySelector('#accountTripReportStatus');
+  const setReportStatus = message => {
+    reportStatus.textContent = message;
+    reportStatus.hidden = !message;
+  };
   let waitingForSave = false;
+  setReportStatus('');
   dialog.close();
   try {
     const answer = await openAccountTripReportDialog({
@@ -200,14 +206,14 @@ async function showAccountTripReport(dialog, context) {
     if (!isCurrentView()) return;
     if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
     if (!dialog.open) dialog.showModal();
-    if (!answer) return renderAccount(dialog, context);
+    if (!answer) return;
     const report = buildAccountTripReport({ observationOrigin: 'self-reported', ...answer, tripId: crypto.randomUUID() });
     waitingForSave = true;
     const result = await submitAccountTripReportObservation(toAccountObservationColumns(report));
     if (!isCurrentView() || !dialog.open) return;
     if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
     const message = t(result.stored === 'remote' ? 'account.reportRemote' : 'account.reportQueued');
-    renderAccount(dialog, context, message);
+    setReportStatus(message);
   } catch (error) {
     if (waitingForSave && (!isCurrentView() || !dialog.open)) {
       if (isCurrentOwner()) deferredReportFailures.set(dialog, { identity, userId });
@@ -215,7 +221,8 @@ async function showAccountTripReport(dialog, context) {
     }
     if (!isCurrentView()) return;
     if (!dialog.open) dialog.showModal();
-    renderAccount(dialog, context, isCurrentOwner() ? error?.message || t('account.reportFailed') : t('account.reportFailed'));
+    if (!isCurrentOwner()) return renderAccount(dialog, context, t('account.reportFailed'));
+    setReportStatus(error?.message || t('account.reportFailed'));
   }
 }
 
@@ -236,6 +243,7 @@ function renderAccount(dialog, context, message = '') {
     <p>${t('account.signedInBody')}</p>
     ${message ? `<p class="notice" role="status">${escapeHtml(message)}</p>` : ''}
     ${previousReportUnconfirmed ? `<p class="notice" role="status">${unconfirmedTripReportCopy[getLanguage()]}</p>` : ''}
+    <p id="accountTripReportStatus" class="notice" role="status" hidden></p>
     <a id="accountTripReportLink" class="account-feature-link" href="#indberet-tur">${t('account.report')} <span aria-hidden="true">→</span></a>
     <a id="tripHistoryLink" class="account-feature-link" href="#mine-ture">${t('account.history')} <span aria-hidden="true">→</span></a>
     <button id="tripExportButton" class="account-feature-link" type="button">${t('account.exportTrips')}</button>
