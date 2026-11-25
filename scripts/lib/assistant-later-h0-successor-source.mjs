@@ -1282,6 +1282,12 @@ export function requireAssistantAfter601Output(){
   for(const value of Object.values(output))assert.match(value,/^[a-f0-9]{64}$/);
   return output;
 }
+const ASSISTANT_AFTER601_RELEASE='4.0.603';
+function requireAssistantAfter601Release(){
+  assert.equal(arguments.length,0);
+  requireAssistantAfter601Output();
+  return ASSISTANT_AFTER601_RELEASE;
+}
 export function assistantAfter601Migration(){
   assert.equal(arguments.length,0);
   const {version}=requireAssistantAfter601Binding();
@@ -1304,7 +1310,8 @@ export const INACTIVE_ASSISTANT_AFTER601_SUCCESSOR=Object.freeze({
   installedAppMigrations:ASSISTANT_AFTER601_APPLIED_APP,originalStateFamily:'601',
   binding:ASSISTANT_AFTER601_BINDING,output:ASSISTANT_AFTER601_OUTPUT,
   requireBinding:requireAssistantAfter601Binding,requireOutput:requireAssistantAfter601Output,
-  migration:assistantAfter601Migration,readCanonicalSource:readAssistantAfter601CanonicalSource,
+  requireRelease:requireAssistantAfter601Release,migration:assistantAfter601Migration,
+  readCanonicalSource:readAssistantAfter601CanonicalSource,
   readPredecessorCanonicalSource:readAssistantAfter599CanonicalSource,
   assertTarget(descriptor,targetReferenceAt){
     assert.equal(arguments.length,2);
