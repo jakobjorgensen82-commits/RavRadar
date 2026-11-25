@@ -558,22 +558,25 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
 
 test('actual issued repair keeps all five family-bound saved guards and command routes closed', async () => {
   const profile=AFTER598_WORKFLOW_SOURCE.ACTIVE_ASSISTANT_SUCCESSOR;
-  const after599=profile===AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR;
-  assert([AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,
-    AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR].includes(profile));
-  const savedFamily=after599?'after599':'after598';
-  assert.equal(profile?.sourcePhase,'assistant-'+savedFamily+'-successor');
+  assert([AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,
+    AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR].includes(profile));
+  const savedFamily='assistant-current';
   profile.requireOutput();
   const binding=profile.requireBinding();
-  assert.equal(profile.requireRelease(),after599?'4.0.601':'4.0.599');
-  assert.equal(ravScoreModelBinding().modelBundleSha256,binding.I);
-  assert.equal(candidateBinding().modelBundleSha256,binding.C);
+  if(profile===AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR){
+    // 599 is published by the fixed, authenticated 601 source. The working
+    // tree can already contain next-model manifests before active selection.
+    const {SOURCE601_ORIGINAL_DATA_PROFILE:installed}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+    assert.deepEqual([binding.I,binding.C,binding.T],[installed.integrated,installed.candidate,
+      installed.runtimeContracts.continuationStateContractSha256]);
+  }else{
+    assert.equal(ravScoreModelBinding().modelBundleSha256,binding.I);
+    assert.equal(candidateBinding().modelBundleSha256,binding.C);
+  }
   const descriptor={modelBinding:{modelBundleSha256:binding.I},
     contractHashes:{continuationStateContractSha256:binding.T}};
-  const old=after599?AFTER598_WORKFLOW_SOURCE.ASSISTANT_AFTER599_BEFORE
-    :AFTER598_WORKFLOW_SOURCE.ASSISTANT_AFTER598_BEFORE;
-  const requiresReconcile=after599?CURRENT_RECONCILE.requiresAssistantAfter599CheckpointReconcile
-    :CURRENT_RECONCILE.requiresAssistantAfter598CheckpointReconcile;
+  const old=profile.before;
+  const requiresReconcile=CURRENT_RECONCILE.requiresActiveAssistantCheckpointReconcile;
   assert.equal(typeof requiresReconcile,'function');
   assert.equal(requiresReconcile(descriptor),true);
   assert.equal(requiresReconcile({
@@ -605,20 +608,20 @@ test('actual issued repair keeps all five family-bound saved guards and command 
   };
   const selectRun=[
     '          set -euo pipefail',
-    '          if test "${{ steps.saved-after598-source.outputs.required }}" = true; then',
-    '            node scripts/reconcile-private-runtime-checkpoint.mjs select-after598-saved',
+    '          if test "${{ steps.saved-assistant-current-source.outputs.required }}" = true; then',
+    '            node scripts/reconcile-private-runtime-checkpoint.mjs select-assistant-current-saved',
     '          else',
     '            node scripts/reconcile-private-runtime-checkpoint.mjs select-saved',
     '            test "${{ steps.saved-last-mile-source.outputs.required }}" = true',
     '          fi',
-  ].join('\n').replaceAll('after598',savedFamily);
+  ].join('\n');
   const reconcileRun=[
     '          set -euo pipefail',
     '          test "${{ steps.current-private-install.outcome }}" = success',
     '          test "${{ steps.saved-checkpoint-reconcile.outputs.required }}" = true',
-    '          if test "${{ steps.saved-after598-source.outputs.required }}" = true; then',
+    '          if test "${{ steps.saved-assistant-current-source.outputs.required }}" = true; then',
     '            test "$RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE" = true',
-    '            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-after598-saved',
+    '            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-assistant-current-saved',
     '          else',
     '            if test "${RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE:-false}" = true; then',
     '              test "$RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_PHASE" = installed',
@@ -627,7 +630,7 @@ test('actual issued repair keeps all five family-bound saved guards and command 
     '            fi',
     '            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-saved',
     '          fi',
-  ].join('\n').replaceAll('after598',savedFamily);
+  ].join('\n');
   const verify=source=>{
     const selected=byId(source,'saved-'+savedFamily+'-source'),select=byId(source,'saved-checkpoint-reconcile');
     const paired=byId(source,'saved-checkpoint-paired');
@@ -736,6 +739,46 @@ test('new594 publication requires exact paired S and rejects mixed installed593 
       assert.equal(requiresPrivateRuntimeCheckpointReconcile({modelBinding:{modelBundleSha256:I},
         contractHashes:{continuationStateContractSha256:T}}),false);
 });
+test('601 checkpoint reconciliation selects only an exact earlier parent under the active route',()=>{
+  const {ACTIVE_ASSISTANT_SUCCESSOR:active,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR:phase599,
+    INACTIVE_ASSISTANT_AFTER601_SUCCESSOR:phase601}=AFTER598_WORKFLOW_SOURCE;
+  const toDescriptor=({I,T})=>({modelBinding:{modelBundleSha256:I},contractHashes:{continuationStateContractSha256:T}});
+  assert.equal(CURRENT_RECONCILE.requiresActiveAssistantCheckpointReconcile(toDescriptor(active.requireBinding())),true);
+  const inactive=active===phase599?phase601:phase599;
+  assert.equal(CURRENT_RECONCILE.requiresActiveAssistantCheckpointReconcile(toDescriptor(inactive.requireBinding())),false);
+  const issued601=toDescriptor(phase601.before);
+  assert.equal(issued601.modelBinding.modelBundleSha256,phase599.requireBinding().I);
+  const ref='2026-11-25T03:00:00.000Z',later='2026-11-25T07:00:00.000Z';
+  const row={payload:{modelBinding:issued601.modelBinding,
+    continuationStateContractSha256:issued601.contractHashes.continuationStateContractSha256,productionReferenceAt:ref}};
+  const classify=CURRENT_RECONCILE.assistantAfter601ReconcileParent;
+  assert.equal(classify([row],later),true);
+  for(const hour of [ref,'2026-11-25T02:00:00.000Z','2026-11-25T07:30:00.000Z','missing'])
+    assert.throws(()=>classify([row],hour),/GENUINE601_STRICTLY_OLDER/);
+  for(const payload of [
+    {...row.payload,modelBinding:toDescriptor(phase599.before).modelBinding},
+    {...row.payload,continuationStateContractSha256:phase601.requireBinding().T},
+    {...row.payload,modelBinding:toDescriptor(phase601.requireBinding()).modelBinding},
+  ])assert.equal(classify([{payload}],later),false);
+  assert.equal(classify([row,row],later),false);
+  assert.equal(classify([],later),false);
+  assert.throws(()=>classify([row],later,{family:'599'}));
+  assert.equal(CURRENT_RECONCILE.assistantAfter599ReconcileParent([row],later),false);
+});
+
+test('ordinary historical maintenance uses the same active reconciliation commands',async()=>{
+  const workflow=(await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  for(const action of ['select','reconcile']){
+    const command='node scripts/reconcile-private-runtime-checkpoint.mjs '+action;
+    const branch=`          if test "$OPERATIONAL_ACTION" = integrated-historical-maintenance; then
+            ${command}-assistant-current
+          else
+            ${command}
+          fi`;
+    assert.equal(workflow.split(branch).length,2);
+  }
+});
+
 test('both fixed families and separate saved guard reject mixed tuples and colliding modes', () => {
   for (const family of [OLD_FAMILY, NEW_FAMILY]) {
     const descriptor = { modelBinding: { modelBundleSha256: family.I },
@@ -789,11 +832,17 @@ test('actual readonly ordinary and saved CLI select use one genuine committed so
   const flags = { COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false', QUICK_CONFIRMATION: 'false',
     RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
     NATIVE_IDENTITY_RECOVERY: 'false' };
-  for (const command of ['select', 'select-saved']) {
+  for (const command of ['select','select-saved','select-assistant-current','select-assistant-current-saved']) {
+    const activeCommand=command.includes('assistant-current'),saved=command.endsWith('-saved');
+    const input=path.join(own,saved?'current-private-runtime-source.json':'private-runtime-current-source.json');
+    if(activeCommand){
+      const {I,T}=AFTER598_WORKFLOW_SOURCE.ACTIVE_ASSISTANT_SUCCESSOR.requireBinding();
+      await fs.writeFile(input,JSON.stringify({modelBinding:{modelBundleSha256:I},contractHashes:{continuationStateContractSha256:T}}));
+    }
     const output = path.join(own, command + '.out'); await fs.writeFile(output, '', { flag: 'wx' });
     const env = { ...baseEnv, ...flags, OPERATIONAL_ACTION: 'integrated', GITHUB_REF: 'refs/heads/main',
       GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_SHA: head, RUNNER_TEMP: own, GITHUB_OUTPUT: output };
-    if (command === 'select-saved') Object.assign(env, { OPERATIONAL_ACTION: 'integrated-historical-maintenance',
+    if (saved) Object.assign(env, { OPERATIONAL_ACTION: 'integrated-historical-maintenance',
       GITHUB_WORKFLOW: 'Deploy RavRadar code-only repair', CONFIRMATION: 'DEPLOY-SAVED-WEATHER-REPAIR',
       PUBLISH_NEWEST_SAVED_WEATHER: 'true', RESTART_ARCHIVED_WEATHER: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false',
       UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false', UPGRADE_EXISTING_OWNER_EXPORT: 'false',
@@ -803,6 +852,23 @@ test('actual readonly ordinary and saved CLI select use one genuine committed so
       { cwd: host, env, encoding: 'utf8', timeout: 30000 });
     assert.equal(child.status, 0, child.stderr); assert.equal(child.signal, null);
     assert.equal(await fs.readFile(output, 'utf8'), 'required=true' + String.fromCharCode(10));
+    if(activeCommand){
+      const inactive=AFTER598_WORKFLOW_SOURCE.ACTIVE_ASSISTANT_SUCCESSOR===AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR
+        ?AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR:AFTER598_WORKFLOW_SOURCE.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR;
+      const {I,T}=inactive.requireBinding();
+      await fs.writeFile(input,JSON.stringify({modelBinding:{modelBundleSha256:I},contractHashes:{continuationStateContractSha256:T}}));
+      await fs.writeFile(output,'');
+      const cold=spawnSync(process.execPath,['scripts/reconcile-private-runtime-checkpoint.mjs',command],
+        {cwd:host,env,encoding:'utf8',timeout:30000});
+      assert.equal(cold.status,0,cold.stderr);
+      assert.equal(await fs.readFile(output,'utf8'),'required=false'+String.fromCharCode(10));
+      await fs.writeFile(output,'');
+      const override=spawnSync(process.execPath,['scripts/reconcile-private-runtime-checkpoint.mjs',command,'after601'],
+        {cwd:host,env,encoding:'utf8',timeout:30000});
+      assert.equal(override.status,1);
+      assert.match(override.stderr,/PRIVATE_B_S_RECONCILE_REFUSED/);
+      assert.equal(await fs.readFile(output,'utf8'),'');
+    }
     if (command === 'select-saved') for (const key of ['UPGRADE_ACCOUNT_STATISTICS_ASSISTANT', 'UPGRADE_NATIVE_ORIGINAL_CONTINUITY']) for (const value of ['true', undefined]) {
       const rejectedOutput = path.join(own, 'saved-rejected-' + key + '-' + String(value) + '.out');
       await fs.writeFile(rejectedOutput, '', { flag: 'wx' });
