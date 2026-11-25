@@ -1705,6 +1705,10 @@ jobs:
         env:
           RAVRADAR_PAGES_REPEAT_ANCHOR: ${{ inputs.prior_pages_anchor }}
           RAVRADAR_PAGES_REPEAT_ACTION: ${{ steps.operational-action.outputs.action }}
+          PAIRED_ROUTE_REQUIRED: ${{ steps.paired-checkpoint-route.outputs.required }}
+          PAIRED_ROUTE_OUTCOME: ${{ steps.paired-checkpoint-route.outcome }}
+          PAIRED_RECONCILE_OUTCOME: ${{ steps.paired-checkpoint-reconcile.outcome }}
+          PAIRED_RECONCILE_PROVED: ${{ steps.paired-checkpoint-reconcile.outputs.paired }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
@@ -1713,7 +1717,11 @@ jobs:
           test "${{ steps.private-runtime-install.outcome }}" = success
           test "${{ steps.exact-weather-recovery.outputs.required }}" != true
           test "${{ steps.historical-wave-predecessor.outputs.required }}" != true
-          test "${{ steps.paired-checkpoint-route.outputs.required }}" != true
+          case "$PAIRED_ROUTE_REQUIRED:$PAIRED_ROUTE_OUTCOME" in
+            false:success|:skipped) ;;
+            true:success) test "$PAIRED_RECONCILE_OUTCOME:$PAIRED_RECONCILE_PROVED" = success:true ;;
+            *) exit 1 ;;
+          esac
           node scripts/pages-cancelled-replay-continuity.mjs admit
 
       - name: Validate provider-free checkpoint continuation request

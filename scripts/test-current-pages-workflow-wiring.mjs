@@ -307,6 +307,65 @@ test('current Pages workflow guards both weather bases before publication', asyn
   for (const marker of order) assert.ok(raw.includes(marker), marker);
 });
 
+test('fresh weather after a closed Pages failure accepts only an attested paired route', async () => {
+  const raw = await rawWorkflow('../.github/workflows/reusable-weather-build.yml');
+  const step = coldStep(raw, 'Verify the exact saved pair before fresh weather after a closed Pages failure');
+  const bindings = {
+    PAIRED_ROUTE_REQUIRED: 'steps.paired-checkpoint-route.outputs.required',
+    PAIRED_ROUTE_OUTCOME: 'steps.paired-checkpoint-route.outcome',
+    PAIRED_RECONCILE_OUTCOME: 'steps.paired-checkpoint-reconcile.outcome',
+    PAIRED_RECONCILE_PROVED: 'steps.paired-checkpoint-reconcile.outputs.paired',
+  };
+  for (const [name, expression] of Object.entries(bindings)) {
+    assert.ok(step.includes('          ' + name + ': ${{ ' + expression + ' }}'));
+  }
+  const { isPagesOnlyWeatherBuildChange } = await import('./source-current-contract-plan.mjs');
+  const earlierStep = step.replace(/^          PAIRED_(?:ROUTE|RECONCILE)_[A-Z]+: .*\n/gm, '')
+    .replace(/          case "\$PAIRED_ROUTE_REQUIRED:\$PAIRED_ROUTE_OUTCOME" in\n[\s\S]*?          esac\n/,
+      '          test "${{ steps.paired-checkpoint-route.outputs.required }}" != true\n');
+  const earlierWorkflow = raw.replace(step, earlierStep);
+  assert.notEqual(earlierWorkflow, raw);
+  assert.equal(isPagesOnlyWeatherBuildChange(earlierWorkflow, raw), true);
+  assert.equal(isPagesOnlyWeatherBuildChange(raw, earlierWorkflow), false);
+  const weakened = raw.replace(step, step.replace('= success:true', '= success:false'));
+  assert.equal(isPagesOnlyWeatherBuildChange(earlierWorkflow, weakened), false);
+  const differentCommand = raw.replace(step, step.replace('pages-cancelled-replay-continuity.mjs admit',
+    'pages-cancelled-replay-continuity.mjs compare'));
+  assert.equal(isPagesOnlyWeatherBuildChange(earlierWorkflow, differentCommand), false);
+  const normalGuards = {
+    'inputs.completed_private_runtime': 'false',
+    'steps.private-runtime-install.outcome': 'success',
+    'steps.exact-weather-recovery.outputs.required': 'false',
+    'steps.historical-wave-predecessor.outputs.required': '',
+  };
+  const program = step.split('        run: |\n')[1].replace(/^ {10}/gm, '')
+    .replace(/\$\{\{ ([a-z_.-]+) \}\}/g, (_, key) => {
+      assert.ok(Object.hasOwn(normalGuards, key), key);
+      return normalGuards[key];
+    });
+  const shell = process.platform === 'win32'
+    ? path.resolve(execFileSync('git', ['--exec-path'], { encoding: 'utf8' }).trim(), '../../../usr/bin/sh.exe')
+    : 'bash';
+  const sentinel = 'node(){ test "$*" = "scripts/pages-cancelled-replay-continuity.mjs admit" && echo ADMITTED; };\n';
+  for (const [required, route, reconciled, proved, allowed] of [
+    ['true', 'success', 'success', 'true', true],
+    ['true', 'success', 'success', '', false],
+    ['true', 'success', 'skipped', '', false],
+    ['true', 'success', 'failure', 'true', false],
+    ['true', 'skipped', 'success', 'true', false],
+    ['false', 'success', 'skipped', '', true],
+    ['', 'skipped', 'skipped', '', true],
+    ['', 'success', 'skipped', '', false],
+    ['unknown', 'success', 'skipped', '', false],
+  ]) {
+    const env = { ...process.env, PAIRED_ROUTE_REQUIRED: required, PAIRED_ROUTE_OUTCOME: route,
+      PAIRED_RECONCILE_OUTCOME: reconciled, PAIRED_RECONCILE_PROVED: proved };
+    const execute = () => execFileSync(shell, ['-c', sentinel + program], { env, encoding: 'utf8', stdio: 'pipe' });
+    if (allowed) assert.equal(execute().trim(), 'ADMITTED');
+    else assert.throws(execute, error => error.status === 1 && error.stdout === '');
+  }
+});
+
 function coldBlock(source, header) {
   const marker = header + '\n', at = source.indexOf(marker);
   assert(at >= 0, 'Actual C workflow block: ' + header);

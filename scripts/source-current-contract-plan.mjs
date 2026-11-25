@@ -798,8 +798,31 @@ function installerIsHandbookOnly(input){
   return project(input.baselineCommit)===project(input.candidateCommit);
 }
 
-// Det brede vejrworkflow er ikke en Pages-ejendom. Denne ene aktuelle
-// ændringsflade er to navngivne trins GH_TOKEN-felt; hele resten bevares.
+function normalizePagesSavedPairAdmission(source) {
+  const name='      - name: Verify the exact saved pair before fresh weather after a closed Pages failure\n';
+  const start=source.indexOf(name);
+  if(start<0||source.indexOf(name,start+1)>=0)return {source,updated:false};
+  const next=source.indexOf('\n      - ',start+name.length);
+  const end=next<0?source.length:next;
+  const step=source.slice(start,end);
+  const actionLine='          RAVRADAR_PAGES_REPEAT_ACTION: ${{ steps.operational-action.outputs.action }}\n';
+  const pairedInputs='          PAIRED_ROUTE_REQUIRED: ${{ steps.paired-checkpoint-route.outputs.required }}\n'
+    +'          PAIRED_ROUTE_OUTCOME: ${{ steps.paired-checkpoint-route.outcome }}\n'
+    +'          PAIRED_RECONCILE_OUTCOME: ${{ steps.paired-checkpoint-reconcile.outcome }}\n'
+    +'          PAIRED_RECONCILE_PROVED: ${{ steps.paired-checkpoint-reconcile.outputs.paired }}\n';
+  const oldGuard='          test "${{ steps.paired-checkpoint-route.outputs.required }}" != true\n';
+  const newGuard='          case "$PAIRED_ROUTE_REQUIRED:$PAIRED_ROUTE_OUTCOME" in\n'
+    +'            false:success|:skipped) ;;\n'
+    +'            true:success) test "$PAIRED_RECONCILE_OUTCOME:$PAIRED_RECONCILE_PROVED" = success:true ;;\n'
+    +'            *) exit 1 ;;\n'
+    +'          esac\n';
+  if(step.split(actionLine+pairedInputs).length!==2||step.split(newGuard).length!==2)return {source,updated:false};
+  const restored=step.replace(actionLine+pairedInputs,actionLine).replace(newGuard,oldGuard);
+  return {source:source.slice(0,start)+restored+source.slice(end),updated:true};
+}
+
+// Det brede vejrworkflow er ikke en Pages-ejendom. Kun den kendte
+// læsevej for gemt vejr og de to GH_TOKEN-felter kan afgrænses her.
 // Prædikatet kan prøves på syntetiske strenge, men giver ingen gateautoritet.
 export function isPagesOnlyWeatherBuildChange(before,after){
   try{
@@ -841,7 +864,10 @@ export function isPagesOnlyWeatherBuildChange(before,after){
         result=result.slice(0,edit.offset)+result.slice(edit.offset+edit.length);
       return result;
     };
-    return project(before,false)===project(after,true);
+    const previous=normalizePagesSavedPairAdmission(before);
+    const candidate=normalizePagesSavedPairAdmission(after);
+    return (!previous.updated||candidate.updated)
+      &&project(previous.source,false)===project(candidate.source,true);
   }catch{return false;}
 }
 
