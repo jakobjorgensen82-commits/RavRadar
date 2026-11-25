@@ -694,6 +694,8 @@ esac
 
         def test_actual_normal_candidates_against_native_index_array(self):
             import eccodes
+            from lib.dkss_current_raw_audit import check_dkss_current_original
+
             self.assertEqual(eccodes.codes_get_api_version(), '2.48.2')
             producer_path = Path(__file__).with_name('update-dmi-bulk.py')
             spec = importlib.util.spec_from_file_location('original_producer', producer_path)
@@ -718,6 +720,56 @@ esac
                         self.assertEqual(report[name], 0)
                     self.assertLess(report['maximumLatitudeVsEndpointDegrees'], 1e-10)
                     self.assertLess(report['maximumLongitudeVsEndpointDegrees'], 1e-10)
+
+                # Reuse the actual ecCodes GRIB1 fixture. Pick a known interior
+                # element with dyadic U/V values, distinct from its neighbours
+                # and from each other even after GRIB packing.
+                index = 9
+                arrays = [[(i - 20) / 32 for i in range(64)],
+                          [(i + 1) / 16 for i in range(64)]]
+                expected_u, expected_v = (values[index] for values in arrays)
+                with tempfile.TemporaryFile() as original:
+                    for parameter, values in zip((49, 50), arrays):
+                        eccodes.codes_set(gid, 'indicatorOfParameter', parameter)
+                        eccodes.codes_set_values(gid, values)
+                        eccodes.codes_write(gid, original)
+                    original.seek(0)
+                    original_bytes = original.read()
+                    digest = hashlib.sha256(original_bytes).hexdigest()
+                    signature = producer.grid_cache_signature(gid)
+                    grid = producer.grid_definition_signature_from_cache(signature)
+                    zone = {'id': 'PART::fixture', 'parentZoneId': 'fixture-zone',
+                            'lat': 56.0101, 'lon': 10.0101}
+                    candidate = {'index': index, 'latitude': 56.01, 'longitude': 10.01,
+                                 'distanceKm': producer.haversine_km(zone['lat'], zone['lon'], 56.01, 10.01),
+                                 'gridDefinitionSha256': producer.grid_definition_sha256_from_signature(grid),
+                                 '_gridIndexIdentity': producer.grid_index_identity_sha256_from_cache(signature),
+                                 '_gridCoordinateInterpretation': 'dmi-dkss-grib1-header-endpoints-v1'}
+                    layer, rank = producer.vector_vertical_layer(
+                        'current', eccodes.codes_get(gid, 'typeOfLevel'), eccodes.codes_get(gid, 'level'))
+                    run_at, valid_at = '2026-10-09T00:00:00Z', '2026-10-14T00:00:00Z'
+                    source = producer.native_component_source(
+                        'dkss_lf', run_at, valid_at, component='current', zone=zone,
+                        grid_candidate=candidate, grid_tuple={
+                            'current-u': {**candidate, 'value': expected_u},
+                            'current-v': {**candidate, 'value': expected_v},
+                        },
+                        capture={'itemId': 'synthetic', 'assetIdentitySha256': 'a' * 64,
+                                 'acquiredAt': run_at, 'contentLengthBytes': len(original_bytes),
+                                 'contentSha256': digest},
+                        spatial_selection=producer.COMPONENT_SPATIAL_SELECTION['current'],
+                        vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+                        vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION,
+                        verticalLayer=layer, verticalLayerRankM=rank)
+                    self.assertIsNotNone(source)
+                    capture = producer.canonical_current_source_asset(source)
+                    row = {'time': valid_at, 'source': source, 'uMps': expected_u, 'vMps': expected_v,
+                           'waterPoint': [zone['lon'], zone['lat']]}
+                    self.assertEqual(check_dkss_current_original(
+                        original, capture, [row, {**row, 'vMps': expected_u}], eccodes),
+                        ('MATCH', 'NATIVE_VECTOR_MISMATCH'))
+                    original.seek(0)
+                    self.assertEqual(hashlib.sha256(original.read()).hexdigest(), digest)
             finally:
                 eccodes.codes_release(gid)
 
