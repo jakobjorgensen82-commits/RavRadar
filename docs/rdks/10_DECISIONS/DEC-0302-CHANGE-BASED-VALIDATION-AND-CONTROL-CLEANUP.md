@@ -620,3 +620,17 @@ I den fulde #1694 tog en ny databaseprøve 49 minutter og 16 sekunder.
 Runnerens billedversion var ændret i forhold til den kendte tidligere
 oprindelse #1681. De registrerede PostgreSQL-programmer var byteidentiske.
 Kravet om identisk runner for netop den oprindelse var derfor ikke opfyldt.
+
+### Vejrvagtens normale kontrol
+
+I #1702 brugte fire kildebevisprøver 991,7 sekunder. Vejrvagtens egen
+prøve tog 2,4 sekunder. De fire prøver ejer planlæggeren, genbrug af
+databaseinput og kildebevisets afsendere og modtagere. De afprøver
+ikke vejrvagtens beslutning eller REST-kald.
+
+Lad den eksisterende snævre kontrolvej omfatte vejrvagtens kendte
+script sammen med dens læser og hele normale prøve. Bevar RAW-gruppens
+prøve, fordi RAW-rotationen bruger vejrvagtens klassifikation af gamle
+køposter. Kerne, uafhængig gennemgang og kontrol af beskyttede input
+gælder fortsat. En ændring af selve workflowet eller andre aktive
+kildekontroller vælger stadig de relevante bredere prøver.

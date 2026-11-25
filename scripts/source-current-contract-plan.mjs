@@ -726,9 +726,10 @@ export function pagesContractCommandsForChangedInputs(changes){
 // Narrow control ownership still requires normal whole tests and independent review.
 const SOURCE_CONTROL_PLANNER_INPUTS=new Set(['scripts/source-current-contract-plan.mjs',
   'scripts/test-source-current-contracts.mjs']);
-const SOURCE_CONTROL_CADENCE_READER_INPUTS=new Set(['scripts/read-weather-cadence-github.mjs',
+const SOURCE_CONTROL_CADENCE_INPUTS=new Set(['scripts/check-weather-cadence-watchdog.mjs',
+  'scripts/read-weather-cadence-github.mjs',
   'scripts/test-weather-cadence-watchdog.mjs']);
-const SOURCE_CONTROL_CADENCE_READER_COMMANDS=freeze([WEATHER_CADENCE_SOURCE_COMMAND]);
+const SOURCE_CONTROL_CADENCE_COMMANDS=freeze([WEATHER_CADENCE_SOURCE_COMMAND]);
 const SOURCE_CONTROL_PLANNER_COMMANDS=freeze([
   'node --test scripts/test-source-current-contracts.mjs',
   'node scripts/test-source-impact-workflow.mjs',
@@ -742,8 +743,8 @@ export function sourceControlCommandsForChangedInputs(changes){
   const controls=changes.filter(row=>sourceControlPaths.has(row.path));
   if(!controls.length||controls.some(row=>row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
     return COMMANDS.sourceControls;
-  if(controls.every(row=>SOURCE_CONTROL_CADENCE_READER_INPUTS.has(row.path)))
-    return SOURCE_CONTROL_CADENCE_READER_COMMANDS;
+  if(controls.every(row=>SOURCE_CONTROL_CADENCE_INPUTS.has(row.path)))
+    return SOURCE_CONTROL_CADENCE_COMMANDS;
   if(controls.every(row=>SOURCE_CONTROL_PLANNER_INPUTS.has(row.path)))
     return SOURCE_CONTROL_PLANNER_COMMANDS;
   return COMMANDS.sourceControls;
