@@ -1182,11 +1182,20 @@ await withFrozenNative0600TestSource('routing',async frozenRoot=>{
   assert(binding.includes("import { LATEST_REQUIRED_CUTOVER_MIGRATION } from './scripts/integrated-cutover-readiness.mjs';"));
   assert(binding.includes('deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version)'));
   assert(!binding.includes('deferCurrentGridBindingEdges(LATEST_RAVSCORE_BINDING_MIGRATION.version)'));
-  for (const name of ['Reconfirm exact main before assistant Edge deployment',
+  for(const name of ['Reconfirm exact main before assistant Edge deployment',
     'Deploy only the exact RavRadar assistant Edge function',
-    'Verify exact backend and assistant readback without weather or Pages'])
-    assert(indentedBody(binding, '      - name: ' + name).includes("if: inputs.install_account_erasure != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'"),
-      'Read-only diagnosis must exclude Edge while preserving the independent current-grid floor');
+    'Verify exact backend and assistant readback without weather or Pages']){
+    const guard=indentedBody(binding,'      - name: '+name).match(/^        if: (.+)$/m)?.[1];
+    assert(guard,'The Edge step must have its normal mode guard');
+    const expression=guard.replace('steps.integrated-implementation','steps.integratedImplementation');
+    for(let mode=0;mode<16;mode++){
+      const [erasure,receipt,diagnose,defer]=[1,2,4,8].map(bit=>Boolean(mode&bit));
+      const inputs={install_account_erasure:erasure,install_account_native_receipt:receipt,diagnose_current_grid_original:diagnose};
+      const steps={integratedImplementation:{outputs:{defer_edges:String(defer)}}};
+      assert.equal(runInNewContext(expression,{inputs,steps}),!erasure&&!receipt&&!diagnose&&!defer,
+        'Every account-only or read-only mode and the independent current-grid floor must prevent Edge deployment');
+    }
+  }
 
   const { assertCurrentGridEdgeArtifact } = await historicalImport('scripts/lib/production-workflow-sources.mjs');
   const { sha256CanonicalJson } = await historicalImport('scripts/ravscore-operational-pages-recovery.mjs');
