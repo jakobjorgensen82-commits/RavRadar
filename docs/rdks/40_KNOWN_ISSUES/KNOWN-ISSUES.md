@@ -1,3 +1,9 @@
+## 25. november — en mulig råcachelæser stoppede ordinær vejrkørsel #393
+
+Efter #392 var tre komplette RAW-kopier bevaret. Den første rotation i #393 fandt den aktive kildekontrol #1719 og udstedte en kvittering med `HOLD` og nul slettede kopier. Byggeren modtog kvitteringen og stoppede kl. 08.31 UTC. De tre prognoseproducenter, den nye råcachelagring, B/S-publicering for den nye prognose og Pages blev sprunget over. Afstemningen af det eksisterende B/S-par var allerede afsluttet med `ALREADY_PAIRED_READBACK_PROVED` og nul CAS-publiceringer. Kataloglæsning hos DMI var en del af forberedelsen. [GitHub-kørsel #393](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45575517700)
+
+Den lokale rettelse lader den eksisterende tidsvagt vente på resten af GitHub-køen uden at holde vejrlåsen. Den kræver præcis den kvitterede årsag i et afsluttet første forsøg på uændret main, bevis for de oversprungne produktionstrin, genbrugelig kildevalidering og en komplet genlæsning af GitHub umiddelbart før en enkelt almindelig start. Fristen er fortsat 90 minutter fra begyndelsen af det planlagte vindue. Ukendt udfald af en start blokkerer ny start. En ejeranmodning i samme kø kan overtage, når den automatiske start beviseligt er sprunget over. Den normale ejeradvarsel er bevaret. GitHub-kvalifikation og faktisk automatisk driftsbevis udestår.
+
 ## 24. november — råcacherotation stoppede vejr #381
 
 #380 udgav prognosen, mens to andre GitHub-kørsler stadig var aktive. Oprydningen returnerede HOLD, så tre råkopier var stadig til stede ved #381. #381 fik også HOLD, før DMI startede, og fjernede ingen kopier. GitHub returnerede kort efter antal én og en tom liste over aktive kørsler. Den daværende log skrev kun HOLD, så det enkelte svar kan ikke knyttes til #381s afgørelse.

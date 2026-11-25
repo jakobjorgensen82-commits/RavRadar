@@ -1,5 +1,5 @@
 import {execFileSync} from 'node:child_process';
-import {lstat, readFile, realpath, writeFile} from 'node:fs/promises';
+import {appendFile, lstat, readFile, realpath, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {readRawRotationArtifactOnce} from './find-raw-rotation-artifact.mjs';
@@ -118,6 +118,10 @@ async function main(mode, env) {
     const receipt = projectRawRotationDecision(scope, untrusted.privateProofSha256, decision);
     await writeFile(path.join(env.RUNNER_TEMP, 'ravradar-raw-rotation-received', 'decision.json'),
       JSON.stringify(receipt), {mode: 0o600, flag: 'wx'});
+    if (decision.status === 'HOLD' && decision.retiredCount === 0
+      && decision.reason === 'possible-raw-reader-active-or-queued') {
+      await appendFile(env.GITHUB_OUTPUT, 'raw_reader_hold=true\n');
+    }
   }
   console.log(decision.status === 'READY'
     ? 'RAW_CACHE_ROTATION_TWO_COPIES_CONFIRMED'

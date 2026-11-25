@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
-import { assessWeatherCadenceWatchdog } from './check-weather-cadence-watchdog.mjs';
+import { assessWeatherCadenceWatchdog, inspectRawReaderRetry } from './check-weather-cadence-watchdog.mjs';
 import { CADENCE_ACTIVE_STATES, readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
 import { notifyWeatherFailure, weatherFailureIssue, WEATHER_FAILURE_REPOSITORY,
   WEATHER_FAILURE_OWNER } from './notify-weather-failure.mjs';
@@ -179,7 +179,7 @@ assert.equal((workflow.match(/RAVRADAR_WEATHER_RECOVERY_RUN_ID:/g) || []).length
 assert.equal((workflow.match(/RAVRADAR_WEATHER_OWNER_FAILED_RUN_ID:/g) || []).length, 2);
 assert.match(workflow, /^run-name:.*'Owner weather request'/m);
 const ordinaryWeather = await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8');
-const recoveryHandoffJob = ordinaryWeather.split('\n  handoff-recovered-weather:\n')[1]?.split('\n  notify-owner-failure:\n')[0];
+const recoveryHandoffJob = ordinaryWeather.split('\n  handoff-recovered-weather:\n')[1]?.split('\n  handoff-raw-reader-retry:\n')[0];
 assert.match(recoveryHandoffJob, /closure_deferred == 'true'[\s\S]*terminal-outcome.result == 'skipped'/);
 assert.match(recoveryHandoffJob, /Bind weather recovery recipient .*recipient_run_id/);
 assert.equal((recoveryHandoffJob.match(/gh api --method POST/g) || []).length, 1);
@@ -215,6 +215,97 @@ const explicitOrder = {
   failedRunId: String(ownerRetryFailure.id), requestId: String(ownerRetryRequest.id), headSha: ownerRetryRequest.head_sha,
   history: ownerHistory(ownerRetryRequest), activity: activeInventory(),
 };
+
+const rawRequest = { ...ownerRetryRequest, head_sha: ownerRetryFailure.head_sha,
+  display_title: 'Retry weather after an exact pre-DMI RAW reader hold', actor: cadenceBot, triggering_actor: cadenceBot,
+  created_at: '2026-09-28T00:29:58Z', updated_at: '2026-09-28T00:29:59Z' };
+const stage = (number, name, conclusion = 'success') => ({ number, name, status: 'completed', conclusion });
+const completed = (name, conclusion, steps) => ({ name, conclusion, steps });
+const rawJobs = [
+  completed('Retire verified older DMI RAW archives', 'success', [
+    stage(7, 'Publish the RAW rotation decision'), stage(8, 'Record exact RAW reader hold with zero retirements'),
+  ]),
+  completed('Build and prepare weather production through reusable workflow / build-and-prepare', 'failure', [
+    stage(113, 'Download the immutable RAW rotation decision'),
+    stage(114, 'Require successful RAW rotation for this exact target', 'failure'),
+    stage(120, 'Update DMI bulk model cache', 'skipped'),
+    stage(126, 'Save progressed DMI GRIB download cache', 'skipped'),
+    stage(140, 'Fill only exact-hour DMI gaps from Copernicus', 'skipped'),
+    stage(144, 'Fill only the exact remaining current gaps from Open-Meteo', 'skipped'),
+    stage(201, 'Publish bounded private runtime with one protected rollback generation', 'skipped'),
+    stage(203, 'Publish atomic RavScore checkpoint to protected admin storage', 'skipped'),
+  ]),
+  completed('Hand off the pre-DMI RAW reader hold to the existing cadence watchdog', 'success',
+    [stage(3, 'Bind RAW reader retry recipient ' + rawRequest.id)]),
+  completed('Require a verified current-weather deployment', 'failure'),
+  completed('Finish an interrupted generation before new work / Require terminal operational recovery before production', 'success'),
+  completed('Deploy prepared Pages artifact through reusable workflow', 'skipped'),
+].map((job, index) => ({ ...job, id: 40000000700 + index, run_id: ownerRetryFailure.id, head_sha: ownerRetryFailure.head_sha,
+  head_branch: 'main', run_attempt: 1, status: 'completed' }));
+const jobDocument = jobs => ({ jobs, total_count: jobs.length });
+const rawOrder = { ...explicitOrder, headSha: rawRequest.head_sha, history: ownerHistory(rawRequest),
+  activity: CADENCE_ACTIVE_STATES.map(status => ownerHistory(...[rawRequest].filter(run => run.status === status))),
+  rawReaderJobs: jobDocument(rawJobs) };
+
+test('The first terminal ordinary RAW reader hold needs exact same-run evidence before a bot retry', () => {
+  const evaluate = (diff = {}, runs = [ownerRetryFailure]) => assessWeatherCadenceWatchdog({
+    ...base, nowMs: ownerFallbackNow, manualRuns: ownerHistory(...runs), ownerOrder: { ...rawOrder, ...diff },
+  });
+  assert.equal(evaluate().reason, 'verified-raw-reader-hold-needs-fresh-weather');
+  assert.equal(evaluate().dispatch, true);
+  for (const [job, step] of [[0, 1], [1, 0], [1, 2], [1, 3], [1, 4], [1, 7], [2, 0]]) {
+    const changed = structuredClone(rawJobs);
+    changed[job].steps[step].conclusion = 'cancelled';
+    assert.equal(evaluate({ rawReaderJobs: jobDocument(changed) }).dispatch, false);
+  }
+  assert.equal(evaluate({ rawReaderJobs: { ...rawOrder.rawReaderJobs, total_count: 99 } }).dispatch, false);
+  assert.equal(evaluate({ history: ownerHistory(rawRequest, { ...rawRequest, id: rawRequest.id - 1 }) }).dispatch, false);
+  const queuedOwner = { ...ownerRetryRequest, id: rawRequest.id + 1, status: 'queued' };
+  const waiting = rawOrder.activity.map((list, index) => CADENCE_ACTIVE_STATES[index] === 'queued'
+    ? ownerHistory(queuedOwner) : list);
+  assert.equal(evaluate({ history: ownerHistory(rawRequest, queuedOwner), activity: waiting }).reason,
+    'raw-reader-retry-yields-to-owner');
+  const earlier = { ...ownerRetryFailure, id: ownerRetryFailure.id - 1,
+    created_at: '2026-09-28T00:18:59Z', updated_at: '2026-09-28T00:18:59Z' };
+  assert.equal(evaluate({}, [ownerRetryFailure, earlier]).reason, 'raw-reader-first-attempt-already-used');
+});
+
+test('RAW wait sees complete reader activity again and stops at the original slot deadline', async () => {
+  const reader = { ...rawRequest, id: rawRequest.id + 1, head_branch: 'fix', path: '.github/workflows/validate-pull-request.yml' };
+  let now = ownerFallbackNow;
+  let observations = 0;
+  const sleeps = [];
+  const options = { ...rawOrder, waitForReaders: true, clock: () => now,
+    sleep: async ms => { sleeps.push(ms); now += ms; },
+    read: async ({ kind, activeRunStatus }) => {
+      if (kind === 'manual') return ownerHistory(ownerRetryFailure);
+      if (kind === 'owner-orders') return rawOrder.history;
+      if (kind === 'recovery-jobs') return rawOrder.rawReaderJobs;
+      if (activeRunStatus === 'in_progress') return ownerHistory(rawRequest, ...(++observations === 1 ? [reader] : []));
+      return ownerHistory();
+    } };
+  assert.equal((await inspectRawReaderRetry(options)).dispatch, true);
+  assert.deepEqual(sleeps, [60_000]);
+  observations = 0;
+  assert.match((await inspectRawReaderRetry({ ...options, waitForReaders: false })).reason, /active-or-unproved/);
+  now = at('2026-09-28T01:46:59Z');
+  observations = 0;
+  assert.equal((await inspectRawReaderRetry(options)).reason, 'owner-weather-order-window-closed');
+  assert.deepEqual(sleeps, [60_000, 1000]);
+});
+
+test('An owner can fall back only after a conclusively skipped automatic dispatch', () => {
+  const prior = { ...rawRequest, id: ownerRetryRequest.id - 1, status: 'completed', conclusion: 'success',
+    updated_at: '2026-09-28T00:42:00Z' };
+  const dispatch = { id: 40000000810, name: 'dispatch', run_id: prior.id, run_attempt: 1,
+    head_branch: 'main', head_sha: prior.head_sha, status: 'completed', conclusion: 'skipped', steps: [] };
+  const evaluate = priorJobs => assessWeatherCadenceWatchdog({ ...base, nowMs: ownerFallbackNow,
+    manualRuns: ownerHistory(ownerRetryFailure), ownerOrder: { ...explicitOrder,
+      history: ownerHistory(prior, ownerRetryRequest), samePriorWorkflow: true, priorJobs } });
+  assert.equal(evaluate(undefined).dispatch, false);
+  assert.equal(evaluate(jobDocument([{ ...dispatch, conclusion: 'failure' }])).dispatch, false);
+  assert.equal(evaluate(jobDocument([dispatch])).dispatch, true);
+});
 
 test('The owner can order one normal retry after the latest failed bot attempt inside the same slot', () => {
   const context = { ...base, nowMs: ownerFallbackNow, manualRuns: { workflow_runs: [ownerRetryFailure] } };
@@ -915,7 +1006,7 @@ test('Source renewal is a separate bounded source-only job and preserves immutab
   const source=workflow.slice(workflow.indexOf('\n  qualify-source:'),workflow.indexOf('\n  dispatch:'));
   const inspect=workflow.slice(workflow.indexOf('\n  inspect:'),workflow.indexOf('\n  qualify-source:'));
   const dispatch=workflow.slice(workflow.indexOf('\n  dispatch:'));
-  assert.match(inspect,/timeout-minutes: 5/);
+  assert.match(inspect,/timeout-minutes: .*raw_reader_retry_source_run_id != '' && 95 \|\| 5/);
   assert.doesNotMatch(inspect,/npm run validate:source/);
   assert.match(inspect,/actions\/setup-python@v7\n        with:\n          python-version: \"3\.12\"/);
   assert.match(dispatch,/actions\/setup-python@v7\n        with:\n          python-version: \"3\.12\"/);
