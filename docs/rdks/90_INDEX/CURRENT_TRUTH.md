@@ -1,3 +1,7 @@
+## 25. november — skeln mellem udgivelse og efterfølgende læsefejl
+
+Vejrkørsel #395 udgav den præcise gemte prognose, men mistede den afsluttende kvittering ved HTTP 503 på en delingsfil. Genoptagelse #13 afsluttede den samme udgivelse. Den lokale rettelse udvider læsekontrollen med ét forsinket genforsøg for HTTP 502, 503 og 504. Samme fil, prognose og model kontrolleres fortsat. Faktisk virkning af den nye kode skal følges i det normale forløb.
+
 ## 24. november — særskilt klargøring af aktivitetskvitteringen
 
 SQL80 er installeret, og den faste kataloglæsning på main har bekræftet kildekroppen, adgangene og den uarmerede kvittering. Engangstrinnet til klargøring ligger på main. Det kræver deaktiveret Auth med tom URI og verificerer den samme kvittering med en frisk databasedato efter skrivning. Et ukendt skriveudfald afklares gennem den eksisterende kataloglæser. Første Auth-aktivering kræver en armeret kvittering for den aktuelle dækningsperiode uden tidligere loginopsamling. Akut frakobling er mulig uden opslag i databasen. Selve klargøringen i drift, konfigurationen af Auth, påvisning af loginopsamling, dækningsstart, varsling og sletning er separate udeståender.

@@ -1093,8 +1093,20 @@ async function verifySealed594CompactShareRegression({ reproduceOnly = false } =
       expectedManifest:manifest,expectedModel:'integrated',expectedBinding:binding,
       expectedContractText:contractText,expectedBundleText:bundleText,expectedPublicClosure:publicClosure,
       observationNonce:'synthetic-real-sealed594-sharing',attempts:1};
-    const result=await verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:mockFetch(files)});
+    const first=shared.zoneFiles[0];
+    const firstSharePath='/data/live/'+first.entry.path.slice(2);
+    const read=mockFetch(files);
+    let shareReads=0;
+    const result=await verifyRavScoreOperationalPagesDeployment({...common,retryDelayMs:0,fetchImpl:async(input,options)=>{
+      const url=new URL(input);
+      if(url.pathname===firstSharePath){
+        shareReads++;
+        if(!url.searchParams.get('ravscore-observation').endsWith('-retry'))return new Response(null,{status:503});
+      }
+      return read(input,options);
+    }});
     assert.equal(result.status,'passed');assert.deepEqual(result.modelBinding,binding);
+    assert.equal(shareReads,4,'three HTTP 503 responses on one share file recover without another Pages deploy');
     if(reproduceOnly)return;
     const currentShare=await import('../js/services/forecast-share-projection.js');
     const direct=()=>currentShare.assertForecastShareProjectionParity({projection:shared.projection,
@@ -1111,7 +1123,6 @@ async function verifySealed594CompactShareRegression({ reproduceOnly = false } =
     const descriptorPath='/data/live/forecast-share.json';
     await mutate('descriptor manifest mismatch',m=>{const d=structuredClone(shared.descriptor);d.manifestSha256='0'.repeat(64);m.set(descriptorPath,jsonBytes(d));},/FORECAST_SHARE_DESCRIPTOR_BINDING/);
     await mutate('descriptor model mismatch',m=>{const d=structuredClone(shared.descriptor);d.modelBinding={...binding,modelBundleSha256:'0'.repeat(64)};m.set(descriptorPath,jsonBytes(d));},/FORECAST_SHARE_PROJECTION_GENERATION/);
-    const first=shared.zoneFiles[0];
     await mutate('payload byte mismatch',m=>m.set('/data/live/'+first.entry.path.slice(2),Buffer.from(first.bytes.toString()+' ')),/projection digest mismatch/);
     const coherent=change=>m=>{const payload=structuredClone(first.payload);change(payload);const bytes=jsonBytes(payload),hash=sha256(bytes),d=structuredClone(shared.descriptor);
       d.zones[0]={id:first.entry.id,path:'./share/'+hash+'.json',sha256:hash,bytes:bytes.length};m.delete('/data/live/'+first.entry.path.slice(2));
@@ -1724,26 +1735,44 @@ async function verifyBoundedTransientHttpContract() {
     assert.deepEqual(requests[1], requests[0], 'retry preserves exact URL, source nonce and request options');
   }
 
+  const unavailableObservation = makeFetch(({ pathname, url, refused }) =>
+    pathname === detailsPath && !new URL(url).searchParams.get('ravscore-observation').endsWith('-retry')
+      ? refused(503) : undefined);
+  assert.equal((await verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: unavailableObservation.fetch,
+  })).status, 'passed');
+  assert.equal(unavailableObservation.cancellations(), 3);
+  for (const [relative, count] of baseline.counts)
+    assert.equal(unavailableObservation.counts.get(relative), count + (relative === detailsPath ? 3 : 0),
+      'delayed verification only rereads the unavailable public asset');
+  const detailRequests = unavailableObservation.requests.get(detailsPath);
+  const refreshedRequestUrl = new URL(detailRequests[3].url);
+  const originalRequestUrl = new URL(detailRequests[0].url);
+  assert.equal(refreshedRequestUrl.searchParams.get('ravscore-observation'),
+    originalRequestUrl.searchParams.get('ravscore-observation') + '-retry');
+  refreshedRequestUrl.searchParams.set('ravscore-observation', originalRequestUrl.searchParams.get('ravscore-observation'));
+  assert.equal(refreshedRequestUrl.href, originalRequestUrl.href);
+
   for (const failedPath of [manifestPath, detailsPath]) {
     const permanent = makeFetch(({ pathname, refused }) =>
       pathname === failedPath ? refused(503) : undefined);
     await assert.rejects(verifyRavScoreOperationalPagesDeployment({
       ...options, fetchImpl: permanent.fetch,
     }), /returned HTTP 503/);
-    assert.equal(permanent.counts.get(failedPath), 3, 'one file has at most three total attempts');
-    assert.equal(permanent.cancellations(), 3);
-    assert.equal(permanent.counts.get(manifestPath), failedPath === manifestPath ? 3 : 1,
+    assert.equal(permanent.counts.get(failedPath), 4, 'one file has at most four total attempts');
+    assert.equal(permanent.cancellations(), 4);
+    assert.equal(permanent.counts.get(manifestPath), failedPath === manifestPath ? 4 : 1,
       '121 manifest observations cannot multiply the exhausted transient budget');
   }
 
   const globalPaths = [manifestPath, legacyPaths[0], detailsPath, legacyPaths[2]];
   const shared = makeFetch(({ pathname, count, refused }) =>
     globalPaths.includes(pathname) && count === 1 ? refused(503) : undefined);
-  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+  assert.equal((await verifyRavScoreOperationalPagesDeployment({
     ...options, fetchImpl: shared.fetch,
-  }), /returned HTTP 503/);
-  assert.deepEqual(globalPaths.map(relative => shared.counts.get(relative)), [2, 2, 2, 1],
-    'one invocation shares exactly three retry tokens across manifest and all payload files');
+  })).status, 'passed');
+  assert.deepEqual(globalPaths.map(relative => shared.counts.get(relative)), [2, 2, 2, 2],
+    'one invocation shares three short retries and one delayed read across all files');
   assert.equal(shared.cancellations(), 4);
 
   const betweenObservations = makeFetch(({ pathname, count, refused }) => {
@@ -1753,9 +1782,9 @@ async function verifyBoundedTransientHttpContract() {
   await assert.rejects(verifyRavScoreOperationalPagesDeployment({
     ...options, fetchImpl: betweenObservations.fetch,
   }), /returned HTTP 503/);
-  assert.equal(betweenObservations.counts.get(manifestPath), 7,
+  assert.equal(betweenObservations.counts.get(manifestPath), 9,
     'transient budget is not renewed when a stale manifest starts the next observation');
-  assert.equal(betweenObservations.cancellations(), 4);
+  assert.equal(betweenObservations.cancellations(), 5);
 
   const corrupt = makeFetch(({ pathname, count, refused }) => pathname !== detailsPath
     ? undefined : count === 1 ? refused(503) : response(Buffer.from('corrupt after HTTP retry')));
@@ -1848,7 +1877,7 @@ async function verifyBoundedTransientHttpContract() {
     assert.equal(interrupted.counts.get(detailsPath), 1);
     assert.equal(interrupted.counts.get(manifestPath), 1);
   }
-  console.log('Transient HTTP: exact-file502/503/504 retries, shared three-token bound, cleanup, hard failures, abort and one payload pass: passed.');
+  console.log('Transient HTTP: exact-file short and delayed retries, shared budget, cleanup, hard failures, abort and one payload pass: passed.');
 }
 
 async function verifyManifestOnlyPropagationContract() {

@@ -1,3 +1,9 @@
+## 25. november — den offentlige læsekontrol tåler en midlertidig Pages-fejl
+
+- [x] Afklar udgivelsen og afslut #395 ud fra den allerede offentliggjorte prognose.
+- [x] Tilføj et begrænset genforsøg for offentlig læsning efter HTTP 502, 503 og 504 i den eksisterende kontrol.
+- [ ] Verificér kilden i GitHub og følg den ændrede kontrol i det almindelige driftsforløb.
+
 ## 25. november — automatisk genoptagelse efter bekræftet råcachelæser
 
 - [x] Afgræns lokalt den automatiske tidsvagt til den autentiske, afsluttede RAW-læserblokering før produktionstrinnene. Bevar de samme kopier, vejrlås, kildebeviser og normale ejeradvarsler.

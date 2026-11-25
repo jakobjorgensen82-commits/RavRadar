@@ -1,3 +1,7 @@
+## Drift — genlæsning efter en midlertidig Pages-fejl
+
+- Den offentlige kontrol prøver automatisk at læse en fil igen med en ny observationsadresse, hvis de korte forsøg er opbrugt efter HTTP 502, 503 eller 504. Filen skal bestå samme indholdskontrol som før.
+
 ## Drift — versionsværktøj og håndbog
 
 - Versionsværktøjet opdaterer håndbogens aktuelle modelfakta og installationskopien i samme kørsel. Den separate kontrol kan derefter læse det færdige resultat.
