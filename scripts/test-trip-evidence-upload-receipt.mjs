@@ -564,17 +564,32 @@ test('late manual report success updates its notice without replacing account co
   let operation, reads = 0;
   try {
     h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
-    const notice = panel.content.querySelector('#accountTripReportStatus');
+    const beforeForm = panel.content.querySelector('#accountTripReportStatus');
     form.resolve(reportAnswer);
     operation = panel.showAccountTripReport(panel.dialog, {});
     await turn();
     assert.equal(reads, 1);
+    const notice = panel.content.querySelector('#accountTripReportStatus');
+    assert.notStrictEqual(notice, beforeForm, 'Controls are restored before awaiting the save');
     body.resolve({ stored: true });
     await operation;
     assert.strictEqual(panel.content.querySelector('#accountTripReportStatus'), notice);
     assert.equal(notice.textContent, t('account.reportRemote'));
     assert.equal(notice.hidden, false);
   } finally { form.resolve(null); body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+});
+
+test('cancelled manual report restores the account controls without submitting', async () => {
+  const h = harness(), form = deferred(), panel = ui(h, form);
+  const beforeForm = panel.content.querySelector('#accountTripReportStatus');
+  try {
+    const operation = panel.showAccountTripReport(panel.dialog, {});
+    form.resolve(null);
+    await operation;
+    assert.equal(panel.dialog.open, true);
+    assert.notStrictEqual(panel.content.querySelector('#accountTripReportStatus'), beforeForm);
+    assert.equal(h.state.submits.length, 0);
+  } finally { h.finish(); }
 });
 
 test('late manual report success preserves the open trip history', async () => {

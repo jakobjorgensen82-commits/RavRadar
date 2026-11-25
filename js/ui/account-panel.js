@@ -187,13 +187,12 @@ async function showAccountTripReport(dialog, context) {
   const view = {};
   pendingReportViews.set(dialog, view);
   const isCurrentView = () => pendingReportViews.get(dialog) === view;
-  const reportStatus = dialog.querySelector('#accountTripReportStatus');
   const setReportStatus = message => {
-    reportStatus.textContent = message;
-    reportStatus.hidden = !message;
+    const status = dialog.querySelector('#accountTripReportStatus');
+    status.textContent = message;
+    status.hidden = !message;
   };
   let waitingForSave = false;
-  setReportStatus('');
   dialog.close();
   try {
     const answer = await openAccountTripReportDialog({
@@ -205,6 +204,9 @@ async function showAccountTripReport(dialog, context) {
     });
     if (!isCurrentView()) return;
     if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
+    // Closing the account for the form disposes its existing controls.
+    renderAccount(dialog, context);
+    pendingReportViews.set(dialog, view);
     if (!dialog.open) dialog.showModal();
     if (!answer) return;
     const report = buildAccountTripReport({ observationOrigin: 'self-reported', ...answer, tripId: crypto.randomUUID() });
