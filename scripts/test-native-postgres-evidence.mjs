@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import {inverseReviewedAfter599PackageForHistoricalOracles,readAuthenticatedAfter598PackageForHistoricalOracles}
+import {AUTHENTIC_RECEIPT80_SOURCE_HEAD,inverseReviewedAfter599PackageForHistoricalOracles,
+  readAuthenticatedAfter598PackageForHistoricalOracles,withAuthenticatedReceipt80Source}
   from './lib/account-statistics-assistant-package-review.mjs';
 import test from 'node:test';
 import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
@@ -1040,15 +1041,39 @@ test('calendar588 computed source inventories retain exact finite edges and refu
     "./lib/private-weather-component-pack.mjs"
   ]
 };
-  for(const [file,expected]of Object.entries(inventories)){
-    const actual=await historical593ImportReviewSource(file),source=historical592ImportSource(actual,file);
-    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],[...expected],file);
-    const actualExpected=Object.hasOwn(reviewedConditions593ImportViews,file)?[...expected,'./bounded-json-writer.mjs']:[...expected];
-    assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)],actualExpected,file);
-    for(const changed of [actual+'\n',actual+"\nimport './unreviewed-source.mjs';\n"])
-      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/,file);
-    assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n// unknown changed input\n',file),
-      /Whole reviewed model import source changed/,file);
+  const assertArchivedByteOracle=async read=>{
+    for(const [file,expected]of Object.entries(inventories)){
+      const actual=await historical593ImportReviewSource(file),source=historical592ImportSource(actual,file);
+      assert.deepEqual([...read(source,file)],expected,file);
+      const actualExpected=Object.hasOwn(reviewedConditions593ImportViews,file)?[...expected,'./bounded-json-writer.mjs']:expected;
+      assert.deepEqual([...read(actual,file)],actualExpected,file);
+      for(const changed of [actual+'\n',actual+"\nimport './unreviewed-source.mjs';\n"])
+        assert.throws(()=>read(changed,file),/Whole reviewed model import source changed/,file);
+      assert.throws(()=>read(source+'\n// unknown changed input\n',file),/Whole reviewed model import source changed/,file);
+    }
+  };
+  if(AFTER601_ACTIVE){
+    const path=await import('node:path'),{pathToFileURL}=await import('node:url');
+    await withInstalled593CodePredecessorSource(async root=>{
+      const archived=await import(pathToFileURL(path.join(root,'scripts/lib/model-source-imports.mjs')).href);
+      await assertArchivedByteOracle(archived.modelSourceRelativeModuleSpecifiers);
+    });
+    // The active capsule verifies the dependency closure. Its model manifests
+    // still seal raw source bytes independently of this import scanner.
+    for(const [file,expected]of Object.entries(inventories)){
+      const actual=await fs.readFile(file,'utf8');
+      const edges=[...expected];
+      if(Object.hasOwn(reviewedConditions593ImportViews,file))edges.push('./bounded-json-writer.mjs');
+      if(file==='scripts/lib/established-native-current-origin.mjs')
+        edges.push('./assistant-public591-runtime-contracts.mjs','../check-assistant-later-h0-predecessor-source.mjs');
+      const scan=source=>[...modelSourceRelativeModuleSpecifiers(source,file)].sort();
+      assert.deepEqual(scan(actual),edges.sort(),file);
+      assert.deepEqual(scan(actual+'\n'),edges,file);
+      assert.throws(()=>scan(actual+"\nimport './unreviewed-source.mjs';\n"),/Undeclared capsule module dependency/,file);
+      assert.throws(()=>scan(actual+"\nimport('./' + 'unreviewed-source.mjs');\n"),/non-literal or unparsed dynamic import/,file);
+    }
+  }else{
+    await assertArchivedByteOracle(modelSourceRelativeModuleSpecifiers);
   }
   const scanner=await fs.readFile('scripts/lib/model-source-imports.mjs','utf8');
   for(const historical of ['36719b093953b7381acd88e9a69b81bbf4532066a044af3ecfa5039a44625e0a',
@@ -1547,7 +1572,9 @@ test('593 quartet observation remains conditional and follows proved cleanup wit
 
 test('597 quartet observation is conditional and follows proved stop and cleanup before the completed report',async()=>{
   const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
-  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
+  const selection=/^  const nativeProgramsBefore=([^\n]+)\n    \?await nativePostgresProgramIdentity\(programs\):null;/m.exec(source);
+  assert(selection?.[1].split('||').includes('includeScalar597LaterH0Successor'));
+  const before=selection.index;
   const setup=source.indexOf("const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'))",before);
   const stop=source.indexOf("assert.equal(stop.code,0,'native server stop was not proved; preserve directory');",setup);
   const terminal=source.indexOf("assert.equal(status.code,3,'native server is not physically terminal; preserve directory');",stop);
@@ -1594,7 +1621,7 @@ import {FROZEN593_NATIVE_CODE,verifyFrozen593NativeCodeManifest,withInstalled593
 const FROZEN594_NATIVE_EVIDENCE_HEAD='84051e2d700595837ebf80426410dcbef8e08704';
 async function historical593ImportReviewSource(file){
   if((LATER_THAN_594||ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor')
-    &&Object.hasOwn(reviewedConditions593ImportViews,file)){
+    &&(AFTER601_ACTIVE||Object.hasOwn(reviewedConditions593ImportViews,file))){
     const {execFileSync}=await import('node:child_process');
     return execFileSync('git',['cat-file','blob',FROZEN593_NATIVE_CODE.head+':'+file],{
       encoding:'utf8',maxBuffer:1024*1024,timeout:30000,
@@ -2735,10 +2762,10 @@ test('native app fixture database ownership survives Auth timestamp shadowing wi
 
 // Current80 DATA for protocol tests only. The original79 DATA below is kept;
 // only an actual owned PG run can supply this facet in a real source receipt.
-async function currentNativeReceiptProtocolData(){
- const files=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql'));
+async function currentNativeReceiptProtocolData(root=new URL('../',import.meta.url)){
+ const files=(await fs.readdir(new URL('supabase/migrations/',root))).filter(file=>file.endsWith('.sql'));
  if(!files.includes('20261122200000_account_native_activity_receipt_off.sql'))return null;
- const {currentNativeActivityReceiptSourceContext}=await import('./lib/account-native-activity-receipt-source.mjs');
+ const {currentNativeActivityReceiptSourceContext}=await import(new URL('scripts/lib/account-native-activity-receipt-source.mjs',root).href);
  const identity=currentNativeActivityReceiptSourceContext();
  return {kind:'ACCOUNT_NATIVE_ACTIVITY_RECEIPT_NATIVE_SQL_CASES',sqlExecuted:true,...identity,
   cases:9,appendSha256:identity.migrationSQLSha256,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,realAuthResponse:false,
@@ -3291,9 +3318,10 @@ console.log(JSON.stringify({scope:'SYNTHETIC_NORMAL_CLI_WIRING',decisions,writes
 }
 
 
-test('current80 typed receipt requires the exact fresh nine-case result and cannot retag original79',async()=>{
- const native=await import('./native-postgres-evidence.mjs');
- const value=await currentNativeReceiptProtocolData();assert(value);
+test('current80 typed receipt requires the exact fresh nine-case result and cannot retag original79',()=>withAuthenticatedReceipt80Source(async root=>{
+ const path=await import('node:path'),{pathToFileURL}=await import('node:url'),source=pathToFileURL(root+path.sep);
+ const native=await import(new URL('scripts/native-postgres-evidence.mjs',source).href);
+ const value=await currentNativeReceiptProtocolData(source);assert(value);
  assert.deepEqual(await native.assertCurrentAccountNativeReceiptNativeReport({accountNativeReceipt:value}),value);
  for(const mutate of [
   r=>delete r.accountNativeReceipt,
@@ -3310,9 +3338,9 @@ test('current80 typed receipt requires the exact fresh nine-case result and cann
   const report={accountNativeReceipt:structuredClone(value)};mutate(report);
   await assert.rejects(native.assertCurrentAccountNativeReceiptNativeReport(report));
  }
-});
+}));
 
-test('current80 normal caller dispatches original79 then receipt9 and refuses incomplete results',async()=>{
+test('current80 normal caller dispatches original79 then receipt9 and refuses incomplete results',()=>withAuthenticatedReceipt80Source(async root=>{
  const [caller,decoder]=await Promise.all([fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8'),fs.readFile('scripts/native-postgres-evidence.mjs','utf8')]);
  const begin=caller.indexOf('    if(includeAssistantAfter598Successor||includeAssistantAfter599Successor){');
  const end=caller.indexOf('    completedReport=',begin);assert(begin>0&&end>begin);
@@ -3325,15 +3353,17 @@ test('current80 normal caller dispatches original79 then receipt9 and refuses in
  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
  const normalOwner=new AsyncFunction('assert','fs','path','accountErasureSchema','repositoryRoot','includeAssistantAfter598Successor','includeAssistantAfter599Successor','psql','runSql','fixtures','sourceExports',
   'let nativePhase,accountErasure,accountInactivity,accountNativeReceipt;\n'+body+'\nreturn {nativePhase,accountErasure,accountInactivity,accountNativeReceipt};');
- const schema=await import('./verify-account-assistant-schema.mjs'),sourceExports=await import('./lib/account-native-activity-receipt-source.mjs'),path=await import('node:path');
- const files=(await fs.readdir('supabase/migrations')).filter(file=>file.endsWith('.sql'));
+ const path=await import('node:path'),{pathToFileURL}=await import('node:url'),source=pathToFileURL(root+path.sep);
+ const schema=await import(new URL('scripts/verify-account-assistant-schema.mjs',source).href);
+ const sourceExports=await import(new URL('scripts/lib/account-native-activity-receipt-source.mjs',source).href);
+ const files=(await fs.readdir(path.join(root,'supabase/migrations'))).filter(file=>file.endsWith('.sql'));
  const receiptFilename='20261122200000_account_native_activity_receipt_off.sql',context=sourceExports.currentNativeActivityReceiptSourceContext();assert(context);
  const invoke=async({withReceipt=true,missingNotice=false,wrongDigest=false,wrongFamily=false}={})=>{
   const calls=[],noSql=()=>{throw Error('This dispatch test must not execute SQL');};
   const fixtures={async exerciseAccountErasureOutbox(args){assert.equal(args.psql,noSql);assert.equal(args.runSql,noSql);calls.push('original49/17');
    return {fixtureScope:'SYNTHETIC_DISPATCH_ONLY',...(missingNotice?{}:{inactivityNotice:{fixtureScope:'SYNTHETIC_DISPATCH_ONLY'}})};},
    async exerciseAccountNativeReceipt(args){assert.equal(args.psql,noSql);calls.push('receipt9');return {appendSha256:wrongDigest?'0'.repeat(64):context.migrationSQLSha256,fixtureScope:'SYNTHETIC_DISPATCH_ONLY'};}};
-  const value=await normalOwner(assert,{readdir:async()=>withReceipt?files:files.filter(file=>file!==receiptFilename)},path,schema,path.resolve('.'),wrongFamily,!wrongFamily,noSql,noSql,fixtures,sourceExports);
+  const value=await normalOwner(assert,{readdir:async()=>withReceipt?files:files.filter(file=>file!==receiptFilename)},path,schema,root,wrongFamily,!wrongFamily,noSql,noSql,fixtures,sourceExports);
   return {value,calls};
  };
  const historical=await invoke({withReceipt:false});assert.deepEqual(historical.calls,['original49/17']);
@@ -3348,16 +3378,16 @@ test('current80 normal caller dispatches original79 then receipt9 and refuses in
  for(const options of [{missingNotice:true},{wrongDigest:true},{wrongFamily:true}])await assert.rejects(invoke(options));
  assert(decoder.includes('await assertCurrentAccountNativeReceiptNativeReport(report);'));
  assert(decoder.includes('await assertCurrentAccountNativeReceiptNativeReport(receipt.report);'));
-});
+}));
 
-test('current80 actual PG input includes the pure leaf, refuses partial pairs and excludes the HTTP controller',async()=>{
+test('current80 actual PG input includes the pure leaf, refuses partial pairs and excludes the HTTP controller',()=>withAuthenticatedReceipt80Source(async root=>{
  const native=await import('./native-postgres-evidence.mjs'),path=await import('node:path'),os=await import('node:os');
  const temporary=await fs.realpath(os.tmpdir()),dir=await fs.mkdtemp(path.join(temporary,'rr-native80-inputs-'));
  const index=path.join(dir,'index');const {execFileSync}=await import('node:child_process');
  const environment={...process.env,GIT_INDEX_FILE:index,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',
   GIT_AUTHOR_NAME:'Synthetic input fixture',GIT_AUTHOR_EMAIL:'fixture@example.invalid',GIT_COMMITTER_NAME:'Synthetic input fixture',GIT_COMMITTER_EMAIL:'fixture@example.invalid'};
  const git=(args,input)=>execFileSync('git',args,{input,env:environment,timeout:10000,maxBuffer:4*1024*1024}).toString('utf8').trim();
- const head=git(['rev-parse','HEAD']),leaf='scripts/lib/account-native-activity-receipt-source.mjs',sql='supabase/migrations/20261122200000_account_native_activity_receipt_off.sql';
+ const head=AUTHENTIC_RECEIPT80_SOURCE_HEAD,leaf='scripts/lib/account-native-activity-receipt-source.mjs',sql='supabase/migrations/20261122200000_account_native_activity_receipt_off.sql';
  // Each ref has its real ls-tree. Cache only immutable object bytes by the OID
  // obtained from that tree; never reuse an input digest across different trees.
  const trees=new Map(),blobs=new Map(),reads=new Map();
@@ -3391,12 +3421,12 @@ test('current80 actual PG input includes the pure leaf, refuses partial pairs an
   return git(['commit-tree',git(['write-tree']),'-p',head,'-m','unqualified synthetic input variant']);
  };
  try{
-  const current=await native.captureAssistantAfter599PgInput({readGit:readInputGit});assert.equal(current.sqlFiles,80);assert.equal(current.complete,true);
-  assert.deepEqual(await native.captureAssistantAfter599PgInput(),current,'Batched normal read preserves the entire input identity');
-  const leafBytes=await fs.readFile(leaf);const changed=variant(leaf,'100644',Buffer.concat([leafBytes,Buffer.from('\n// synthetic leaf input mutation\n')]));
+  const current=await native.captureAssistantAfter599PgInput({ref:head,root,readGit:readInputGit});assert.equal(current.sqlFiles,80);assert.equal(current.complete,true);
+  assert.deepEqual(await native.captureAssistantAfter599PgInput({ref:head,root}),current,'Batched normal read preserves the entire input identity');
+  const leafBytes=await fs.readFile(path.join(root,leaf));const changed=variant(leaf,'100644',Buffer.concat([leafBytes,Buffer.from('\n// synthetic leaf input mutation\n')]));
   const changedInput=await native.captureAssistantAfter599PgInput({ref:changed,physical:false,readGit:readInputGit});assert.notEqual(changedInput.inputSha256,current.inputSha256);
   assert.deepEqual(await native.captureAssistantAfter599PgInput({ref:changed,physical:false}),changedInput);
-  const http=variant('scripts/read-fixed-account-activity-hook.mjs','100644',Buffer.concat([await fs.readFile('scripts/read-fixed-account-activity-hook.mjs'),Buffer.from('\n// synthetic HTTP-only input mutation\n')]));
+  const http=variant('scripts/read-fixed-account-activity-hook.mjs','100644',Buffer.concat([await fs.readFile(path.join(root,'scripts/read-fixed-account-activity-hook.mjs')),Buffer.from('\n// synthetic HTTP-only input mutation\n')]));
   assert.deepEqual(await native.captureAssistantAfter599PgInput({ref:http,physical:false,readGit:readInputGit}),current);
   for(const file of [leaf,sql])await assert.rejects(native.captureAssistantAfter599PgInput({ref:variant(file,'100644',null),physical:false,readGit:readInputGit}));
   await assert.rejects(native.captureAssistantAfter599PgInput({ref:variant(leaf,'120000',Buffer.from('foreign-target')),physical:false,readGit:readInputGit}));
@@ -3406,4 +3436,4 @@ test('current80 actual PG input includes the pure leaf, refuses partial pairs an
   try{await fs.unlink(index);}catch(error){if(error.code!=='ENOENT')throw error;}
   await fs.rmdir(dir);
  }
-});
+}));
