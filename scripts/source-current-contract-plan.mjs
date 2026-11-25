@@ -54,6 +54,7 @@ const LOCAL_RESTORE_INVENTORY_DISPATCH=[
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
 const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs scripts/test-committed-raw-current-capture-union.mjs';
 const WEATHER_CADENCE_SOURCE_COMMAND = 'node scripts/test-weather-cadence-watchdog.mjs';
+const ACCOUNT_TRIP_UI_SOURCE_TEST = 'node --test scripts/test-user-account-trip-log-4.0.264.mjs scripts/test-trip-evidence-upload-receipt.mjs';
 
 const WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND='node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs';
 
@@ -85,6 +86,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   assistantDiagnostic1712:['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'],
   accountActivityHookRead:['node --test scripts/test-fixed-account-activity-hook.mjs'],
   accountSchemaFixture:[ACCOUNT_SCHEMA_SOURCE_TEST],
+  accountTripUI:[ACCOUNT_TRIP_UI_SOURCE_TEST],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -282,6 +284,11 @@ const PATH_AREAS=freeze({
     'scripts/test-fixed-account-activity-hook.mjs',
   ],
   accountSchemaFixture:[ACCOUNT_SCHEMA_FIXTURE],
+  accountTripUI:[
+    'js/ui/account-panel.js',
+    'scripts/test-user-account-trip-log-4.0.264.mjs',
+    'scripts/test-trip-evidence-upload-receipt.mjs',
+  ],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'js/services/data-service.js',
@@ -515,7 +522,8 @@ const WEATHER_OPERATION_PATHS=new Set([...PATH_AREAS.waterSourceRouting,...PATH_
 const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
 const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure,
-  ...PATH_AREAS.privateStudy,...PATH_AREAS.accountActivityHookRead,...PATH_AREAS.accountSchemaFixture]);
+  ...PATH_AREAS.privateStudy,...PATH_AREAS.accountActivityHookRead,...PATH_AREAS.accountSchemaFixture,
+  ...PATH_AREAS.accountTripUI]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
