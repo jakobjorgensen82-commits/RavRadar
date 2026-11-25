@@ -55,9 +55,9 @@ const ANSWERS={
     en:'Start by learning to distinguish amber from stone and plastic. Search wash lines and pockets of light material systematically, comparing fresh and older wash. Look at the preceding weather and the coast rather than one wind direction or water level. Check finds using several gentle clues; UV alone is not proof. Choose equipment for the beach or water and assess conditions on site. A forecast or RavScore guarantees neither finds nor safety.'
   },
   daylight:{
-    da:'En UV-lygte kan stadig få rav til at lyse i dagslys. Det omgivende lys kan overdøve gløden, så prøv at skærme fundet af eller undersøge det i skygge. Andet materiale kan også lyse. Brug gløden som ét spor sammen med fundets vægt og overflade.',
-    de:'Eine UV-Lampe kann Bernstein auch bei Tageslicht zum Leuchten bringen. Helles Umgebungslicht kann das Leuchten überstrahlen. Schirme den Fund ab oder prüfe ihn im Schatten. Auch andere Materialien können leuchten. Beurteile deshalb auch das Gewicht und die Oberfläche des Fundstücks.',
-    en:'A UV lamp can make amber glow in daylight. Bright surroundings can hide the glow, so shield the find from ambient light or check it in the shade. Other materials can glow too. Use the glow as one clue along with the weight and surface of the piece.'
+    da:'En UV-lygte kan stadig få rav til at lyse i dagslys. Det omgivende lys kan overdøve gløden, så prøv at skærme fundet af eller undersøge det i skygge. Andet materiale kan også fluorescere under UV-lys. Brug gløden som ét spor sammen med fundets vægt og overflade.',
+    de:'Eine UV-Lampe kann Bernstein auch bei Tageslicht zum Leuchten bringen. Helles Umgebungslicht kann das Leuchten überstrahlen. Schirme den Fund ab oder prüfe ihn im Schatten. Auch andere Materialien können unter UV-Licht fluoreszieren. Beurteile deshalb auch das Gewicht und die Oberfläche des Fundstücks.',
+    en:'A UV lamp can make amber glow in daylight. Bright surroundings can hide the glow, so shield the find from ambient light or check it in the shade. Other materials can fluoresce under UV light too. Use the glow as one clue along with the weight and surface of the piece.'
   },
   'named-equipment':{
     da:'Jeg mangler pålidelige oplysninger om det apparat. Hvis du skriver modelnavnet eller beskriver, hvordan det skulle virke, kan jeg hjælpe med at vurdere metoden.',
@@ -112,6 +112,12 @@ const UV_DAYLIGHT={
   da:/^kan (?:jeg|man) (?:bruge en uv[- ](?:lygte|lampe) (?:i dagslys til at (?:(?:genkende|identificere) rav|kende rav fra andre fund)|til at (?:genkende|identificere) rav i dagslys)|i dagslys skelne rav fra andre fund med en uv[- ](?:lygte|lampe))$/iu,
   de:/^kann (?:ich|man) (?:bernstein (?:im|bei) tageslicht mit einer uv[- ]lampe (?:erkennen|identifizieren|von anderen fundstücken unterscheiden)|mit einer uv[- ]lampe (?:im|bei) tageslicht bernstein (?:erkennen|identifizieren))$/iu,
   en:/^can (?:i|we|you) (?:use a uv[- ](?:torch|lamp|light) (?:in daylight to (?:identify amber|tell amber from other finds)|to identify amber in daylight)|tell amber from other finds with a uv[- ](?:torch|lamp|light) in daylight)$/iu
+};
+// Whole questions about why this UV test is inconclusive and harder to see in daylight.
+const UV_IDENTIFICATION_DAYLIGHT={
+  da:/^hvorfor kan uv[- ]lys alene ikke identificere rav sikkert(?:,? og |[?.] )hvorfor er fluorescensen sværere at se i dagslys$/iu,
+  de:/^warum kann uv[- ]licht allein bernstein nicht sicher identifizieren(?:,? und |[?.] )warum ist die fluoreszenz bei tageslicht schlechter zu erkennen$/iu,
+  en:/^why can uv[- ]light alone (?:not reliably|not conclusively) identify amber(?:,? and |[?.] )why is (?:the )?fluorescence harder to see in daylight$/iu,
 };
 // Both clauses must ask about the mechanism and visibility of the same UV test.
 const UV_FLUORESCENCE_DAYLIGHT={
@@ -307,7 +313,7 @@ export function publicRavAssistantHelp(question,language,previousTopic=null){
   }
   let id=Object.keys(FORMS).find(key=>FORMS[key][language].test(text));
   if(!id&&WATER[language].test(text))id='water';
-  if(!id&&UV_DAYLIGHT[language].test(text))id='daylight';
+  if(!id&&(UV_DAYLIGHT[language].test(text)||UV_IDENTIFICATION_DAYLIGHT[language].test(text)))id='daylight';
   if(!id&&NAMED_EQUIPMENT[language].test(text))id='named-equipment';
   const term=COMPOUND[language].exec(text)?.[1];
   if(!id&&term&&!KNOWN_COMPOUNDS.test(term)&&classifyRavQuestion(raw)==='origin')id='compound';
