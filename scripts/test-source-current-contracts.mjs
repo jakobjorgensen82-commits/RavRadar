@@ -206,7 +206,7 @@ if(pagesCommandSelectionOnly){
 }
 
 // Account UI changes select its normal callers without widening backend or weather scope.
-for (const file of ['js/ui/account-panel.js', 'scripts/test-user-account-trip-log-4.0.264.mjs',
+for (const file of ['js/ui/account-panel.js', 'js/ui/trip-evidence-dialog.js', 'scripts/test-user-account-trip-log-4.0.264.mjs',
   'scripts/test-trip-evidence-upload-receipt.mjs']) {
   assert.deepEqual(currentSourceTargets(file).owners,[{area:'accountTripUI',commands:[
     'node --test scripts/test-user-account-trip-log-4.0.264.mjs scripts/test-trip-evidence-upload-receipt.mjs',
