@@ -163,7 +163,10 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
       return hold('artifact-not-unique');
     }
     if (listing.total_count !== listing.artifacts.length) {
-      return hold(kind === 'result' ? 'artifact-inventory-incomplete' : 'artifact-not-unique');
+      const discoverProof = kind === 'proof' && expectedArtifactId === undefined && expectedDigest === undefined;
+      const transientInventory = kind === 'result' || (discoverProof
+        && (listing.total_count === 0 || listing.total_count === 1));
+      return hold(transientInventory ? 'artifact-inventory-incomplete' : 'artifact-not-unique');
     }
     if (!listing.total_count) {
       if (kind === 'proof' && inspectMissingProofProducer) {
@@ -237,6 +240,7 @@ export async function findRawRotationArtifact({ pause = wait, signal, ...context
       if (signal?.aborted) break;
       if (finding.status === 'PENDING') continue;
       const retryable = finding.reason === 'metadata-temporarily-unavailable'
+        || (context.kind === 'proof' && finding.reason === 'artifact-inventory-incomplete')
         || (context.kind === 'result' && RETRYABLE_RESULT_OBSERVATIONS.has(finding.reason));
       if (!retryable) return finding;
       lastIncompleteObservation = finding;

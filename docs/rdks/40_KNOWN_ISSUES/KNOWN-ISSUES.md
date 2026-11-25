@@ -1,3 +1,9 @@
+## 25. november — råcachekvitteringen var synlig for sent i #397
+
+GitHub bekræftede upload af råcachekvitteringen kl. 20.32.15 UTC. Modtageren afviste listen med kategorien `artifact-not-unique` kl. 20.32.16 UTC. Den samme afgrænsede forespørgsel viste kort efter ét gyldigt ID. Loggen bevarer ikke selve det afviste svar. Koden brugte samme fejlkategori ved en ufuldstændig liste og ved to faktiske kvitteringer. [Vejrkørsel #397](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45694157045)
+
+Første opslag genlæser en uoverensstemmelse mellem nul eller én i antal og højst én række inden for den eksisterende frist. Ugyldig svarform og flere resultater afvises fortsat. Det fulde identitetsbevis og den særskilte genlæsning umiddelbart før sletning gælder ved hver godkendelse.
+
 ## 25. november — HTTP 503 efter offentlig vejrudgivelse i #395
 
 #395 hentede, beregnede, gemte og udgav prognosen. Pages kvitterede for udgivelsen. Kontrollen bagefter fik HTTP 503 på en fil til prognosedeling, så kørslen stoppede før den afsluttende kvittering. Det offentlige manifest var identisk med den forseglede pakke, og den konkrete fil svarede senere HTTP 200. Genoptagelse #13 afsluttede den allerede udgivne prognose. [Vejrkørsel #395](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45612925028) · [Genoptagelse #13](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45647105083)

@@ -1,3 +1,7 @@
+## Drift — genlæsning af råcachekvitteringen
+
+- Råcacherotationen venter på en entydig kvittering, hvis GitHub kortvarigt viser et antal på nul eller én, der afviger fra listen. To kvitteringer eller et fortsat uafklaret svar stopper som før.
+
 ## Drift — genlæsning efter en midlertidig Pages-fejl
 
 - Den offentlige kontrol prøver automatisk at læse en fil igen med en ny observationsadresse, hvis de korte forsøg er opbrugt efter HTTP 502, 503 eller 504. Filen skal bestå samme indholdskontrol som før.

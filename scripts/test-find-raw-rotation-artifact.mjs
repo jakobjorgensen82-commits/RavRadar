@@ -246,6 +246,35 @@ test('the initial RAW handoff recovers a transient listing read before the build
   assert.equal(polls, 2);
 });
 
+test('initial proof discovery waits for a consistent single-artifact inventory', async () => {
+  for (const totalCount of [0, 1]) {
+    const subject = fixture();
+    subject.listing.total_count = totalCount;
+    subject.listing.artifacts = totalCount === 1 ? [] : [subject.artifact];
+    subject.afterPause(() => {
+      subject.listing.total_count = 1;
+      subject.listing.artifacts = [subject.artifact];
+    });
+    assert.deepEqual(await subject.find(), { status: 'FOUND', artifactId: 14, digest });
+    assert.equal(subject.calls.length, 4);
+  }
+
+  const knownProof = fixture();
+  knownProof.listing.artifacts = [];
+  assert.deepEqual(await knownProof.recheck({ expectedArtifactId: 14, expectedDigest: digest }), {
+    status: 'HOLD', reason: 'artifact-not-unique',
+  });
+  assert.equal(knownProof.calls.length, 1);
+
+  for (const totalCount of [2, '1', undefined]) {
+    const subject = fixture();
+    subject.listing.total_count = totalCount;
+    subject.listing.artifacts = [];
+    assert.deepEqual(await subject.find(), { status: 'HOLD', reason: 'artifact-not-unique' });
+    assert.equal(subject.calls.length, 1);
+  }
+});
+
 test('the initial handoff honours read backoff and checks the exact waiting producer again', async () => {
   const subject = fixture();
   const limited = Object.assign(new Error('Limited'), { statusCode: 403, rateLimited: true, retryDelayMs: 60_000 });
