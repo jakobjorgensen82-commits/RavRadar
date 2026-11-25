@@ -57,6 +57,9 @@ const WEATHER_CADENCE_SOURCE_COMMAND = 'node scripts/test-weather-cadence-watchd
 const ACCOUNT_TRIP_UI_SOURCE_TEST = 'node --test scripts/test-user-account-trip-log-4.0.264.mjs scripts/test-trip-evidence-upload-receipt.mjs';
 
 const WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND='node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs';
+const DKSS_RAW_NATIVE_FIXTURE='scripts/test-native-current-grid.py';
+const DKSS_RAW_H0_FIXTURE='scripts/test-protected-dmi-native-current-proofs.mjs';
+const DKSS_RAW_AUDIT_COMMAND='node scripts/test-dkss-current-raw-audit-source.mjs';
 
 export const CURRENT_CONTRACT_COMMANDS=freeze({
   core:[
@@ -152,6 +155,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   dmiCollectionRecovery:[
     'node --test scripts/test-current-operational-python-contracts.mjs',
   ],
+  dkssRawAudit:[DKSS_RAW_AUDIT_COMMAND],
   weatherScalarPlanning:[
     'node --test scripts/test-weather-component-normal-wireup.mjs',
     WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND,
@@ -241,6 +245,15 @@ const COMMANDS=CURRENT_CONTRACT_COMMANDS;
 // Stier udpeger ansvar; indholdet godkendes først af de faktiske kommandoer.
 // Nye/ukendte produktstier falder ikke automatisk ind under et bredt præfiks.
 const PATH_AREAS=freeze({
+  dkssRawAudit:[
+    'scripts/lib/dkss-current-raw-audit-input.mjs',
+    'scripts/lib/dkss_current_raw_audit.py',
+    'scripts/lib/dkss_current_raw_cache.py',
+    'scripts/test-dkss-current-raw-audit.py',
+    'scripts/test-dkss-current-raw-audit-source.mjs',
+    DKSS_RAW_NATIVE_FIXTURE,
+    DKSS_RAW_H0_FIXTURE,
+  ],
   pages:[
     '.github/actions/deploy-ravradar-pages/action.yml',
     '.github/workflows/run-current-weather-once.yml',
@@ -623,6 +636,7 @@ const SOURCE_EXECUTION_TARGETS=freeze({
     'python -B scripts/test-dmi-native-chain-continuity.py FirstTurnMarineCatalogueTests',
   ],
   'scripts/test-dmi-native-provenance.py':COMMANDS.dmiCollectionRecovery,
+  [DKSS_RAW_H0_FIXTURE]:['node --test '+DKSS_RAW_H0_FIXTURE,DKSS_RAW_AUDIT_COMMAND],
   'scripts/test_dmi_wave_bootstrap_update_integration.py':[
     'python -B scripts/test_dmi_wave_bootstrap_update_integration.py',
   ],
@@ -782,6 +796,24 @@ function publicDigests(analysis){
     IBefore:analysis.models.I.before.bundleSha256,IAfter:analysis.models.I.after.bundleSha256,
     TBefore:analysis.models.T.before.implementationSha256,TAfter:analysis.models.T.after.implementationSha256,
   };
+}
+
+// Only the added comparator checks can use the narrow route for the two
+// existing fixtures. Changes elsewhere retain the regular FULL route.
+function dkssRawAuditFixtureBase(file,source){
+  const native=file===DKSS_RAW_NATIVE_FIXTURE;
+  const start=native?'\n\n                # Reuse the actual ecCodes GRIB1 fixture.'
+    :"test('offline DKSS audit input uses the normal admitted H0 row and exact native endpoints'";
+  const end=native?'\n            finally:\n                eccodes.codes_release(gid)'
+    :"test('normal original-wire identity uses exact Python round seven with measured IEEE parity'";
+  const addition=source.indexOf(start);
+  if(addition<0)return source;
+  const remainder=source.indexOf(end,addition+start.length);
+  if(remainder<0||source.indexOf(start,addition+start.length)>=0)return null;
+  const withoutAudit=source.slice(0,addition)+source.slice(remainder);
+  if(!native)return withoutAudit;
+  const imported='            from lib.dkss_current_raw_audit import check_dkss_current_original\n\n';
+  return withoutAudit.split(imported).length===2?withoutAudit.replace(imported,''):null;
 }
 
 // INSTALL-filen indeholder både DDL og håndbog. Kun en faktisk håndbogsændring
@@ -1421,6 +1453,13 @@ export function planSourceCurrentContractsFromGit(input){
         return refuse('CURRENT_DMI_RECOVERY_REQUIRES_EXISTING_REGULAR_SOURCE',['DMI_PRODUCER_CONTRACTS']);
       if(file==='scripts/test-dmi-dkss-primary-mode.py'&&!recoveryScope)
         return refuse('CURRENT_DMI_RECOVERY_FIXTURE_SCOPE_CHANGED',['DMI_PRODUCER_CONTRACTS']);
+      if(file===DKSS_RAW_NATIVE_FIXTURE||file===DKSS_RAW_H0_FIXTURE){
+        if(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644')
+          return refuse('CURRENT_DKSS_RAW_AUDIT_FIXTURE_REQUIRES_EXISTING_SOURCE');
+        const before=dkssRawAuditFixtureBase(file,readCommittedText(input.baselineCommit,file));
+        const after=dkssRawAuditFixtureBase(file,readCommittedText(input.candidateCommit,file));
+        if(before===null||after!==before)return refuse('CURRENT_DKSS_RAW_AUDIT_FIXTURE_SCOPE_CHANGED');
+      }
       if(file==='scripts/update-dmi-bulk.py'&&!recoveryScope&&!isDmiBudgetOnlyUpdaterChange(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)))
         return refuse('CURRENT_DMI_BUDGET_UPDATER_SCOPE_CHANGED',['DMI_PRODUCER_CONTRACTS']);

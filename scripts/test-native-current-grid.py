@@ -770,6 +770,7 @@ esac
                         ('MATCH', 'NATIVE_VECTOR_MISMATCH'))
                     original.seek(0)
                     self.assertEqual(hashlib.sha256(original.read()).hexdigest(), digest)
+                    print('DKSS_CURRENT_RAW_NATIVE_COMPARISON_OK')
             finally:
                 eccodes.codes_release(gid)
 
