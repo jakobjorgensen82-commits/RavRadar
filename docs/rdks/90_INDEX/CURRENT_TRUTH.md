@@ -1,3 +1,9 @@
+## 25. november — Spørg RavRadars lokale sprogkandidat
+
+Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog, den åbne fane viser. Et opfølgende spørgsmål om en anden dag bruger samme samtale og søger i prognosen for den nye dag.
+
+Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. GitHub-kontrol #1726 bestod på #1093, inklusive den afgrænsede PostgreSQL-prøve. Den efterfølgende indarbejdelse af Pages-rettelsen kræver kontrol af den samlede kilde, før installation og verifikation på en senere ordinær vejrprognose.
+
 ## 25. november — skeln mellem udgivelse og efterfølgende læsefejl
 
 Vejrkørsel #395 udgav den præcise gemte prognose, men mistede den afsluttende kvittering ved HTTP 503 på en delingsfil. Genoptagelse #13 afsluttede den samme udgivelse. Den lokale rettelse udvider læsekontrollen med ét forsinket genforsøg for HTTP 502, 503 og 504. Samme fil, prognose og model kontrolleres fortsat. Faktisk virkning af den nye kode skal følges i det normale forløb.

@@ -5,7 +5,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash as conditions593TestHash} from 'node:crypto';
 import path from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {execFileSync} from 'node:child_process';
+import {SOURCE601_ORIGINAL_DATA_PROFILE} from './check-assistant-later-h0-predecessor-source.mjs';
 import {withFrozenNative0600TestSource} from './run-frozen-native0600-source-targets.mjs';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 await import('./test-completed-private-runtime-workflow-inverse.mjs');
@@ -33,7 +35,8 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as ISSUED597_TIMEOUT_SUCCESSOR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597_TIMEOUT_SUCCESSOR,
   INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as AFTER598_TIMEOUT_SUCCESSOR,
-  INACTIVE_ASSISTANT_AFTER599_SUCCESSOR as AFTER599_TIMEOUT_SUCCESSOR}
+  INACTIVE_ASSISTANT_AFTER599_SUCCESSOR as AFTER599_TIMEOUT_SUCCESSOR,
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR as AFTER601_TIMEOUT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -782,18 +785,44 @@ assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 // A later binding migration must not silently undo DEC-0249's scoped 55s
 // setting. Checking the old corrective file alone missed the Top20 reset.
 const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
-let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
-  .sort().flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
-    /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
-  )].map(match => ({ migration: name, timeout: match[1] })));
-assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
+const timeoutRows=(migration,sql)=>[...sql.matchAll(
+  /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
+)].map(match=>({migration,timeout:match[1]}));
+let casTimeoutSettings=fs.readdirSync(migrationsUrl).filter(name=>name.endsWith('.sql')).sort()
+  .flatMap(name=>timeoutRows(name,fs.readFileSync(new URL(name,migrationsUrl),'utf8')));
+assert.equal(casTimeoutSettings.at(-1)?.timeout,'55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER601_TIMEOUT_SUCCESSOR){
+  const profile=AFTER601_TIMEOUT_SUCCESSOR,migration=profile.migration(),pins=profile.requireOutput();
+  const currentSql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
+  const canonical=await profile.readCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');
+  assert.deepEqual(canonical.migration,migration);
+  assert.equal(conditions593TestHash('sha256').update(canonical.canonicalSource).digest('hex'),pins.canonicalSha256);
+  assert.equal(conditions593TestHash('sha256').update(currentSql).digest('hex'),pins.migrationSha256);
+  const currentRow={migration:migration.filename,timeout:'55s'};
+  assert.deepEqual(timeoutRows(migration.filename,currentSql.toString('utf8')),[currentRow]);
+  const {head,tree}=SOURCE601_ORIGINAL_DATA_PROFILE;
+  const git=args=>execFileSync('git',['-c','protocol.allow=never',...args],{
+    cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:'utf8',timeout:20000,
+    env:{...process.env,GIT_NO_REPLACE_OBJECTS:'1',GIT_NO_LAZY_FETCH:'1',GIT_OPTIONAL_LOCKS:'0'},
+  });
+  assert.equal(git(['rev-parse',head+'^{tree}']).trim(),tree);
+  const archivedFiles=git(['grep','-l','-z','-F',
+    'alter function public.ravradar_ravscore_checkpoint_cas(bigint,timestamptz,jsonb)',head,'--','supabase/migrations'])
+    .split('\0').filter(Boolean).sort();
+  const historic=archivedFiles.flatMap(file=>timeoutRows(path.posix.basename(file),git(['cat-file','blob',file])));
+  assert.deepEqual(historic.at(-1),{migration:AFTER599_TIMEOUT_SUCCESSOR.migration().filename,timeout:'55s'});
+  assert.deepEqual(casTimeoutSettings,[...historic,currentRow]);
+  casTimeoutSettings=historic;
+}
 
 // Actual594 is a separate issued source profile. Validate its whole normal SQL
 // and canonical reader before a TEST INVENTORY ONLY inverse; never remove a
 // guessed latest row or grant SQL/data admission to historical593 oracles.
 const activeTimeoutMigration=ISSUED594_TIMEOUT_SUCCESSOR.migration();
-if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER599_TIMEOUT_SUCCESSOR){
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER599_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER601_TIMEOUT_SUCCESSOR){
   const profile=AFTER599_TIMEOUT_SUCCESSOR,migration=profile.migration(),output=profile.requireOutput();
   assert.equal(profile.requireRelease(),'4.0.601');
   const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
@@ -821,7 +850,7 @@ if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER599_TIMEOUT_SUCCESSOR){
   assert.throws(()=>inverse601(casTimeoutSettings,sql,{...profile}),/EXACT_ISSUED601_TIMEOUT_PROFILE_REQUIRED/);
   casTimeoutSettings=inverse601(casTimeoutSettings);
 }
-if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER599_TIMEOUT_SUCCESSOR){
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER599_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER601_TIMEOUT_SUCCESSOR){
   const profile=AFTER598_TIMEOUT_SUCCESSOR,migration=profile.migration(),output=profile.requireOutput();
   assert.equal(profile.requireRelease(),'4.0.599');
   const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
@@ -847,9 +876,9 @@ if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESS
   assert.throws(()=>inverse599(casTimeoutSettings,sql,{...profile}),/EXACT_ISSUED599_TIMEOUT_PROFILE_REQUIRED/);
   casTimeoutSettings=inverse599(casTimeoutSettings);
 }
-if(ACTIVE_TIMEOUT_SUCCESSOR!==AFTER598_TIMEOUT_SUCCESSOR&&ACTIVE_TIMEOUT_SUCCESSOR!==AFTER599_TIMEOUT_SUCCESSOR)
+if(ACTIVE_TIMEOUT_SUCCESSOR!==AFTER598_TIMEOUT_SUCCESSOR&&ACTIVE_TIMEOUT_SUCCESSOR!==AFTER599_TIMEOUT_SUCCESSOR&&ACTIVE_TIMEOUT_SUCCESSOR!==AFTER601_TIMEOUT_SUCCESSOR)
 assert([ISSUED594_TIMEOUT_SUCCESSOR,ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR));
-if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER597_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER599_TIMEOUT_SUCCESSOR){
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER597_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER599_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER601_TIMEOUT_SUCCESSOR){
   const profile=AFTER597_TIMEOUT_SUCCESSOR,migration=profile.migration();
   const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
   const canonical=await profile.readCanonicalSource();
@@ -865,7 +894,7 @@ if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER597_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESS
   assert.throws(()=>inverse([...casTimeoutSettings,casTimeoutSettings.at(-1)]));
   casTimeoutSettings=inverse(casTimeoutSettings);
 }
-if([ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR,AFTER598_TIMEOUT_SUCCESSOR,AFTER599_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR)){
+if([ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR,AFTER598_TIMEOUT_SUCCESSOR,AFTER599_TIMEOUT_SUCCESSOR,AFTER601_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR)){
   const migration=ISSUED597_TIMEOUT_SUCCESSOR.migration();
   const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
   const canonical=await ISSUED597_TIMEOUT_SUCCESSOR.readCanonicalSource();
@@ -1153,11 +1182,20 @@ await withFrozenNative0600TestSource('routing',async frozenRoot=>{
   assert(binding.includes("import { LATEST_REQUIRED_CUTOVER_MIGRATION } from './scripts/integrated-cutover-readiness.mjs';"));
   assert(binding.includes('deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version)'));
   assert(!binding.includes('deferCurrentGridBindingEdges(LATEST_RAVSCORE_BINDING_MIGRATION.version)'));
-  for (const name of ['Reconfirm exact main before assistant Edge deployment',
+  for(const name of ['Reconfirm exact main before assistant Edge deployment',
     'Deploy only the exact RavRadar assistant Edge function',
-    'Verify exact backend and assistant readback without weather or Pages'])
-    assert(indentedBody(binding, '      - name: ' + name).includes("if: inputs.install_account_erasure != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'"),
-      'Read-only diagnosis must exclude Edge while preserving the independent current-grid floor');
+    'Verify exact backend and assistant readback without weather or Pages']){
+    const guard=indentedBody(binding,'      - name: '+name).match(/^        if: (.+)$/m)?.[1];
+    assert(guard,'The Edge step must have its normal mode guard');
+    const expression=guard.replace('steps.integrated-implementation','steps.integratedImplementation');
+    for(let mode=0;mode<16;mode++){
+      const [erasure,receipt,diagnose,defer]=[1,2,4,8].map(bit=>Boolean(mode&bit));
+      const inputs={install_account_erasure:erasure,install_account_native_receipt:receipt,diagnose_current_grid_original:diagnose};
+      const steps={integratedImplementation:{outputs:{defer_edges:String(defer)}}};
+      assert.equal(runInNewContext(expression,{inputs,steps}),!erasure&&!receipt&&!diagnose&&!defer,
+        'Every account-only or read-only mode and the independent current-grid floor must prevent Edge deployment');
+    }
+  }
 
   const { assertCurrentGridEdgeArtifact } = await historicalImport('scripts/lib/production-workflow-sources.mjs');
   const { sha256CanonicalJson } = await historicalImport('scripts/ravscore-operational-pages-recovery.mjs');

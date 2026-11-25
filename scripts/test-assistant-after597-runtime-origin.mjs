@@ -2,15 +2,17 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {test} from 'node:test';
 // Explicit normal current entry. No project constructor/runtime import
 // precedes the fixed after598 issuance guard. Old PRE bodies stay unchanged.
 const currentArguments=process.argv.slice(2);
-assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
+assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current','--after601-origin'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
 const AFTER598_CURRENT_MODE=currentArguments[0]==='--after598-current';
 const AFTER599_CURRENT_MODE=currentArguments[0]==='--after599-current';
+const AFTER601_ORIGIN_MODE=currentArguments[0]==='--after601-origin';
 const currentSource=await import('./lib/assistant-later-h0-successor-source.mjs');
 if(AFTER598_CURRENT_MODE){
   currentSource.requireAssistantAfter598Output();currentSource.requireAssistantAfter598Release();
@@ -46,7 +48,46 @@ if(AFTER599_CURRENT_MODE){
   const {verifyAssistantAfter599SourceTarget}=await import('./national584-source-evidence.mjs');
   await verifyAssistantAfter599SourceTarget();
 }
-if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
+if(AFTER601_ORIGIN_MODE){
+  const origin=await import('./lib/established-native-current-origin.mjs');
+  const {SOURCE601_ORIGINAL_DATA_PROFILE:old601}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const T=old601.runtimeContracts.continuationStateContractSha256;
+  const oldDescriptor={modelBinding:{modelBundleSha256:old601.integrated},productionReferenceAt:H0,
+    contractHashes:{continuationStateContractSha256:T}};
+  const oldCheckpoint={candidateGRollbackCompanion:{modelBinding:{modelBundleSha256:old601.candidate}}};
+  test('normal later origin admits only the authentic 601 parent C/I/T for a later full hour',()=>{
+    assert.deepEqual([old601.candidate,old601.integrated,T],
+      ['C','I','T'].map(key=>currentSource.ASSISTANT_AFTER601_BEFORE[key]));
+    assert.equal(origin.isAssistantAfter601OriginParentBinding(oldDescriptor.modelBinding),true);
+    assert.equal(origin.assertAssistantAfter601OriginParentMetadata(oldDescriptor,oldCheckpoint),true);
+    assert.equal(origin.assertAssistantAfter601OriginTarget(oldDescriptor,later),true);
+    for(const time of [H0,'2026-11-04T03:00:00.000Z','2026-11-04T08:30:00.000Z','invalid'])
+      assert.throws(()=>origin.assertAssistantAfter601OriginTarget(oldDescriptor,time),/601_LATER_TARGET/);
+    assert.throws(()=>origin.assertAssistantAfter601OriginTarget(oldDescriptor,later,{family:'599'}),/601_FIXED_ORIGINAL_BINDING/);
+    for(const family of [currentSource.ASSISTANT_AFTER599_BEFORE,currentSource.ASSISTANT_AFTER601_BINDING,
+      {I:'e'.repeat(64),C:'f'.repeat(64),T:'0'.repeat(64)}]){
+      const foreign={...oldDescriptor,modelBinding:{modelBundleSha256:family.I}};
+      const mismatchedT={...oldDescriptor,contractHashes:{continuationStateContractSha256:family.T}};
+      const mismatchedC={candidateGRollbackCompanion:{modelBinding:{modelBundleSha256:family.C}}};
+      assert.equal(origin.isAssistantAfter601OriginParentBinding(foreign.modelBinding),false);
+      assert.throws(()=>origin.assertAssistantAfter601OriginTarget(foreign,later),/601_FIXED_ORIGINAL_BINDING/);
+      assert.throws(()=>origin.assertAssistantAfter601OriginTarget(mismatchedT,later),/601_FIXED_ORIGINAL_BINDING/);
+      assert.throws(()=>origin.assertAssistantAfter601OriginParentMetadata(mismatchedT,oldCheckpoint),/601_FIXED_ORIGINAL_BINDING/);
+      assert.throws(()=>origin.assertAssistantAfter601OriginParentMetadata(oldDescriptor,mismatchedC),/601_FIXED_ORIGINAL_BINDING/);
+    }
+  });
+  test('normal 599 origin retains its own target, checkpoint and family separation',()=>{
+    const old599=currentSource.ASSISTANT_AFTER599_BEFORE;
+    const own={...oldDescriptor,modelBinding:{modelBundleSha256:old599.I},contractHashes:{continuationStateContractSha256:old599.T}};
+    const candidate={candidateGRollbackCompanion:{modelBinding:{modelBundleSha256:old599.C}}};
+    assert.equal(origin.isAssistantAfter599OriginParentBinding(own.modelBinding),true);
+    assert.equal(origin.isAssistantAfter599OriginParentBinding(oldDescriptor.modelBinding),false);
+    assert.equal(origin.assertAssistantAfter599OriginTarget(own,later),true);
+    assert.equal(origin.assertAssistantAfter599OriginParentMetadata(own,candidate),true);
+    assert.throws(()=>origin.assertAssistantAfter599OriginTarget(oldDescriptor,later),/599_FIXED_ORIGINAL_BINDING/);
+    assert.throws(()=>origin.assertAssistantAfter599OriginParentMetadata(own,oldCheckpoint),/599_FIXED_ORIGINAL_BINDING/);
+  });
+}else if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
 
 test('den faste597-originalfamilie kræver ægte597-metadata og en strengt nyere hel time',()=>{
   assert.equal(isAssistantAfter597OriginParentBinding(descriptor.modelBinding),true);
@@ -221,10 +262,14 @@ test('normal modelimport kræver præcise nye hunks og genskaber de ægte gamle 
   });
   test('after599 current four register inverses retain the existing whole old rule',async()=>{
     const {assistantAfter599RegisterImportBeforeSource}=await import('./lib/model-source-imports.mjs');
+    const {SOURCE601_ORIGINAL_DATA_PROFILE}=await import('./check-assistant-later-h0-predecessor-source.mjs');
     for(const file of ['scripts/check-assistant-later-h0-predecessor-source.mjs',
       'scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/lib/established-native-current-origin.mjs',
       'scripts/assistant-later-h0-binding-prewrite.mjs']){
-      const source=await fs.readFile(path.join(ROOT,file),'utf8');
+      const source=execFileSync('git',['-C',ROOT,'cat-file','blob',SOURCE601_ORIGINAL_DATA_PROFILE.head+':'+file],{
+        encoding:'utf8',timeout:30000,maxBuffer:2*1024*1024,
+        env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0'},
+      });
       const original=assistantAfter599RegisterImportBeforeSource(source,file);
       assert.deepEqual(modelSourceRelativeModuleSpecifiers(source,file),modelSourceRelativeModuleSpecifiers(original,file));
       for(const changed of [source+'\n// unexplained change\n',source+"\nimport(unknown.path);\n"])

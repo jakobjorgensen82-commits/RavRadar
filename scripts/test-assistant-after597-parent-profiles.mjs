@@ -10,9 +10,10 @@ import {test} from 'node:test';
 // Explicit normal current entry. No project constructor/runtime import
 // precedes the fixed after598 issuance guard. Old PRE bodies stay unchanged.
 const currentArguments=process.argv.slice(2);
-assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
+assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current','--after601-predecessor'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
 const AFTER598_CURRENT_MODE=currentArguments[0]==='--after598-current';
 const AFTER599_CURRENT_MODE=currentArguments[0]==='--after599-current';
+const AFTER601_PREDECESSOR_MODE=currentArguments[0]==='--after601-predecessor';
 const currentSource=await import('./lib/assistant-later-h0-successor-source.mjs');
 if(AFTER598_CURRENT_MODE){
   currentSource.requireAssistantAfter598Output();currentSource.requireAssistantAfter598Release();
@@ -44,7 +45,136 @@ if(AFTER599_CURRENT_MODE){
   const {verifyAssistantAfter599SourceTarget}=await import('./national584-source-evidence.mjs');
   await verifyAssistantAfter599SourceTarget();
 }
-if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
+async function verifyNormalContinuationData(t,{withSource,head,assertionPath,assertion,family}){
+  let archivedLoader;
+  await withSource(async (root,load)=>{
+    archivedLoader=load;
+    const loadFixture=relative=>import(pathToFileURL(path.join(root,relative)).href);
+    if(family==='601'){
+      await assert.rejects(load(path.join(root,assertionPath)),/Undeclared or closed capsule module/);
+      const tempParent=await fs.realpath(os.tmpdir());
+      assert.equal(path.dirname(root),tempParent);
+      const moved=root+'-original';
+      await fs.rename(root,moved);
+      try{
+        await fs.mkdir(root);
+        try{await assert.rejects(load(assertionPath),/Invalid capsule host/);}
+        finally{await fs.rmdir(root);}
+      }finally{await fs.rename(moved,root);}
+      const unrelated='scripts/lib/ravscore-sampling-context.mjs';
+      await assert.rejects(load(unrelated),/Undeclared or closed capsule module/);
+      const leaf=path.join(root,unrelated),original=await fs.readFile(leaf);
+      try{
+        await fs.writeFile(leaf,Buffer.concat([original,Buffer.from('// altered capsule fixture')]));
+        await assert.rejects(load(assertionPath),/Fixed producer source changed/);
+      }finally{await fs.writeFile(leaf,original);}
+    }
+    const [data,I,C,stateI,stateC,context,partContract,rollback,workflow,checkpoint,protectedB]=await Promise.all([
+      load(assertionPath),
+      load('js/core/ravscore-model-contract.js'),loadFixture('scripts/rollback-assets/ravscore-model-contract.js'),
+      loadFixture('js/core/ravscore-integrated-state-pipeline.js'),loadFixture('js/core/ravscore-candidate-g-state-pipeline.js'),
+      loadFixture('scripts/lib/ravscore-sampling-context.mjs'),loadFixture('scripts/lib/coastal-point-staging-contract.mjs'),
+      loadFixture('scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'),load('scripts/private-production-runtime-workflow.mjs'),
+      load('scripts/ravscore-continuation-checkpoint.mjs'),load('scripts/protected-private-production-runtime.mjs'),
+    ]);
+    const assertSnapshotData=data[assertion];
+    assert.equal(assertSnapshotData instanceof Function,true);
+    assert.equal(data.assertFrozen594OriginSnapshotData,undefined);
+    const tempParent=await fs.realpath(os.tmpdir());
+    const own=await fs.mkdtemp(path.join(tempParent,'rr-assistant-data-input-'));
+    t.after(async()=>{assert.equal(path.dirname(own),tempParent);await fs.rm(own,{recursive:true});});
+    const central={zoneCount:210,partCount:673,zones:Object.fromEntries(Array.from({length:210},(_,i)=>['z'+i,[]]))};
+    for(let i=0;i<673;i++)central.zones['z'+(i%210)].push({partId:'p'+i,
+      landPoint:[10,56],waterPoint:[10.01,56.01],onshoreDirectionDeg:90});
+    // The existing ordinary-lineage target's normal49-hour recipe. Values are
+    // synthetic inputs; both whole state types are created by their real APIs.
+    const samples=Array.from({length:49},(_,i)=>({time:new Date(Date.parse(H0)-(48-i)*3600000).toISOString(),
+      currentSpeedMps:0.12,currentAlignment:0.75,currentVerified:true,waveHeightM:1.2,wavePeriodS:6,waveDirectionDeg:270}));
+    const first=central.zones.z0[0];
+    const integrated=stateI.buildIntegratedRavScoreStateSeries(samples,{samplingContextKey:context.ravScoreSamplingContextKey(first),
+      onshoreDirectionDeg:90}).rows.at(-1).continuationState;
+    const candidate=stateC.buildCandidateGDerivedStateSeries(samples,{stateKey:partContract.candidateGStateKey(first)}).continuationState;
+    const parts={},candidateParts={},pairs=new Map();
+    for(const[zoneId,values]of Object.entries(central.zones))for(const part of values){
+      const{partId,...metadata}=part;
+      const pair={integrated:{...structuredClone(integrated),samplingContextKey:context.ravScoreSamplingContextKey(part)},
+        candidate:{...structuredClone(candidate),stateKey:partContract.candidateGStateKey(part)}};
+      pair.context=pair.integrated.samplingContextKey;pairs.set(partId,pair);
+      parts[partId]={...metadata,zoneId,ravScoreModel:{currentState:pair.integrated}};
+      candidateParts[partId]={ravScoreModel:{currentState:pair.candidate}};
+    }
+    const iBinding=I.ravScoreModelBinding(),cBinding=C.ravScoreModelBinding();
+    const conditions={datasetId:'rr-synthetic-assistant-210',productionReferenceAt:H0,generatedAt:later,
+      zones:Object.fromEntries(Object.keys(central.zones).map(id=>[id,{}])),
+      coastalParts:{modelBinding:iBinding,expectedPartCount:673,parts},
+      ravScoreCandidateGRollback:{schemaVersion:'1.0.0',kind:'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
+        privacyClass:'PRIVATE_PRODUCTION_RUNTIME',sourceModelBinding:iBinding,rollbackModelBinding:cBinding,
+        rollbackId:rollback.CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,automaticActivationAllowed:false,publicDuringNormalOperation:false,
+        runtime:{modelBinding:cBinding,expectedPartCount:673,scoredPartCount:673,
+          scoreProfile:{modelCoverageReady:true,modelMemoryReady:true,modelMigrationReady:true},parts:candidateParts}}};
+    const origin=await fs.readFile(path.join(root,'scripts/lib/established-native-current-origin.mjs'),'utf8');
+    const seedMatch=/const SEED = Object\.freeze\(\{\n([\s\S]*?)\n\}\);/.exec(origin.replaceAll('\r\n','\n'));
+    assert(seedMatch);const seedRows=[...seedMatch[1].matchAll(/([A-Za-z][A-Za-z0-9]*): '([^'\n]*)'/g)];
+    assert.equal(seedRows.length,13);
+    assert.equal(seedMatch[1].replace(/([A-Za-z][A-Za-z0-9]*): '([^'\n]*)'/g,'').replace(/[\s,]/g,''),'');
+    const seed=Object.fromEntries(seedRows.map(row=>[row[1],row[2]]));
+    const contracts=await workflow.privateRuntimeContractHashes({repositoryRoot:root});
+    const hash=crypto.createHash('sha256');for(const id of [...pairs.keys()].sort())hash.update(canonical([id,pairs.get(id)]));
+    const content={schemaVersion:1,kind:'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',semanticContract:'established-native-current-continuation-v1',
+      seed,parent:{bundleContentSha256:'1'.repeat(64),generationSha256:'2'.repeat(64),attestationSha256:'3'.repeat(64)},
+      producer:{sourceHead:head,semanticContract:'established-native-current-continuation-v1',
+        integrated:iBinding.modelBundleSha256,candidate:cBinding.modelBundleSha256,
+        continuation:contracts.continuationStateContractSha256,ownerPolicyGitBlob:seed.ownerPolicyGitBlob},
+      datasetId:conditions.datasetId,referenceAt:H0,registrySha256:digest(central),pairsSha256:hash.digest('hex'),
+      contextRegistrySha256:digest([...pairs].map(([id,pair])=>[id,pair.context]).sort(([a],[b])=>a.localeCompare(b))),
+      transition:'NORMAL_STRICT_CONTINUATION'};
+    conditions.privateEstablishedNativeCurrentOrigin={...content,attestationSha256:digest(content)};
+    const sourcePath=path.join(own,'conditions.json'),checkpointPath=path.join(own,'checkpoint.json');
+    await fs.writeFile(sourcePath,JSON.stringify(conditions));
+    await checkpoint.saveRavScoreContinuationCheckpoint({sourcePath,checkpointPath,repositoryRoot:root});
+    const S=JSON.parse(await fs.readFile(checkpointPath,'utf8'));
+    const policy=protectedB.PROTECTED_PRIVATE_RUNTIME_POLICY;
+    const descriptor={schemaVersion:policy.legacySchemaVersion,kind:policy.legacyDescriptorKind,privacyClass:policy.privacyClass,
+      bucketId:policy.bucketId,objectPath:'bundles/sha256/'+('4'.repeat(64))+'.json.gz',objectSha256:'4'.repeat(64),objectBytes:1,
+      bundleContentSha256:'5'.repeat(64),datasetId:conditions.datasetId,productionReferenceAt:H0,generatedAt:later,
+      sourceHead:head,modelBinding:iBinding,contractHashes:contracts};
+    const input={descriptor,conditions,centralContract:central,checkpoint:S};
+    assert.equal(await assertSnapshotData(input),undefined);
+    const otherFamily=structuredClone(input);otherFamily.descriptor.modelBinding.modelBundleSha256='0'.repeat(64);
+    await assert.rejects(assertSnapshotData(otherFamily),/incompatible modelBundleSha256/);
+    const unknownSchema=structuredClone(input);unknownSchema.descriptor.schemaVersion='99.0.0';
+    await assert.rejects(assertSnapshotData(unknownSchema));
+    const metadata=structuredClone(input);metadata.conditions.privateEstablishedNativeCurrentOrigin.kind='PRIVATE_ORIGINAL_BOUND_SAME_H0_METADATA';
+    await assert.rejects(assertSnapshotData(metadata),new RegExp('SOURCE_'+family+'_NORMAL_GENERATION_REQUIRED'));
+    const changedS=structuredClone(input);changedS.checkpoint.states.p0.extraNumericValue=1;
+    await assert.rejects(assertSnapshotData(changedS),/B_S_DIFFER/);
+    const changedAttestation=structuredClone(input);changedAttestation.conditions.privateEstablishedNativeCurrentOrigin.attestationSha256='0'.repeat(64);
+    await assert.rejects(assertSnapshotData(changedAttestation),/ATTESTATION_HASH/);
+  });
+  if(family==='601')await assert.rejects(archivedLoader(assertionPath),/Undeclared or closed capsule module/);
+}
+
+if(AFTER601_PREDECESSOR_MODE){
+  const [{SOURCE601_ORIGINAL_DATA_PROFILE:profile},{source601OriginalPredecessor:reader}]=await Promise.all([
+    import('./check-assistant-later-h0-predecessor-source.mjs'),
+    import('./lib/authenticated-frozen586-predecessor.mjs'),
+  ]);
+  test('601 normal predecessor rejects caller overrides and fabricated snapshot and freshness handles',async()=>{
+    assert.equal(currentSource.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.originalStateFamily,'601');
+    await assert.rejects(reader.withSource(()=>{}, {head:profile.head}));
+    await assert.rejects(reader.read({family:'599'}),/SOURCE601_PREDECESSOR_ARGUMENTS/);
+    for(const foreign of [null,Object.freeze({}),{descriptor:{sourceHead:profile.head},family:'601'}]){
+      assert.throws(()=>reader.snapshot(foreign),/SOURCE601_PREDECESSOR_HANDLE/);
+      await assert.rejects(reader.fresh(foreign),/SOURCE601_PREDECESSOR_HANDLE/);
+    }
+  });
+  test('601 normal predecessor uses the issued source and validates synthetic B/S data with normal current checks',async t=>{
+    assert.deepEqual([profile.integrated,profile.candidate,profile.runtimeContracts.continuationStateContractSha256],
+      ['I','C','T'].map(key=>currentSource.ASSISTANT_AFTER601_BEFORE[key]));
+    await verifyNormalContinuationData(t,{withSource:reader.withSource,head:profile.head,
+      assertionPath:profile.assertion,assertion:'assertSource601OriginSnapshotData',family:'601'});
+  });
+}else if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
 
 test('named unissued assistant parent reads genuine597 canonical SQL without changing ACTIVE or issuing a tuple',async()=>{
   assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR);
@@ -287,84 +417,7 @@ test('normal fixed598 DATA host validates673 actual model pairs and refuses meta
     assert.throws(()=>named.requireBinding({tuple:'caller-selected'}));
   });
 test('normal fixed599 DATA host validates673 actual model pairs and refuses metadata views, wrong S and altered attestation',async t=>{
-  await withSource599OriginalDataSource(async root=>{
-    const load=relative=>import(pathToFileURL(path.join(root,relative)).href);
-    const [data,I,C,stateI,stateC,context,partContract,rollback,workflow,checkpoint,protectedB]=await Promise.all([
-      load('scripts/lib/established-native-current-origin-599-assertion.mjs'),
-      load('js/core/ravscore-model-contract.js'),load('scripts/rollback-assets/ravscore-model-contract.js'),
-      load('js/core/ravscore-integrated-state-pipeline.js'),load('js/core/ravscore-candidate-g-state-pipeline.js'),
-      load('scripts/lib/ravscore-sampling-context.mjs'),load('scripts/lib/coastal-point-staging-contract.mjs'),
-      load('scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'),load('scripts/private-production-runtime-workflow.mjs'),
-      load('scripts/ravscore-continuation-checkpoint.mjs'),load('scripts/protected-private-production-runtime.mjs'),
-    ]);
-    assert.equal(data.assertSource599OriginSnapshotData instanceof Function,true);
-    assert.equal(data.assertFrozen594OriginSnapshotData,undefined);
-    const tempParent=await fs.realpath(os.tmpdir());
-    const own=await fs.mkdtemp(path.join(tempParent,'rr-assistant599-data-input-'));
-    t.after(async()=>{assert.equal(path.dirname(own),tempParent);await fs.rm(own,{recursive:true});});
-    const central={zoneCount:210,partCount:673,zones:Object.fromEntries(Array.from({length:210},(_,i)=>['z'+i,[]]))};
-    for(let i=0;i<673;i++)central.zones['z'+(i%210)].push({partId:'p'+i,
-      landPoint:[10,56],waterPoint:[10.01,56.01],onshoreDirectionDeg:90});
-    // The existing ordinary-lineage target's normal49-hour recipe. Values are
-    // synthetic inputs; both whole state types are created by their real APIs.
-    const samples=Array.from({length:49},(_,i)=>({time:new Date(Date.parse(H0)-(48-i)*3600000).toISOString(),
-      currentSpeedMps:0.12,currentAlignment:0.75,currentVerified:true,waveHeightM:1.2,wavePeriodS:6,waveDirectionDeg:270}));
-    const first=central.zones.z0[0];
-    const integrated=stateI.buildIntegratedRavScoreStateSeries(samples,{samplingContextKey:context.ravScoreSamplingContextKey(first),
-      onshoreDirectionDeg:90}).rows.at(-1).continuationState;
-    const candidate=stateC.buildCandidateGDerivedStateSeries(samples,{stateKey:partContract.candidateGStateKey(first)}).continuationState;
-    const parts={},candidateParts={},pairs=new Map();
-    for(const[zoneId,values]of Object.entries(central.zones))for(const part of values){
-      const{partId,...metadata}=part;
-      const pair={integrated:{...structuredClone(integrated),samplingContextKey:context.ravScoreSamplingContextKey(part)},
-        candidate:{...structuredClone(candidate),stateKey:partContract.candidateGStateKey(part)}};
-      pair.context=pair.integrated.samplingContextKey;pairs.set(partId,pair);
-      parts[partId]={...metadata,zoneId,ravScoreModel:{currentState:pair.integrated}};
-      candidateParts[partId]={ravScoreModel:{currentState:pair.candidate}};
-    }
-    const iBinding=I.ravScoreModelBinding(),cBinding=C.ravScoreModelBinding();
-    const conditions={datasetId:'rr-synthetic-assistant-after599-210',productionReferenceAt:H0,generatedAt:later,
-      zones:Object.fromEntries(Object.keys(central.zones).map(id=>[id,{}])),
-      coastalParts:{modelBinding:iBinding,expectedPartCount:673,parts},
-      ravScoreCandidateGRollback:{schemaVersion:'1.0.0',kind:'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
-        privacyClass:'PRIVATE_PRODUCTION_RUNTIME',sourceModelBinding:iBinding,rollbackModelBinding:cBinding,
-        rollbackId:rollback.CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,automaticActivationAllowed:false,publicDuringNormalOperation:false,
-        runtime:{modelBinding:cBinding,expectedPartCount:673,scoredPartCount:673,
-          scoreProfile:{modelCoverageReady:true,modelMemoryReady:true,modelMigrationReady:true},parts:candidateParts}}};
-    const origin=await fs.readFile(path.join(root,'scripts/lib/established-native-current-origin.mjs'),'utf8');
-    const seedMatch=/const SEED = Object\.freeze\(\{\n([\s\S]*?)\n\}\);/.exec(origin.replaceAll('\r\n','\n'));
-    assert(seedMatch);const seedRows=[...seedMatch[1].matchAll(/([A-Za-z][A-Za-z0-9]*): '([^'\n]*)'/g)];
-    assert.equal(seedRows.length,13);
-    assert.equal(seedMatch[1].replace(/([A-Za-z][A-Za-z0-9]*): '([^'\n]*)'/g,'').replace(/[\s,]/g,''),'');
-    const seed=Object.fromEntries(seedRows.map(row=>[row[1],row[2]]));
-    const contracts=await workflow.privateRuntimeContractHashes({repositoryRoot:root});
-    const hash=crypto.createHash('sha256');for(const id of [...pairs.keys()].sort())hash.update(canonical([id,pairs.get(id)]));
-    const content={schemaVersion:1,kind:'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',semanticContract:'established-native-current-continuation-v1',
-      seed,parent:{bundleContentSha256:'1'.repeat(64),generationSha256:'2'.repeat(64),attestationSha256:'3'.repeat(64)},
-      producer:{sourceHead:SOURCE599_CODE_SOURCE_PROVENANCE.head,semanticContract:'established-native-current-continuation-v1',
-        integrated:iBinding.modelBundleSha256,candidate:cBinding.modelBundleSha256,
-        continuation:contracts.continuationStateContractSha256,ownerPolicyGitBlob:seed.ownerPolicyGitBlob},
-      datasetId:conditions.datasetId,referenceAt:H0,registrySha256:digest(central),pairsSha256:hash.digest('hex'),
-      contextRegistrySha256:digest([...pairs].map(([id,pair])=>[id,pair.context]).sort(([a],[b])=>a.localeCompare(b))),
-      transition:'NORMAL_STRICT_CONTINUATION'};
-    conditions.privateEstablishedNativeCurrentOrigin={...content,attestationSha256:digest(content)};
-    const sourcePath=path.join(own,'conditions.json'),checkpointPath=path.join(own,'checkpoint.json');
-    await fs.writeFile(sourcePath,JSON.stringify(conditions));
-    await checkpoint.saveRavScoreContinuationCheckpoint({sourcePath,checkpointPath,repositoryRoot:root});
-    const S=JSON.parse(await fs.readFile(checkpointPath,'utf8'));
-    const policy=protectedB.PROTECTED_PRIVATE_RUNTIME_POLICY;
-    const descriptor={schemaVersion:policy.legacySchemaVersion,kind:policy.legacyDescriptorKind,privacyClass:policy.privacyClass,
-      bucketId:policy.bucketId,objectPath:'bundles/sha256/'+('4'.repeat(64))+'.json.gz',objectSha256:'4'.repeat(64),objectBytes:1,
-      bundleContentSha256:'5'.repeat(64),datasetId:conditions.datasetId,productionReferenceAt:H0,generatedAt:later,
-      sourceHead:SOURCE599_CODE_SOURCE_PROVENANCE.head,modelBinding:iBinding,contractHashes:contracts};
-    const input={descriptor,conditions,centralContract:central,checkpoint:S};
-    assert.equal(await data.assertSource599OriginSnapshotData(input),undefined);
-    const metadata=structuredClone(input);metadata.conditions.privateEstablishedNativeCurrentOrigin.kind='PRIVATE_ORIGINAL_BOUND_SAME_H0_METADATA';
-    await assert.rejects(data.assertSource599OriginSnapshotData(metadata),/SOURCE_599_NORMAL_GENERATION_REQUIRED/);
-    const changedS=structuredClone(input);changedS.checkpoint.states.p0.extraNumericValue=1;
-    await assert.rejects(data.assertSource599OriginSnapshotData(changedS),/B_S_DIFFER/);
-    const changedAttestation=structuredClone(input);changedAttestation.conditions.privateEstablishedNativeCurrentOrigin.attestationSha256='0'.repeat(64);
-    await assert.rejects(data.assertSource599OriginSnapshotData(changedAttestation),/ATTESTATION_HASH/);
-  });
+  await verifyNormalContinuationData(t,{withSource:withSource599OriginalDataSource,head:SOURCE599_CODE_SOURCE_PROVENANCE.head,
+    assertionPath:'scripts/lib/established-native-current-origin-599-assertion.mjs',assertion:'assertSource599OriginSnapshotData',family:'599'});
 });
 }

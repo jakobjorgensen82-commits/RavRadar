@@ -17,8 +17,8 @@ after(() => {
   if (savedStorage) Object.defineProperty(globalThis, 'localStorage', savedStorage);
   else delete globalThis.localStorage;
 });
-const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261125-uv-identification-daylight&followup=daylight-20261122`);
+const assistant = await import(`../js/services/rav-assistant.js?v=${version}&locale=topic-tab-20261125`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261125-uv-identification-daylight&followup=daylight-20261122&locale=topic-tab-20261125`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -442,7 +442,7 @@ test('assistant header waits for its handler, independently of forecast readines
   assert.equal(fetchCalls, 0);
 });
 
-test('assistant locale cache identity updates the app while retaining the model service', async () => {
+test('assistant followup cache identity reaches the app and the assistant service', async () => {
   const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
   const boot = await fs.readFile(new URL('../bootstrap.js', import.meta.url), 'utf8');
   const bootMatches = [...html.matchAll(/<script type="module" src="(bootstrap\.js\?[^"<>]+)"><\/script>/gu)];
@@ -466,11 +466,11 @@ test('assistant locale cache identity updates the app while retaining the model 
     assert.equal(url.searchParams.getAll('assistant-followup').length, 1);
     assert.equal(url.searchParams.get('assistant-data'), 'ready-20261123');
     assert.equal(url.searchParams.getAll('assistant-data').length, 1);
-    assert.deepEqual(url.searchParams.getAll('assistant-locale'), ['tab-20261125']);
+    assert.deepEqual(url.searchParams.getAll('assistant-locale'), ['topic-tab-20261125']);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
   assert.equal(serviceImports.length, 1);
-  assert.equal(serviceImports[0][1], `./js/services/rav-assistant.js?v=${version}`);
+  assert.equal(serviceImports[0][1], `./js/services/rav-assistant.js?v=${version}&locale=topic-tab-20261125`);
 });
 const dynamic = { da: 'Hvorfor denne score?', de: 'Warum dieser Score?', en: 'Why this score?' };
 const fact = { da: 'Hvad er rav?', de: 'Was ist Bernstein?', en: 'What is amber?' };
@@ -715,6 +715,33 @@ test('forecast followups preserve the whole weekday intent and use the normal da
     assert.equal(JSON.stringify(ui.state), before, 'No model, input, score or dataset mutation');
     assert.equal(ui.detailCalls(), 0); assert.equal(fetchCalls, 0); assert.equal(ui.loading(), false);
   }
+});
+
+test('German forecast followup survives another tab changing the stored language', async () => {
+  const question = 'Was ist ein Bernsteinkescher, und wo ist es morgen am besten?';
+  const followup = 'und am Dienstag?';
+  const completeFollowup = 'Bester Ort am Dienstag';
+  for (const storedLanguage of ['de', 'da']) {
+    const ui = await forecastFixture(storedLanguage, 'waders', { pageLanguage: 'de' });
+    const asked = [];
+    ui.context.askRavRadar = (text, context) => {
+      asked.push({ text, locale: context.locale });
+      return assistant.askRavRadar(text, context, { now: forecastNow, localOnly: true });
+    };
+
+    assert.equal(assistant.assistantTopicForQuestion(question),
+      storedLanguage === 'de' ? 'forecast-best-place' : null);
+    assert.equal(assistant.assistantTopicForQuestion(question, 'de'), 'forecast-best-place');
+    await ui.submit(question);
+    assert.match(ui.answers().at(-1), /Ein Bernsteinkescher.*Zone A/su);
+    assert.equal(ui.topic(), 'forecast-best-place');
+
+    await ui.submit(followup);
+    assert.deepEqual(asked, [{ text: question, locale: 'de' }, { text: completeFollowup, locale: 'de' }]);
+    assert.match(ui.answers().at(-1), /Dienstag.*Zone B/su);
+    assert.equal(ui.users().at(-1), followup);
+  }
+  assert.equal(fetchCalls, 0);
 });
 
 test('forecast best-time followups use the selected zone and ordinary local score selector', async () => {

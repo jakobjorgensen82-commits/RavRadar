@@ -137,3 +137,7 @@ Målrettet kontrakt dækker alle 51 lokale sprog-/intentkombinationer uden et en
 Et sammensat spørgsmål i den offentlige tyske formular spurgte, hvorfor UV-lys alene ikke kan identificere rav sikkert, og hvorfor gløden er sværere at se i dagslys. Formularen viste beskeden om et utilgængeligt AI-svar. Det konkrete svar fra AI-tjenesten er ukendt.
 
 Rettelsen dækker hele spørgsmålsformen på dansk, tysk og engelsk med den eksisterende forklaring om UV og dagslys. Andre materialer kan også fluorescere under UV-lys, og dagslyset kan overdøve gløden. Spørgsmål med ekstra ønsker går videre som hele spørgsmål. Den almindelige formularprøve dækker svarene og tilfældet med et yderligere ønske om private oplysninger. Browserprøven på den offentlige rettelse følges efter levering.
+
+## 25. november 2026 – fanens sprog ved opfølgning om prognosen
+
+En tysk fane kunne svare på både et spørgsmål om ravkesen og morgendagens bedste sted, men afvise opfølgningen om tirsdag efter et sprogskift til dansk i en anden fane. Årsagen var, at emnevalget stadig læste det gemte sprogvalg. Den åbne fane sender nu sit viste sprog til emnevalget. Den direkte kalder kan fortsat bruge det gemte sprog som standard. Formularprøven sammenligner de to situationer med den normale lokale rangering og uden netværkskald.

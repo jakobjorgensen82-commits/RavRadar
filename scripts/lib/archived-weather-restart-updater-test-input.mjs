@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { assertSource598CodeSourceSelected } from '../check-assistant-later-h0-predecessor-source.mjs';
+import { assertSource598CodeSourceSelected, SOURCE601_ORIGINAL_DATA_PROFILE } from '../check-assistant-later-h0-predecessor-source.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 // TEST INPUT ONLY: exact V7 scalar-planning callback extraction, before all
 // immutable old updater oracles. Current DMI/loader tests use actual V7 code.
@@ -49,6 +49,24 @@ export function readHistoricalWeatherRestartUpdaterSource() {
   assert.equal(sha(raw), row.after.sha256, 'HISTORICAL_WEATHER_UPDATER_ORIGINAL_WHOLE');
   return new TextDecoder('utf-8', { fatal: true }).decode(raw);
 }
+let archivedRetentionCompanion;
+// Historical callers share the exact old reader. The current reader is tested separately.
+export function readHistoricalRetentionCompanionSource() {
+  assert.equal(arguments.length, 0, 'HISTORICAL_RETENTION_COMPANION_ARGUMENTS');
+  if (archivedRetentionCompanion === undefined) {
+    const { head, tree } = SOURCE601_ORIGINAL_DATA_PROFILE;
+    const root = fileURLToPath(new URL('../../', import.meta.url));
+    const git = args => execFileSync('git', ['-C', root, '-c', 'protocol.allow=never', ...args], {
+      timeout: 20000, maxBuffer: 131072,
+      env: { ...process.env, GIT_NO_REPLACE_OBJECTS: '1', GIT_NO_LAZY_FETCH: '1', GIT_OPTIONAL_LOCKS: '0' },
+    });
+    assert.equal(git(['rev-parse', head + '^{tree}']).toString('ascii').trim(), tree);
+    const raw = git(['cat-file', 'blob', head + ':scripts/read-authenticated-dmi-current-companions.mjs']);
+    archivedRetentionCompanion = new TextDecoder('utf-8', { fatal: true }).decode(raw);
+  }
+  return archivedRetentionCompanion;
+}
+
 export function inverseDmiScalarPlanningUpdaterTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'DMI_SCALAR_PLANNING_UPDATER_ARGUMENTS');
   assert.equal(typeof source, 'string', 'DMI_SCALAR_PLANNING_UPDATER_TYPE');

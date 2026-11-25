@@ -18,7 +18,8 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_ALIASES,assistantLaterH0Mi
   ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,requireAssistantPublic591SuccessorOutput,requireInstalled593Original591Output,
   SCALAR597_LATER_H0_ALIASES,requireScalar597LaterH0Output,
   ASSISTANT_AFTER597_ALIASES,requireAssistantAfter597Output,
-  ASSISTANT_AFTER598_ALIASES,requireAssistantAfter598Output,ASSISTANT_AFTER599_ALIASES,requireAssistantAfter599Output}
+  ASSISTANT_AFTER598_ALIASES,requireAssistantAfter598Output,ASSISTANT_AFTER599_ALIASES,requireAssistantAfter599Output,
+  ASSISTANT_AFTER601_ALIASES,ASSISTANT_AFTER601_BINDING,ASSISTANT_AFTER601_OUTPUT,assistantAfter601Migration,readAssistantAfter601CanonicalSource}
   from './lib/assistant-later-h0-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
@@ -43,8 +44,6 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/schema.sql',
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
-const CHECKPOINT_METADATA_CAS_MIGRATION_PATH = ACTIVE.binding===null ? null
-  : 'supabase/migrations/' + ACTIVE.migration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -274,42 +273,73 @@ export function assistantAfter598CheckpointInspectionView(source){
   }
   return view;
 }
-export function assistantAfter599CheckpointInspectionView(source){
-  const pins=requireAssistantAfter599Output();
-  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+const AFTER599_CHECKPOINT_ALIASES=Object.freeze([
+  ...ASSISTANT_AFTER599_ALIASES,...ASSISTANT_AFTER598_ALIASES,...ASSISTANT_AFTER597_ALIASES,...SCALAR597_LATER_H0_ALIASES,
+  ...ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
+  ...ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
+  ...ASSISTANT_LATER_H0_ALIASES,...NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2),
+]);
+const AFTER601_CHECKPOINT_ALIASES=Object.freeze([...ASSISTANT_AFTER601_ALIASES,...AFTER599_CHECKPOINT_ALIASES]);
+
+function pinnedCheckpointInspectionView(source,pins,aliases,family){
+  assert.equal(typeof source,'string');
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'),pins.canonicalSha256,
-    'Assistant after599 inspection requires the entire issued canonical source');
+    `Assistant ${family} inspection requires the entire issued canonical source`);
   let view=source;
-  for(const row of [...ASSISTANT_AFTER599_ALIASES,...ASSISTANT_AFTER598_ALIASES,...ASSISTANT_AFTER597_ALIASES,...SCALAR597_LATER_H0_ALIASES,
-    ...ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
-    ...ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
-    ...ASSISTANT_LATER_H0_ALIASES,...NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2)]){
-    const original=exactFunctionDefinition(view,'public.'+row.name,'Exact preserved after599 predecessor alias');
+  for(const row of aliases){
+    const original=exactFunctionDefinition(view,'public.'+row.name,`Exact preserved ${family} predecessor alias`);
     view=view.slice(0,original.start)+view.slice(original.end);
   }
   return view;
 }
 
-export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
+export function assistantAfter599CheckpointInspectionView(source){
+  assert.equal(arguments.length,1);
+  return pinnedCheckpointInspectionView(source,requireAssistantAfter599Output(),AFTER599_CHECKPOINT_ALIASES,'after599');
+}
+
+export function assistantAfter601CheckpointInspectionView(source){
+  assert.equal(arguments.length,1);
+  return pinnedCheckpointInspectionView(source,ASSISTANT_AFTER601_OUTPUT,AFTER601_CHECKPOINT_ALIASES,'after601');
+}
+
+const AFTER601_SETUP_SOURCE=Object.freeze({
+  sourcePhase:'assistant-after601-successor',
+  migration:assistantAfter601Migration,
+  readCanonicalSource:readAssistantAfter601CanonicalSource,
+});
+
+function canonicalSetupSource(binding,candidateBinding,continuationHash){
+  const actual={I:binding.modelBundleSha256,C:candidateBinding.modelBundleSha256,T:continuationHash};
+  const matches=expected=>actual.I===expected.I&&actual.C===expected.C&&actual.T===expected.T;
+  // Source setup can be generated before this family is selected in production.
+  if(matches(ASSISTANT_AFTER601_BINDING))return AFTER601_SETUP_SOURCE;
   ACTIVE.requireOutput();
+  assert(matches(ACTIVE.requireBinding()),'RavScore setup requires one exact C/I/T source family');
+  return ACTIVE;
+}
+
+export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
+  const profile=canonicalSetupSource(binding,candidateBinding,continuationHash);
   assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor',
     'assistant-public591-successor','assistant-installed593-origin591-successor',
-    'scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase),
+    'scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(profile.sourcePhase),
   'ASSISTANT_SYNC_UNKNOWN_SOURCE_PHASE');
-  const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
+  const label = `supabase/migrations/${profile.migration().filename} checkpoint metadata CAS`;
   const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
   // Frozen0200 aliases deliberately preserve their ORIGINAL generated-marker
   // comments too. Validate both complete immutable definitions before removing
   // them from this current-binding-only inspection view. The returned SQL still
   // contains every original byte; no alias is rebound, hidden or rewritten.
-  let currentView=ACTIVE.sourcePhase==='assistant-after599-successor'
-    ?assistantAfter599CheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-after598-successor'
-    ?assistantAfter598CheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-mixed-after597-successor'
-    ?assistantAfter597CheckpointInspectionView(source):ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'
-    ?scalar597LaterH0CheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
-    ?installed593Original591CheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public591-successor'
-    ?assistantPublic591SuccessorCheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public590-successor'
-    ?assistantPublic590SuccessorCheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public588-successor'
+  let currentView=profile.sourcePhase==='assistant-after601-successor'
+    ?assistantAfter601CheckpointInspectionView(source):profile.sourcePhase==='assistant-after599-successor'
+    ?assistantAfter599CheckpointInspectionView(source):profile.sourcePhase==='assistant-after598-successor'
+    ?assistantAfter598CheckpointInspectionView(source):profile.sourcePhase==='assistant-mixed-after597-successor'
+    ?assistantAfter597CheckpointInspectionView(source):profile.sourcePhase==='scalar597-later-h0-original594-successor'
+    ?scalar597LaterH0CheckpointInspectionView(source):profile.sourcePhase==='assistant-installed593-origin591-successor'
+    ?installed593Original591CheckpointInspectionView(source):profile.sourcePhase==='assistant-public591-successor'
+    ?assistantPublic591SuccessorCheckpointInspectionView(source):profile.sourcePhase==='assistant-public590-successor'
+    ?assistantPublic590SuccessorCheckpointInspectionView(source):profile.sourcePhase==='assistant-public588-successor'
     ?assistantPublic588SuccessorCheckpointInspectionView(source):assistantPublic587SuccessorCheckpointInspectionView(source);
   const originalAliases=[
     ['public.ravradar_ravscore_checkpoint_cmw0200_state_valid','7841b008be46efc651c3c416ded60145fa2265954a39020a50974b353ac3feb0'],
@@ -442,7 +472,7 @@ function assertMutableSqlBindingPath(relative) {
   }
 }
 
-function expectedMigration(source, canonicalMigration) {
+function expectedMigration(source, canonicalMigration, migrationPath) {
   let synchronized = source;
   for (const functionName of [
     'public.ravradar_trip_v3_score_quality_allowed',
@@ -463,7 +493,7 @@ function expectedMigration(source, canonicalMigration) {
     const canonical = exactGeneratedBlock(
       canonicalMigration,
       marker,
-      `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} ${marker}`,
+      `${migrationPath} ${marker}`,
     );
     synchronized = replaceGeneratedBlock(
       synchronized,
@@ -497,7 +527,6 @@ function synchronizeAccountSchema(source, accountSource, relative) {
 }
 
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
-  ACTIVE.requireOutput(); // Ingen gammel familie eller caller-valgt fallback.
   const binding = ravScoreModelBinding();
   assertRavScoreModelBinding(binding);
   const candidateBinding = candidateGRollbackModelBinding();
@@ -505,8 +534,10 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
   const continuationHash = await ravScoreContinuationImplementationSha256({ repositoryRoot: root });
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
+  const profile=canonicalSetupSource(binding,candidateBinding,continuationHash);
+  const migrationPath='supabase/migrations/'+profile.migration().filename;
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await ACTIVE.readCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await profile.readCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,
@@ -518,7 +549,7 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
     assertMutableSqlBindingPath(relative);
     const sqlPath = path.join(root, relative);
     const sql = (await fs.readFile(sqlPath, 'utf8')).replace(/\r\n?/g, '\n');
-    const expectedTripBindings = expectedMigration(sql, checkpointMigration);
+    const expectedTripBindings = expectedMigration(sql, checkpointMigration, migrationPath);
     const expectedSql = synchronizeAccountSchema(replaceGeneratedBlock(
       expectedTripBindings,
       CHECKPOINT_METADATA_CAS_MARKER,

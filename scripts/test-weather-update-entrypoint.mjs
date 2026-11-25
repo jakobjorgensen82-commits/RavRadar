@@ -1,4 +1,5 @@
-import {inverseReviewedAfter599PackageForHistoricalOracles} from './lib/account-statistics-assistant-package-review.mjs';
+import {inverseReviewedAfter599PackageForHistoricalOracles,readAuthenticatedAfter598PackageForHistoricalOracles}
+  from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant590RetentionCompanionTestInput, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant591RetentionCompanionTestInput, ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW,
@@ -20,26 +21,34 @@ import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TES
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
-  inverseCurrentFamilyColdTargetTestInput, readHistoricalWeatherRestartUpdaterSource }
+  inverseCurrentFamilyColdTargetTestInput, readHistoricalWeatherRestartUpdaterSource, readHistoricalRetentionCompanionSource }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {SOURCE601_ORIGINAL_DATA_PROFILE} from './check-assistant-later-h0-predecessor-source.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR} from './lib/assistant-later-h0-successor-source.mjs';
 import test from 'node:test';
 import { writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';
 import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
 import { withFrozenEstablishedNativeCurrentOriginSourceTarget } from './run-frozen-established-native-current-origin-source-targets.mjs';
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
+const retentionCompanionUrl = new URL('../'+retention594Review.path,import.meta.url);
+async function historicalRetentionCompanionSource(){
+  return ACTIVE_ASSISTANT_SUCCESSOR===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR
+    ? readHistoricalRetentionCompanionSource()
+    : (await fs.readFile(retentionCompanionUrl, 'utf8')).replace(/\r\n/g, '\n');
+}
 const sourceText = async file => {
+  const retention=file instanceof URL&&file.href===retentionCompanionUrl.href;
   let source = file === producerPath ? readHistoricalWeatherRestartUpdaterSource()
-    : (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+    : retention ? await historicalRetentionCompanionSource() : (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
   if (file instanceof URL && file.href === new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url).href)
     source = inverseCurrentNativeOriginalProducerTestInput(source, 'scripts/lib/private-dmi-recovery-record.mjs');
-  if (file instanceof URL && file.href === new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url).href)
-    source = inverseIssued594RetentionCompanionSource(source, 'scripts/read-authenticated-dmi-current-companions.mjs');
+  if(retention)source=inverseIssued594RetentionCompanionSource(source,retention594Review.path);
   return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(inverseAlternativeCCaller(source, 'scripts/update-weather.mjs')) : source;
 };
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -823,9 +832,13 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
   const pkg=JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const {inverseScalar597LaterH0Package,inverseAssistantAfter597Package,inverseAssistantAfter598Package}=await import('./national584-source-evidence.mjs');
-  const {ACTIVE_ASSISTANT_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
-  const beforeAfter597=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'?await inverseReviewedAfter599PackageForHistoricalOracles(pkg):ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after598-successor'?inverseAssistantAfter598Package(pkg):pkg;
-  const scalarPackage=['assistant-after599-successor','assistant-after598-successor','assistant-mixed-after597-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)?inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
+  const phase=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase;
+  const beforeAfter597=ACTIVE_ASSISTANT_SUCCESSOR===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR
+    ?await readAuthenticatedAfter598PackageForHistoricalOracles()
+    :phase==='assistant-after599-successor'?await inverseReviewedAfter599PackageForHistoricalOracles(pkg)
+    :phase==='assistant-after598-successor'?inverseAssistantAfter598Package(pkg):pkg;
+  const scalarPackage=['assistant-after601-successor','assistant-after599-successor','assistant-after598-successor','assistant-mixed-after597-successor'].includes(phase)
+    ?inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
   const historicalPackage=scalarPackage.version==='4.0.597'?inverseScalar597LaterH0Package(scalarPackage):scalarPackage;
   const actualScripts=inverseReviewedAccountStatisticsAssistantSourceScripts(historicalPackage.scripts);
   // Retain the entire genuine140000 command oracle on its real frozen input,
@@ -1294,7 +1307,7 @@ test('actual native-original companion caller stays unprojected and declared in 
   assert.match(planner, /await readAuthenticatedCurrentCompanions\(verified, conditions\)/);
   const actualHelper = (await fs.readFile(new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
   assert.match(actualHelper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.originalConditions \?\? input\.conditions\);\n  await input\.verify\(\);/);
-  const genuine588Helper = inverseActiveFamilyRetentionCompanionTestInput(actualHelper, 'scripts/read-authenticated-dmi-current-companions.mjs');
+  const genuine588Helper = inverseActiveFamilyRetentionCompanionTestInput(await historicalRetentionCompanionSource(),retention594Review.path);
   const genuine587Helper = inverseAssistant588OriginalCompanionTestInput(genuine588Helper, 'scripts/read-authenticated-dmi-current-companions.mjs');
   const helper = inverseAssistant587OriginalCompanionTestInput(genuine587Helper, 'scripts/read-authenticated-dmi-current-companions.mjs');
   assert.match(helper, /await readAuthenticatedCurrentCompanions\(input\.verified, input\.conditions\);\n  await input\.verify\(\);/);
@@ -1448,7 +1461,7 @@ test('active-family retention companion has an exact outer inverse before unchan
 
 test('issued594 retention companion has an exact whole inverse and rejects every changed selector input',async()=>{
   const row=retention594Review;
-  const live=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const live=await historicalRetentionCompanionSource();
   const actual=inverseIssued597RetentionCompanionSource(live,row.path);
   if(digest(live)===retention597Review.after.sha256){
     assert.equal(digest(actual),row.after.sha256);
@@ -1491,14 +1504,26 @@ test('current594 retention companion selects actual original591 while preserving
   const after597=profiles.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR;
   const after598=profiles.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR;
   const after599=profiles.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR;
-  assert([current,next,after597,after598,after599].includes(active));
+  assert([current,next,after597,after598,after599,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR].includes(active));
   assert.equal(current.sourcePhase,'assistant-installed593-origin591-successor');
   assert.equal(current.requireRelease(),'4.0.594');assert.equal(current.originalStateFamily,'591');
   assert.equal(current.before,profiles.ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE);
   assert.deepEqual(current.databaseBefore,{...profiles.ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,
     canonicalSha256:profiles.ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT.canonicalSha256});
-  const live=(await fs.readFile(new URL('../'+retention594Review.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const live=await historicalRetentionCompanionSource();
   const actual=inverseIssued597RetentionCompanionSource(live,retention594Review.path);
+  if(active===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR){
+    const {activeAssistantRuntimePredecessor}=await import('./assistant-later-h0-runtime-transition.mjs');
+    const {source601OriginalPredecessor}=await import('./lib/authenticated-frozen586-predecessor.mjs');
+    const {integrated:I,candidate:C,runtimeContracts}=SOURCE601_ORIGINAL_DATA_PROFILE;
+    assert.equal(active.originalStateFamily,'601');
+    assert.deepEqual([active.before.I,active.before.C,active.before.T],
+      [I,C,runtimeContracts.continuationStateContractSha256]);
+    assert.equal(activeAssistantRuntimePredecessor(),source601OriginalPredecessor);
+    assert.throws(()=>activeAssistantRuntimePredecessor({family:'599'}),/caller-valgt originalfamilie/);
+    const currentReader=await fs.readFile(retentionCompanionUrl,'utf8');
+    assert.match(currentReader,/const ACTIVE_PREDECESSOR=activeAssistantRuntimePredecessor\(\);/);
+  }
   if(active===next){
     assert.equal(next.requireRelease(),'4.0.597');assert.equal(next.originalStateFamily,'594');
     assert.equal(next.before.I,current.requireBinding().I);
@@ -1524,7 +1549,7 @@ test('current594 retention companion selects actual original591 while preserving
       for(const changed of [live.replace(after,()=>before),live.replace(after,()=>after+after),live+'\n'])
         assert.throws(()=>inverseAssistantAfter598RetentionCompanionSource(changed,retention594Review.path));
   }
-  if(active===after599){
+  if(active===after599||active===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR){
     assert.equal(after599.originalStateFamily,'599');assert.equal(after599.before.I,after598.requireBinding().I);
     const prior=inverseAssistantAfter599RetentionCompanionSource(live,retention594Review.path);
     assert.equal(digest(inverseAssistantAfter598RetentionCompanionSource(prior,retention594Review.path)),after597RetentionReview.after.sha256);
@@ -1551,7 +1576,7 @@ test('current594 retention companion selects actual original591 while preserving
     // Den faktiske normale selector udføres; markører læser ingen B/S og
     // fabrikerer hverken autentificering, descriptor eller opaque adgang.
     const factory=new Function(...parameters,source.slice(begin,end)+'\nreturn ACTIVE_PREDECESSOR;');
-    if(source===live&&active===after599){
+    if(source===live&&(active===after599||active===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR)){
       const selected=factory(after599,...values);
       assert.equal(selected.read,markers['599'].read);assert.equal(selected.snapshot,markers['599'].snapshot);
     }
