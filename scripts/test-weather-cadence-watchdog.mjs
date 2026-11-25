@@ -623,7 +623,9 @@ if(file==='check-weather-cadence-watchdog.mjs')
   await fs.writeFile(gh, String.raw`#!/usr/bin/env node
 const fs=require('node:fs');
 fs.appendFileSync(process.env.RR_CADENCE_WRITES,JSON.stringify(process.argv.slice(2))+'\n');
-if(process.env.RR_CADENCE_CASE==='unknown-post'){console.error('PRIVATE_FIXTURE_CANARY');process.exitCode=1;}
+if(['unknown-post','raw-unknown-post'].includes(process.env.RR_CADENCE_CASE)){
+  console.error('PRIVATE_FIXTURE_CANARY');process.exitCode=1;
+}
 `);
   await fs.chmod(gh, 0o700);
   const script = `export RR_CADENCE_STAGE=first\n${cadenceBlocks[0]}
@@ -642,14 +644,20 @@ fi\n`;
       ['transient', 0, 2, 1, 10], ['first-active', 0, 1, 0, 3],
       ['recheck-active', 0, 2, 0, 5], ['persistent', 1, 0, 0, 3],
       ['auth', 1, 0, 0, 1], ['unknown-post', 1, 2, 1, 5],
+      ['raw-ready', 0, 2, 1, 5], ['raw-cutoff', 0, 2, 0, 5],
+      ['raw-missing-deadline', 1, 2, 0, 5], ['raw-unknown-post', 1, 2, 1, 5],
     ]) {
       for (const file of [calls, writes, output, summary]) await fs.writeFile(file, '');
+      const raw = scenario.startsWith('raw-');
+      const deadline = raw && scenario !== 'raw-missing-deadline'
+        ? String(Date.now() + (scenario === 'raw-cutoff' ? 0 : 60_000)) : '';
       const result = spawnSync('bash', ['-c', script], { encoding: 'utf8', timeout: 10_000,
         env: { ...process.env, NODE_OPTIONS: `--import=${pathToFileURL(hook).href}`,
           PATH: dir + path.delimiter + path.dirname(process.execPath) + path.delimiter + process.env.PATH,
           GITHUB_REF: 'refs/heads/main', GITHUB_REPOSITORY: 'owner/repository',
           GH_TOKEN: 'OFFLINE_SYNTHETIC_TOKEN', RUNNER_TEMP: dir,
           GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary,
+          RAW_RETRY_SOURCE: raw ? String(ownerRetryFailure.id) : '', RAW_RETRY_DEADLINE: deadline,
           RR_CADENCE_CASE: scenario, RR_CADENCE_CALLS: calls, RR_CADENCE_WRITES: writes } });
       assert.equal(result.error, undefined, scenario);
       assert.equal(result.signal, null, scenario);
@@ -666,7 +674,8 @@ fi\n`;
         'Accept: application/vnd.github+json', '-H', 'X-GitHub-Api-Version: 2022-11-28',
         'repos/owner/repository/actions/workflows/run-current-weather-once.yml/dispatches',
         '-f', 'ref=main', '-F', 'inputs[quick_confirmation]=false']);
-      if (scenario === 'unknown-post') assert.match(result.stderr, /WEATHER_CADENCE_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY/);
+      if (scenario.endsWith('unknown-post')) assert.match(result.stderr, /WEATHER_CADENCE_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY/);
+      if (scenario === 'raw-cutoff') assert.match(result.stdout, /RAW_READER_RETRY_CADENCE_END_NEAR_NO_DISPATCH/);
     }
   } finally {
     for (const file of owned) await fs.unlink(file).catch(error => { if (error.code !== 'ENOENT') throw error; });
@@ -1049,19 +1058,22 @@ test('Actual source-decision Bash accepts only reuse or explicit renewal',{
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'rr-source-decision-'));
   const output=path.join(dir,'output');
   try{
-    for(const [required,reason,status,expected]of[
+    for(const [required,reason,status,expected,rawSource='']of[
       ['false','verified-exact-main-source-content',0,'renew_source=false\n'],
       ['true','source-proof-renewal-required',0,'renew_source=true\n'],
       ['true','later-source-not-green',1,''],['true','later-source-unresolved',1,''],
       ['true','source-history-inspection-limit',1,''],['true','source-history-limit',1,''],
       ['true','main-source-proof-discovery-unavailable',1,''],['','source-proof-renewal-required',1,''],
+      ['false','verified-exact-main-source-content',0,'renew_source=false\n',String(ownerRetryFailure.id)],
+      ['true','source-proof-renewal-required',1,'',String(ownerRetryFailure.id)],
     ]){
       await fs.writeFile(output,'');
       const actual=spawnSync('bash',['-c',block],{encoding:'utf8',timeout:3000,
-        env:{...process.env,REQUIRED:required,REASON:reason,GITHUB_OUTPUT:output}});
+        env:{...process.env,REQUIRED:required,REASON:reason,RAW_RETRY_SOURCE:rawSource,GITHUB_OUTPUT:output}});
       assert.equal(actual.error,undefined);assert.equal(actual.status,status);
       assert.equal(await fs.readFile(output,'utf8'),expected);
-      if(status)assert.match(actual.stderr,/SOURCE_PROOF_UNKNOWN_OR_CONTRADICTORY_NO_DISPATCH/);
+      if(status)assert.match(actual.stderr,rawSource ? /WEATHER_RAW_READER_RETRY_SOURCE_NOT_REUSABLE/
+        : /SOURCE_PROOF_UNKNOWN_OR_CONTRADICTORY_NO_DISPATCH/);
     }
   }finally{await fs.unlink(output);await fs.rmdir(dir);}
 });
