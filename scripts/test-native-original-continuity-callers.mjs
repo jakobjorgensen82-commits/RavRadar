@@ -165,8 +165,9 @@ test('current installed code-only actual selection body rejects unknown or parti
 
 test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
   assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor',
-    'assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
-  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'
+    'assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor'
+    ?(await import('./integrated-cutover-readiness.mjs')).assistantAfter601RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).assistantAfter599RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after598-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).assistantAfter598RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).assistantAfter597RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor'
@@ -2053,25 +2054,33 @@ test('ordinary companion readers use the exact active predecessor before and aft
   const start=source.indexOf('export async function readCurrentPrivateRuntimeCompanionInput(');
   const end=source.indexOf('\nexport { readAuthenticatedCurrentCompanions };',start);
   assert(start>=0&&end>start,'Actual normal reader boundaries');
-  const selectorStart=source.indexOf('const ACTIVE_PREDECESSOR=');
-  const selectorEnd=source.indexOf('\nconst ROOT',selectorStart);
-  if(selectorStart>=0)assert(selectorEnd>selectorStart,'Actual fixed family selector boundary');
-  const selector=selectorStart<0?'':source.slice(selectorStart,selectorEnd);
-  const factory=compileFunction(selector+'\n'+source.slice(start,end).replaceAll('export async function','async function')
+  const transition=(await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-runtime-transition.mjs'),'utf8')).replace(/\r\n/g,'\n');
+  const selectorStart=transition.indexOf('const ACTIVE_PREDECESSOR=');
+  const selectorEnd=transition.indexOf('\nconst ROOT',selectorStart);
+  assert(selectorStart>=0&&selectorEnd>selectorStart,'Actual shared family selector boundary');
+  const selector=compileFunction(transition.slice(selectorStart,selectorEnd).replace('export function','function')
+    +'\nreturn activeAssistantRuntimePredecessor;',
+    ['ACTIVE','INACTIVE_ASSISTANT_AFTER601_SUCCESSOR','assert',
+      'assistantAfter597RuntimePredecessor','assistantAfter598RuntimePredecessor',
+      'assistantAfter599RuntimePredecessor','assistantAfter601RuntimePredecessor',
+      ...['587','588','590','591'].flatMap(family=>['withAuthenticated'+family+'PredecessorSource',
+        'readAuthenticatedFrozen'+family+'Predecessor','assertAuthenticatedFrozen'+family+'Snapshot']),
+      'withSource594OriginalDataSource','readAuthenticatedSource594Predecessor','assertAuthenticatedSource594Snapshot']);
+  const selection=source.match(/^const ACTIVE_PREDECESSOR=[^\n]+;$/m)?.[0];
+  assert(selection,'Actual companion predecessor selection');
+  const factory=compileFunction(selection+'\n'
+    +source.slice(start,end).replaceAll('export async function','async function')
     +'\nreturn {readCurrentPrivateRuntimeCompanionInput,readCurrentPrivateRuntimeCompanions};',
     ['ACTIVE','ravScoreModelBinding','process','path','fs','ROOT','crypto','isDeepStrictEqual','refuse',
-      'readAssistantLaterH0RetentionInput','assistantAfter597RuntimePredecessor','assistantAfter598RuntimePredecessor','assistantAfter599RuntimePredecessor','verifyPrivateProductionRuntimeBundle',
-      'readAuthenticatedFrozen587Predecessor','assertAuthenticatedFrozen587Snapshot',
-      'readAuthenticatedFrozen588Predecessor','assertAuthenticatedFrozen588Snapshot',
-      'readAuthenticatedFrozen590Predecessor','assertAuthenticatedFrozen590Snapshot',
-      'readAuthenticatedFrozen591Predecessor','assertAuthenticatedFrozen591Snapshot',
-      'readAuthenticatedSource594Predecessor','assertAuthenticatedSource594Snapshot',
+      'readAssistantLaterH0RetentionInput','activeAssistantRuntimePredecessor','verifyPrivateProductionRuntimeBundle',
       'readAuthenticatedCurrentCompanions']);
   const target='2026-10-27T20:00:00.000Z';
   // Routing-only fixtures: no real B/S, opaque authority, model values or I/O.
-  for(const profile of new Set([profiles.ACTIVE_ASSISTANT_SUCCESSOR,profiles.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
+  for(const profile of new Set([profiles.ACTIVE_ASSISTANT_SUCCESSOR,profiles.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,
+    profiles.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
     profiles.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,profiles.ISSUED_ASSISTANT_PUBLIC588_PROFILE])){
-    const expectedFamily=profile.sourcePhase==='assistant-after599-successor'?'599'
+    const expectedFamily=profile.sourcePhase==='assistant-after601-successor'?'601'
+      :profile.sourcePhase==='assistant-after599-successor'?'599'
       :profile.sourcePhase==='assistant-after598-successor'?'598'
       :profile.sourcePhase==='assistant-mixed-after597-successor'?'597'
       :profile.sourcePhase==='scalar597-later-h0-original594-successor'?'594'
@@ -2083,7 +2092,8 @@ test('ordinary companion readers use the exact active predecessor before and aft
       RAVRADAR_PRIVATE_RUNTIME_ROOT:path.join(os.tmpdir(),'synthetic-companion-private')};
     env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=path.join(env.RAVRADAR_PRIVATE_RUNTIME_ROOT,'bundle');
     let descriptorI=profile.before.I,localI=profile.binding.I,changedDescriptor=false,changedSnapshot=false;
-    let descriptorReads=0,retentionReads=0,directReads=0,companionReads=0,after597Selectors=0,after598Selectors=0,after599Selectors=0;
+    let descriptorReads=0,retentionReads=0,directReads=0,companionReads=0;
+    const selectedFamilies=[];
     const families=[],originalPath=path.join(env.RAVRADAR_PRIVATE_RUNTIME_ROOT,'synthetic-original.json');
     const original={synthetic:'unchanged original weather'},contexts=[{synthetic:'original companion'}];
     const snapshot={descriptor:{bundleContentSha256:'b'.repeat(64)},conditionsPath:originalPath,
@@ -2102,25 +2112,24 @@ test('ordinary companion readers use the exact active predecessor before and aft
       assert.equal(handle.family,family);
       return changedSnapshot&&families.length>1?{...snapshot,changed:true}:snapshot;
     };
+    const selectFamily=family=>(...args)=>{
+      assert.deepEqual(args,[]);
+      selectedFamilies.push(family);
+      return Object.freeze({read:readFamily(family),snapshot:snapshotFamily(family)});
+    };
+    const unusedArchive=()=>{throw Error('Companion reader does not open a source archive directly');};
+    const select=selector(profile,profiles.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR,assert,
+      ...['597','598','599','601'].map(selectFamily),
+      ...['587','588','590','591','594'].flatMap(family=>[unusedArchive,readFamily(family),snapshotFamily(family)]));
+    assert.throws(()=>select(profile),/Ingen caller-valgt originalfamilie/);
     const normal=factory(profile,()=>({modelBundleSha256:localI}),{env},path,mockFs,ROOT,crypto,isDeepStrictEqual,
-      reason=>{throw Error(reason);},async()=>{retentionReads++;return view;},
-      (...args)=>{assert.deepEqual(args,[]);assert.equal(expectedFamily,'597');after597Selectors++;
-        return Object.freeze({read:readFamily('597'),snapshot:snapshotFamily('597')});},
-      (...args)=>{assert.deepEqual(args,[]);assert.equal(expectedFamily,'598');after598Selectors++;
-        return Object.freeze({read:readFamily('598'),snapshot:snapshotFamily('598')});},
-      (...args)=>{assert.deepEqual(args,[]);assert.equal(expectedFamily,'599');after599Selectors++;
-        return Object.freeze({read:readFamily('599'),snapshot:snapshotFamily('599')});},
+      reason=>{throw Error(reason);},async()=>{retentionReads++;return view;},select,
       async()=>{directReads++;throw Error('SYNTHETIC_STRICT_NORMAL_MODEL_CHECK');},
-      readFamily('587'),snapshotFamily('587'),readFamily('588'),snapshotFamily('588'),
-      readFamily('590'),snapshotFamily('590'),readFamily('591'),snapshotFamily('591'),
-      readFamily('594'),snapshotFamily('594'),
       async(verified,conditions)=>{companionReads++;assert.equal(verified,snapshot.verified);
         assert.deepEqual(conditions,original);return contexts;});
     assert.equal(await normal.readCurrentPrivateRuntimeCompanionInput(target),view);
     assert.equal(retentionReads,1);assert.equal(directReads,0);
-    assert.equal(after597Selectors,expectedFamily==='597'?1:0);
-    assert.equal(after598Selectors,expectedFamily==='598'?1:0);
-    assert.equal(after599Selectors,expectedFamily==='599'?1:0);
+    assert.deepEqual(selectedFamilies,['597','598','599','601'].includes(expectedFamily)?[expectedFamily]:[]);
     descriptorReads=0;
     assert.equal(await normal.readCurrentPrivateRuntimeCompanions(target),contexts);
     assert.equal(retentionReads,1,'After providers must not re-enter the pre-provider working-view reader');
