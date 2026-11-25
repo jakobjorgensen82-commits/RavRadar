@@ -236,6 +236,7 @@ export function planSourceDomainImpactFromGit(input){
     // Current V4 owns the derived599 family; historical V2 owners are not retagged.
     if(analysis.profile?.id==='DERIVED_599_DOMAIN_INPUTS_C101_I100_T12')return full('DERIVED_599_REQUIRES_CURRENT_OR_FULL');
     if(analysis.profile?.id==='DERIVED_601_DOMAIN_INPUTS_C101_I100_T12')return full('DERIVED_601_REQUIRES_CURRENT_OR_FULL');
+    if(analysis.profile?.id==='DERIVED_ASSISTANT_BROWSER_SEPARATION_INPUTS')return full('ASSISTANT_BROWSER_REQUIRES_CURRENT_OR_FULL');
     const registryBytes=fs.readFileSync(new URL('./lib/source-impact-domain-owners-594.json',import.meta.url));
     assert.equal(sha(registryBytes),REGISTRY_SHA256,'DOMAIN_REGISTRY_BYTES');
     const is598=analysis.profile?.id==='REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12';
