@@ -205,13 +205,14 @@ async function fetchBytes(fetchImpl, url, label, httpRetryBudget, readBody = nul
     headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
       ? 'application/json' : label.endsWith('.gz') ? 'application/gzip' : 'text/javascript' },
   };
-  // Both kinds of transient error share one budget across all public reads.
+  let requestUrl = url;
+  // Both kinds of transient error share one short retry budget across all reads.
   for (let attempt = 1; ; attempt += 1) {
     let failure;
     let retryable = false;
     let response;
     try {
-      response = await fetchImpl(url, request);
+      response = await fetchImpl(requestUrl, request);
     } catch (error) {
       if (error?.name === 'AbortError' || error?.name === 'TimeoutError') throw error;
       const category = transientFetchCause(error);
@@ -225,9 +226,22 @@ async function fetchBytes(fetchImpl, url, label, httpRetryBudget, readBody = nul
       if (typeof response?.body?.cancel === 'function') await response.body.cancel();
       retryable = [502, 503, 504].includes(response?.status);
     }
-    if (!retryable || attempt >= 3 || httpRetryBudget.remaining <= 0) throw failure;
-    httpRetryBudget.remaining -= 1;
-    await new Promise(resolve => setTimeout(resolve, httpRetryBudget.delayMs));
+    if (requestUrl === url && retryable && attempt < 3 && httpRetryBudget.remaining > 0) {
+      httpRetryBudget.remaining -= 1;
+      await new Promise(resolve => setTimeout(resolve, httpRetryBudget.delayMs));
+      continue;
+    }
+    if (!response || !retryable || !httpRetryBudget.delayedHttpRetry) throw failure;
+
+    // A Pages edge can keep answering 503 for the same observation. Read just
+    // that asset again after a longer pause, under a fresh observation nonce.
+    httpRetryBudget.delayedHttpRetry = false;
+    const refreshed = new URL(url);
+    const nonce = refreshed.searchParams.get('ravscore-observation');
+    refreshed.searchParams.set('ravscore-observation', `${nonce}-retry`);
+    requestUrl = refreshed.toString();
+    console.warn(`Retrying public Pages read ${label} after HTTP ${response.status}.`);
+    await new Promise(resolve => setTimeout(resolve, httpRetryBudget.delayMs * 6));
   }
 }
 
@@ -771,7 +785,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
   // Pages may serve its previous manifest for up to ten minutes after deploy.
   // Poll only the exact manifest/startup pair; the large package is checked once.
   // A matching manifest can precede its startup bytes during Pages propagation.
-  // Transient HTTP and pre-response transport failures share at most three extra attempts total.
+  // Transient failures share three short retries and one delayed HTTP read.
   attempts = 121,
   retryDelayMs = 5_000,
   knownSourceRepairId = null,
@@ -809,7 +823,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
       !== knownSourceRepair.sourcePublicClosureSha256)) {
     throw new Error('Operational Pages source repair does not match its exact pinned source');
   }
-  const httpRetryBudget = { remaining: 3, delayMs: retryDelayMs };
+  const httpRetryBudget = { remaining: 3, delayMs: retryDelayMs, delayedHttpRetry: true };
   let manifest, matchedManifestBytes, matchedObservationNonce, sealedStartupBytes;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const manifestObservationNonce = `${observationNonce}-${attempt}`;

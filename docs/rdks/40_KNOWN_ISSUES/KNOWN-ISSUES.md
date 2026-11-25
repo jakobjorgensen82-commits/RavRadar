@@ -1,3 +1,9 @@
+## 25. november — HTTP 503 efter offentlig vejrudgivelse i #395
+
+#395 hentede, beregnede, gemte og udgav prognosen. Pages kvitterede for udgivelsen. Kontrollen bagefter fik HTTP 503 på en fil til prognosedeling, så kørslen stoppede før den afsluttende kvittering. Det offentlige manifest var identisk med den forseglede pakke, og den konkrete fil svarede senere HTTP 200. Genoptagelse #13 afsluttede den allerede udgivne prognose. [Vejrkørsel #395](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45612925028) · [Genoptagelse #13](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45647105083)
+
+Den lokale rettelse giver kontrollen én ekstra læsning i alt efter en pause på 30 sekunder, når et kort genforsøg efter HTTP 502, 503 eller 504 er opbrugt. Kun observationsparameteren på adressen ændres. Filsti, krav til filens indhold og den forventede prognose er de samme. Ved fortsat læsefejl står fejlen ved magt. Genlæsningen foretager ingen ny vejrhentning eller Pages-bestilling. Første virkning i det almindelige GitHub-forløb udestår.
+
 ## 25. november — en mulig råcachelæser stoppede ordinær vejrkørsel #393
 
 Efter #392 var tre komplette RAW-kopier bevaret. Den første rotation i #393 fandt den aktive kildekontrol #1719 og udstedte en kvittering med `HOLD` og nul slettede kopier. Byggeren modtog kvitteringen og stoppede kl. 08.31 UTC. De tre prognoseproducenter, den nye råcachelagring, B/S-publicering for den nye prognose og Pages blev sprunget over. Afstemningen af det eksisterende B/S-par var allerede afsluttet med `ALREADY_PAIRED_READBACK_PROVED` og nul CAS-publiceringer. Kataloglæsning hos DMI var en del af forberedelsen. [GitHub-kørsel #393](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45575517700)
