@@ -1,3 +1,9 @@
+## 25. november — genlæsning af en ufuldstændig råcachekvittering
+
+- [x] Afgræns fejlen til den tidlige overlevering af råcachekvitteringen i #397.
+- [x] Brug den eksisterende ventetid ved et gyldigt antal på nul eller én, som afviger fra listen. Bevar den strenge genlæsning før sletning.
+- [ ] Kvalificér rettelsen i GitHub og verificér næste normale vejrstart til offentlig prognose.
+
 ## 25. november — den offentlige læsekontrol tåler en midlertidig Pages-fejl
 
 - [x] Afklar udgivelsen og afslut #395 ud fra den allerede offentliggjorte prognose.
