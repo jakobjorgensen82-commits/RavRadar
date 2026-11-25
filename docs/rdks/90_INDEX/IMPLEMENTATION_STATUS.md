@@ -13,6 +13,12 @@
 - [x] Den aktuelle #1093-kandidat efter #1095 bestod GitHub-kontrol #1726 med sin PostgreSQL-prøve.
 - [ ] Kontrollér den samlede kilde med Pages-rettelsen, kør den afgrænsede installation og verificér en senere offentlig prognose og samtaler på dansk, tysk og engelsk.
 
+## 25. november — lokal R2-kopi og genlæsning af driftsbeviser
+
+- [x] Før seks faste pladser og eksisterende private R2-binding videre på den aktuelle hovedgren. Bevar alle normale råcache-, udgivelses- og databevaringskontroller.
+- [x] Afgræns genlæsning til autentificeret HTTP 404 og det observerede præcise JSON-svar for tabt bucket. Kontrollér byteparitet, fejl der skal afvises, og de normale kaldere.
+- [ ] Kvalificér den præcise ændring i GitHub. Efter sikker levering skal hosted genlæsning i isolation med den primære Storage afskåret bekræfte alle påkrævede aktive beviser og særskilt dækning af de resterende driftskritiske objekter. Afvent en verificeret central reference og friske forbrugstal.
+
 ## 25. november — genlæsning af en ufuldstændig råcachekvittering
 
 - [x] Afgræns fejlen til den tidlige overlevering af råcachekvitteringen i #397.

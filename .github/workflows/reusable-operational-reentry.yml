@@ -7,6 +7,12 @@ on:
         type: boolean
         default: false
     secrets:
+      RAVRADAR_R2_ACCOUNT_ID:
+        required: false
+      RAVRADAR_R2_ACCESS_KEY_ID:
+        required: false
+      RAVRADAR_R2_SECRET_ACCESS_KEY:
+        required: false
       SUPABASE_ACCESS_TOKEN:
         required: false
       SUPABASE_URL:
@@ -109,6 +115,9 @@ jobs:
         id: reconcile
         shell: bash
         env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1262,6 +1271,10 @@ jobs:
           node-version: 22
       - name: Claim only the exact terminal owner and restore its sealed target
         shell: bash
+        env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin main
@@ -1355,6 +1368,10 @@ jobs:
           retention-days: 14
       - name: Seal the actual uploaded recovery artifact and advance only the owned attempt
         shell: bash
+        env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
           artifact_id="${{ steps.phase-pages-upload.outputs.artifact_id }}"
@@ -1387,6 +1404,9 @@ jobs:
       - name: Resume only the three fixed Edges while the exact target remains owned
         timeout-minutes: 7
         env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
         shell: bash
@@ -1407,6 +1427,9 @@ jobs:
       - name: Produce real readiness and plan then the ordinary exact handoff
         id: handoff
         env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           RAVRADAR_REQUIRE_INTEGRATED_BINDING: true
         shell: bash
@@ -1456,6 +1479,9 @@ jobs:
       exact_public_recovery: false
       pre_activation_recovery: true
     secrets:
+      RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+      RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+      RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -1481,6 +1507,9 @@ jobs:
           node-version: 22
       - name: Clear only a fresh normally validated publicly completed exact target
         env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
