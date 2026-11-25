@@ -3318,6 +3318,45 @@ console.log(JSON.stringify({scope:'SYNTHETIC_NORMAL_CLI_WIRING',decisions,writes
 }
 
 
+test('after601 receipt accepts the measured whole-history and quota results and refuses old markers',async()=>{
+  const native=await import('./native-postgres-evidence.mjs');
+  const {INACTIVE_ASSISTANT_AFTER601_SUCCESSOR:profile}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {SOURCE601_ORIGINAL_DATA_PROFILE}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const current={...v2Current(),branch:'synthetic-after601-native'};
+  const report={
+    kind:'ASSISTANT_AFTER601_SUCCESSOR',sourceMigrationInventory:70,databaseBeforeVersion:profile.databaseBefore.version,
+    originalStateRelease:601,migrationVersion:profile.migration().version,partCount:673,installedLedgerBeforeRows:69,
+    installedLedgerAfterRows:70,beforeGuardCases:17,parentCodeHead:SOURCE601_ORIGINAL_DATA_PROFILE.head,
+    allHistoricalMigrationsExecuted:false,productionInstalledHistoryEvidence:false,productionSeedAuthenticated:false,
+    sqlIsNotOriginAuthentication:true,sqlExecuted:true,wholeMigrationExecuted:true,exactCheckpointContract:true,
+    exactTripContract:true,oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,originalDigestsPreserved:true,
+    trueOld601Fixtures:true,old601ModelNotRetagged:true,currentNormalFixtures:true,wholeMetadataInverse:true,
+    strictlyLater601ToNextOnly:true,accountOffCatalogPreserved:true,normalProtectedJsonbRoundtrip:true,
+    schema2Catalog:true,predecessorExecutedInSameHost:true,
+    intermediateRuntime:{
+      old601ActiveAfterSql:true,nextRefusedBeforeActivation:true,pendingBothRefused:true,nextActiveAfterCompletion:true,
+      old601RefusedAfterCompletion:true,wholeHistoryAndDocumentsPreserved:true,quotaFunctionAndAdmissionUnchanged:true,
+      quotaServiceRoleWorking:true,
+    },
+  };
+  const receipt={
+    schemaVersion:1,kind:native.ASSISTANT_AFTER601_PHASE_KIND,phase:report.kind,sourcePhase:native.ASSISTANT_AFTER601_PHASE,
+    current,commands:native.ASSISTANT_AFTER601_COMMANDS,status:'EXECUTED',executedInThisRun:true,origin:null,
+    eligibleForReuse:false,binding:profile.requireBinding(),output:profile.requireOutput(),runtime:v2Runtime(),report,
+  };
+  assert.equal(native.verifyAssistantAfter601PhaseReceipt(receipt,current),receipt);
+
+  const oldMarker=copy(receipt);
+  delete oldMarker.report.intermediateRuntime.wholeHistoryAndDocumentsPreserved;
+  oldMarker.report.intermediateRuntime.activeDocumentsUnchangedBySql=true;
+  assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(oldMarker,current),/wholeHistoryAndDocumentsPreserved/);
+  for(const key of ['quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking']){
+    const failed=copy(receipt);
+    failed.report.intermediateRuntime[key]=false;
+    assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(failed,current),new RegExp(key));
+  }
+});
+
 test('current80 typed receipt requires the exact fresh nine-case result and cannot retag original79',()=>withAuthenticatedReceipt80Source(async root=>{
  const path=await import('node:path'),{pathToFileURL}=await import('node:url'),source=pathToFileURL(root+path.sep);
  const native=await import(new URL('scripts/native-postgres-evidence.mjs',source).href);

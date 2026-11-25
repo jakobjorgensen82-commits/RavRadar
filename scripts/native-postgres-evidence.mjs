@@ -2682,6 +2682,11 @@ const after601ReportFields=Object.freeze([
   'strictlyLater601ToNextOnly','accountOffCatalogPreserved','normalProtectedJsonbRoundtrip',
   'schema2Catalog','predecessorExecutedInSameHost',
 ]);
+const after601IntermediateTruths=Object.freeze([
+  'old601ActiveAfterSql','old601RefusedAfterCompletion','nextRefusedBeforeActivation',
+  'pendingBothRefused','nextActiveAfterCompletion','wholeHistoryAndDocumentsPreserved',
+  'quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking',
+]);
 function after601ReportProjection(report){
   const profile=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
   profile.requireOutput();
@@ -2704,17 +2709,10 @@ function after601ReportProjection(report){
   for(const [key,value] of Object.entries(expectations))assert.equal(report?.[key],value);
   for(const key of after601ReportFields)assert.equal(report[key],true,'Missing measured 601 property '+key);
   const intermediate=report.intermediateRuntime;
-  assert.equal(intermediate?.old601ActiveAfterSql,true);
-  assert.equal(intermediate?.old601RefusedAfterCompletion,true);
-  assert.equal(intermediate?.nextRefusedBeforeActivation,true);
-  assert.equal(intermediate?.pendingBothRefused,true);
-  assert.equal(intermediate?.nextActiveAfterCompletion,true);
-  assert.equal(intermediate?.activeDocumentsUnchangedBySql,true);
+  for(const key of after601IntermediateTruths)
+    assert.equal(intermediate?.[key],true,'Missing measured 601 runtime property '+key);
   return {...expectations,...Object.fromEntries(after601ReportFields.map(key=>[key,true])),
-    intermediateRuntime:{
-      old601ActiveAfterSql:true,old601RefusedAfterCompletion:true,nextRefusedBeforeActivation:true,
-      pendingBothRefused:true,nextActiveAfterCompletion:true,activeDocumentsUnchangedBySql:true,
-    }};
+    intermediateRuntime:Object.fromEntries(after601IntermediateTruths.map(key=>[key,true]))};
 }
 
 function after601PhaseReceipt(current,runtime,report){
