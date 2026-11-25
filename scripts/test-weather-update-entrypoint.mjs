@@ -21,15 +21,13 @@ import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TES
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
-  inverseCurrentFamilyColdTargetTestInput, readHistoricalWeatherRestartUpdaterSource }
+  inverseCurrentFamilyColdTargetTestInput, readHistoricalWeatherRestartUpdaterSource, readHistoricalRetentionCompanionSource }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {execFileSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
 import {SOURCE601_ORIGINAL_DATA_PROFILE} from './check-assistant-later-h0-predecessor-source.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR} from './lib/assistant-later-h0-successor-source.mjs';
 import test from 'node:test';
@@ -39,21 +37,10 @@ import { withFrozenEstablishedNativeCurrentOriginSourceTarget } from './run-froz
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const retentionCompanionUrl = new URL('../'+retention594Review.path,import.meta.url);
-let archivedRetentionCompanion;
 async function historicalRetentionCompanionSource(){
-  if(ACTIVE_ASSISTANT_SUCCESSOR!==INACTIVE_ASSISTANT_AFTER601_SUCCESSOR){
-    return (await fs.readFile(retentionCompanionUrl,'utf8')).replace(/\r\n/g,'\n');
-  }
-  if(archivedRetentionCompanion===undefined){
-    const {head,tree}=SOURCE601_ORIGINAL_DATA_PROFILE;
-    const git=args=>execFileSync('git',['-c','protocol.allow=never',...args],{
-      cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:'utf8',timeout:20000,
-      env:{...process.env,GIT_NO_REPLACE_OBJECTS:'1',GIT_NO_LAZY_FETCH:'1',GIT_OPTIONAL_LOCKS:'0'},
-    });
-    assert.equal(git(['rev-parse',head+'^{tree}']).trim(),tree);
-    archivedRetentionCompanion=git(['cat-file','blob',head+':'+retention594Review.path]).replace(/\r\n/g,'\n');
-  }
-  return archivedRetentionCompanion;
+  return ACTIVE_ASSISTANT_SUCCESSOR===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR
+    ? readHistoricalRetentionCompanionSource()
+    : (await fs.readFile(retentionCompanionUrl, 'utf8')).replace(/\r\n/g, '\n');
 }
 const sourceText = async file => {
   const retention=file instanceof URL&&file.href===retentionCompanionUrl.href;

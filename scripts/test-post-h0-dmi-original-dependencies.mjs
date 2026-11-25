@@ -22,7 +22,7 @@ import { currentFamilyColdStartScoreInputs } from './current-family-cold-start.m
 import { inverseCurrentFamilyColdTargetTestInput, CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW,
   inverseCurrentFamilyColdZoneHistoryTestInput, CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW,
   inverseFinalizedWeatherOwnersTestInput, FINALIZED_WEATHER_OWNERS_TEST_REVIEW,
-  readHistoricalWeatherRestartUpdaterSource }
+  readHistoricalWeatherRestartUpdaterSource, readHistoricalRetentionCompanionSource }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
@@ -2614,7 +2614,7 @@ test('cold target inverse: complete exact modules precede unchanged historical o
 function assistant588CompanionCallerUnits(dependencies) {
   const row = ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW;
   const source = inverseActiveFamilyRetentionCompanionTestInput(
-    readFileSync(new URL('../' + row.path, import.meta.url), 'utf8'), row.path);
+    readHistoricalRetentionCompanionSource(), row.path);
   assert.equal(Buffer.byteLength(source), row.after.bytes);
   assert.equal(sha(source), row.after.sha256);
   const genuine587 = inverseAssistant588OriginalCompanionTestInput(source, row.path);
