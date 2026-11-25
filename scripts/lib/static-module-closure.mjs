@@ -138,8 +138,15 @@ function statementEnd(items, start) {
   return items.length;
 }
 
-// Contract of the one computed import owned by the verified archive host.
-const VERIFIED_CAPSULE_IMPORT=tokens(`
+// Match checked executable tokens. Comments and string literals cannot
+// authorize computed imports, and every predeclared frame must occur once.
+function importFrame(source){
+  const sequence=tokens(source);
+  const offset=sequence.findIndex(token=>token.type==='id'&&token.value==='import');
+  return {sequence,offset};
+}
+const VERIFIED_CAPSULE_IMPORT_FRAMES=Object.freeze({
+  host:[importFrame(`
   async function importCapsuleLeaf(file){
     assert(importsOpen&&DECLARED_MODULES.includes(file)&&written.has(file),'Undeclared or closed capsule module');
     const verifiedLeaf=path.resolve(root,file);
@@ -150,12 +157,40 @@ const VERIFIED_CAPSULE_IMPORT=tokens(`
     const verifiedLeafUrl=pathToFileURL(verifiedLeaf);
     return import(verifiedLeafUrl.href);
   }
-`);
-const CAPSULE_IMPORT_OFFSET=VERIFIED_CAPSULE_IMPORT.findIndex(token=>token.type==='id'&&token.value==='import');
+`)],
+  origin:[
+    importFrame(`await withNativeCurrentReanalysisPredecessorSource(async sourceRoot => {
+        const load = file => {
+          need(['scripts/private-production-runtime-bundle.mjs','scripts/ravscore-continuation-checkpoint.mjs',
+            'scripts/protected-ravscore-continuation-checkpoint.mjs','scripts/lib/coastal-point-staging-contract.mjs',
+            'scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'].includes(file), 'SEED_ARCHIVE_MODULE');
+          return import(pathToFileURL(path.join(sourceRoot, file)).href);
+        };
+        await qualify(sourceRoot,load);
+      });`),
+    importFrame(`await withAuthenticated584PredecessorSource(async frozenRoot => {
+    const module = await import(pathToFileURL(path.join(frozenRoot,
+      'scripts/lib/established-native-current-origin-584-assertion.mjs')).href);
+    await module.assertFrozen584MetadataOriginData({ descriptor: old.descriptor, conditions: oldPairView,
+      centralContract: central });
+  });`),
+    importFrame(`await withAuthenticated585PredecessorSource(async frozenRoot => {
+    const module = await import(pathToFileURL(path.join(frozenRoot,
+      'scripts/lib/established-native-current-origin-585-assertion.mjs')).href);
+    await module.assertFrozen585MetadataOriginData({ descriptor: old.descriptor, conditions: oldPairView,
+      centralContract: central });
+  });`),
+  ],
+  consumer:[],
+});
+const VERIFIED_ORIGIN_ARCHIVE_BINDINGS=[
+  ['withNativeCurrentReanalysisPredecessorSource','../check-native-current-reanalysis-predecessor-source.mjs'],
+  ['withAuthenticated584PredecessorSource','../check-account-statistics-assistant-predecessor-source.mjs'],
+  ['withAuthenticated585PredecessorSource','../check-native-original-continuity-predecessor-source.mjs'],
+].map(([symbol,relative])=>({symbol,sequence:tokens("import { "+symbol+" } from '"+relative+"';")}));
 
-function matchesCapsuleImport(items,index){
-  const start=index-CAPSULE_IMPORT_OFFSET;
-  return start>=0&&VERIFIED_CAPSULE_IMPORT.every((token,offset)=>{
+function tokensMatchAt(items,sequence,start){
+  return start>=0&&sequence.every((token,offset)=>{
     const actual=items[start+offset];
     return token.type===actual?.type&&token.value===actual.value;
   });
@@ -166,7 +201,20 @@ export function exactRelativeModuleSpecifiers(source, label = 'module', capsuleR
   try { items = tokens(source); }
   catch (error) { throw new Error(`${label}: ${error.message}`); }
   const values = new Set();
-  let capsuleImports = 0;
+  const addDependency=specifier=>{
+    if(specifier.startsWith('./')||specifier.startsWith('../'))values.add(specifier);
+    else if(capsuleRole&&!specifier.startsWith('node:')){
+      throw new Error(label+' has an undeclared external module');
+    }
+  };
+  const capsuleFrames=VERIFIED_CAPSULE_IMPORT_FRAMES[capsuleRole]??[];
+  const matchedFrames=new Set();
+  if(capsuleRole==='origin'&&(items.some(token=>token.type==='punct'&&token.value==='\\')
+    || !VERIFIED_ORIGIN_ARCHIVE_BINDINGS.every(({symbol,sequence})=>
+      items.filter(token=>token.type==='id'&&token.value===symbol).length===2
+      &&items.some((_token,index)=>tokensMatchAt(items,sequence,index))))){
+    throw new Error(label+' has an undeclared or shadowed verified archive owner');
+  }
   for (let index = 0; index < items.length; index += 1) {
     const token = items[index];
     if (token.type !== 'id' || !['import', 'export'].includes(token.value)) continue;
@@ -175,17 +223,16 @@ export function exactRelativeModuleSpecifiers(source, label = 'module', capsuleR
     if (token.value === 'import' && next?.value === '(') {
       const specifier = items[index + 2];
       const close = items[index + 3];
-      if (capsuleRole === 'host' && matchesCapsuleImport(items,index)) {
-        capsuleImports += 1;
-        index += 5;
+      const frame=capsuleFrames.find(({sequence,offset})=>tokensMatchAt(items,sequence,index-offset));
+      if(frame&&!matchedFrames.has(frame)){
+        matchedFrames.add(frame);
         continue;
       }
-      if (capsuleRole || specifier?.type !== 'string' || close?.value !== ')') {
+      const literalAllowed=!capsuleRole||(capsuleRole==='origin'&&specifier?.value==='./ravscore-production-part-pipeline.mjs');
+      if (!literalAllowed || specifier?.type !== 'string' || close?.value !== ')') {
         throw new Error(`${label} contains a non-literal or unparsed dynamic import`);
       }
-      if (specifier.value.startsWith('./') || specifier.value.startsWith('../')) {
-        values.add(specifier.value);
-      }
+      addDependency(specifier.value);
       index += 3;
       continue;
     }
@@ -195,7 +242,7 @@ export function exactRelativeModuleSpecifiers(source, label = 'module', capsuleR
       && ['const', 'let', 'var', 'function', 'class', 'default', 'async'].includes(next.value)) continue;
     const end = statementEnd(items, index + 1);
     if (token.value === 'import' && next?.type === 'string') {
-      if (next.value.startsWith('./') || next.value.startsWith('../')) values.add(next.value);
+      addDependency(next.value);
       index += 1;
       continue;
     }
@@ -208,15 +255,13 @@ export function exactRelativeModuleSpecifiers(source, label = 'module', capsuleR
       if (specifier?.type !== 'string') {
         throw new Error(`${label} contains an unparsed static module specifier`);
       }
-      if (specifier.value.startsWith('./') || specifier.value.startsWith('../')) {
-        values.add(specifier.value);
-      }
+      addDependency(specifier.value);
     } else if (token.value === 'import') {
       throw new Error(`${label} contains an unparsed import expression`);
     }
   }
-  if (capsuleRole === 'host' && capsuleImports !== 1) {
-    throw new Error(label + ' must have exactly one verified capsule import');
+  if(matchedFrames.size!==capsuleFrames.length){
+    throw new Error(label+' is missing a verified archive import');
   }
   return [...values];
 }
