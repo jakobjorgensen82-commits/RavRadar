@@ -13,8 +13,8 @@ import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4
 import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.602&ui=zone-panels-20261027&map=plain-map-v3-20261104";
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.602&ui=account-20261006";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.602";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.602";
-import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.602&ui=public-help-20261125-uv-identification-daylight&followup=daylight-20261122";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.602&locale=topic-tab-20261125";
+import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.602&ui=public-help-20261125-uv-identification-daylight&followup=daylight-20261122&locale=topic-tab-20261125";
 import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.602";
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.602";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.602";
@@ -747,12 +747,12 @@ async function submitAssistantQuestion(question){
     pending.querySelector("p").textContent=answer;pending.classList.remove("loading");
     const findTopic=forecast||knowledgeQuestion||followup!==null?null:publicRavAssistantFindTopic(clean,frame.language);
     let topic=forecast?.topic??(knowledgeQuestion||followup!==null?previous:
-      (findTopic??assistantTopicForQuestion(clean)));
+      (findTopic??assistantTopicForQuestion(clean,frame.language)));
     if((knowledgeQuestion||findTopic)&&[t('assistant.refusal',{},frame.language),t('assistant.remoteUnavailable',{},frame.language)].includes(answer))topic=null;
     if(!topic&&followup===null&&frame.language==='en'&&assistantIntent==='wind'&&clean.length<=600){
       // Keep the original first answer. The service still owns whole-question topic admission.
       const topicQuestion=clean.replace(/^(?:what|which)\s+wind\s+direction\s+is\s+(?:good|best)(?=\s|[?!.]|$)/iu,'which wind is best');
-      if(topicQuestion!==clean&&assistantTopicForQuestion(topicQuestion)==='public-search:wind')topic='public-search:wind';
+      if(topicQuestion!==clean&&assistantTopicForQuestion(topicQuestion,frame.language)==='public-search:wind')topic='public-search:wind';
     }
     // Identifying a find depends on the conversation language, not on live map data.
     let nextFrame=frame;
