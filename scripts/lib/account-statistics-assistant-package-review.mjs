@@ -280,7 +280,9 @@ export async function withAuthenticatedReceipt80Source(callback){
   const head=AUTHENTIC_RECEIPT80_SOURCE_HEAD;
   assert.equal(git(['rev-parse',head+'^{tree}']).trim(),'8f6d19011ce465f47a3895e4c27c612127381fc5');
   const paths=['package.json','package-lock.json','config.js','js','scripts','supabase/config.toml',
-    'supabase/functions','supabase/migrations','requirements-dmi.txt','requirements-geometry.txt','requirements-copernicus.txt'];
+    'supabase/functions','supabase/migrations','requirements-dmi.txt','requirements-geometry.txt','requirements-copernicus.txt',
+    'knowledge/rav-assistant-local-v2.js','knowledge/rav-assistant-research-coast-v1.js',
+    'knowledge/rav-assistant-research-material-v1.js','knowledge/rav-assistant-research-v1.js','knowledge/rav-assistant-sources-v1.js'];
   const rows=git(['ls-tree','-rz',head,'--',...paths]).split('\0').filter(Boolean);
   assert(rows.every(row=>/^100(?:644|755) blob [a-f0-9]{40}\t/u.test(row)));
   const migrations=rows.map(row=>row.split('\t')[1]).filter(file=>/^supabase\/migrations\/[^/]+\.sql$/u.test(file))
