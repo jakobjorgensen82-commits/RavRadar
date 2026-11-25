@@ -291,6 +291,8 @@ const PATH_AREAS=freeze({
   ],
   accountSchemaFixture:[ACCOUNT_SCHEMA_FIXTURE],
   accountTripUI:[
+    'js/services/trip-evidence-controller.js',
+    'js/services/trip-evidence-runtime.js',
     'js/ui/account-panel.js',
     'js/ui/trip-evidence-dialog.js',
     'scripts/test-user-account-trip-log-4.0.264.mjs',

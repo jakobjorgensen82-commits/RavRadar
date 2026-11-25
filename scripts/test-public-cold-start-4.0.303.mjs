@@ -96,9 +96,26 @@ const previousRamanHelpSuffix = previousOriginHelpSuffix.replace('assistant-help
 const previousLandingHelpSuffix = previousRamanHelpSuffix.replace('assistant-help=20261124-raman-followup', 'assistant-help=20261124-landing-precision');
 const previousWaterChangeSuffix = previousLandingHelpSuffix.replace('assistant-help=20261124-landing-precision', 'assistant-help=20261124-water-change');
 const previousUvSuffix = previousWaterChangeSuffix.replace('assistant-help=20261124-water-change', 'assistant-help=20261125-uv-identification-daylight');
-const suffix = `${previousUvSuffix}&assistant-locale=tab-20261125`;
+const previousLocaleSuffix = `${previousUvSuffix}&assistant-locale=tab-20261125`;
+const tripTestTag = '&trip-test=20261125';
+const suffix = `${previousLocaleSuffix}${tripTestTag}`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
+const oldAccountPanelSuffix = `?v=${releaseVersion}&ui=account-20261006`;
+const oldTripModuleSuffix = `?v=${releaseVersion}`;
+const accountPanelSuffix = oldAccountPanelSuffix + tripTestTag;
+const tripModuleSuffix = oldTripModuleSuffix + tripTestTag;
+const accountPanel = await fs.readFile(new URL('../js/ui/account-panel.js', import.meta.url), 'utf8');
+const tripRuntime = await fs.readFile(new URL('../js/services/trip-evidence-runtime.js', import.meta.url), 'utf8');
+const tripController = await fs.readFile(new URL('../js/services/trip-evidence-controller.js', import.meta.url), 'utf8');
+assert.ok(app.includes(`"./js/ui/account-panel.js${accountPanelSuffix}"`));
+assert.ok(app.includes(`'./js/services/trip-evidence-runtime.js${tripModuleSuffix}'`));
+assert.ok(tripRuntime.includes(`'./trip-evidence-controller.js${tripModuleSuffix}'`));
+assert.ok(accountPanel.includes(`"./trip-evidence-dialog.js${tripModuleSuffix}"`));
+for (const caller of [tripRuntime, tripController]) {
+  assert.ok(caller.includes(`'../ui/trip-evidence-dialog.js${tripModuleSuffix}'`),
+    'Account reporting and start/finish must load the same version of the shared trip dialog.');
+}
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
 const dashboard = await fs.readFile(new URL('../js/ui/admin-dashboard.js', import.meta.url), 'utf8');
 const adminDependencySuffix = `?v=${releaseVersion}&ui=admin-model-startup-20261101&map=plain-map-v3-20261104`;
@@ -122,7 +139,7 @@ const workerAssets = worker.replaceAll('${APP_VERSION}', releaseVersion)
   .replaceAll('${COMPACT_MAP}', workerMapTag).replaceAll('${PUBLIC_JSON_TRANSPORT}', workerTransportTag);
 assert.ok(workerAssets.includes(`./bootstrap.js${suffix}`));
 assert.ok(workerAssets.includes(`./app.js${suffix}`));
-assert.ok(workerAssets.includes(`./js/ui/account-panel.js?v=${releaseVersion}&ui=account-20261006`));
+assert.ok(workerAssets.includes(`./js/ui/account-panel.js${accountPanelSuffix}`));
 assert.ok(workerAssets.includes(`./js/i18n.js?v=${releaseVersion}`));
 assert.ok(workerAssets.includes(`./js/ui/admin-dashboard.js${adminEntrypointSuffix}`));
 assert.ok(workerAssets.includes(`./js/services/visitor-report-service.js${visitorReportSuffix}`));
@@ -158,6 +175,7 @@ const previousDeliveredAssets = [
   [previousPublishedHelpSuffix, 'previous-published-help'], [previousRamanHelpSuffix, 'previous-raman-help'],
   [previousLandingHelpSuffix, 'previous-landing-help'],
   [previousWaterChangeSuffix, 'previous-water-change'], [previousUvSuffix, 'previous-uv-identification'],
+  [previousLocaleSuffix, 'previous-locale'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
@@ -178,7 +196,7 @@ vm.runInNewContext(worker, {
 let installation;
 handlers.get('install')({waitUntil: promise => {installation=promise;}});
 await installation;
-const accountPanelUrl = new URL(`./js/ui/account-panel.js?v=${releaseVersion}&ui=account-20261006`, origin);
+const accountPanelUrl = new URL(`./js/ui/account-panel.js${accountPanelSuffix}`, origin);
 assert.deepEqual(precached.filter(request => request instanceof Request).map(request => [request.url, request.cache]),
   [[accountPanelUrl.href, 'reload']]);
 for (const file of ['bootstrap.js', 'app.js']) {
@@ -239,7 +257,20 @@ assert.equal(await cached.get(previousPublishedHelpUrl).clone().text(), 'previou
 assert.equal(await cached.get(previousOriginHelpUrl).clone().text(), 'previous-origin-help-module');
 assert.equal(await cached.get(previousLandingHelpUrl).clone().text(), 'previous-landing-help-module');
 assert.equal(await cached.get(previousWaterChangeHelpUrl).clone().text(), 'previous-water-change-help-module');
-const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, helpRequest.url];
+const tripDialogUrl = new URL(`./js/ui/trip-evidence-dialog.js${tripModuleSuffix}`, origin);
+const tripAssets = [[accountPanelUrl, oldAccountPanelSuffix], [tripDialogUrl, oldTripModuleSuffix]];
+for (const [url, oldSuffix] of tripAssets) {
+  const oldUrl = url.origin + url.pathname + oldSuffix;
+  cached.set(oldUrl, new Response('previous-trip-module'));
+  for (let pass = 0; pass < 2; pass++) {
+    let response;
+    handlers.get('fetch')({request:{method:'GET',mode:'cors',url:url.href},respondWith:value => {response=value;}});
+    assert.equal(await (await response).text(), `new:${url.href}`);
+  }
+  assert.equal(await cached.get(oldUrl).clone().text(), 'previous-trip-module');
+}
+const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, helpRequest.url,
+  ...tripAssets.map(([url]) => url.href)];
 assert.deepEqual(fetched, startupRequests);
 
 // The admin-only copy update gets a new exact key; its unchanged data import
