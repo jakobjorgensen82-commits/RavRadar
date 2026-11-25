@@ -7,7 +7,7 @@ import * as quality from '../js/services/calibration-eligibility.js';
 import * as model from '../js/core/ravscore-model-contract.js';
 import * as account from '../js/services/account-trip-report-contract.js';
 import * as store from '../js/services/trip-evidence-store.js';
-import { formatDateTime, formatNumber, t } from '../js/i18n.js';
+import { formatDateTime, formatNumber, getLanguage, t } from '../js/i18n.js';
 import { openTripEvidenceDialog } from '../js/ui/trip-evidence-dialog.js';
 import { listPendingTripEvidence, tripEvidenceStorageKeys } from '../js/services/trip-evidence-store.js';
 import { collectOwnTripExport } from '../js/services/own-trip-export.js';
@@ -486,17 +486,27 @@ const reportAnswer = { startedAt: '2026-08-23T06:00:00.000Z', searchMinutes: 60,
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
 function ui(h, form) {
-  const content = { innerHTML: '', querySelector: () => null };
+  const noticeMarkup = '<p id="accountTripReportStatus" class="notice" role="status" hidden></p>';
+  let markup = '', notice;
+  const content = {
+    get innerHTML() { return notice?.textContent ? markup.replace(noticeMarkup, notice.textContent) : markup; },
+    set innerHTML(value) {
+      markup = value;
+      notice = markup.includes(noticeMarkup) ? { textContent: '', hidden: true } : null;
+    },
+    querySelector: selector => selector === '#accountTripReportStatus' ? notice : null,
+  };
   const events = new EventTarget();
-  const dialog = { open: true, querySelector: () => content,
+  const dialog = { open: true, querySelector: selector => selector === '.dialog-content' ? content : content.querySelector(selector),
     addEventListener: (...args) => events.addEventListener(...args),
     removeEventListener: (...args) => events.removeEventListener(...args),
     close() { this.open = false; events.dispatchEvent(new Event('close')); },
     showModal() { this.open = true; } };
   (h.state.dialogs ??= []).push(dialog);
-  const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, t, ...quality, ...model, crypto,
+  const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, getLanguage, t, ...quality, ...model, crypto,
     openAccountTripReportDialog: () => form.promise };
-  vm.runInNewContext(`${accountBody}\nthis.api={showAccountTripReport,showTripHistory};`, scope);
+  vm.runInNewContext(`${accountBody}\nthis.api={openAccountDialog,showAccountTripReport,showTripHistory};`, scope);
+  scope.api.openAccountDialog(dialog);
   return { dialog, content, ...scope.api };
 }
 
@@ -546,6 +556,106 @@ for (const kind of ['other-owner new login', 'same-owner new login', 'logout', '
       assert.equal(acknowledged, kind === 'renewal', 'A late old-report acknowledgment must not be presented under a new login');
       assert.equal(h.service.getObservationSyncStatus().pending, kind === 'renewal' ? 0 : 1);
     } finally { form.resolve(null); body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+  });
+}
+
+test('late manual report success updates its notice without replacing account controls', async () => {
+  const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();
+  let operation, reads = 0;
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
+    const beforeForm = panel.content.querySelector('#accountTripReportStatus');
+    form.resolve(reportAnswer);
+    operation = panel.showAccountTripReport(panel.dialog, {});
+    await turn();
+    assert.equal(reads, 1);
+    const notice = panel.content.querySelector('#accountTripReportStatus');
+    assert.notStrictEqual(notice, beforeForm, 'Controls are restored before awaiting the save');
+    body.resolve({ stored: true });
+    await operation;
+    assert.strictEqual(panel.content.querySelector('#accountTripReportStatus'), notice);
+    assert.equal(notice.textContent, t('account.reportRemote'));
+    assert.equal(notice.hidden, false);
+  } finally { form.resolve(null); body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+});
+
+test('cancelled manual report restores the account controls without submitting', async () => {
+  const h = harness(), form = deferred(), panel = ui(h, form);
+  const beforeForm = panel.content.querySelector('#accountTripReportStatus');
+  try {
+    const operation = panel.showAccountTripReport(panel.dialog, {});
+    form.resolve(null);
+    await operation;
+    assert.equal(panel.dialog.open, true);
+    assert.notStrictEqual(panel.content.querySelector('#accountTripReportStatus'), beforeForm);
+    assert.equal(h.state.submits.length, 0);
+  } finally { h.finish(); }
+});
+
+test('manual form failure restores the account controls before any save', async () => {
+  const h = harness();
+  const form = { promise: Promise.resolve().then(() => { throw new Error('No zones available'); }) };
+  const panel = ui(h, form);
+  const beforeForm = panel.content.querySelector('#accountTripReportStatus');
+  try {
+    await panel.showAccountTripReport(panel.dialog, {});
+    assert.equal(panel.dialog.open, true);
+    assert.notStrictEqual(panel.content.querySelector('#accountTripReportStatus'), beforeForm);
+    assert.ok(panel.content.innerHTML.includes('No zones available'));
+    assert.equal(h.state.submits.length, 0);
+  } finally { h.finish(); }
+});
+
+test('late manual report success preserves the open trip history', async () => {
+  const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();
+  let operation, reads = 0;
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
+    form.resolve(reportAnswer);
+    operation = panel.showAccountTripReport(panel.dialog, {});
+    await turn();
+    assert.equal(reads, 1);
+    await panel.showTripHistory(panel.dialog, {});
+    const history = panel.content.innerHTML;
+    assert.ok(history.includes('tripHistoryBack'));
+    body.resolve({ stored: true });
+    await operation;
+    assert.equal(panel.content.innerHTML, history);
+    assert.equal(h.state.submits.length, 1);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+  } finally { body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+});
+
+for (const changeOwner of [false, true]) {
+  test(`late manual report failure keeps dialog closed and feedback owner-scoped: ${changeOwner}`, async () => {
+    const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();
+    let operation, reads = 0;
+    try {
+      h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
+      form.resolve(reportAnswer);
+      operation = panel.showAccountTripReport(panel.dialog, {});
+      await turn();
+      assert.equal(reads, 1);
+      panel.dialog.close();
+      h.state.failWrite = { key: 'ravradar-observation-last-sync', error: new Error('Status storage unavailable') };
+      body.resolve({ stored: true });
+      await operation;
+      assert.equal(panel.dialog.open, false);
+      assert.equal(h.state.submits.length, 1);
+      h.state.failWrite = null;
+      if (changeOwner) await h.login(B);
+      panel.openAccountDialog(panel.dialog);
+      const unconfirmed = 'Vi kunne ikke bekræfte en tidligere indberetning.';
+      assert.equal(panel.content.innerHTML.includes(unconfirmed), !changeOwner);
+      assert.equal(panel.content.innerHTML.includes(t('account.reportRemote')), false);
+      panel.openAccountDialog(panel.dialog);
+      assert.equal(panel.content.innerHTML.includes(unconfirmed), false);
+    } finally {
+      h.state.failWrite = null;
+      body.resolve({ stored: true });
+      if (operation) await operation;
+      h.finish();
+    }
   });
 }
 

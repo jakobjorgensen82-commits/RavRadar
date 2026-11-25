@@ -2,7 +2,7 @@ import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagic
 import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.602";
 import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.602";
 import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.602";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.602";
+import { formatDateTime, formatNumber, getLanguage, t } from "../i18n.js?v=4.0.602";
 import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.602";
 import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.602";
 
@@ -10,6 +10,14 @@ import { getOwnStatisticsPreference, setOwnStatisticsPreference } from "../servi
 
 const pendingHistoryViews = new WeakMap();
 function stopHistoryView(dialog) { pendingHistoryViews.get(dialog)?.dispose(); }
+
+const pendingReportViews = new WeakMap();
+const deferredReportFailures = new WeakMap();
+const unconfirmedTripReportCopy = {
+  da: 'Vi kunne ikke bekræfte en tidligere indberetning. Se Mine ture og fund, før du prøver igen.',
+  de: 'Eine frühere Meldung konnte nicht bestätigt werden. Prüfe Meine Touren und Funde, bevor du es erneut versuchst.',
+  en: 'We could not confirm an earlier trip report. Check My trips and finds before trying again.',
+};
 
 const pendingStatisticsViews = new WeakMap();
 function stopStatisticsView(dialog) { pendingStatisticsViews.get(dialog)?.dispose(); }
@@ -122,6 +130,7 @@ function renderHistoryRows(rows, context) {
 }
 
 async function showTripHistory(dialog, context) {
+  pendingReportViews.delete(dialog);
   stopStatisticsView(dialog);
   stopHistoryView(dialog);
   const content = dialog.querySelector('.dialog-content');
@@ -175,6 +184,15 @@ async function showAccountTripReport(dialog, context) {
   const identity = authIdentityEpoch(), userId = currentSession()?.user?.id;
   const isCurrentOwner = () => Boolean(userId) && authIdentityEpoch() === identity
     && currentSession()?.user?.id === userId;
+  const view = {};
+  pendingReportViews.set(dialog, view);
+  const isCurrentView = () => pendingReportViews.get(dialog) === view;
+  const setReportStatus = message => {
+    const status = dialog.querySelector('#accountTripReportStatus');
+    status.textContent = message;
+    status.hidden = !message;
+  };
+  let waitingForSave = false;
   dialog.close();
   try {
     const answer = await openAccountTripReportDialog({
@@ -184,31 +202,52 @@ async function showAccountTripReport(dialog, context) {
       zones: context.zones,
       coastalParts: context.coastalParts
     });
+    if (!isCurrentView()) return;
     if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
+    // Closing the account for the form disposes its existing controls.
+    renderAccount(dialog, context);
+    pendingReportViews.set(dialog, view);
     if (!dialog.open) dialog.showModal();
-    if (!answer) return renderAccount(dialog, context);
+    if (!answer) return;
     const report = buildAccountTripReport({ observationOrigin: 'self-reported', ...answer, tripId: crypto.randomUUID() });
+    waitingForSave = true;
     const result = await submitAccountTripReportObservation(toAccountObservationColumns(report));
+    if (!isCurrentView() || !dialog.open) return;
     if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
     const message = t(result.stored === 'remote' ? 'account.reportRemote' : 'account.reportQueued');
-    renderAccount(dialog, context, message);
+    setReportStatus(message);
   } catch (error) {
+    if (waitingForSave && (!isCurrentView() || !dialog.open)) {
+      if (isCurrentOwner()) deferredReportFailures.set(dialog, { identity, userId });
+      return;
+    }
+    if (!isCurrentView()) return;
     if (!dialog.open) dialog.showModal();
-    renderAccount(dialog, context, isCurrentOwner() ? error?.message || t('account.reportFailed') : t('account.reportFailed'));
+    const ownerIsCurrent = isCurrentOwner();
+    const message = ownerIsCurrent && error?.message ? error.message : t('account.reportFailed');
+    if (!waitingForSave || !ownerIsCurrent) return renderAccount(dialog, context, message);
+    setReportStatus(message);
   }
 }
 
 function renderAccount(dialog, context, message = '') {
+  pendingReportViews.delete(dialog);
   stopStatisticsView(dialog);
   stopHistoryView(dialog);
   const session = currentSession();
   const signedIn = Boolean(session?.access_token && session?.user?.id);
+  const deferredFailure = deferredReportFailures.get(dialog);
+  deferredReportFailures.delete(dialog);
+  const previousReportUnconfirmed = signedIn && deferredFailure?.userId === session.user.id
+    && deferredFailure.identity === authIdentityEpoch();
   const content = dialog.querySelector('.dialog-content');
   content.innerHTML = signedIn ? `
     <h2>${t('account.title')}</h2>
     <p>${t('account.signedIn',{email:session.user?.email ? t('account.asEmail',{email:`<strong>${escapeHtml(session.user.email)}</strong>`}) : ''})}</p>
     <p>${t('account.signedInBody')}</p>
     ${message ? `<p class="notice" role="status">${escapeHtml(message)}</p>` : ''}
+    ${previousReportUnconfirmed ? `<p class="notice" role="status">${unconfirmedTripReportCopy[getLanguage()]}</p>` : ''}
+    <p id="accountTripReportStatus" class="notice" role="status" hidden></p>
     <a id="accountTripReportLink" class="account-feature-link" href="#indberet-tur">${t('account.report')} <span aria-hidden="true">→</span></a>
     <a id="tripHistoryLink" class="account-feature-link" href="#mine-ture">${t('account.history')} <span aria-hidden="true">→</span></a>
     <button id="tripExportButton" class="account-feature-link" type="button">${t('account.exportTrips')}</button>

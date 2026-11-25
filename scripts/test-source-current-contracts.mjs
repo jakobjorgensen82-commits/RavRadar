@@ -205,6 +205,14 @@ if(pagesCommandSelectionOnly){
   process.exit(0);
 }
 
+// Account UI changes select its normal callers without widening backend or weather scope.
+for (const file of ['js/ui/account-panel.js', 'scripts/test-user-account-trip-log-4.0.264.mjs',
+  'scripts/test-trip-evidence-upload-receipt.mjs']) {
+  assert.deepEqual(currentSourceTargets(file).owners,[{area:'accountTripUI',commands:[
+    'node --test scripts/test-user-account-trip-log-4.0.264.mjs scripts/test-trip-evidence-upload-receipt.mjs',
+  ]}]);
+}
+
 // Assistant Edge scope: the same assertions run in the normal Git fixture.
 function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
   const files=['supabase/functions/ravradar-assistant/index.ts',

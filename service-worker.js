@@ -2,7 +2,8 @@ const APP_VERSION = "4.0.602";
 const CACHE_PREFIX = "ravradar-app-";
 const PUBLIC_JSON_TRANSPORT = "public-json-bridge-20261103";
 const COMPACT_MAP = "plain-map-v3-20261104";
-const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}-${COMPACT_MAP}-owner-notice-20261109`;
+const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}-${COMPACT_MAP}-owner-notice-20261109-account-report-20261125`;
+const ACCOUNT_PANEL_ASSET = `./js/ui/account-panel.js?v=${APP_VERSION}&ui=account-20261006`;
 const STATIC = [
   `./js/services/public-delivery-transport-binding.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
   `./js/services/plain-map-hour.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
@@ -14,6 +15,7 @@ const STATIC = [
   `./js/services/app-update-flow.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,
   `./js/services/public-json-transport.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,
   `./js/core/public-page-resume.js?v=${APP_VERSION}`,
+  ACCOUNT_PANEL_ASSET,
   "./js/services/vendor/fflate-0.8.2/browser.js",
   "./","./index.html","./about.html","./learn.html","./admin.html",`./about.css?v=${APP_VERSION}`,`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/i18n.js?v=${APP_VERSION}`,`./js/ui/about.js?v=${APP_VERSION}`,`./js/ui/about-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-de.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-en.js?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
   `./about.css?v=${APP_VERSION}&ui=about-explainer-20261025`,
@@ -37,7 +39,10 @@ const STATIC = [
   "./js/services/data-service.js","./js/services/zone-registry.js","./js/services/auth-service.js","./js/services/observation-service.js","./js/services/learning-analysis.js","./js/services/historical-analysis.js","./js/services/storage-safety.js",
   "./js/map/map-view.js","./js/ui/info-panel.js","./js/ui/account-panel.js","./js/ui/developer-panel.js"
 ];
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(STATIC.map(url=>cache.add(url)))));});
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(STATIC.map(url=>
+    cache.add(url === ACCOUNT_PANEL_ASSET ? new Request(url, { cache: 'reload' }) : url)))));
+});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
 self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();});
 async function networkFirst(request){const cache=await caches.open(CACHE);try{const response=await fetch(request,{cache:'no-store'});if(response.ok)cache.put(request,response.clone());return response;}catch(error){return (await cache.match(request))||(await cache.match('./index.html'))||Response.error();}}

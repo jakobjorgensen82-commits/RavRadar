@@ -15,6 +15,8 @@ Ture indsendt uden login forbliver anonyme og må ikke bagefter knyttes til en k
 
 Oversigten indlæses først, når brugeren åbner den. Den viser højst de seneste 100 ture med et lille, fast feltudvalg. Det begrænser Supabase-egress på free-planen. En tur kan vises som afventende, mens den ligger i den lokale outbox, men den må ikke sendes som en ekstra serverrække.
 
+En forsinket kvittering fra en efterregistrering må ikke skifte fra »Mine ture og fund« til kontosiden, afbryde en igangværende eksport eller genåbne en lukket dialog. Hvis afsendelsen ikke kan bekræftes, efter at brugeren er gået videre, vises en besked ved næste åbning af samme konto i den samme fane. Brugeren kan tjekke turloggen før en ny indberetning. En ny indlogning eller sidegenindlæsning overtager ikke den gamle besked.
+
 Login er valgfrit. Brugerfladen skal forklare, at et magic link er et engangslink sendt til mailen, så brugeren kan logge ind uden adgangskode. Efter login skal callbacken hente den faktiske brugeridentitet fra Supabase, før en tur eller privat log behandles som kontoejet.
 
 Offentlige tekster om RavScore, turregistrering, login og fund skal bruge almindelige, forståelige danske ord. Faglige internnavne må fortsat findes i kode og revisionsspor, men skal forklares eller oversættes i brugerfladen.
