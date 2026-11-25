@@ -239,17 +239,29 @@ export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
   return inverseReviewed585AccountStatisticsAssistantSourceScripts(prior);
 }
 
-// TEST DATA only: actual after599 is qualified before unchanged older package oracles.
-// The old after598 actual-release checker deliberately retains its own model binding.
+// TEST DATA only. Preserve the genuine CODE598 package once per test
+// process, and give each historical oracle independent data to mutate.
+let authenticatedAfter598Package;
+export async function readAuthenticatedAfter598PackageForHistoricalOracles(){
+  assert.equal(arguments.length,0);
+  authenticatedAfter598Package??=(async()=>{
+    const {withSource598CodeParent}=await import('../check-assistant-later-h0-predecessor-source.mjs');
+    const {verifyAssistantAfter597Package}=await import('../national584-source-evidence.mjs');
+    const pkg=await withSource598CodeParent(root=>JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')));
+    verifyAssistantAfter597Package(pkg);
+    return pkg;
+  })().catch(error=>{
+    authenticatedAfter598Package=undefined;
+    throw error;
+  });
+  return structuredClone(await authenticatedAfter598Package);
+}
+
+// Retain the former actual after599 package check before its old oracle.
 export async function inverseReviewedAfter599PackageForHistoricalOracles(pkg){
   assert.equal(arguments.length,1);
   const actual=structuredClone(pkg),national=await import('../national584-source-evidence.mjs');
   national.verifyAssistantAfter599Package(pkg);
-  // Old whole-map oracles read their existing authenticated CODE598 package.
-  // They no longer require today's unrelated source/production test map to
-  // be reconstructible by successively undoing application releases.
-  const {withSource598CodeParent}=await import('../check-assistant-later-h0-predecessor-source.mjs');
-  const prior=await withSource598CodeParent(root=>JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')));
-  national.verifyAssistantAfter597Package(prior);
+  const prior=await readAuthenticatedAfter598PackageForHistoricalOracles();
   assert.deepEqual(pkg,actual,'Current package is never edited or retagged');return prior;
 }
