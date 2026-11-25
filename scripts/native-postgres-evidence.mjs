@@ -18,6 +18,7 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
   INACTIVE_ASSISTANT_AFTER598_SUCCESSOR,ASSISTANT_AFTER598_BEFORE,ASSISTANT_AFTER598_ALIASES,
   requireAssistantAfter598Output,requireAssistantAfter598Release,requireAssistantAfter598Binding,readAssistantAfter598CanonicalSource,INACTIVE_ASSISTANT_AFTER599_SUCCESSOR,ASSISTANT_AFTER599_BEFORE,ASSISTANT_AFTER599_ALIASES,requireAssistantAfter599Output,requireAssistantAfter599Release,requireAssistantAfter599Binding,readAssistantAfter599CanonicalSource,
   INACTIVE_ASSISTANT_AFTER601_SUCCESSOR} from './lib/assistant-later-h0-successor-source.mjs';
+import {SOURCE601_ORIGINAL_DATA_PROFILE} from './check-assistant-later-h0-predecessor-source.mjs';
 
 import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,assistantAfter599RequiredMigrations} from './integrated-cutover-readiness.mjs';
 import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
@@ -2678,7 +2679,8 @@ const after601ReportFields=Object.freeze([
   'sqlExecuted','wholeMigrationExecuted','exactCheckpointContract','exactTripContract',
   'oldFunctionsAndOidsPreserved','allOriginalDefinitionsPreserved','originalDigestsPreserved',
   'trueOld601Fixtures','old601ModelNotRetagged','currentNormalFixtures','wholeMetadataInverse',
-  'strictlyLater601ToNextOnly','accountOffCatalogPreserved',
+  'strictlyLater601ToNextOnly','accountOffCatalogPreserved','normalProtectedJsonbRoundtrip',
+  'schema2Catalog','predecessorExecutedInSameHost',
 ]);
 function after601ReportProjection(report){
   const profile=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
@@ -2693,6 +2695,7 @@ function after601ReportProjection(report){
     installedLedgerBeforeRows:69,
     installedLedgerAfterRows:70,
     beforeGuardCases:17,
+    parentCodeHead:SOURCE601_ORIGINAL_DATA_PROFILE.head,
     allHistoricalMigrationsExecuted:false,
     productionInstalledHistoryEvidence:false,
     productionSeedAuthenticated:false,
