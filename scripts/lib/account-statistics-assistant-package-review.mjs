@@ -265,3 +265,41 @@ export async function inverseReviewedAfter599PackageForHistoricalOracles(pkg){
   const prior=await readAuthenticatedAfter598PackageForHistoricalOracles();
   assert.deepEqual(pkg,actual,'Current package is never edited or retagged');return prior;
 }
+
+// TEST ONLY. Run the original receipt-80 readers against their own complete SQL
+// inventory after a later append changes the live worktree's inventory.
+export const AUTHENTIC_RECEIPT80_SOURCE_HEAD='32321a78e61acf78e25dd566f9b467c74c2c2fad';
+export async function withAuthenticatedReceipt80Source(callback){
+  assert.equal(arguments.length,1);assert.equal(typeof callback,'function');
+  const [{execFileSync},{tmpdir},{fileURLToPath}]=await Promise.all([
+    import('node:child_process'),import('node:os'),import('node:url')]);
+  const repository=fileURLToPath(new URL('../../',import.meta.url));
+  const git=args=>execFileSync('git',['-c','protocol.allow=never',...args],{
+    cwd:repository,encoding:'utf8',timeout:30000,maxBuffer:2*1024*1024,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}});
+  const head=AUTHENTIC_RECEIPT80_SOURCE_HEAD;
+  assert.equal(git(['rev-parse',head+'^{tree}']).trim(),'8f6d19011ce465f47a3895e4c27c612127381fc5');
+  const paths=['package.json','package-lock.json','config.js','js','scripts','supabase/config.toml',
+    'supabase/functions','supabase/migrations','requirements-dmi.txt','requirements-geometry.txt','requirements-copernicus.txt'];
+  const rows=git(['ls-tree','-rz',head,'--',...paths]).split('\0').filter(Boolean);
+  assert(rows.every(row=>/^100(?:644|755) blob [a-f0-9]{40}\t/u.test(row)));
+  const migrations=rows.map(row=>row.split('\t')[1]).filter(file=>/^supabase\/migrations\/[^/]+\.sql$/u.test(file))
+    .map(file=>path.basename(file)).sort();
+  assert.equal(migrations.length,80);
+  const parent=await fs.promises.realpath(tmpdir());
+  const owned=await fs.promises.mkdtemp(path.join(parent,'rr-authentic-receipt80-'));
+  const root=path.join(owned,'source'),archive=path.join(owned,'source.tar');
+  try{
+    await fs.promises.mkdir(root);
+    git(['archive','--format=tar','--output='+archive,head,'--',...paths]);
+    execFileSync('tar',['-xf',archive,'-C',root],{timeout:30000,maxBuffer:2*1024*1024});
+    await fs.promises.unlink(archive);
+    assert.deepEqual((await fs.promises.readdir(path.join(root,'supabase/migrations'))).filter(file=>file.endsWith('.sql')).sort(),migrations);
+    return await callback(root);
+  }finally{
+    assert.equal(path.dirname(path.resolve(owned)),parent);
+    assert.equal(await fs.promises.realpath(owned),owned);
+    assert(path.basename(owned).startsWith('rr-authentic-receipt80-'));
+    await fs.promises.rm(owned,{recursive:true,force:false});
+  }
+}
