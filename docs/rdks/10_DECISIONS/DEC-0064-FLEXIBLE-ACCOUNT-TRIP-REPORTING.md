@@ -70,3 +70,5 @@ Den efterfølgende interaktive ejerprøve viste, at den autentificerede upload o
 Manuelle indberetninger kan mærkes som testture i den eksisterende turlog. Markeringen er frivillig og som udgangspunkt slået fra. Den gemmes med turen og bevares ved genforsøg. Ture med den eksisterende oprindelsesmarkør vises som »Testtur« i den personlige turlog og filtreres fra den samlede statistik. Ældre umærkede ture skal ikke ommærkes ud fra gæt. Statistikfunktionen har fortsat sin egen kvalifikation og aktivering. Den normale kildekontrol vælger de eksisterende prøver af turlog og gemmekvitteringer for denne dialog.
 
 Den offentlige app bruger nye cacheadresser fra forsiden til konto- og turdialogerne i samme appversion. Indberetning fra kontoen og almindelig turstart og -afslutning henter det samme turdialogmodul. Browseren kan derfor hente ændringen, selv om den har gemt de tidligere 4.0.602-moduler.
+
+Den eksisterende kortprøve af cacheidentiteten kontrollerer appversionen samt udgaverne af transport og kort. Prøven af den nye turlogadresse efterprøver, at en tidligere cache ikke leverer den gamle formular.
