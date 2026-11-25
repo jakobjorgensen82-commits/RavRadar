@@ -112,7 +112,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE||profile===ASSISTANT_AFTER597_SOURCE||profile===ASSISTANT_AFTER598_SOURCE||profile===ASSISTANT_AFTER599_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE||profile===ASSISTANT_AFTER597_SOURCE||profile===ASSISTANT_AFTER598_SOURCE||profile===ASSISTANT_AFTER599_SOURCE||profile===ASSISTANT_AFTER601_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -1217,5 +1217,51 @@ export const INACTIVE_ASSISTANT_AFTER599_SUCCESSOR=Object.freeze({
   assertTarget:assertAssistantAfter599Target,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
 
+
+// Source-only successor of the issued 601 model. Production selection remains independent.
+export const ASSISTANT_AFTER601_BEFORE=Object.freeze({...ASSISTANT_AFTER599_BINDING,
+  canonicalSha256:ASSISTANT_AFTER599_OUTPUT.canonicalSha256});
+export const ASSISTANT_AFTER601_ALIASES=Object.freeze([
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask601_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask601_payload_valid',signature:'(jsonb,timestamptz)'}),
+]);
+
+export function assistantAfter601CheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);
+  let text=assistantAfter599CheckpointContractFromBase(source,base).definition;
+  for(const [index,alias] of ASSISTANT_AFTER601_ALIASES.entries()){
+    const whole=nativeOriginalContinuityDefinition(source,alias.name);
+    text+='\n-- assistant-later-h0-original601-'+(index===0?'state':'payload')+'-validator --\n'
+      +whole.slice(whole.indexOf('as $')+5,whole.lastIndexOf('$;')).replace(/\r\n?/g,'\n').trim();
+  }
+  return Object.freeze({id:base.id,definition:text,sha256:sha(text)});
+}
+
+export const ASSISTANT_AFTER601_BINDING=Object.freeze({
+  "version": "20261125045214",
+  "C": "1a15ea2de34ef75e992c548897ba2dfab2c53306c50fef0ee8e63493f0b8a789",
+  "I": "825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198",
+  "T": "9492548a5a6dc5cf5a0b8aa89ba0b118d86670e93a58229e7452fe09edcee6f2"
+});
+export const ASSISTANT_AFTER601_OUTPUT=Object.freeze({
+  "migrationSha256": "ed1eb1f680b5b896a0500af6a261309af7bab8e65bff04680f13c392a5e3d46c",
+  "canonicalSha256": "a669a279ca0bb6fe30e56019534303d2b2c5ef16872b703bd9694a33fbb9243f",
+  "checkpointContractSha256": "0e444943da4e96b1f1bd6fcfef1fc0e7861f0a16f864fe2ad04646bef9158d31",
+  "tripBindingPolicySha256": "b58258d1588ada629159190347eddec1f648ae2a6f6e7505517c9221710a82b7"
+});
+export function assistantAfter601Migration(){
+  assert.equal(arguments.length,0);
+  const {version}=ASSISTANT_AFTER601_BINDING;
+  const id=version+'_assistant_after601_original601_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+
+const ASSISTANT_AFTER601_SOURCE=Object.freeze({
+  readPredecessor:readAssistantAfter599CanonicalSource,aliases:ASSISTANT_AFTER601_ALIASES,previousRelease:601,
+});
+export async function readAssistantAfter601CanonicalSource(options){
+  assert(arguments.length<=1);
+  return readFixedCanonicalSource(ASSISTANT_AFTER601_SOURCE,options,ASSISTANT_AFTER601_OUTPUT,assistantAfter601Migration());
+}
 
 export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_AFTER599_SUCCESSOR;
