@@ -7,9 +7,10 @@ import {test} from 'node:test';
 // Explicit normal current entry. No project constructor/runtime import
 // precedes the fixed after598 issuance guard. Old PRE bodies stay unchanged.
 const currentArguments=process.argv.slice(2);
-assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
+assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current','--after601-plan'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
 const AFTER598_CURRENT_MODE=currentArguments[0]==='--after598-current';
 const AFTER599_CURRENT_MODE=currentArguments[0]==='--after599-current';
+const AFTER601_PLAN_MODE=currentArguments[0]==='--after601-plan';
 const currentSource=await import('./lib/assistant-later-h0-successor-source.mjs');
 if(AFTER598_CURRENT_MODE){
   currentSource.requireAssistantAfter598Output();currentSource.requireAssistantAfter598Release();
@@ -47,7 +48,47 @@ if(AFTER599_CURRENT_MODE){
   const {verifyAssistantAfter599SourceTarget}=await import('./national584-source-evidence.mjs');
   await verifyAssistantAfter599SourceTarget();
 }
-if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
+if(AFTER601_PLAN_MODE){
+  const ready=await import('./integrated-cutover-readiness.mjs');
+  const {assistantAfter601PrewritePredecessor}=await import('./assistant-later-h0-binding-prewrite.mjs');
+  const {source601OriginalPredecessor}=await import('./lib/authenticated-frozen586-predecessor.mjs');
+  const profile=currentSource.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
+  const rows=ready.assistantAfter601RequiredMigrations(),installed=rows.slice(0,-1);
+  const ledger=(local,remote)=>'Local | Remote | Time (UTC)\n'+local.map(({version})=>
+    version+' | '+(remote.some(row=>row.version===version)?version:'')+' | ').join('\n');
+  const pending='DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '
+    +rows.at(-1).filename+'\nFinished supabase db push.\n';
+  test('after601 normal prewrite requires the complete installed ledger before the sole new migration',async()=>{
+    assert.equal(ready.assistantAfter599RequiredMigrations().length,66);
+    assert.deepEqual(installed.slice(-3).map(row=>row.version),
+      profile.installedAppMigrations.slice(1).map(row=>row.version));
+    assert.equal(installed.at(-1).version,profile.databaseBefore.version);
+    assert.equal(installed.length,69);
+    const owner=assistantAfter601PrewritePredecessor();
+    assert.equal(owner.read,source601OriginalPredecessor.read);
+    assert.equal(owner.plan,ready.assertAssistantAfter601MigrationPlan);
+    const newPlan=await owner.plan({migrationListText:ledger(rows,installed),dryRunText:pending});
+    assert.deepEqual(newPlan.pendingVersions,[profile.migration().version]);
+    assert.equal(newPlan.alreadyAppliedVersions.length,69);
+    assert.throws(()=>ready.assertAssistantAfter601MigrationsApplied(ledger(rows,installed)),
+      /ASSISTANT_AFTER601_PREWRITE_ROUTE_REQUIRED/);
+    const done=await owner.plan({migrationListText:ledger(rows,rows),dryRunText:upToDate});
+    assert.deepEqual(done.pendingVersions,[]);
+    assert.equal(ready.assertAssistantAfter601MigrationsApplied(ledger(rows,rows)).appliedVersions.length,70);
+    assert.equal((await ready.expectedCheckpointCasContract({sourcePhase:profile.sourcePhase})).sha256,
+      profile.output.checkpointContractSha256);
+  });
+  test('after601 normal prewrite rejects missing SQL80, unknown or duplicate rows and a mismatched dry run',async()=>{
+    const owner=assistantAfter601PrewritePredecessor();
+    assert.throws(()=>assistantAfter601PrewritePredecessor({family:'599'}));
+    const invalid=ledger(rows,installed.slice(0,-1));
+    await assert.rejects(owner.plan({migrationListText:invalid,dryRunText:pending}),/Missing genuine installed assistant predecessor/);
+    for(const local of [[...rows,rows.at(-1)],[...rows,{version:'20991231235959'}]]){
+      await assert.rejects(owner.plan({migrationListText:ledger(local,installed),dryRunText:pending}));
+    }
+    await assert.rejects(owner.plan({migrationListText:ledger(rows,installed),dryRunText:upToDate}));
+  });
+}else if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
 
 test('den faktiske597-plan og alle gamle krav bevares uden SOURCE eller en uudstedt migration',async()=>{
   assert.equal(rows.length,62);assert.deepEqual(REQUIRED_CUTOVER_MIGRATIONS,rows);

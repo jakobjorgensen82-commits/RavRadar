@@ -1,14 +1,24 @@
+## 25. november — fanens sprog og den normale modelovergang
+
+- [x] Ret den åbne fanes emnevalg og saml de fem aktuelle kilde-/releaseprøver.
+- [x] Afled og genlæs lokalt den ene 601-efterfølgermigration og synkronisér releaseversionen.
+- [x] Den første kandidat bestod kildekontrol og PostgreSQL i #1720.
+- [x] Den aktuelle #1093-kandidat efter #1095 bestod GitHub-kontrol #1726 med sin PostgreSQL-prøve.
+- [ ] Kontrollér den samlede kilde med Pages-rettelsen, kør den afgrænsede installation og verificér en senere offentlig prognose og samtaler på dansk, tysk og engelsk.
+
 ## 25. november — den offentlige læsekontrol tåler en midlertidig Pages-fejl
 
 - [x] Afklar udgivelsen og afslut #395 ud fra den allerede offentliggjorte prognose.
 - [x] Tilføj et begrænset genforsøg for offentlig læsning efter HTTP 502, 503 og 504 i den eksisterende kontrol.
-- [ ] Verificér kilden i GitHub og følg den ændrede kontrol i det almindelige driftsforløb.
+- [x] Den målrettede kildekontrol #1729 bestod på #1100.
+- [ ] Følg den ændrede kontrol i det almindelige driftsforløb.
 
 ## 25. november — automatisk genoptagelse efter bekræftet råcachelæser
 
 - [x] Afgræns lokalt den automatiske tidsvagt til den autentiske, afsluttede RAW-læserblokering før produktionstrinnene. Bevar de samme kopier, vejrlås, kildebeviser og normale ejeradvarsler.
 - [x] Afprøv komplet genlæsning, samme vindue, ejerens overtagelse og afslag ved ukendt startudfald i de eksisterende cadence- og RAW-prøver.
-- [ ] Kvalificér den præcise ændring i GitHub og efterprøv, at én ordinær kørsel starter og udgiver, når en mulig læser afslutter inden fristen.
+- [x] Kildekontrol #1724 bestod, og #1095 er på main.
+- [ ] Efterprøv, at én ordinær kørsel starter og udgiver, når en mulig læser afslutter inden fristen.
 
 ## 24. november — aktivitetskvittering og Auth
 

@@ -96,7 +96,8 @@ const previousRamanHelpSuffix = previousOriginHelpSuffix.replace('assistant-help
 const previousLandingHelpSuffix = previousRamanHelpSuffix.replace('assistant-help=20261124-raman-followup', 'assistant-help=20261124-landing-precision');
 const previousWaterChangeSuffix = previousLandingHelpSuffix.replace('assistant-help=20261124-landing-precision', 'assistant-help=20261124-water-change');
 const previousUvSuffix = previousWaterChangeSuffix.replace('assistant-help=20261124-water-change', 'assistant-help=20261125-uv-identification-daylight');
-const suffix = `${previousUvSuffix}&assistant-locale=tab-20261125`;
+const previousTabLanguageSuffix = `${previousUvSuffix}&assistant-locale=tab-20261125`;
+const suffix = `${previousUvSuffix}&assistant-locale=topic-tab-20261125`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
@@ -158,6 +159,7 @@ const previousDeliveredAssets = [
   [previousPublishedHelpSuffix, 'previous-published-help'], [previousRamanHelpSuffix, 'previous-raman-help'],
   [previousLandingHelpSuffix, 'previous-landing-help'],
   [previousWaterChangeSuffix, 'previous-water-change'], [previousUvSuffix, 'previous-uv-identification'],
+  [previousTabLanguageSuffix, 'previous-tab-language'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
@@ -209,7 +211,13 @@ const previousOriginHelpPath = previousPublishedHelpPath.replace('ui=public-help
 const previousRamanHelpPath = previousOriginHelpPath.replace('ui=public-help-20261123-origin-and-net', 'ui=public-help-20261124-raman-followup');
 const previousLandingHelpPath = previousRamanHelpPath.replace('ui=public-help-20261124-raman-followup', 'ui=public-help-20261124-landing-precision');
 const previousWaterChangeHelpPath = previousLandingHelpPath.replace('ui=public-help-20261124-landing-precision', 'ui=public-help-20261124-water-change');
-const helpPath = previousWaterChangeHelpPath.replace('ui=public-help-20261124-water-change', 'ui=public-help-20261125-uv-identification-daylight');
+const previousUvHelpPath = previousWaterChangeHelpPath.replace('ui=public-help-20261124-water-change', 'ui=public-help-20261125-uv-identification-daylight');
+const helpPath = `${previousUvHelpPath}&locale=topic-tab-20261125`;
+const previousAssistantPath = `./js/services/rav-assistant.js?v=${releaseVersion}`;
+const assistantPath = `${previousAssistantPath}&locale=topic-tab-20261125`;
+assert.ok(app.includes(`from "${assistantPath}"`));
+const helpSource = await fs.readFile(new URL('../js/services/rav-assistant-public-help.js', import.meta.url), 'utf8');
+assert.ok(helpSource.includes(`from '${assistantPath.replace('./js/services/', './')}'`));
 assert.ok(app.includes(`from "${helpPath}"`));
 cached.set(oldHelpUrl, new Response('old-help-module'));
 const previousHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261121`;
@@ -226,12 +234,21 @@ const previousLandingHelpUrl = new URL(previousLandingHelpPath, origin).href;
 cached.set(previousLandingHelpUrl, new Response('previous-landing-help-module'));
 const previousWaterChangeHelpUrl = new URL(previousWaterChangeHelpPath, origin).href;
 cached.set(previousWaterChangeHelpUrl, new Response('previous-water-change-help-module'));
-const helpRequest = {method:'GET',mode:'cors',url:new URL(helpPath, origin).href};
-for (let pass = 0; pass < 2; pass++) {
-  let response;
-  handlers.get('fetch')({request:helpRequest,respondWith:value => {response=value;}});
-  assert.equal(await (await response).text(), `new:${helpRequest.url}`);
+const previousUvHelpUrl = new URL(previousUvHelpPath, origin).href;
+const previousAssistantUrl = new URL(previousAssistantPath, origin).href;
+cached.set(previousUvHelpUrl, new Response('previous-uv-help-module'));
+cached.set(previousAssistantUrl, new Response('previous-assistant-module'));
+const assistantModuleUrls = [helpPath, assistantPath].map(path => new URL(path, origin).href);
+for (const url of assistantModuleUrls) {
+  const request = {method:'GET',mode:'cors',url};
+  for (let pass = 0; pass < 2; pass++) {
+    let response;
+    handlers.get('fetch')({request,respondWith:value => {response=value;}});
+    assert.equal(await (await response).text(), `new:${url}`);
+  }
 }
+assert.equal(await cached.get(previousUvHelpUrl).clone().text(), 'previous-uv-help-module');
+assert.equal(await cached.get(previousAssistantUrl).clone().text(), 'previous-assistant-module');
 assert.equal(await cached.get(oldHelpUrl).clone().text(), 'old-help-module');
 assert.equal(await cached.get(previousHelpUrl).clone().text(), 'previous-help-module');
 assert.equal(await cached.get(previousDaylightHelpUrl).clone().text(), 'previous-daylight-help-module');
@@ -239,7 +256,7 @@ assert.equal(await cached.get(previousPublishedHelpUrl).clone().text(), 'previou
 assert.equal(await cached.get(previousOriginHelpUrl).clone().text(), 'previous-origin-help-module');
 assert.equal(await cached.get(previousLandingHelpUrl).clone().text(), 'previous-landing-help-module');
 assert.equal(await cached.get(previousWaterChangeHelpUrl).clone().text(), 'previous-water-change-help-module');
-const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, helpRequest.url];
+const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, ...assistantModuleUrls];
 assert.deepEqual(fetched, startupRequests);
 
 // The admin-only copy update gets a new exact key; its unchanged data import

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {readFileSync} from 'node:fs';
 import {assertReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
+import {ASSISTANT_AFTER601_SOURCE_COMMANDS} from './lib/release-gate-test-plan.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
@@ -28,7 +29,8 @@ import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586Pha
   INSTALLED593_ORIGINAL591_V2_KIND,verifyInstalled593Original591V2PhaseReceipt,
   INSTALLED593_ORIGINAL591_COMMANDS,SCALAR597_LATER_H0_PHASE,SCALAR597_LATER_H0_COMMANDS,
   verifyScalar597LaterH0PhaseReceipt,ASSISTANT_AFTER597_PHASE,ASSISTANT_AFTER597_COMMANDS,
-  verifyAssistantAfter597PhaseReceipt,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER598_COMMANDS,verifyAssistantAfter598PhaseReceipt,ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER599_COMMANDS,verifyAssistantAfter599PhaseReceipt} from './native-postgres-evidence.mjs';
+  verifyAssistantAfter597PhaseReceipt,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER598_COMMANDS,verifyAssistantAfter598PhaseReceipt,ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER599_COMMANDS,verifyAssistantAfter599PhaseReceipt,
+  ASSISTANT_AFTER601_PHASE,ASSISTANT_AFTER601_COMMANDS} from './native-postgres-evidence.mjs';
 
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
@@ -467,7 +469,24 @@ export async function verifyAssistantAfter599SourceTarget(){
     release,canonicalSha256:output.canonicalSha256,sourceOnly:true,sqlExecuted:false,
     originalsAuthenticated:false,nationalExecutionClaimed:false,productionProof:false});
 }
+export function verifyAssistantAfter601Package(pkg){
+  assert.equal(arguments.length,1);
+  assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER601_PHASE);
+  const metadata=JSON.parse(readFileSync(path.join(ROOT,'version.json'),'utf8'));
+  assert.equal(pkg.version,metadata.version);
+  assert.match(pkg.version,/^4\.0\.[1-9][0-9]*$/);
+  assert(Number(pkg.version.split('.').at(-1))>=Number(ACTIVE.requireRelease().split('.').at(-1)));
+  const binding=ACTIVE.requireBinding();
+  assertReleaseContractMetadata(metadata.releaseContract,{releaseVersion:pkg.version});
+  assert.equal(metadata.releaseContract.modelBindings.integrated.modelBundleSha256,binding.I);
+  assert.equal(metadata.releaseContract.modelBindings.candidateGRollback.modelBundleSha256,binding.C);
+  assert.equal(pkg.scripts?.['test:assistant-later-h0-source'],ASSISTANT_AFTER601_SOURCE_COMMANDS.join(' && '));
+  assert.equal(pkg.scripts?.['validate:source'],'node scripts/validate-source-once.mjs');
+  assert.equal(pkg.scripts?.['source:critical-gate'],'node scripts/source-critical-gate.mjs');
+  return pkg;
+}
 export function verifyPackage(pkg){
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE)return verifyAssistantAfter601Package(pkg);
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE)return verifyAssistantAfter599Package(pkg);
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)return verifyAssistantAfter598Package(pkg);
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)return verifyAssistantAfter597Package(pkg);
@@ -635,6 +654,11 @@ export async function assistantAfter599NativeClaims(native,current,options){
   };
 }
 export function verifyCurrentNativeCommands(commands,version){
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE){
+    assert.equal(version,ACTIVE.requireRelease());
+    assert.deepEqual(commands,ASSISTANT_AFTER601_COMMANDS);
+    return;
+  }
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE)return verifyAssistantAfter599NativeCommands(commands,version);
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)return verifyAssistantAfter598NativeCommands(commands,version);
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)return verifyAssistantAfter597NativeCommands(commands,version);

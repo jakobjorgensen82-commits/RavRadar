@@ -9,9 +9,10 @@ import {fileURLToPath} from 'node:url';
 import {computeCandidateGRollbackBundle,renderCandidateGRollbackGeneratedModule} from './build-candidate-g-rollback-bundle.mjs';
 import {computeRavScoreModelBundle,renderGeneratedBundleModule} from './build-ravscore-model-bundle.mjs';
 import {ravScoreContinuationImplementationSha256} from './lib/ravscore-continuation-implementation-contract.mjs';
-import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
+import {readAccountErasureSource,readAccountInactivitySource} from './verify-account-erasure-schema.mjs';
+import {fixedNativeActivityReceiptMigration,readFixedNativeActivityReceiptSource} from './lib/account-native-activity-receipt-source.mjs';
 import {statisticsPreferenceRevisionCatalogQuery} from './verify-account-assistant-schema.mjs';
-import {checkpointCasContractFromCanonicalSource,tripBindingPolicyFromCanonicalSource,assistantAfter598RequiredMigrations} from './integrated-cutover-readiness.mjs';
+import {checkpointCasContractFromCanonicalSource,tripBindingPolicyFromCanonicalSource,assistantAfter598RequiredMigrations,assistantAfter599RequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   readAssistantLaterH0PredecessorCanonicalSource,assistantLaterH0Definition as definition,
   assistantLaterH0CheckpointContractFromBase,requireAssistantLaterH0Binding,
@@ -46,7 +47,10 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   requireAssistantAfter598Output,requireAssistantAfter598Release,assistantAfter598Migration,
   ASSISTANT_AFTER599_BEFORE,ASSISTANT_AFTER599_ALIASES,ASSISTANT_AFTER599_DATABASE_LEDGER,readAssistantAfter598CanonicalSource,
   assistantAfter599CheckpointContractFromBase,requireAssistantAfter599Binding,
-  requireAssistantAfter599Output,requireAssistantAfter599Release,assistantAfter599Migration}
+  requireAssistantAfter599Output,requireAssistantAfter599Release,assistantAfter599Migration,
+  ASSISTANT_AFTER601_BEFORE,ASSISTANT_AFTER601_ALIASES,readAssistantAfter599CanonicalSource,assistantAfter601CheckpointContractFromBase,
+  ASSISTANT_AFTER601_BINDING,ASSISTANT_AFTER601_OUTPUT,assistantAfter601Migration,readAssistantAfter601CanonicalSource,
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -131,8 +135,17 @@ const ASSISTANT_AFTER599=Object.freeze({
   kind:'ASSISTANT_AFTER599_SUCCESSOR_STRUCTURE',
 });
 
+const ASSISTANT_AFTER601=Object.freeze({
+  previous:ASSISTANT_AFTER601_BEFORE,aliases:ASSISTANT_AFTER601_ALIASES,
+  previousRelease:601,validatorCount:49,
+  readPredecessor:readAssistantAfter599CanonicalSource,
+  checkpointFromBase:assistantAfter601CheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original599-payload-validator --\\n' || v_ask599_payload_definition;",
+  kind:'ASSISTANT_AFTER601_SUCCESSOR_STRUCTURE',
+});
+
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597||profile===ASSISTANT_AFTER598||profile===ASSISTANT_AFTER599,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597||profile===ASSISTANT_AFTER598||profile===ASSISTANT_AFTER599||profile===ASSISTANT_AFTER601,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -480,6 +493,27 @@ function assistantAfter599InstalledLedgerGuard(){
   ];
 }
 
+function assistantAfter601InstalledLedgerGuard(version){
+  const current=assistantAfter599RequiredMigrations();
+  assert.equal(current.length,66);
+  assert.equal(current.at(-1).version,ASSISTANT_AFTER601_BEFORE.version);
+  const account=[
+    {version:ASSISTANT_AFTER599_DATABASE_LEDGER.maximumVersion,sha256:readAccountErasureSource().sha256},
+    ...readAccountInactivitySource().migrations.map(({version,sha256})=>({version,sha256})),
+    {version:fixedNativeActivityReceiptMigration.slice(0,14),sha256:readFixedNativeActivityReceiptSource().sha256},
+  ];
+  assert.deepEqual(account,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.installedAppMigrations,
+    'Exact installed 601 application migration sources');
+  const versions=[...current.map(row=>row.version),...account.slice(1).map(row=>row.version)];
+  assert.equal(new Set(versions).size,69);
+  assert.deepEqual(versions,[...versions].sort());
+  assert(version>versions.at(-1),'Successor must append after the existing 601 application ledger');
+  return [
+    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+versions.at(-1)+"' then raise exception 'ASSISTANT_AFTER601_EXACT_LEDGER_REQUIRED'; end if;",
+    "  if (select coalesce(array_agg(version::text order by version::text),array[]::text[]) from supabase_migrations.schema_migrations where version::text >= '"+versions[0]+"') is distinct from array["+versions.map(literal).join(',')+"]::text[] then raise exception 'ASSISTANT_AFTER601_EXACT_LEDGER_REQUIRED'; end if;",
+  ];
+}
+
 function wrap(core,prior,profile=LEGACY586){
   fixedProfile(profile);const OLD=profile.previous;
   assert.equal(core.kind,profile.kind);
@@ -497,7 +531,8 @@ function wrap(core,prior,profile=LEGACY586){
   const snapshot=preservationQuery(signatures);
   const prefix=['do $assistant_later_h0_successor$',
     'declare original_catalog jsonb; after_catalog jsonb; account_observed jsonb; function_name text;','begin',
-    ...(profile===ASSISTANT_AFTER599?assistantAfter599InstalledLedgerGuard():[
+    ...(profile===ASSISTANT_AFTER601?assistantAfter601InstalledLedgerGuard(core.nextBinding.version):
+      profile===ASSISTANT_AFTER599?assistantAfter599InstalledLedgerGuard():[
     "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+OLD.version+"' then raise exception 'ASSISTANT_LATER_H0_EXACT_INSTALLED"+profile.previousRelease+"_REQUIRED'; end if;"]),
     "  if exists(select 1 from supabase_migrations.schema_migrations where version::text=any(array['20261014140000','20261015030000','20261016030000'])) then raise exception 'ASSISTANT_LATER_H0_ARCHIVED_PHASE_MUST_BE_ABSENT'; end if;",
     "  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261013230000') then raise exception 'ASSISTANT_LATER_H0_INSTALLED230_REQUIRED'; end if;",
@@ -602,8 +637,40 @@ export async function buildAssistantAfter599BindingSuccessor(options){
 }
 
 
+export async function buildAssistantAfter601BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version']);
+  assert.match(options.version,/^[0-9]{14}$/);
+  assistantAfter601InstalledLedgerGuard(options.version);
+  const prior=await ASSISTANT_AFTER601.readPredecessor();
+  const core=await prepareStructure(ASSISTANT_AFTER601,options.version);
+  return wrap(core,prior,ASSISTANT_AFTER601);
+}
+
 async function main(){
   const args=process.argv.slice(2);
+  if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor')
+    args[0]='--assistant-after601';
+  if(args[0]==='--assistant-after601'){
+    assert.equal(args.length,2);assert(['--check','--write'].includes(args[1]));
+    const result=await buildAssistantAfter601BindingSuccessor({version:ASSISTANT_AFTER601_BINDING.version});
+    assert.deepEqual(result.nextBinding,ASSISTANT_AFTER601_BINDING);
+    assert.deepEqual(scalar597Output(result),ASSISTANT_AFTER601_OUTPUT);
+    const file=path.join(ROOT,'supabase/migrations',assistantAfter601Migration().filename);
+    if(args[1]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    const reconstructed=await readAssistantAfter601CanonicalSource();
+    assert.equal(reconstructed.canonicalSource,result.canonicalSource);
+    console.log('Præcis originalbevarende 601-kilde, migration og invers genlæsning består.');
+    return;
+  }
+  if(args[0]==='--assistant-after601-derive'){
+    assert.equal(args.length,2);
+    const result=await buildAssistantAfter601BindingSuccessor({version:args[1]});
+    console.log(JSON.stringify({binding:result.nextBinding,output:scalar597Output(result)}));
+    return;
+  }
   if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor')
     args[0]='--assistant-after599';
   if(args[0]==='--assistant-after599'){

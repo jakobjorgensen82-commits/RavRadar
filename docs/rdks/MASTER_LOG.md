@@ -1,3 +1,9 @@
+## 25. november 2026 — Spørg RavRadars 4.0.603-kandidat
+
+Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog, den åbne fane viser. Et opfølgende spørgsmål om en anden dag bruger samme samtale og søger i prognosen for den nye dag.
+
+Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. Den aktuelle kvalifikation kræver sin egen PostgreSQL-kvittering på GitHub. Derefter følger genlæsning af den installerede overgang og verifikation på den første nye, senere ordinære vejrprognose.
+
 ## 18. november 2026 — ravfundsopfølgning forberedt på 4.0.602
 
 Den afgrænsede ændring følger det konkrete testspor i Spørg RavRadar. I offentlig 4.0.601 svarede den eksterne AI på dansk, tysk og engelsk. En længere tysk formulering gav HTTP 502 efter et læsbart HTTP-svar fra leverandøren, hvor RavRadar ikke kunne udlede det strukturerede svar. Den efterfølgende danske formulering om svag glød blev behandlet som et nyt spørgsmål om en ravlygte. Appkandidaten følger fundet som emne og begrænser udvalget af fakta for det hele spørgsmål. Den særskilte GitHub-opgave har et ejermål om højst to gemte råkopier og fortsat plads til næste normale upload. Samlet drift, behandling og lagerøkonomi verificeres gennem deres normale forløb.

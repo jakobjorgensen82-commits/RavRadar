@@ -11,7 +11,7 @@ import {promisify} from 'node:util';
 const execute=promisify(callbackExec);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE||profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE||profile===SOURCE599_CODE_PROFILE||profile===SOURCE599_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE||profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE||profile===SOURCE599_CODE_PROFILE||profile===SOURCE599_ORIGINAL_DATA_PROFILE||profile===SOURCE601_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const C='scripts/rollback-assets/ravscore-model-bundle.generated.js';
 const I='js/core/ravscore-model-bundle.generated.js';
@@ -85,15 +85,15 @@ async function inventory(){
 }
 async function bytes(file,index){relative(file);assert(index.has(file),'Fixed regular Git source leaf required: '+file);
   if(!bytesCache.has(file))bytesCache.set(file,Buffer.from(await git(['cat-file','blob',HEAD+':'+file])));return bytesCache.get(file);}
-async function selected(index){
-  const scannerBytes=await bytes(SCANNER,index),scannerUrl='data:text/javascript;base64,'+scannerBytes.toString('base64');
-  const modelBytes=(await bytes(MODEL_SCANNER,index)).toString('utf8');
-  const originalImport="import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';";
-  assert.equal(modelBytes.split(originalImport).length,2,'One fixed normal scanner import');
-  const replacementImport='import { exactRelativeModuleSpecifiers } from '+JSON.stringify(scannerUrl)+';';
-  const executableModel=modelBytes.replace(originalImport,replacementImport);
-  assert.equal(executableModel.replace(replacementImport,originalImport),modelBytes,'Whole frozen model scanner inverse');
-  const scanner=await import('data:text/javascript;base64,'+Buffer.from(executableModel).toString('base64'));
+const WORKFLOW='scripts/private-production-runtime-workflow.mjs';
+const SEED_FILES=Object.freeze([SCANNER,MODEL_SCANNER,C,I,'package.json']);
+const DECLARED_MODULES=Object.freeze([SCANNER,MODEL_SCANNER,C,I,T,WORKFLOW,CP,ASSERTION,
+  'scripts/protected-private-production-runtime.mjs','scripts/protected-ravscore-continuation-checkpoint.mjs',
+  'scripts/private-production-runtime-bundle.mjs','js/core/ravscore-model-contract.js',
+  'scripts/lib/private-weather-component-pack.mjs']);
+
+async function selected(index,importCapsuleLeaf){
+  const scanner=await importCapsuleLeaf(MODEL_SCANNER);
   const pending=[BUILDER,SCANNER,MODEL_SCANNER,ORIGIN,C,I,T,CP,'package.json',
     'scripts/private-production-runtime-workflow.mjs',
     'scripts/protected-ravscore-continuation-checkpoint.mjs','scripts/private-production-runtime-bundle.mjs',
@@ -102,7 +102,7 @@ async function selected(index){
     'scripts/lib/dmi-marine-zone-exclusions.json','scripts/lib/copernicus-component-spatial-policy.json'];
   for(const [file,binding,count] of [[C,profile.candidate,profile.candidateFiles],
     [I,profile.integrated,profile.integratedFiles]]){
-    const generated=await import('data:text/javascript;base64,'+(await bytes(file,index)).toString('base64'));
+    const generated=await importCapsuleLeaf(file);
     assert.equal(generated.GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256,binding);
     const rows=generated.GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST.files;assert.equal(rows.length,count);
     const field=file===C?'file':'path';
@@ -402,7 +402,10 @@ export async function assertSource599OriginSnapshotData(options) {
 }
 `;
 
-const ASSERTION_SUFFIX=profile===SOURCE599_ORIGINAL_DATA_PROFILE?SOURCE_599_ASSERTION_SUFFIX:profile===SOURCE598_ORIGINAL_DATA_PROFILE?SOURCE_598_ASSERTION_SUFFIX:profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
+const ASSERTION_SUFFIX=profile===SOURCE601_ORIGINAL_DATA_PROFILE
+  ?SOURCE_599_ASSERTION_SUFFIX.replaceAll('source599OriginData','source601OriginData')
+    .replaceAll('assertSource599OriginSnapshotData','assertSource601OriginSnapshotData').replaceAll('SOURCE_599_','SOURCE_601_')
+  :profile===SOURCE599_ORIGINAL_DATA_PROFILE?SOURCE_599_ASSERTION_SUFFIX:profile===SOURCE598_ORIGINAL_DATA_PROFILE?SOURCE_598_ASSERTION_SUFFIX:profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
   assertionNames.reduce((source,[before,after])=>{assert(source.includes(before));return source.replaceAll(before,after);},ORIGINAL_586_ASSERTION_SUFFIX);
 if(profile===FROZEN587)assert.equal([...assertionNames].reverse().reduce(
   (source,[before,after])=>source.replaceAll(after,before),ASSERTION_SUFFIX),ORIGINAL_586_ASSERTION_SUFFIX,'Whole assertion-suffix inverse');
@@ -440,7 +443,7 @@ async function withSource(useVerifiedSource){
   if(profile===FROZEN590)assertFrozen590CodeSourceSelected(); // FIRST: no selected parent, no Git/I/O.
   if(profile===FROZEN588)assertFrozen588CodeSourceSelected(); // FIRST: unselected code cannot reach Git/I/O.
   assert.equal(arguments.length,1,'No caller head/root/source override');assert.equal(typeof useVerifiedSource,'function');
-  const index=await inventory(),sourceFiles=await selected(index),files=[...sourceFiles,...(ASSERTION===null?[]:[ASSERTION]),GIT_REFERENCE].sort();
+  const index=await inventory();
   assert(!index.has(GIT_REFERENCE));
   // Same genuine object-store reference as run-frozen584-reconcile-source.
   // This does NOT claim frozen HEAD/source-clean or create an issuer.
@@ -452,12 +455,35 @@ async function withSource(useVerifiedSource){
   const parent=await fs.realpath(os.tmpdir()),prefix=profile.temporaryPrefix,root=await fs.mkdtemp(path.join(parent,prefix));
   assert.equal(path.dirname(root),parent);assert.equal(await fs.realpath(root),root);
   const owned=identity(await fs.lstat(root,{bigint:true}));
+  const written=new Set();
+  let importsOpen=true;
+  async function importCapsuleLeaf(file){
+    assert(importsOpen&&DECLARED_MODULES.includes(file)&&written.has(file),'Undeclared or closed capsule module');
+    const verifiedLeaf=path.resolve(root,file);
+    assert(inside(root,verifiedLeaf),'Invalid capsule module location');
+    await noLinks(root);
+    assert.deepEqual(identity(await fs.lstat(root,{bigint:true})),owned,'Invalid capsule host');
+    await exactTree(root,[...written].sort(),index,gitReference);
+    const verifiedLeafUrl=pathToFileURL(verifiedLeaf);
+    return import(verifiedLeafUrl.href);
+  }
+  async function materialize(file){
+    const output=path.resolve(root,file);
+    assert(inside(root,output));
+    await fs.mkdir(path.dirname(output),{recursive:true});
+    await fs.writeFile(output,await materializedBytes(file,index,gitReference),{flag:'wx',mode:0o600});
+    written.add(file);
+  }
   let result,first,hasFirst=false;
   try{
-    for(const file of files){const output=path.resolve(root,file);assert(inside(root,output));await fs.mkdir(path.dirname(output),{recursive:true});
-      await fs.writeFile(output,await materializedBytes(file,index,gitReference),{flag:'wx',mode:0o600});}
-    await exactTree(root,files,index,gitReference);
-    const builderArgs=(profile===SOURCE599_CODE_PROFILE||profile===SOURCE599_ORIGINAL_DATA_PROFILE)?['--assistant-after598','--check']:
+    for(const file of [...SEED_FILES,GIT_REFERENCE])await materialize(file);
+    const sourceFiles=await selected(index,importCapsuleLeaf);
+    for(const file of [...sourceFiles,...(ASSERTION===null?[]:[ASSERTION])]){
+      if(!written.has(file))await materialize(file);
+    }
+    await exactTree(root,[...written].sort(),index,gitReference);
+    const builderArgs=profile===SOURCE601_ORIGINAL_DATA_PROFILE?['--assistant-after599','--check']:
+      (profile===SOURCE599_CODE_PROFILE||profile===SOURCE599_ORIGINAL_DATA_PROFILE)?['--assistant-after598','--check']:
       (profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE)?['--assistant-after597','--check']:
       (profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE)?['--scalar597-later-h0','--check']:
       (profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE)?['--installed593-origin591-successor','--check']:
@@ -466,16 +492,18 @@ async function withSource(useVerifiedSource){
       profile===FROZEN588?['--public587-successor','--check']:['--check'];
     const checked=await execute(process.execPath,[path.join(root,BUILDER),...builderArgs],{cwd:root,env:fixedEnv(),timeout:60000,maxBuffer:1024*1024});
     assert.equal(checked.stdout.trim(),profile.builderChecked);
-    const continuation=await import(pathToFileURL(path.join(root,T)).href);
+    const continuation=await importCapsuleLeaf(T);
     assert.equal(await continuation.ravScoreContinuationImplementationSha256({repositoryRoot:root}),
       RUNTIME_CONTRACTS.continuationStateContractSha256);
-    const workflow=await import(pathToFileURL(path.join(root,'scripts/private-production-runtime-workflow.mjs')).href);
+    const workflow=await importCapsuleLeaf(WORKFLOW);
     assert.deepEqual(await workflow.privateRuntimeContractHashes({repositoryRoot:root}),RUNTIME_CONTRACTS,
       'Genuine fixed predecessor B/S persisted runtime contracts');
-    await exactTree(root,files,index,gitReference);
+    await exactTree(root,[...written].sort(),index,gitReference);
     await noLinks(gitDirectory);assert.deepEqual(identity(await fs.lstat(gitDirectory,{bigint:true})),gitIdentity);
-    result=await useVerifiedSource(root);
+    result=await useVerifiedSource(root,importCapsuleLeaf);
   }catch(error){first=error;hasFirst=true;}
+  importsOpen=false;
+  const files=[...written].sort();
   try{
     await noLinks(gitDirectory);assert.equal(await fs.realpath(gitDirectory),gitDirectory);
     assert.deepEqual(identity(await fs.lstat(gitDirectory,{bigint:true})),gitIdentity);
@@ -722,6 +750,29 @@ const SOURCE599_ORIGINAL_DATA_PROFILE=Object.freeze({...SOURCE599_CODE_PROFILE,
   assertion:'scripts/lib/established-native-current-origin-599-assertion.mjs',temporaryPrefix:'rr-source-a599-data-'});
 
 
+// One verified 601 host for both prewrite and normal runtime. This Git source
+// owns code only. The private descriptor and saved checkpoint are verified separately.
+export const SOURCE601_ORIGINAL_DATA_PROFILE=Object.freeze({
+  head:'034091bb76daa7a858b0611f0faa5ca9cf3ebf45',
+  tree:'1ee282cc4cd4413afbb1ded1289978e2eb76d2cc',
+  originSha256:'06dee927e49f8fd908528659a12849af4559ce247f586d184b018110ca8f8875',
+  partPipelineSha256:SOURCE599_CODE_SOURCE_PROVENANCE.partPipelineSha256,
+  candidateFiles:101,integratedFiles:100,
+  builder:'scripts/build-assistant-later-h0-successor.mjs',
+  builderChecked:'Præcis assistentkilde efter599 kontrolleret; ingen installation eller tilstandsoptagelse.',
+  assertion:'scripts/lib/established-native-current-origin-601-assertion.mjs',
+  temporaryPrefix:'rr-source-a601-data-',
+  candidate:'2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076',
+  integrated:'8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313',
+  additionalMigrations:Object.freeze([...SOURCE599_CODE_PROFILE.additionalMigrations,
+    Object.freeze({path:'supabase/migrations/20261116181500_account_erasure_outbox_off.sql',
+      sha256:'80fad3aa7232443558973d9ee9adc1a0e590c30cecf66eb4bb8c85fade7aa499'}),
+    Object.freeze({path:'supabase/migrations/20261117052301_assistant_after599_original599_bound_successor.sql',
+      sha256:'0823bf663c6658bb40f6b4c5e35df88b7d13eb212b7d2ec2f9c4a54f37982b15'})]),
+  runtimeContracts:Object.freeze({...SOURCE599_CODE_PROFILE.runtimeContracts,
+    continuationStateContractSha256:'e1eb1f8e40b33ec3ab6c7459a7fb43d0eb369a1f0dd6aa8a867c65da7f0a5b34'}),
+});
+
 // Hver fast profil ejer sin cache; samme relative sti kan aldrig genbruge den anden familie.
 const source586=fixedSource(FROZEN586),source587=fixedSource(FROZEN587),source588=fixedSource(FROZEN588);
 export async function withAuthenticated586PredecessorSource(useVerifiedSource){
@@ -864,6 +915,7 @@ export async function withSource598OriginalDataSource(callback){
 
 const source599Code=fixedSource(SOURCE599_CODE_PROFILE);
 const source599OriginalData=fixedSource(SOURCE599_ORIGINAL_DATA_PROFILE);
+export const withSource601OriginalDataSource=fixedSource(SOURCE601_ORIGINAL_DATA_PROFILE);
 export function assertSource599CodeSourceSelected(){
   assert.equal(arguments.length,0,'No caller-selected599 CODE source');
   const source=SOURCE599_CODE_SOURCE_PROVENANCE;

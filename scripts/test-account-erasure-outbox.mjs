@@ -234,14 +234,12 @@ test('current79 inactivity OFF readback refuses activation ACL body shape and ol
  }
  let unavailable=0;await assert.rejects(verifyInstalledAccountInactivitySchema({accessToken:'SYNTHETIC',fetchImpl:async()=>{unavailable++;}}));assert.equal(unavailable,0);
 });
-test('current79 inactivity OFF uses the existing installed601 finite app plan with exact source staging',async()=>{
+async function verifyHistoricalInactivityOffPlan(cutover){
  const path=await import('node:path'),os=await import('node:os');
- const cutover=await import('./integrated-cutover-readiness.mjs');
- assert.equal(cutover.DEFAULT_CUTOVER_SOURCE_PHASE,'assistant-after599-successor');
  const work=await fs.promises.mkdtemp(path.join(os.tmpdir(),'rr-notice601-app-'));
  try{
   const prepared=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:work,includeAccountErasureSource:true});
-  const required=cutover.REQUIRED_CUTOVER_MIGRATIONS,pair=ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+  const required=cutover.REQUIRED_CUTOVER_MIGRATIONS,pair=cutover.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
   const local=[...required,...pair],list=remote=>'Local | Remote | Time\n'+local.map(row=>row.version+' | '+(remote.has(row.version)?row.version:'')+' |').join('\n');
   const dryFor=filenames=>'DRY RUN: migrations will *not* be pushed to the database.\n'+(filenames.length?'Would push these migrations:\n'+filenames.map(name=>' • '+name).join('\n')+'\nFinished supabase db push.':'Remote database is up to date.');
   const remote=new Set(required.map(r=>r.version)),dry=dryFor(pair.map(r=>r.filename));
@@ -262,30 +260,19 @@ test('current79 inactivity OFF uses the existing installed601 finite app plan wi
   await assert.rejects(cutover.assertSupabaseMigrationPlan({migrationListText:list(remote),dryRunText:dryFor([]),migrationsDirectory:prepared.migrationsDirectory,allowAccountErasurePlan:true}));
   await fs.promises.writeFile(file,original);
  }finally{const absolute=path.resolve(work);assert(path.dirname(absolute)===path.resolve(os.tmpdir())&&path.basename(absolute).startsWith('rr-notice601-app-'));await fs.promises.rm(absolute,{recursive:true,force:true});}
-});
+}
 
-test('current79 app qualification CLI refuses before transport without the normal exact-main proof',async()=>{
- const {spawnSync}=await import('node:child_process');
- const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
- for(const mode of ['--qualify-account-erasure-source','--read-account-erasure-installed']){
-  const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],{encoding:'utf8',env});
-  assert.equal(result.status,1);assert.equal(result.stdout,'');assert.equal(result.stderr.trim(),'ACCOUNT_ERASURE_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED');
- }
-});
-
-// Current80 installer protocol only. No native server, hosted data or write is used.
-test('current80 receipt finite installer stages one exact append and preserves old79 OFF admission',async()=>{
+async function verifyHistoricalReceiptPlan(cutover,sourceRoot){
  const path=await import('node:path'),os=await import('node:os');
- const cutover=await import('./integrated-cutover-readiness.mjs');
  const work=await fs.promises.mkdtemp(path.join(os.tmpdir(),'rr-receipt80-install-'));
- const required=cutover.REQUIRED_CUTOVER_MIGRATIONS,pair=ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,receipt=cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION;
+ const required=cutover.REQUIRED_CUTOVER_MIGRATIONS,pair=cutover.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,receipt=cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION;
  const local=[...required,...pair,receipt],remote=new Set([...required,...pair].map(r=>r.version));
  const list=(selected=local,installed=remote)=>'Local | Remote | Time\n'+selected.map(row=>row.version+' | '+(installed.has(row.version)?row.version:'')+' |').join('\n');
  const dry=names=>'DRY RUN: migrations will *not* be pushed to the database.\n'+(names.length?'Would push these migrations:\n'+names.map(name=>' • '+name).join('\n')+'\nFinished supabase db push.':'Remote database is up to date.');
  try{
   const prepared=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:work,includeAccountNativeReceiptSource:true});
   assert.equal(required.length,66);assert.equal((await fs.promises.readdir(prepared.migrationsDirectory)).length,69);
-  for(const row of local)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),await fs.promises.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)));
+  for(const row of local)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),await fs.promises.readFile(path.join(sourceRoot,'supabase/migrations',row.filename)));
   const input={migrationListText:list(),dryRunText:dry([receipt.filename]),migrationsDirectory:prepared.migrationsDirectory};
   assert.deepEqual((await cutover.assertSupabaseMigrationPlan({...input,allowAccountNativeReceiptPlan:true})).pendingVersions,[receipt.version]);
   await assert.rejects(cutover.assertSupabaseMigrationPlan(input));
@@ -304,22 +291,83 @@ test('current80 receipt finite installer stages one exact append and preserves o
   const {spawnSync}=await import('node:child_process');const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
   Object.assign(env,{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'apply-binding',RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN:'true',GITHUB_WORKFLOW_REF:'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main'});
   const args=['scripts/verify-code-only-migration-plan.mjs','--account-native-receipt-plan','--migration-list',listFile,'--dry-run',dryFile,'--migrations-directory',prepared.migrationsDirectory];
-  const result=spawnSync(process.execPath,args,{env,encoding:'utf8',timeout:15000});assert.equal(result.status,0,result.stderr);assert.deepEqual(JSON.parse(result.stdout).pendingVersions,[]);
-  for(const extra of ['--enable','--account-erasure-plan'])assert.notEqual(spawnSync(process.execPath,[...args,extra],{env,encoding:'utf8',timeout:15000}).status,0);
+  const result=spawnSync(process.execPath,args,{cwd:sourceRoot,env,encoding:'utf8',timeout:15000});assert.equal(result.status,0,result.stderr);assert.deepEqual(JSON.parse(result.stdout).pendingVersions,[]);
+  for(const extra of ['--enable','--account-erasure-plan'])assert.notEqual(spawnSync(process.execPath,[...args,extra],{cwd:sourceRoot,env,encoding:'utf8',timeout:15000}).status,0);
  }finally{const absolute=path.resolve(work);assert(path.dirname(absolute)===path.resolve(os.tmpdir())&&path.basename(absolute).startsWith('rr-receipt80-install-'));await fs.promises.rm(absolute,{recursive:true,force:true});}
-});
+}
 
-test('current80 applied receipt hydrates exact source for ordinary successors without granting a pending write',async()=>{
- const path=await import('node:path'),os=await import('node:os'),cutover=await import('./integrated-cutover-readiness.mjs');
+async function verifyHistoricalAppliedReceipt(cutover,sourceRoot){
+ const path=await import('node:path'),os=await import('node:os');
  const work=await fs.promises.mkdtemp(path.join(os.tmpdir(),'rr-receipt80-applied-'));
  try{
   const prepared=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:work});
-  const prior=cutover.REQUIRED_CUTOVER_MIGRATIONS,extra=[...ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION];
+  const prior=cutover.REQUIRED_CUTOVER_MIGRATIONS,extra=[...cutover.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION];
   const list='Local | Remote | Time\n'+[...prior.map(r=>r.version+' | '+r.version+' |'),...extra.map(r=>' | '+r.version+' |')].join('\n');
   assert.deepEqual((await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list})).placeholders,[]);
-  for(const row of extra)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),await fs.promises.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)));
+  for(const row of extra)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),await fs.promises.readFile(path.join(sourceRoot,'supabase/migrations',row.filename)));
   await assert.rejects(cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list+'\n | 20261122999999 |'}));
  }finally{const absolute=path.resolve(work);assert(path.dirname(absolute)===path.resolve(os.tmpdir())&&path.basename(absolute).startsWith('rr-receipt80-applied-'));await fs.promises.rm(absolute,{recursive:true,force:true});}
+}
+
+test('historical account79 and account80 keep their finite OFF plans and refusals',async t=>{
+ const {pathToFileURL}=await import('node:url');
+ const path=await import('node:path');
+ const {withAuthenticatedReceipt80Source}=await import('./lib/account-statistics-assistant-package-review.mjs');
+ await withAuthenticatedReceipt80Source(async sourceRoot=>{
+  const cutover=await import(pathToFileURL(path.join(sourceRoot,'scripts/integrated-cutover-readiness.mjs')).href);
+  assert.equal(cutover.DEFAULT_CUTOVER_SOURCE_PHASE,'assistant-after599-successor');
+  await t.test('79 inactivity OFF uses the existing installed601 finite app plan with exact source staging',()=>verifyHistoricalInactivityOffPlan(cutover));
+  await t.test('80 receipt finite installer stages one exact append and preserves old79 OFF admission',()=>verifyHistoricalReceiptPlan(cutover,sourceRoot));
+  await t.test('80 applied receipt hydrates exact source for ordinary successors without granting a pending write',()=>verifyHistoricalAppliedReceipt(cutover,sourceRoot));
+ });
+});
+
+test('current79 app qualification CLI refuses before transport without the normal exact-main proof',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+ for(const mode of ['--qualify-account-erasure-source','--read-account-erasure-installed']){
+  const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],{encoding:'utf8',env});
+  assert.equal(result.status,1);assert.equal(result.stdout,'');assert.equal(result.stderr.trim(),'ACCOUNT_ERASURE_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED');
+ }
+});
+
+test('active after601 treats all OFF account migrations as installed dependencies',async()=>{
+ const path=await import('node:path'),os=await import('node:os');
+ const cutover=await import('./integrated-cutover-readiness.mjs');
+ assert.equal(cutover.DEFAULT_CUTOVER_SOURCE_PHASE,'assistant-after601-successor');
+ const required=cutover.assistantAfter601RequiredMigrations();
+ const app=[...cutover.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION];
+ assert.equal(required.length,70);
+ assert.deepEqual(required.slice(-4,-1),app);
+ const list=(pending,missing)=>'Local | Remote | Time\n'+required.map(({version})=>
+  (version===missing?'':version)+' | '+(version===pending?'':version)+' |').join('\n');
+ const noPending='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+ const parent=await fs.promises.realpath(os.tmpdir());
+ const work=await fs.promises.mkdtemp(path.join(parent,'rr-account-off-after601-'));
+ try{
+  const prepared=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:work});
+  const names=(await fs.promises.readdir(prepared.migrationsDirectory)).sort();
+  assert.deepEqual(names,required.map(row=>row.filename).sort());
+  for(const row of app)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),
+   await fs.promises.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)));
+  const input={migrationListText:list(),dryRunText:noPending,migrationsDirectory:prepared.migrationsDirectory};
+  assert.deepEqual((await cutover.assertSupabaseMigrationPlan(input)).pendingVersions,[]);
+  assert.deepEqual(cutover.assertSupabaseMigrationsApplied(input.migrationListText).appliedVersions,required.map(row=>row.version));
+  assert.deepEqual((await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list()})).placeholders,[]);
+  for(const row of app){
+   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list(row.version)}));
+   await assert.rejects(cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list(undefined,row.version)}),
+    /temporary migration view is missing/);
+  }
+  for(const option of ['allowAccountErasurePlan','allowAccountNativeReceiptPlan'])
+   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,[option]:true}));
+  for(const option of ['includeAccountErasureSource','includeAccountNativeReceiptSource'])
+   await assert.rejects(cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'unused'),[option]:true}));
+ }finally{
+  assert.equal(path.dirname(await fs.promises.realpath(work)),parent);
+  assert(path.basename(work).startsWith('rr-account-off-after601-'));
+  await fs.promises.rm(work,{recursive:true,force:true});
+ }
 });
 
 test('current80 installation readback is fixed metadata only and refuses enabled armed or changed OFF state',async()=>{

@@ -83,10 +83,11 @@ const PUBLIC_FILES = Object.freeze([
 ]);
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const EXACT_PUBLIC_ZONE_COUNT = 210;
-const REQUIRED_PUBLIC_CLOSURE_FILES = Object.freeze([
+// The model manifest covers scoring. assertRavScorePublicBrowserClosure separately
+// requires the assistant and binds its actual public source.
+const REQUIRED_PUBLIC_MODEL_FILES = Object.freeze([
   'js/core/best-time-selector.js',
   'js/core/local-zone-score.js',
-  'js/services/rav-assistant.js',
   'js/services/trip-evidence-public-adapter.js',
 ]);
 
@@ -350,7 +351,7 @@ export function parseSealedRavScoreBundleModule(text, { model, binding } = {}) {
   const publicFiles = manifest.files
     .map(item => Object.freeze({ path: item[fileKey], sha256: item.sha256 }))
     .filter(item => !item.path.startsWith('scripts/') && !item.path.startsWith('supabase/'));
-  for (const required of REQUIRED_PUBLIC_CLOSURE_FILES) {
+  for (const required of REQUIRED_PUBLIC_MODEL_FILES) {
     if (!publicFiles.some(item => item.path === required)) {
       throw new Error(`Sealed generated model bundle omits public browser closure file ${required}`);
     }

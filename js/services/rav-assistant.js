@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.602";
-import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.602";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.602";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.602";
-import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.602";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.603";
+import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.603";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.603";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.603";
+import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.603";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.602";
-import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.602";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.602";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.602";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.602";
+} from "../core/ravscore-model-contract.js?v=4.0.603";
+import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.603";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.603";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.603";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.603";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
@@ -1217,12 +1217,12 @@ export function assistantPublicFollowupQuestion(question, topic, language=getLan
   const resolved=prefix?prefix+raw:null;
   return resolved&&resolved.length<=600?resolved:null;
 }
-export function assistantTopicForQuestion(question) {
+export function assistantTopicForQuestion(question, language = getLanguage()) {
   const text = String(question || '').trim();
   if (text.length>600 || SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text) || PRIVATE_FIND_REQUEST_PATTERN.test(text)) return null;
-  return mixedKnowledgeForecastQuestion(text,getLanguage())?.topic
+  return mixedKnowledgeForecastQuestion(text,language)?.topic
     ?? (isOriginIdentificationQuestion(text) || isAuthoredOriginQuestion(text) ? 'amber-origin-identification' : null)
-    ?? fieldCompoundAnswer(text, getLanguage())?.topic
+    ?? fieldCompoundAnswer(text, language)?.topic
     ?? (isPracticalAlongshoreQuestion(text) ? 'alongshore' : null)
     ?? publicSearchTopicForQuestion(text)
     ?? publicKnowledgeTopicForQuestion(text);

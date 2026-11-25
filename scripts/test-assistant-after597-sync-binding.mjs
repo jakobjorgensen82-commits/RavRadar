@@ -9,9 +9,10 @@ import {test} from 'node:test';
 // Explicit normal current entry. No project constructor/runtime import
 // precedes the fixed after598 issuance guard. Old PRE bodies stay unchanged.
 const currentArguments=process.argv.slice(2);
-assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
+assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current','--after601-setup'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
 const AFTER598_CURRENT_MODE=currentArguments[0]==='--after598-current';
 const AFTER599_CURRENT_MODE=currentArguments[0]==='--after599-current';
+const AFTER601_SETUP_MODE=currentArguments[0]==='--after601-setup';
 const currentSource=await import('./lib/assistant-later-h0-successor-source.mjs');
 if(AFTER598_CURRENT_MODE){
   currentSource.requireAssistantAfter598Output();currentSource.requireAssistantAfter598Release();
@@ -62,7 +63,98 @@ if(AFTER599_CURRENT_MODE){
   const {verifyAssistantAfter599SourceTarget}=await import('./national584-source-evidence.mjs');
   await verifyAssistantAfter599SourceTarget();
 }
-if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
+function damageHistoricalAlias(source,alias){
+  const signature='create or replace function public.'+alias.name+'(';
+  assert.equal(source.split(signature).length,2);
+  const start=source.indexOf(signature);
+  const body=source.indexOf('as $',start);
+  assert(body>start&&body<source.indexOf('$;',start));
+  const position=body+'as $'.length;
+  return source.slice(0,position)+'\n-- altered predecessor definition'+source.slice(position);
+}
+
+async function verifySevenConsumerSync(migration,alias){
+  const prefix='rr-assistant-normal-sync-';
+  const tempDirectory=await fs.realpath(os.tmpdir());
+  const stage=await fs.realpath(await fs.mkdtemp(path.join(tempDirectory,prefix)));
+  assert.equal(path.dirname(stage),tempDirectory);
+  assert(path.basename(stage).startsWith(prefix));
+  const files=[...new Set([...CONSUMERS,...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,migration])];
+  const snapshot=async()=>new Map(await Promise.all(CONSUMERS.map(async file=>[file,await fs.readFile(path.join(stage,file))])));
+  try{
+    for(const file of files){
+      const target=path.join(stage,file);
+      await fs.mkdir(path.dirname(target),{recursive:true});
+      await fs.copyFile(path.join(ROOT,file),target);
+    }
+    const first=await synchronizeRavScoreModelBinding({write:true,root:stage});
+    assert.deepEqual(first.binding,ravScoreModelBinding());
+    assert.deepEqual(first.candidateBinding,candidateBinding());
+    assert.deepEqual([...first.changed].sort(),[...CONSUMERS].sort());
+    const after=await snapshot();
+    assert.deepEqual((await synchronizeRavScoreModelBinding({root:stage})).changed,[]);
+    for(const[file,bytes]of after)assert.deepEqual(bytes,await fs.readFile(path.join(ROOT,file)));
+    const schema='supabase/schema.sql';
+    const sql=after.get(schema).toString('utf8');
+    const marker='-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
+    assert.equal(sql.split(marker).length,2);
+    for(const damaged of [sql.replace(marker,''),sql+'\n'+marker+'\n']){
+      await fs.writeFile(path.join(stage,schema),damaged);
+      const before=await snapshot();
+      await assert.rejects(synchronizeRavScoreModelBinding({write:true,root:stage}),/missing or duplicated/);
+      assert.deepEqual(await snapshot(),before);
+    }
+    if(alias){
+      await fs.writeFile(path.join(stage,schema),after.get(schema));
+      const migrationPath=path.join(stage,migration);
+      const source=await fs.readFile(migrationPath,'utf8');
+      await fs.writeFile(migrationPath,damageHistoricalAlias(source,alias));
+      await assert.rejects(synchronizeRavScoreModelBinding({write:true,root:stage}));
+      assert.deepEqual(await snapshot(),after);
+    }
+  }finally{
+    await fs.rm(stage,{recursive:true,force:false});
+  }
+}
+
+if(AFTER601_SETUP_MODE){
+  const sync=await import('./sync-ravscore-model-binding.mjs');
+  test('after601 setup consumes only exact reconstructed SQL and retains after599 alias verification',async()=>{
+    for(const [read,inspect,alias] of [
+      [currentSource.readAssistantAfter599CanonicalSource,sync.assistantAfter599CheckpointInspectionView,currentSource.ASSISTANT_AFTER599_ALIASES[0]],
+      [currentSource.readAssistantAfter601CanonicalSource,sync.assistantAfter601CheckpointInspectionView,currentSource.ASSISTANT_AFTER601_ALIASES[0]],
+    ]){
+      const {canonicalSource}=await read();
+      assert(inspect(canonicalSource).length<canonicalSource.length);
+      assert.throws(()=>inspect(damageHistoricalAlias(canonicalSource,alias)),/entire issued canonical source/);
+    }
+    const {canonicalSource}=await currentSource.readAssistantAfter601CanonicalSource();
+    const exact=sync.checkpointMetadataCasBlock(canonicalSource,ravScoreModelBinding(),candidateBinding(),currentSource.ASSISTANT_AFTER601_BINDING.T);
+    assert(exact.includes(currentSource.ASSISTANT_AFTER601_ALIASES[0].name));
+    assert.throws(()=>sync.checkpointMetadataCasBlock(canonicalSource,ravScoreModelBinding(),candidateBinding(),currentSource.ASSISTANT_AFTER601_BEFORE.T),
+      /one exact C\/I\/T source family/);
+  });
+  test('after601 CAS digest uses the two bare PostgreSQL catalog bodies',async()=>{
+    const {canonicalSource}=await currentSource.readAssistantAfter601CanonicalSource();
+    const {expectedCheckpointCasContract}=await import('./integrated-cutover-readiness.mjs');
+    const {definition}=await expectedCheckpointCasContract({sourcePhase:'assistant-after601-successor'});
+    const catalogBodies=currentSource.ASSISTANT_AFTER601_ALIASES.map((alias,index)=>{
+      const start=canonicalSource.indexOf('create or replace function public.'+alias.name+'(');
+      assert(start>=0);
+      const [header]=canonicalSource.slice(start).split('\n');
+      assert(header.includes(alias.name));
+      const body=/\bas \$\$([\s\S]*?)\$\$;/iu.exec(canonicalSource.slice(start));
+      assert(body,'SQL alias must have a literal catalog body');
+      const label=index===0?'state':'payload';
+      return '\n-- assistant-later-h0-original601-'+label+'-validator --\n'+body[1].replace(/\r\n?/g,'\n').trim();
+    });
+    assert(definition.endsWith(catalogBodies.join('')),'CAS digest must exclude SQL dollar delimiters');
+  });
+  test('after601 seven-consumer setup is deterministic and rejects damaged original alias before writing',async()=>{
+    await verifySevenConsumerSync('supabase/migrations/'+currentSource.assistantAfter601Migration().filename,
+      currentSource.ASSISTANT_AFTER601_ALIASES[0]);
+  });
+}else if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
 
 test('alle gamle navngivne kontrolvisninger læser deres egne ægte hele kanoniske kilder',async()=>{
   const pairs=[
@@ -355,24 +447,7 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
       for(const changed of [source+'\n-- unknown\n',source.slice(1),source+source])assert.throws(()=>inspect(changed));assert.deepEqual(Buffer.from(source),before);}
   });
   test('after599 current normal seven-consumer sync is stable and rejects damaged SQL before writing',async()=>{
-    const stage=await fs.mkdtemp(path.join(os.tmpdir(),'rr-after599-normal-sync-'));
-    const migration='supabase/migrations/'+currentSource.assistantAfter599Migration().filename;
-    const files=[...new Set([...CONSUMERS,...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,migration])];
-    try{
-      for(const file of files){const target=path.join(stage,file);await fs.mkdir(path.dirname(target),{recursive:true});await fs.copyFile(path.join(ROOT,file),target);}
-      const first=await synchronizeRavScoreModelBinding({write:true,root:stage});assert.deepEqual(first.binding,ravScoreModelBinding());assert.deepEqual(first.candidateBinding,candidateBinding());
-      const after=new Map(await Promise.all(CONSUMERS.map(async file=>[file,await fs.readFile(path.join(stage,file))])));
-      assert.deepEqual((await synchronizeRavScoreModelBinding({root:stage})).changed,[]);
-      for(const[file,bytes]of after)assert.deepEqual(await fs.readFile(path.join(stage,file)),bytes);
-      assert.deepEqual(after.get('supabase/functions/_shared/rav-assistant-contract.ts'),await fs.readFile(path.join(ROOT,'supabase/functions/_shared/rav-assistant-contract.ts')),'Actual reviewed current Edge semantics stay unchanged by binding synchronization');
-      const badPath=path.join(stage,'supabase/schema.sql'),sql=await fs.readFile(badPath,'utf8'),marker='-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
-      assert.equal(sql.split(marker).length,2);
-      for(const damaged of [sql.replace(marker,''),sql+'\n'+marker+'\n']){
-        await fs.writeFile(badPath,damaged);const before=new Map(await Promise.all(CONSUMERS.map(async file=>[file,await fs.readFile(path.join(stage,file))])));
-        await assert.rejects(synchronizeRavScoreModelBinding({write:true,root:stage}),/missing or duplicated/);
-        for(const[file,bytes]of before)assert.deepEqual(await fs.readFile(path.join(stage,file)),bytes);
-      }
-    }finally{assert.equal(path.dirname(stage),path.resolve(os.tmpdir()));assert(path.basename(stage).startsWith('rr-after599-normal-sync-'));await fs.rm(stage,{recursive:true,force:false});}
+    await verifySevenConsumerSync('supabase/migrations/'+currentSource.assistantAfter599Migration().filename);
   });
 
   test('after599 current next ordinary app release keeps issued family, original599 and unchanged C/I/T and SQL',async()=>{
