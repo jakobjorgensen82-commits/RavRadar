@@ -592,6 +592,20 @@ test('cancelled manual report restores the account controls without submitting',
   } finally { h.finish(); }
 });
 
+test('manual form failure restores the account controls before any save', async () => {
+  const h = harness();
+  const form = { promise: Promise.resolve().then(() => { throw new Error('No zones available'); }) };
+  const panel = ui(h, form);
+  const beforeForm = panel.content.querySelector('#accountTripReportStatus');
+  try {
+    await panel.showAccountTripReport(panel.dialog, {});
+    assert.equal(panel.dialog.open, true);
+    assert.notStrictEqual(panel.content.querySelector('#accountTripReportStatus'), beforeForm);
+    assert.ok(panel.content.innerHTML.includes('No zones available'));
+    assert.equal(h.state.submits.length, 0);
+  } finally { h.finish(); }
+});
+
 test('late manual report success preserves the open trip history', async () => {
   const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();
   let operation, reads = 0;

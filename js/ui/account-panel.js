@@ -223,8 +223,10 @@ async function showAccountTripReport(dialog, context) {
     }
     if (!isCurrentView()) return;
     if (!dialog.open) dialog.showModal();
-    if (!isCurrentOwner()) return renderAccount(dialog, context, t('account.reportFailed'));
-    setReportStatus(error?.message || t('account.reportFailed'));
+    const ownerIsCurrent = isCurrentOwner();
+    const message = ownerIsCurrent && error?.message ? error.message : t('account.reportFailed');
+    if (!waitingForSave || !ownerIsCurrent) return renderAccount(dialog, context, message);
+    setReportStatus(message);
   }
 }
 
