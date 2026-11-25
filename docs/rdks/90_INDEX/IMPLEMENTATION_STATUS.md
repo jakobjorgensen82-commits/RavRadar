@@ -1,3 +1,9 @@
+## 25. november — automatisk genoptagelse efter bekræftet råcachelæser
+
+- [x] Afgræns lokalt den automatiske tidsvagt til den autentiske, afsluttede RAW-læserblokering før produktionstrinnene. Bevar de samme kopier, vejrlås, kildebeviser og normale ejeradvarsler.
+- [x] Afprøv komplet genlæsning, samme vindue, ejerens overtagelse og afslag ved ukendt startudfald i de eksisterende cadence- og RAW-prøver.
+- [ ] Kvalificér den præcise ændring i GitHub og efterprøv, at én ordinær kørsel starter og udgiver, når en mulig læser afslutter inden fristen.
+
 ## 24. november — aktivitetskvittering og Auth
 
 - [x] SQL80 installeret med OFF, og den normale kataloglæsning har bekræftet den uarmerede kvittering.
