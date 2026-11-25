@@ -496,7 +496,7 @@ function ui(h, form) {
   (h.state.dialogs ??= []).push(dialog);
   const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, t, ...quality, ...model, crypto,
     openAccountTripReportDialog: () => form.promise };
-  vm.runInNewContext(`${accountBody}\nthis.api={showAccountTripReport,showTripHistory};`, scope);
+  vm.runInNewContext(`${accountBody}\nthis.api={openAccountDialog,showAccountTripReport,showTripHistory};`, scope);
   return { dialog, content, ...scope.api };
 }
 
@@ -546,6 +546,58 @@ for (const kind of ['other-owner new login', 'same-owner new login', 'logout', '
       assert.equal(acknowledged, kind === 'renewal', 'A late old-report acknowledgment must not be presented under a new login');
       assert.equal(h.service.getObservationSyncStatus().pending, kind === 'renewal' ? 0 : 1);
     } finally { form.resolve(null); body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+  });
+}
+
+test('late manual report success preserves the open trip history', async () => {
+  const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();
+  let operation, reads = 0;
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
+    form.resolve(reportAnswer);
+    operation = panel.showAccountTripReport(panel.dialog, {});
+    await turn();
+    assert.equal(reads, 1);
+    await panel.showTripHistory(panel.dialog, {});
+    const history = panel.content.innerHTML;
+    assert.ok(history.includes('tripHistoryBack'));
+    body.resolve({ stored: true });
+    await operation;
+    assert.equal(panel.content.innerHTML, history);
+    assert.equal(h.state.submits.length, 1);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+  } finally { body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+});
+
+for (const changeOwner of [false, true]) {
+  test(`late manual report failure keeps dialog closed and feedback owner-scoped: ${changeOwner}`, async () => {
+    const h = harness(), form = deferred(), panel = ui(h, form), body = deferred();
+    let operation, reads = 0;
+    try {
+      h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
+      form.resolve(reportAnswer);
+      operation = panel.showAccountTripReport(panel.dialog, {});
+      await turn();
+      assert.equal(reads, 1);
+      panel.dialog.close();
+      h.state.failWrite = { key: 'ravradar-observation-last-sync', error: new Error('Status storage unavailable') };
+      body.resolve({ stored: true });
+      await operation;
+      assert.equal(panel.dialog.open, false);
+      assert.equal(h.state.submits.length, 1);
+      h.state.failWrite = null;
+      if (changeOwner) await h.login(B);
+      panel.openAccountDialog(panel.dialog);
+      assert.equal(panel.content.innerHTML.includes(t('account.previousReportUnconfirmed')), !changeOwner);
+      assert.equal(panel.content.innerHTML.includes(t('account.reportRemote')), false);
+      panel.openAccountDialog(panel.dialog);
+      assert.equal(panel.content.innerHTML.includes(t('account.previousReportUnconfirmed')), false);
+    } finally {
+      h.state.failWrite = null;
+      body.resolve({ stored: true });
+      if (operation) await operation;
+      h.finish();
+    }
   });
 }
 
