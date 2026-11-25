@@ -17,6 +17,7 @@
 
 - [x] Før seks faste pladser og eksisterende private R2-binding videre på den aktuelle hovedgren. Bevar alle normale råcache-, udgivelses- og databevaringskontroller.
 - [x] Afgræns genlæsning til autentificeret HTTP 404 og det observerede præcise JSON-svar for tabt bucket. Kontrollér byteparitet, fejl der skal afvises, og de normale kaldere.
+- [x] Lad den almindelige kildekontrol vælge de eksisterende genoptagelsesprøver for R2-hjælperen og det manuelle genoptagelsesworkflow.
 - [ ] Kvalificér den præcise ændring i GitHub. Efter sikker levering skal hosted genlæsning i isolation med den primære Storage afskåret bekræfte alle påkrævede aktive beviser og særskilt dækning af de resterende driftskritiske objekter. Afvent en verificeret central reference og friske forbrugstal.
 
 ## 25. november — genlæsning af en ufuldstændig råcachekvittering
