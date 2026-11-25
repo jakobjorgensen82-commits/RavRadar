@@ -848,8 +848,14 @@ test('assistant later-H0 registration keeps exact older scripts and refuses phas
 });
 
 test('private-study006: deklarations-export må ikke forveksle Array.from med en re-export',async()=>{
-  const file='scripts/lib/static-module-closure.mjs',
-    source=(await fs.readFile(new URL('./lib/static-module-closure.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const {execFileSync}=await import('node:child_process');
+  const archivedFix='ee21a057e14f066d6d7d2a70822de81e6177879b';
+  const readArchived=(revision,file)=>execFileSync('git',['-c','protocol.allow=never','cat-file','blob',revision+':'+file],{
+    cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:'utf8',timeout:10000,maxBuffer:64*1024,
+    env:{...process.env,GIT_NO_REPLACE_OBJECTS:'1',GIT_NO_LAZY_FETCH:'1',GIT_OPTIONAL_LOCKS:'0'},
+  }).replace(/\r\n/g,'\n');
+  const file='scripts/lib/static-module-closure.mjs';
+  const source=readArchived(archivedFix,file),original=readArchived(archivedFix+'^',file);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(hash(source),'bb64f60e1a700897f6dd982b8fe9c3ed85fbb48fd3dfd0b2f46f65e3dc91b17e');
   const current="    // En deklarations-export har ingen module-specifier. Fortsæt dog token\n"
@@ -858,16 +864,17 @@ test('private-study006: deklarations-export må ikke forveksle Array.from med en
     +"      && ['const', 'let', 'var', 'function', 'class', 'default', 'async'].includes(next.value)) continue;\n"
     +"    const end = statementEnd(items, index + 1);";
   assert.equal(source.split(current).length,2);
-  const original=source.replace(current,"    const end = statementEnd(items, index + 1);");
+  assert.equal(source.replace(current,"    const end = statementEnd(items, index + 1);"),original);
   assert.equal(hash(original),'675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0');
   assert.equal(original.split('export function exactRelativeModuleSpecifiers(').length,2);
   const oldScanner=vm.runInNewContext(original.replace('export function exactRelativeModuleSpecifiers(','function exactRelativeModuleSpecifiers(')
     +'\nexactRelativeModuleSpecifiers;');
-  const dpFile='cloudflare/trip-gateway/trip-aggregate-dp.js',
-    dp=(await fs.readFile(new URL('../'+dpFile,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
-  assert.equal(hash(dp),'ffd3389017064fce904ec2f8f850b4e60248db0e29185f9a0ed83021be73117b');
-  assert.throws(()=>oldScanner(dp,dpFile),/contains an unparsed static module specifier/);
-  assert.deepEqual(exactRelativeModuleSpecifiers(dp,dpFile),[
+  const dpFile='cloudflare/trip-gateway/trip-aggregate-dp.js';
+  const archivedDp=readArchived(archivedFix,dpFile);
+  assert.equal(hash(archivedDp),'ffd3389017064fce904ec2f8f850b4e60248db0e29185f9a0ed83021be73117b');
+  assert.throws(()=>oldScanner(archivedDp,dpFile),/contains an unparsed static module specifier/);
+  const currentDp=await fs.readFile(new URL('../'+dpFile,import.meta.url),'utf8');
+  assert.deepEqual(exactRelativeModuleSpecifiers(currentDp,dpFile),[
     '../../supabase/functions/_shared/trip-storage.js','../../js/services/calibration-eligibility.js']);
   for(const declarations of [
     "export const rows = Array.from({ length: 1 });",
