@@ -86,10 +86,10 @@ export const ASSISTANT_AFTER599_REUSE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES
 export const ASSISTANT_AFTER599_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after599-successor']);
 export const ASSISTANT_AFTER599_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER599_COMMANDS.join('\n')+'\n';
 export const ASSISTANT_AFTER601_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER601_POSTGRES_PHASE_V1';
-const ASSISTANT_AFTER601_PHASE=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.sourcePhase;
+export const ASSISTANT_AFTER601_PHASE=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.sourcePhase;
 const AFTER601_RESULT='ASSISTANT_AFTER601_SUCCESSOR';
-const ASSISTANT_AFTER601_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after601-successor']);
-const ASSISTANT_AFTER601_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER601_COMMANDS.join('\n')+'\n';
+export const ASSISTANT_AFTER601_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after601-successor']);
+export const ASSISTANT_AFTER601_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER601_COMMANDS.join('\n')+'\n';
 export const ACTIVE_COMMANDS=ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE?ASSISTANT_AFTER601_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_COMMANDS
   :ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE
   ?SCALAR597_LATER_H0_COMMANDS:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'

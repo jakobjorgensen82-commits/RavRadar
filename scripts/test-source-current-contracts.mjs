@@ -914,17 +914,30 @@ const {assertSource598CodeSourceSelected}=await import(pathToFileURL(path.join(S
 const fixedCode598=assertSource598CodeSourceSelected();
 assert.equal(text(SOURCE,['rev-parse',fixedCode598.head+'^{tree}']),fixedCode598.tree);
 // Current planner DATA is distinct from the unchanged protected historical PG module.
-const currentDomainFamily=(await import(pathToFileURL(path.join(SOURCE,'scripts/lib/assistant-later-h0-successor-source.mjs')).href)).ASSISTANT_AFTER599_BINDING;
-assert(currentDomainFamily&&Object.isFrozen(currentDomainFamily));
-assert.deepEqual(Object.keys(currentDomainFamily).sort(),['C','I','T','version']);
-const currentDomainFamilyImport="import {ASSISTANT_AFTER599_BINDING as FAMILY601} from './lib/assistant-later-h0-successor-source.mjs';";
+const currentDomainSource=await import(pathToFileURL(path.join(SOURCE,'scripts/lib/assistant-later-h0-successor-source.mjs')).href);
+const domainBindingNames=['ASSISTANT_AFTER599_BINDING as FAMILY601','ASSISTANT_AFTER601_BINDING',
+  'ASSISTANT_AFTER601_OUTPUT','assistantAfter601Migration'];
+const domainBindingData={
+  FAMILY601:currentDomainSource.ASSISTANT_AFTER599_BINDING,
+  ASSISTANT_AFTER601_BINDING:currentDomainSource.ASSISTANT_AFTER601_BINDING,
+  ASSISTANT_AFTER601_OUTPUT:currentDomainSource.ASSISTANT_AFTER601_OUTPUT,
+};
+for(const item of Object.values(domainBindingData))assert(item&&Object.isFrozen(item));
+function currentDomainImports(body){
+  return [...body.matchAll(/^import\s*\{([^}]+)\}\s*from\s*['"]\.\/lib\/assistant-later-h0-successor-source\.mjs['"];$/gm)];
+}
 function currentDomainFixtureBytes(bytes){
   const body=bytes.toString('utf8');
-  const imports=[...body.matchAll(/^import\b[^;]*?\bfrom\s*['"]\.\/lib\/assistant-later-h0-successor-source\.mjs['"];$/gm)].map(match=>match[0]);
-  assert.deepEqual(imports,[currentDomainFamilyImport],'Only the actual current binding DATA import is materialized');
-  return Buffer.from(body.replace(currentDomainFamilyImport,'const FAMILY601=Object.freeze('+JSON.stringify(currentDomainFamily)+');'));
+  const imports=currentDomainImports(body);
+  assert.equal(imports.length,1,'Only the actual current binding DATA import is materialized');
+  assert.deepEqual(imports[0][1].split(',').map(name=>name.trim()).filter(Boolean).sort(),[...domainBindingNames].sort());
+  const data=Object.entries(domainBindingData).map(([name,value])=>'const '+name+'=Object.freeze('+JSON.stringify(value)+');');
+  const migration=JSON.stringify(currentDomainSource.assistantAfter601Migration());
+  data.push('function assistantAfter601Migration(){assert.equal(arguments.length,0);return Object.freeze('+migration+');}');
+  return Buffer.from(body.replace(imports[0][0],data.join('\n')));
 }
 const currentDomainBytes=fs.readFileSync(path.join(SOURCE,'scripts/source-impact-domain-inputs.mjs'));
+const [currentDomainFamilyImport]=currentDomainImports(currentDomainBytes.toString('utf8'))[0];
 assert.throws(()=>currentDomainFixtureBytes(Buffer.from(currentDomainBytes.toString('utf8').replace(currentDomainFamilyImport,''))));
 assert.throws(()=>currentDomainFixtureBytes(Buffer.concat([currentDomainBytes,Buffer.from('\n'+currentDomainFamilyImport+'\n')])));
 assert.throws(()=>currentDomainFixtureBytes(Buffer.from(currentDomainBytes.toString('utf8').replace('ASSISTANT_AFTER599_BINDING as FAMILY601','ASSISTANT_AFTER599_BINDING as FAMILY601,ASSISTANT_AFTER599_OUTPUT'))));
@@ -980,6 +993,7 @@ let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBod
 let immutableFullZip,immutablePhaseZip;
 let actualCurrentAfter598SourceVerified=false;
 let actualCurrentAfter599SourceVerified=false;
+let actualCurrentAfter601SourceVerified=false;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
   baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
@@ -1789,6 +1803,23 @@ try{
   }
 
 
+  if(actualSuccessor.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor'){
+    const actualNational=await import(pathToFileURL(path.join(SOURCE,'scripts/national584-source-evidence.mjs')).href);
+    const actualNative=await import(pathToFileURL(path.join(SOURCE,'scripts/native-postgres-evidence.mjs')).href);
+    const release=actualSuccessor.ACTIVE_ASSISTANT_SUCCESSOR.requireRelease();
+    const currentPackage=JSON.parse(fs.readFileSync(path.join(SOURCE,'package.json'),'utf8'));
+    assert.equal(actualNational.verifyPackage(currentPackage),currentPackage);
+    actualNational.verifyCurrentNativeCommands(actualNative.ASSISTANT_AFTER601_COMMANDS,release);
+    assert.throws(()=>actualNational.verifyCurrentNativeCommands(nativeReceipt.commands,release));
+    assert.throws(()=>actualNative.verifyAssistantAfter601PhaseReceipt(nativeReceipt,nativeCurrent));
+    const omitted=structuredClone(currentPackage);
+    const target='test:assistant-later-h0-source';
+    omitted.scripts[target]=omitted.scripts[target].split(' && ').slice(1).join(' && ');
+    assert.throws(()=>actualNational.verifyPackage(omitted));
+    actualCurrentAfter601SourceVerified=true;cases++;
+    scenarios.push('current after601 package and native command required; historical receipts rejected without executing SQL');
+  }
+
   async function assertScalarSourcePrerequisites(){
     const scalarTarget='scripts/test-weather-component-normal-wireup.mjs';
     const scalarTree=rewrite(baselineTree,[[scalarTarget,Buffer.concat([
@@ -2486,7 +2517,7 @@ try{
 console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V4_PRODUCER_CONSUMER_INTEGRATION',cases,passed:cases,failed:0,scenarios,
   actualTargetProcesses:actualProcesses,syntheticTransportCalls:calls,realIsolatedGit:true,
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
-  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,actualCurrentAfter599SourceVerified,
+  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,actualCurrentAfter599SourceVerified,actualCurrentAfter601SourceVerified,
   network:false,production:false,deliveryAuthority:false}));
 
 // BEGIN FOCUSED WEATHER OPERATION OWNER CASES
