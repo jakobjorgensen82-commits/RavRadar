@@ -13,7 +13,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313"
+    "modelBundleSha256": "825e6faac3bc18cba74a5e36dd705b44b5b3e2288b9f0416ff67e4305b337198"
   },
   "cases": [
     {
