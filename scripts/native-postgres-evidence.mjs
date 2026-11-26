@@ -24,6 +24,7 @@ import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,
 import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
 import {ASSISTANT_AFTER599_DATABASE_LEDGER} from './lib/assistant-later-h0-successor-source.mjs';
 import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE,FROZEN599_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
   projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
   hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow,verifyTargetedSourceStepShape}
@@ -86,6 +87,7 @@ export const ASSISTANT_AFTER599_REUSE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES
 export const ASSISTANT_AFTER599_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after599-successor']);
 export const ASSISTANT_AFTER599_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER599_COMMANDS.join('\n')+'\n';
 export const ASSISTANT_AFTER601_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER601_POSTGRES_PHASE_V1';
+export const ASSISTANT_AFTER601_EXECUTED_V2_KIND='RAVRADAR_ASSISTANT_AFTER601_POSTGRES_EXECUTED_V2';
 export const ASSISTANT_AFTER601_PHASE=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.sourcePhase;
 const AFTER601_RESULT='ASSISTANT_AFTER601_SUCCESSOR';
 export const ASSISTANT_AFTER601_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after601-successor']);
@@ -2218,7 +2220,20 @@ function loadAfter599GitBlobs(readBatch, oids, objects) {
 }
 export async function captureAssistantAfter599PgInput(options){
   requireAssistantAfter599Output(); // FIRST, including before option getters.
-  assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert(arguments.length<=1);
+  return captureAssistantNativePgInput(options,false);
+}
+
+// This measures the current source inputs. It grants no phase or reuse authority.
+export async function captureAssistantAfter601PgInput(options){
+  assert.equal(ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
+  ACTIVE.requireOutput();
+  assert(arguments.length<=1);
+  return captureAssistantNativePgInput(options,true);
+}
+
+async function captureAssistantNativePgInput(options,after601){
+  options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
   assert(Object.keys(options).every(key=>['ref','readGit','root','physical'].includes(key)));
   const {ref='HEAD',root=process.cwd(),physical=true}=options;
   const readGit=after599BoundedGit(options.readGit??git,performance.now()+60000);
@@ -2262,7 +2277,11 @@ export async function captureAssistantAfter599PgInput(options){
   const receiptSource='scripts/lib/account-native-activity-receipt-source.mjs';
   const receiptPresent=index.has(receiptSql);
   assert.equal(index.has(receiptSource),receiptPresent,'Incomplete current80 source dependency');
-  if(receiptPresent)assert.equal(sql.length,80,'Receipt input requires the complete current80 source');
+  if(after601){
+    assert(receiptPresent&&sql.length===81,'After601 requires the complete current81 source');
+    assert(sql.includes('supabase/migrations/'+INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.migration().filename),
+      'After601 migration is missing');
+  }else if(receiptPresent)assert.equal(sql.length,80,'Receipt input requires the complete current80 source');
   const modules=new Set([...profile.postgresModules,'scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs',
     ...(receiptPresent?[receiptSource]:[])]);
   const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
@@ -2278,9 +2297,25 @@ export async function captureAssistantAfter599PgInput(options){
     for(const row of manifest.files){assert(typeof row[definition.rowKey]==='string');selected.add(row[definition.rowKey]);}
   }
   load([...selected]);
+  if(after601){
+    // Fixed native modules and both model manifests already own the current
+    // imports. A new literal dependency must be admitted before reuse.
+    for(const file of modules){
+      assert(index.has(file),'Missing after601 native module: '+file);
+      const raw=content(file,index.get(file));
+      const {imports}=scanAllSourceDependencies(new TextDecoder('utf8',{fatal:true}).decode(raw));
+      for(const {specifier} of imports){
+        if(specifier===null||specifier.startsWith('node:'))continue;
+        assert(specifier.startsWith('./')||specifier.startsWith('../'),'Unqualified after601 native package import');
+        const dependency=path.posix.join(path.posix.dirname(file),specifier.split(/[?#]/,1)[0]);
+        assert(selected.has(dependency)&&index.has(dependency),'Unqualified after601 native import: '+dependency);
+      }
+    }
+  }
   for(const file of [...selected].sort())await read(file);
   const scopePaths=new Set(['package.json']);
-  for(const file of modules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
+  const scopedModules=after601?[...selected].filter(file=>/\.[cm]?js$/.test(file)):modules;
+  for(const file of scopedModules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
   const scopes=[];
   for(const file of [...scopePaths].sort()){
     if(!index.has(file)){
@@ -2298,10 +2333,12 @@ export async function captureAssistantAfter599PgInput(options){
     scopes.push({file,present:true,mode:row[1],type:value.type??null,name:value.name??null,main:value.main??null,imports:value.imports??null,exports:value.exports??null});
   }
   const anchors=[...profile.frozenGitAnchors,{head:FROZEN599_NATIVE_SOURCE.codeHead,tree:FROZEN599_NATIVE_SOURCE.codeTree}];
+  if(after601)anchors.push({head:SOURCE601_ORIGINAL_DATA_PROFILE.head,tree:SOURCE601_ORIGINAL_DATA_PROFILE.tree});
   const frozenGitTrees=[...new Map(anchors.map(row=>[row.head,row])).values()].sort((a,b)=>a.head.localeCompare(b.head));
-  for(const row of frozenGitTrees)assert.equal(readGit(['rev-parse',row.head+'^{tree}']).trim(),row.tree);
+  for(const row of frozenGitTrees)assert.equal(String(readGit(['rev-parse',row.head+'^{tree}'])).trim(),row.tree);
   const files=[...rows.values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
-  return {schemaVersion:1,kind:'AFTER599_ACTUAL_PG_INPUT_V1',files:files.length,sqlFiles:sql.length,
+  return {schemaVersion:1,kind:after601?'AFTER601_ACTUAL_PG_INPUT_V1':'AFTER599_ACTUAL_PG_INPUT_V1',
+    files:files.length,sqlFiles:sql.length,
     complete:files.every(row=>row.present!==false),inputSha256:sha(JSON.stringify(files)),packageScopes:scopes,frozenGitTrees};
 }
 export function verifyAssistantAfter599PgInput(value,prior=value){
@@ -2735,6 +2772,32 @@ export function verifyAssistantAfter601PhaseReceipt(native,current){
   return native;
 }
 
+function after601ExecutedV2Receipt(current,runtime,report,nativeInput){
+  assert.equal(nativeInput?.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
+  assert.equal(nativeInput.complete,true);
+  return {...after601PhaseReceipt(current,runtime,report),schemaVersion:2,
+    kind:ASSISTANT_AFTER601_EXECUTED_V2_KIND,nativeInput};
+}
+
+export async function verifyAssistantAfter601ExecutedV2Receipt(native,current,readGit=git){
+  // Verify an existing receipt at its original commit, independently of what
+  // active phase the consumer currently selects for a fresh native command.
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.requireOutput();
+  assert.equal(native?.kind,ASSISTANT_AFTER601_EXECUTED_V2_KIND);
+  assert.equal(native.status,'EXECUTED');
+  assert.equal(native.origin,null);
+  let read=git;
+  if(readGit!==git){
+    // The FULL consumer already bounds each Git call. Preserve that budget
+    // while using the same batched object verification as the normal producer.
+    read=args=>readGit(args);
+    read[after599GitBatch]=(args,input,timeout)=>readGit(args,{input,timeout});
+  }
+  const expectedInput=await captureAssistantNativePgInput({ref:current.head,readGit:read,physical:false},true);
+  assert.deepEqual(native,after601ExecutedV2Receipt(current,native.runtime,native.report,expectedInput));
+  return native;
+}
+
 async function executeAssistantAfter601Native(){
   assert.equal(ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
   ACTIVE.requireOutput();
@@ -2751,6 +2814,16 @@ async function executeAssistantAfter601Native(){
   const current={run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
     pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
   const runtime=await assistantPublic591Runtime();
+  let nativeInput;
+  try{
+    nativeInput=await captureAssistantAfter601PgInput({ref:head});
+    assert.equal(nativeInput.complete,true);
+  }catch{
+    // Unknown source projection still requires the complete original SQL test.
+    // It cannot seed evidence reuse.
+    nativeInput=null;
+    console.log('AFTER601_PG_INPUT_ATTESTATION_UNAVAILABLE');
+  }
   for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
   const report=await executeMarkedNative(env,ASSISTANT_AFTER601_SCRIPT,nativeMarkerCollector(SCALAR597_REPORT_MARKER,65536));
   if(!report)return;
@@ -2762,7 +2835,14 @@ async function executeAssistantAfter601Native(){
   for(const key of ['assistantAfter597Successor','assistantAfter598Successor','assistantAfter599Successor',
     'accountErasure','accountInactivity','accountNativeReceipt'])assert(!Object.hasOwn(report,key));
   verifyCheckout();verifyAssistantPublic591Runtime(runtime,await assistantPublic591Runtime());
-  await record(after601PhaseReceipt(current,runtime,report.assistantAfter601Successor));
+  const nativeReport=report.assistantAfter601Successor;
+  if(nativeInput===null){
+    await record(after601PhaseReceipt(current,runtime,nativeReport));
+    return;
+  }
+  assert.deepEqual(await captureAssistantAfter601PgInput({ref:head}),nativeInput,
+    'After601 PostgreSQL inputs changed during SQL execution');
+  await record(after601ExecutedV2Receipt(current,runtime,nativeReport,nativeInput));
 }
 
 async function record(receipt) {
@@ -2771,7 +2851,10 @@ async function record(receipt) {
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
-  if(ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE)verifyAssistantAfter601PhaseReceipt(receipt,current);
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE){
+    if(receipt.kind===ASSISTANT_AFTER601_EXECUTED_V2_KIND)await verifyAssistantAfter601ExecutedV2Receipt(receipt,current);
+    else verifyAssistantAfter601PhaseReceipt(receipt,current);
+  }
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE){
     await assertCurrentAccountErasureNativeReport(receipt.report);
     await assertCurrentAccountInactivityNativeReport(receipt.report);

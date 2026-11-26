@@ -1448,6 +1448,10 @@ export function planSourceCurrentContractsFromGit(input){
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
+    // Changes to the producer must prove an actual PostgreSQL phase. Its
+    // readers and fixtures can still use the reviewed source-only route.
+    if(analysis.evidenceControls.native.changes.some(row=>row.file==='scripts/native-postgres-evidence.mjs'))
+      return refuse('CURRENT_NATIVE_POSTGRES_PRODUCER_CHANGED',['ACTUAL_POSTGRES']);
     const restore=analysis.completeGitDiff.inventory.find(row=>
       Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===LOCAL_RESTORE_FIXTURE);
     const restoreWorkflow=analysis.completeGitDiff.inventory.find(row=>
