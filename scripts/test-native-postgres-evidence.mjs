@@ -3318,7 +3318,7 @@ console.log(JSON.stringify({scope:'SYNTHETIC_NORMAL_CLI_WIRING',decisions,writes
 }
 
 
-test('after601 receipt accepts the measured whole-history and quota results and refuses old markers',async()=>{
+test('after601 receipt accepts the measured whole-history and quota results and refuses old markers',async t=>{
   const native=await import('./native-postgres-evidence.mjs');
   const {INACTIVE_ASSISTANT_AFTER601_SUCCESSOR:profile}=await import('./lib/assistant-later-h0-successor-source.mjs');
   const {SOURCE601_ORIGINAL_DATA_PROFILE}=await import('./check-assistant-later-h0-predecessor-source.mjs');
@@ -3389,6 +3389,141 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     const changed=copy(v2);mutate(changed);
     await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(changed,exactCurrent));
   }
+  await t.test('after601 V2 bounded origin, normal record and FULL decoder preserve honest reuse',async()=>{
+    const {verifyCurrentSourceWorkflow,verifyTargetedSourceStepShape,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}=await import('./lib/source-impact-workflow-review.mjs');
+    const workflow=await fs.readFile(native.WORKFLOW,'utf8');
+    const shape=verifyCurrentSourceWorkflow(workflow),nativeSource=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+    const originRunId=current.run+100,currentRunId=originRunId+10,prNumber=999;
+    const originCurrent={...exactCurrent,run:originRunId,pullRequest:prNumber};
+    const callerCurrent={...originCurrent,run:currentRunId};
+    const original={...copy(v2),current:originCurrent};
+    const originalBytes=JSON.stringify(original),archive=Buffer.from('SYNTHETIC_V2_TRANSPORT_ONLY');
+    const stamp=minute=>'2026-11-26T10:'+String(minute).padStart(2,'0')+':00Z';
+    const runFor=(id,status='completed')=>({id,run_attempt:1,head_sha:realHead,head_branch:callerCurrent.branch,
+      path:native.WORKFLOW,event:'pull_request',status,conclusion:status==='completed'?'success':null,
+      repository:{full_name:native.ORIGIN.repository},head_repository:{full_name:native.ORIGIN.repository},
+      pull_requests:status==='in_progress'?[{number:prNumber}]:[],created_at:stamp(id===originRunId?0:30)});
+    const jobsFor=r=>({total_count:1,jobs:[{id:r.id+1000,run_id:r.id,run_attempt:1,head_sha:r.head_sha,name:native.JOB,
+      status:r.status,conclusion:r.conclusion,steps:shape.stepNames.map((name,index)=>({name,number:index+1,
+        status:'completed',conclusion:'success',started_at:stamp(index),completed_at:stamp(index+1)}))}]});
+    const artifactFor=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,
+      size_in_bytes:archive.length,digest:'sha256:'+cryptoHash('sha256').update(archive).digest('hex'),
+      workflow_run:{id:r.id,head_sha:r.head_sha},created_at:stamp(shape.nativeUploadNumber)});
+    const base='/repos/'+native.ORIGIN.repository,actions=base+'/actions';
+    const build=(fault=null)=>{
+      const origin=runFor(originRunId),active=runFor(currentRunId,'in_progress'),later=runFor(originRunId+1);
+      const transition=typeof fault==='string'&&fault.startsWith('transition-');
+      const history=fault==='later-failure'||transition?[active,later,origin]:[active,origin];
+      const calls=[];let inputReads=0,historyReads=0,decoding=origin;
+      const observedRows=()=>history.map(r=>r.id!==later.id||!transition?r:historyReads<=1
+        ?{...r,status:'in_progress',conclusion:null}:fault==='transition-skip'?r:{...r,conclusion:'failure'});
+      const get=async route=>{
+        calls.push(route);if(fault==='unavailable')throw Error('SYNTHETIC_UNAVAILABLE');
+        if(route===base+'/pulls/'+prNumber)return {number:prNumber,state:'open',draft:false,
+          base:{ref:'main',repo:{full_name:native.ORIGIN.repository}},head:{sha:realHead,ref:callerCurrent.branch,repo:{full_name:native.ORIGIN.repository}}};
+        if(route.includes('/workflows/')){historyReads++;const rows=observedRows();return {total_count:rows.length,workflow_runs:copy(rows)};}
+        for(const r of observedRows()){
+          if(route===actions+'/runs/'+r.id)return copy(r);
+          if(route===actions+'/runs/'+r.id+'/attempts/1/jobs?per_page=100'){
+            const jobs=jobsFor(r);if(fault==='later-failure'&&r.id===later.id)
+              jobs.jobs[0].steps.find(step=>step.name===native.STEP).conclusion='failure';
+            if(transition&&r.id===later.id&&historyReads>1){
+              const job=jobs.jobs[0],upload=job.steps.find(step=>step.name===native.CURRENT586_PHASE_UPLOAD);
+              if(fault==='transition-upload-failed')upload.conclusion='failure';
+              else if(fault==='transition-upload-missing')job.steps=job.steps.filter(step=>step!==upload);
+              else if(fault==='transition-native-ok')job.steps.find(step=>step.number===shape.nativeUploadNumber+1).conclusion='failure';
+              else if(fault==='transition-skip'){
+                const fullOnly=new Set(TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.slice(9,23));
+                for(const step of job.steps)if(fullOnly.has(step.name))step.conclusion='skipped';
+                verifyTargetedSourceStepShape(job,workflow);
+              }
+            }
+            return jobs;
+          }
+          if(route===actions+'/runs/'+r.id+'/artifacts?per_page=100')return {total_count:1,artifacts:[{...artifactFor(r),expired:fault==='expired'}]};
+          if(route===actions+'/artifacts/'+(r.id+2000)+'/zip'){decoding=r;return archive;}
+          if(route===actions+'/artifacts/'+(r.id+2000))return {...artifactFor(r),expired:fault==='expired'};
+        }
+        throw Error('UNEXPECTED_SYNTHETIC_ROUTE');
+      };
+      return {calls,options:{env:{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,
+        GITHUB_RUN_ATTEMPT:'1',SOURCE_GATE_HEAD_SHA:realHead,GITHUB_RUN_ID:String(currentRunId),PULL_REQUEST_NUMBER:String(prNumber),GITHUB_HEAD_REF:callerCurrent.branch},
+        readGit:(args,input)=>{
+          // The fixture has synthetic Actions state; immutable input bytes still
+          // come from the real exact Git tree, not the dirty development files.
+          if(args[0]==='status'||args[0]==='for-each-ref')return '';
+          const raw=execFileSync('git',args,{input,maxBuffer:32*1024*1024});
+          return args[0]==='cat-file'||args[0]==='ls-tree'?raw:raw.toString('utf8');
+        },get,getInput:async()=>{inputReads++;return {...input,...(fault==='fresh-input'&&inputReads>1?{inputSha256:'f'.repeat(64)}:{})};},
+        getRuntime:async()=>({...v2Runtime(),...(fault==='runtime'?{imageVersion:'20261126.999'}:{})}),
+        decode:()=>{
+          const nativePostgres=fault==='v1'?{...copy(receipt),current:originCurrent}
+            :{...copy(original),current:{...originCurrent,run:decoding.id}};
+          if(fault==='origin-81')nativePostgres.nativeInput.sqlFiles=81;
+          if(fault==='missing-append-proof')delete nativePostgres.report.checkpointScalarWalk;
+          if(fault==='false-append-proof')nativePostgres.report.checkpointScalarWalk.sqlExecuted=false;
+          return Buffer.from(JSON.stringify({schemaVersion:nativePostgres.schemaVersion,kind:nativePostgres.kind,
+            repository:native.ORIGIN.repository,headSha:realHead,sourceTreeSha256:'sha256:'+'e'.repeat(64),
+            privatePayloadIncluded:false,nativePostgres}));
+        },
+      }};
+    };
+    const fixture=build(),refusals=[];fixture.options.onRefusal=reason=>refusals.push(reason);
+    const reused=await native.decideAssistantAfter601Reuse(fixture.options);
+    assert(reused,JSON.stringify(refusals));assert.equal(reused.kind,native.ASSISTANT_AFTER601_REUSE_V2_KIND);
+    assert.equal(reused.status,'REUSED');assert.equal(reused.executedInThisRun,false);assert.equal(reused.eligibleForReuse,false);
+    assert.equal(reused.origin.run,originRunId);assert.equal(reused.origin.artifactId,originRunId+2000);
+    assert.equal(JSON.stringify(original),originalBytes,'The authentic EXECUTED_V2 bytes are never retagged');
+    assert.equal(await native.verifyAssistantAfter601ReuseV2Receipt(reused,callerCurrent,readGit),reused);
+    for(const fault of ['v1','runtime','expired','later-failure','fresh-input','unavailable','transition-upload-failed','transition-upload-missing'])
+      assert.equal(await native.decideAssistantAfter601Reuse(build(fault).options),null,fault);
+    if(scalarWalk){
+      assert.deepEqual(reused.report.checkpointScalarWalk,checkpointScalarWalk);
+      for(const fault of ['origin-81','missing-append-proof','false-append-proof'])
+        assert.equal(await native.decideAssistantAfter601Reuse(build(fault).options),null,fault);
+    }
+    for(const state of ['transition-native-ok','transition-skip']){
+      const f=build(state),accepted=await native.decideAssistantAfter601Reuse(f.options);
+      assert(accepted,state);assert.equal(accepted.origin.run,originRunId,'A later native or skip never replaces the original SQL origin');
+      if(state==='transition-native-ok')assert(f.calls.includes(actions+'/artifacts/'+(originRunId+1+2000)+'/zip'));
+      else assert(!f.calls.includes(actions+'/artifacts/'+(originRunId+1+2000)+'/zip'));
+    }
+    const self=copy(reused);self.origin.run=currentRunId;
+    await assert.rejects(native.verifyAssistantAfter601ReuseV2Receipt(self,callerCurrent,readGit));
+    const extra=copy(reused);extra.origin.unreviewedPayload='SYNTHETIC_FORBIDDEN_FIELD';
+    await assert.rejects(native.verifyAssistantAfter601ReuseV2Receipt(extra,callerCurrent,readGit));
+    const producerChanged=(args,options)=>args[0]==='ls-tree'&&args[4]==='scripts/native-postgres-evidence.mjs'
+      ?Buffer.from('100644 blob '+(args[2]==='1'.repeat(40)?'f':'e').repeat(40)+'\tscripts/native-postgres-evidence.mjs\0'):readGit(args,options);
+    const changedProducer=copy(reused);changedProducer.origin.head='1'.repeat(40);
+    await assert.rejects(native.verifyAssistantAfter601ReuseV2Receipt(changedProducer,callerCurrent,producerChanged),/AFTER601_PG_PRODUCER_CHANGED/);
+    const fullSource=await fs.readFile('scripts/source-impact-full-baseline.mjs','utf8');
+    const start=fullSource.indexOf('async function nativeProof('),end=fullSource.indexOf('async function historicalNational(',start);
+    assert(start>=0&&end>start);
+    const names=['ASSISTANT_AFTER601_PHASE_KIND','ASSISTANT_AFTER601_EXECUTED_V2_KIND','ASSISTANT_AFTER601_REUSE_V2_KIND',
+      'ASSISTANT_AFTER599_REUSE_KIND','ASSISTANT_AFTER599_PHASE_KIND','ASSISTANT_AFTER598_PHASE_KIND','ASSISTANT_AFTER597_PHASE_KIND',
+      'SCALAR597_LATER_H0_PHASE_KIND','INSTALLED593_ORIGINAL591_V2_KIND','INSTALLED593_ORIGINAL591_PHASE_KIND',
+      'ASSISTANT_PUBLIC591_V2_KIND','ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND','verifyAssistantAfter601ReuseV2Receipt'];
+    const dependencies={assert,...Object.fromEntries(names.map(name=>[name,native[name]]))};
+    const decode=Function(...Object.keys(dependencies),'return ('+fullSource.slice(start,end)+');')(...Object.values(dependencies));
+    const proof={schemaVersion:2,kind:reused.kind,repository:native.ORIGIN.repository,headSha:realHead,
+      sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,nativePostgres:reused};
+    assert.equal(await decode(proof,{repository:native.ORIGIN.repository,producerHead:realHead,sourceTreeSha256:proof.sourceTreeSha256},callerCurrent,'4.0.603',readGit),reused);
+    const execStart=nativeSource.indexOf('async function executeAssistantAfter601Native(){'),recordStart=nativeSource.indexOf('async function record(receipt) {',execStart),mainStart=nativeSource.indexOf('async function main() {',recordStart);
+    assert(execStart>=0&&recordStart>execStart&&mainStart>recordStart);
+    const writes=[];let decisions=0;
+    const normalDependencies={assert,ACTIVE:profile,process:{env:fixture.options.env},
+      fs:{readFile:async()=>JSON.stringify({headSha:realHead,repository:native.ORIGIN.repository,contractId:'weather-source-gate-content-v2',privatePayloadIncluded:false,sourceTreeSha256:'sha256:'+'e'.repeat(64)}),
+        writeFile:async(file,raw)=>writes.push({file,value:JSON.parse(raw)})},
+      git:()=>realHead,ORIGIN:native.ORIGIN,CURRENT586_PHASE_FILE:native.CURRENT586_PHASE_FILE,
+      ASSISTANT_AFTER601_PHASE:native.ASSISTANT_AFTER601_PHASE,
+      ASSISTANT_AFTER601_PHASE_KIND:native.ASSISTANT_AFTER601_PHASE_KIND,ASSISTANT_AFTER601_EXECUTED_V2_KIND:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
+      ASSISTANT_AFTER601_REUSE_V2_KIND:native.ASSISTANT_AFTER601_REUSE_V2_KIND,
+      decideAssistantAfter601Reuse:async()=>{decisions++;return reused;},verifyAssistantAfter601ReuseV2Receipt:native.verifyAssistantAfter601ReuseV2Receipt};
+    await Function(...Object.keys(normalDependencies),nativeSource.slice(execStart,mainStart)+'\nreturn executeAssistantAfter601Native();')(...Object.values(normalDependencies));
+    assert.equal(decisions,1);assert.equal(writes.length,2);assert.equal(writes[1].value.nativePostgres.status,'REUSED');
+    assert.equal(writes[1].value.nativePostgres.executedInThisRun,false);
+    t.diagnostic('Synthetic Actions/transport and normal dispatch only; no SQL, credentials or provider requests.');
+  });
 });
 
 test('current80 typed receipt requires the exact fresh nine-case result and cannot retag original79',()=>withAuthenticatedReceipt80Source(async root=>{

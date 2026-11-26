@@ -511,3 +511,36 @@ console.log('Pages generation order, exact reusable attempt, shared reentry and 
   assert.throws(()=>exactPagesAttemptStep([recovered,recovered],recoveryIdentity),/unambiguous/);
   assert.throws(()=>exactPagesAttemptStep(both,{...recoveryIdentity,attemptId:'pages-recovery-1-999'}),/identity/);
 }
+
+
+// Current semantics are checked directly. Existing historical workflow oracles
+// keep their genuine frozen input; no new inverse or replacement pin is needed.
+{
+  const r2=['RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY'];
+  const workflows=['update-and-deploy','run-current-weather-once','deploy-code-only-repair',
+    'resume-operational-checkpoint','reusable-weather-build','reusable-pages-deploy','reusable-operational-reentry'];
+  for(const name of workflows){
+    const raw=await read(name);
+    if(['reusable-pages-deploy','reusable-operational-reentry'].includes(name)){
+      const declaration=raw.split('    secrets:\n')[1].split(/^    (?:outputs|inputs):/m)[0];
+      for(const key of r2)assert.match(declaration,new RegExp('^      '+key+':\\n        required: false$','m'),
+        name+': replica credentials stay optional; primary publication cannot depend on R2 availability');
+    }
+    for(const job of raw.split(/(?=^  [a-zA-Z0-9_-]+:\n)/m)){
+      if(!/^    uses: \.\/\.github\/workflows\/reusable-(?:pages-deploy|operational-reentry)\.yml$/m.test(job))continue;
+      const secrets=job.split('    secrets:\n')[1];assert(secrets,name+': explicit reusable secret mapping');
+      for(const key of r2)assert.equal(secrets.split('      '+key+': ${{ secrets.'+key+' }}\n').length,2,
+        name+': every normal nested caller forwards the existing credential exactly once');
+    }
+    if(!name.startsWith('reusable-'))continue;
+    for(const step of raw.split(/(?=^      - name: )/m)){
+      const commands=[...step.matchAll(/node scripts\/protected-operational-reentry-evidence\.mjs ([-a-z]+)/g)].map(match=>match[1]);
+      if(!commands.length)continue;
+      const storageNeeded=commands.some(command=>!['--read-live-main-head','--assert-pages-recovery-writer'].includes(command));
+      const env=step.split('        env:\n')[1]?.split(/^        [a-z_]+:/m)[0]??'';
+      for(const key of r2)assert.equal(env.split('          '+key+': ${{ secrets.'+key+' }}\n').length,storageNeeded?2:1,
+        name+': scoped credential only at the existing evidence owner');
+    }
+  }
+  console.log('Current operational evidence R2 credentials: every normal nested caller and scoped step passed.');
+}
