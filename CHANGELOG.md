@@ -10,6 +10,10 @@
 
 - DMI kan genlæse kataloget sent i hentevinduet for at udfylde dokumenterede vandstandshuller. Den almindelige kontrollæsning af originaler, tidsfristen og downloadgrænserne gælder fortsat.
 
+## Drift — lokal R2-kopi af forseglede genoptagelsesbeviser
+
+- Forbered seks private R2-pladser til bytepræcise kopier af de driftsbeviser, som den aktuelle genoptagelse kan bruge. Supabase er primær. Reservelæsning kræver HTTP 404 eller det observerede Supabase-svar HTTP 400 med `statusCode: "404"` og `code: "NoSuchBucket"`, samt samme verificerede arkiv og central reference. Kildekvalifikation og hosted gendannelsesprøve udestår.
+
 ## Drift — genlæsning af råcachekvitteringen
 
 - Råcacherotationen venter på en entydig kvittering, hvis GitHub kortvarigt viser et antal på nul eller én, der afviger fra listen. To kvitteringer eller et fortsat uafklaret svar stopper som før.
