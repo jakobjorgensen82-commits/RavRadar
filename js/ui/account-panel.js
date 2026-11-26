@@ -1,7 +1,7 @@
 import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.603";
 import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.603";
 import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.603";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.603";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.603&trip-test=20261125";
 import { formatDateTime, formatNumber, getLanguage, t } from "../i18n.js?v=4.0.603";
 import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.603";
 import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.603";
@@ -18,6 +18,7 @@ const unconfirmedTripReportCopy = {
   de: 'Eine frühere Meldung konnte nicht bestätigt werden. Prüfe Meine Touren und Funde, bevor du es erneut versuchst.',
   en: 'We could not confirm an earlier trip report. Check My trips and finds before trying again.',
 };
+const testTripLabel = { da: 'Testtur', de: 'Testtour', en: 'Test trip' };
 
 const pendingStatisticsViews = new WeakMap();
 function stopStatisticsView(dialog) { pendingStatisticsViews.get(dialog)?.dispose(); }
@@ -118,13 +119,14 @@ function renderHistoryRows(rows, context) {
     const grams = found && hasNumber(row.grams) ? `<span>${escapeHtml(formatNumber(row.grams, { maximumFractionDigits:1 }))} g</span>` : '';
     const pending = row._source === 'device' && row.sync_status !== 'synced' ? `<span class="trip-log-pending">${t('account.pending')}</span>` : '';
     const manual = row.data_quality_flags?.includes('account-manual') ? `<span>${t('account.manual')}</span>` : '';
+    const testTrip = row.observation_origin === 'synthetic-test' ? `<span>${testTripLabel[getLanguage()]}</span>` : '';
     const bindingStatus = accountTripBindingStatus(row, ravScoreModelBinding(), {
       allowCalibration: RAVSCORE_CALIBRATION_ELIGIBLE,
     });
     const bindingLabel = `<span>${t(`account.binding.${bindingStatus}`)}</span>`;
     return `<article class="trip-log-row">
       <div><strong>${escapeHtml(tripDate(row))}</strong><span>${escapeHtml(zone)} · ${escapeHtml(part)}</span></div>
-      <div class="trip-log-facts"><span>${huntModeLabel(row.hunt_mode)}</span><span>${escapeHtml(minutesLabel(row.search_minutes))}</span><span class="${found ? 'trip-found' : 'trip-not-found'}">${t(found ? 'account.found' : 'account.notFound')}</span>${grams}${bindingLabel}${manual}${pending}</div>
+      <div class="trip-log-facts"><span>${huntModeLabel(row.hunt_mode)}</span><span>${escapeHtml(minutesLabel(row.search_minutes))}</span><span class="${found ? 'trip-found' : 'trip-not-found'}">${t(found ? 'account.found' : 'account.notFound')}</span>${grams}${bindingLabel}${manual}${testTrip}${pending}</div>
     </article>`;
   }).join('');
 }
