@@ -2678,6 +2678,10 @@ async function decideAssistantNativeReuse(options,after601){
       assert(['success','failure'].includes(row.conclusion)&&['success','failure'].includes(job.conclusion));
       assert(successful(one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'))));
       const pg=one(job.steps.filter(value=>value.name===STEP));assert(successful(pg));
+      // A newly terminal row is not proved by two green steps. Requalify the
+      // same native upload, artifact and typed receipt as in the first walk.
+      const completed=await load(row,jobs);
+      for(const key of ['status','conclusion','head_branch'])assert.equal(completed.run[key],row[key]);
     }
     // Fresh identity and independent origin metadata after the history walk.
     refusalStage='FINAL_REOBSERVATION';

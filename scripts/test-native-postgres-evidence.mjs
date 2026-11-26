@@ -3375,7 +3375,7 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(changed,exactCurrent));
   }
   await t.test('after601 V2 bounded origin, normal record and FULL decoder preserve honest reuse',async()=>{
-    const {verifyCurrentSourceWorkflow}=await import('./lib/source-impact-workflow-review.mjs');
+    const {verifyCurrentSourceWorkflow,verifyTargetedSourceStepShape,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}=await import('./lib/source-impact-workflow-review.mjs');
     const workflow=await fs.readFile(native.WORKFLOW,'utf8');
     const shape=verifyCurrentSourceWorkflow(workflow),nativeSource=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
     const originRunId=current.run+100,currentRunId=originRunId+10,prNumber=999;
@@ -3397,22 +3397,36 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     const base='/repos/'+native.ORIGIN.repository,actions=base+'/actions';
     const build=(fault=null)=>{
       const origin=runFor(originRunId),active=runFor(currentRunId,'in_progress'),later=runFor(originRunId+1);
-      const history=fault==='later-failure'?[active,later,origin]:[active,origin];
-      const calls=[];let inputReads=0;
+      const transition=typeof fault==='string'&&fault.startsWith('transition-');
+      const history=fault==='later-failure'||transition?[active,later,origin]:[active,origin];
+      const calls=[];let inputReads=0,historyReads=0,decoding=origin;
+      const observedRows=()=>history.map(r=>r.id!==later.id||!transition?r:historyReads<=1
+        ?{...r,status:'in_progress',conclusion:null}:fault==='transition-skip'?r:{...r,conclusion:'failure'});
       const get=async route=>{
         calls.push(route);if(fault==='unavailable')throw Error('SYNTHETIC_UNAVAILABLE');
         if(route===base+'/pulls/'+prNumber)return {number:prNumber,state:'open',draft:false,
           base:{ref:'main',repo:{full_name:native.ORIGIN.repository}},head:{sha:realHead,ref:callerCurrent.branch,repo:{full_name:native.ORIGIN.repository}}};
-        if(route.includes('/workflows/'))return {total_count:history.length,workflow_runs:copy(history)};
-        for(const r of history){
+        if(route.includes('/workflows/')){historyReads++;const rows=observedRows();return {total_count:rows.length,workflow_runs:copy(rows)};}
+        for(const r of observedRows()){
           if(route===actions+'/runs/'+r.id)return copy(r);
           if(route===actions+'/runs/'+r.id+'/attempts/1/jobs?per_page=100'){
             const jobs=jobsFor(r);if(fault==='later-failure'&&r.id===later.id)
               jobs.jobs[0].steps.find(step=>step.name===native.STEP).conclusion='failure';
+            if(transition&&r.id===later.id&&historyReads>1){
+              const job=jobs.jobs[0],upload=job.steps.find(step=>step.name===native.CURRENT586_PHASE_UPLOAD);
+              if(fault==='transition-upload-failed')upload.conclusion='failure';
+              else if(fault==='transition-upload-missing')job.steps=job.steps.filter(step=>step!==upload);
+              else if(fault==='transition-native-ok')job.steps.find(step=>step.number===shape.nativeUploadNumber+1).conclusion='failure';
+              else if(fault==='transition-skip'){
+                const fullOnly=new Set(TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.slice(9,23));
+                for(const step of job.steps)if(fullOnly.has(step.name))step.conclusion='skipped';
+                verifyTargetedSourceStepShape(job,workflow);
+              }
+            }
             return jobs;
           }
           if(route===actions+'/runs/'+r.id+'/artifacts?per_page=100')return {total_count:1,artifacts:[{...artifactFor(r),expired:fault==='expired'}]};
-          if(route===actions+'/artifacts/'+(r.id+2000)+'/zip')return archive;
+          if(route===actions+'/artifacts/'+(r.id+2000)+'/zip'){decoding=r;return archive;}
           if(route===actions+'/artifacts/'+(r.id+2000))return {...artifactFor(r),expired:fault==='expired'};
         }
         throw Error('UNEXPECTED_SYNTHETIC_ROUTE');
@@ -3430,7 +3444,7 @@ test('after601 receipt accepts the measured whole-history and quota results and 
         decode:()=>Buffer.from(JSON.stringify({schemaVersion:fault==='v1'?1:2,
           kind:fault==='v1'?native.ASSISTANT_AFTER601_PHASE_KIND:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
           repository:native.ORIGIN.repository,headSha:realHead,sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,
-          nativePostgres:fault==='v1'?{...copy(receipt),current:originCurrent}:copy(original)})),
+          nativePostgres:fault==='v1'?{...copy(receipt),current:originCurrent}:{...copy(original),current:{...originCurrent,run:decoding.id}}})),
       }};
     };
     const fixture=build(),refusals=[];fixture.options.onRefusal=reason=>refusals.push(reason);
@@ -3440,8 +3454,14 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     assert.equal(reused.origin.run,originRunId);assert.equal(reused.origin.artifactId,originRunId+2000);
     assert.equal(JSON.stringify(original),originalBytes,'The authentic EXECUTED_V2 bytes are never retagged');
     assert.equal(await native.verifyAssistantAfter601ReuseV2Receipt(reused,callerCurrent,readGit),reused);
-    for(const fault of ['v1','runtime','expired','later-failure','fresh-input','unavailable'])
+    for(const fault of ['v1','runtime','expired','later-failure','fresh-input','unavailable','transition-upload-failed','transition-upload-missing'])
       assert.equal(await native.decideAssistantAfter601Reuse(build(fault).options),null,fault);
+    for(const state of ['transition-native-ok','transition-skip']){
+      const f=build(state),accepted=await native.decideAssistantAfter601Reuse(f.options);
+      assert(accepted,state);assert.equal(accepted.origin.run,originRunId,'A later native or skip never replaces the original SQL origin');
+      if(state==='transition-native-ok')assert(f.calls.includes(actions+'/artifacts/'+(originRunId+1+2000)+'/zip'));
+      else assert(!f.calls.includes(actions+'/artifacts/'+(originRunId+1+2000)+'/zip'));
+    }
     const self=copy(reused);self.origin.run=currentRunId;
     await assert.rejects(native.verifyAssistantAfter601ReuseV2Receipt(self,callerCurrent,readGit));
     const extra=copy(reused);extra.origin.unreviewedPayload='SYNTHETIC_FORBIDDEN_FIELD';
