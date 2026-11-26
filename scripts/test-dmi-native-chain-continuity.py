@@ -418,6 +418,10 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
         class SyntheticGribInternalError(Exception):
             pass
 
+        # The real stop check in the compiled caller uses the producer's
+        # absolute work deadline. Keep that deadline on this fixture's clock.
+        late_now = 2500.0
+        late_work_deadline = late_now + 180.0
         bad_hour = gap_hours[1]
         for run_fault in ("no fault", "unknown size", "truncated GRIB", "different capture", "unsettled read"):
             with self.subTest(late_water_fault=run_fault):
@@ -466,10 +470,10 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                 if run_fault == "unknown size":
                     context["retained_current_asset_proofs"] = []
                 with (
-                    patch.object(producer.time, "monotonic", return_value=2500.0),
+                    patch.object(producer.time, "monotonic", return_value=late_now),
+                    patch.object(producer, "WORK_DEADLINE", late_work_deadline),
                     patch.object(producer, "request_json", return_value=new_page) as request,
                     patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
-                    patch.object(producer, "should_stop_work", return_value=False),
                     patch.object(producer, "progress"),
                     patch.object(producer, "download_asset", side_effect=synthetic_download) as download,
                     patch.object(producer, "_grib_read_scope", side_effect=synthetic_reader),
@@ -518,20 +522,23 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
         oversized_offer = copy.deepcopy(new_page)
         for feature in oversized_offer["features"]:
             feature["assets"]["data"]["file:size"] = producer.MAX_DOWNLOAD_BYTES + 1
-        for slots, facts, remaining, cap, offered, expected_requests in (
-            (0, plan, True, normal_cap, old_page, 1), (1, None, True, normal_cap, old_page, 0),
-            (1, v2(trend=(117,)), True, normal_cap, old_page, 0), (1, plan, False, normal_cap, old_page, 0),
-            (1, plan, True, len(catalogues[collection][1]), old_page, 0),
-            (1, plan, True, normal_cap, oversized_offer, 1),
+        for now, slots, facts, remaining, cap, offered, expected_requests in (
+            (late_now, 0, plan, True, normal_cap, old_page, 1),
+            (late_now, 1, None, True, normal_cap, old_page, 0),
+            (late_now, 1, v2(trend=(117,)), True, normal_cap, old_page, 0),
+            (late_now, 1, plan, False, normal_cap, old_page, 0),
+            (late_now, 1, plan, True, len(catalogues[collection][1]), old_page, 0),
+            (late_now, 1, plan, True, normal_cap, oversized_offer, 1),
+            (late_work_deadline, 1, plan, True, normal_cap, new_page, 0),
         ):
             controller = Mock()
             controller.can_start_asset.return_value = remaining
             context = late_context(copy.deepcopy(old_saved), controller, slots=slots, facts=facts)
             with (
-                patch.object(producer.time, "monotonic", return_value=2500.0),
+                patch.object(producer.time, "monotonic", return_value=now),
+                patch.object(producer, "WORK_DEADLINE", late_work_deadline),
                 patch.object(producer, "request_json", return_value=offered) as request,
                 patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
-                patch.object(producer, "should_stop_work", return_value=False),
                 patch.object(producer, "progress"),
                 patch.object(producer, "MAX_ASSETS_PER_COLLECTION", cap),
                 patch.object(producer, "download_asset") as download,
