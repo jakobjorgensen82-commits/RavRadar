@@ -10,6 +10,10 @@
 
 - DMI kan genlæse kataloget sent i hentevinduet for at udfylde dokumenterede vandstandshuller. Den almindelige kontrollæsning af originaler, tidsfristen og downloadgrænserne gælder fortsat.
 
+## Drift — lokal R2-kopi af forseglede genoptagelsesbeviser
+
+- Forbered seks private R2-pladser til bytepræcise kopier af de driftsbeviser, som den aktuelle genoptagelse kan bruge. Den normale genlæsning undersøger Supabase-lageret skrivefrit og kan hente den eksakte R2-kopi, når det autentificerede objektsvar bekræfter fravær. Kvitteringen viser, når en R2-kopi er genlæst. Kildekvalifikation og hosted gendannelsesprøve udestår.
+
 ## Drift — genlæsning af råcachekvitteringen
 
 - Råcacherotationen venter på en entydig kvittering, hvis GitHub kortvarigt viser et antal på nul eller én, der afviger fra listen. To kvitteringer eller et fortsat uafklaret svar stopper som før.

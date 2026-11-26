@@ -4,6 +4,12 @@ Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog
 
 Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. GitHub-kontrol #1726 bestod på #1093, inklusive den afgrænsede PostgreSQL-prøve. Den efterfølgende indarbejdelse af Pages-rettelsen kræver kontrol af den samlede kilde, før installation og verifikation på en senere ordinær vejrprognose.
 
+## 25. november — lokal, afgrænset kopi af driftsbeviser i R2
+
+Kandidaten kopierer forseglede gzipbytes til højst seks pladser i det eksisterende private R2-lager. Fem pladser kan være bundet til aktuelle referencer, og en sjette giver plads til den indkommende kopi. Samme-plads-versionering og betingede skrivninger afviser forsinkede overskrivninger. Kun et verificeret normalt skift af den centrale reference kan frigive en plads fra en anden kopi. R2-afslag standser ikke publicering til Supabase. Loftet for kopierne er 63.012.864 byte, og den almindelige vejrpakke har fortsat forrang i pladsberegningen.
+
+Den normale genlæsning kontrollerer Supabase-lageret med læseadgang. Når lagerets metadata melder fravær, kræver den også en bekræftet fejl om fravær på den autentificerede objektlæsning. Begge svar kan vise HTTP 404 eller den kendte Supabase-form med HTTP 400 med `statusCode: "404"` og `code: "NoSuchBucket"`. Forkert lagerpolitik, adgangsafslag, ukendt transportfejl og uforenelige svar stopper genlæsningen. R2-kopien skal matche det forseglede arkiv og den uændrede centrale reference. Det normale forløb viser en kort kvittering for kopiering eller faktisk genlæsning fra R2. Kildekvalifikation og test af den hostede genlæsning med primær Storage afskåret udestår. De historiske, urefererede objekter, vejrarkivet og databasepointeren kræver særskilte beviser.
+
 ## 25. november — skeln mellem udgivelse og efterfølgende læsefejl
 
 Vejrkørsel #395 udgav den præcise gemte prognose, men mistede den afsluttende kvittering ved HTTP 503 på en delingsfil. Genoptagelse #13 afsluttede den samme udgivelse. Den lokale rettelse udvider læsekontrollen med ét forsinket genforsøg for HTTP 502, 503 og 504. Samme fil, prognose og model kontrolleres fortsat. Faktisk virkning af den nye kode skal følges i det normale forløb.
