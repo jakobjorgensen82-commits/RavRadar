@@ -1103,7 +1103,7 @@ test('closed ordinary phase retires only its authenticated unchanged-model defau
 // Real normal clients and SigV4 slot transport; only the HTTP boundary is synthetic.
 function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRow=null}={}) {
   const primary=primaryMap,slots=new Map(),events=[],unexpected=[],statuses=[],pending=[];
-  let row=initialRow,primaryFailure=null,r2Failure=false,nextPut=null,lateCas=null,nextCas=null,pointerHang=false,bucketHang=false,foreignBytes=0;
+  let row=initialRow,primaryFailure=null,primaryBucketRead=null,r2Failure=false,nextPut=null,lateCas=null,nextCas=null,pointerHang=false,bucketHang=false,foreignBytes=0;
   const bucket=policy.bucketId,base='https://synthetic.supabase.co';
   const readPath='/storage/v1/object/authenticated/'+bucket+'/',writePath='/storage/v1/object/'+bucket+'/';
   const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -1130,8 +1130,11 @@ function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRo
         if(nextCas==='after'){nextCas=null;apply();throw Error('SYNTHETIC_LOST_CAS_ACK');}
         return Response.json(apply());
       }
-      if(u.pathname==='/storage/v1/bucket/'+bucket)return Response.json({id:bucket,name:bucket,
-        public:false,file_size_limit:PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,allowed_mime_types:['application/gzip']});
+      if(u.pathname==='/storage/v1/bucket/'+bucket&&method==='GET'){
+        events.push('primary-bucket-get');
+        return primaryBucketRead ? primaryBucketRead() : Response.json({id:bucket,name:bucket,
+          public:false,file_size_limit:PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,allowed_mime_types:['application/gzip']});
+      }
       if(u.pathname.startsWith(readPath)&&method==='GET'){
         events.push('primary-get');if(primaryFailure instanceof Error)throw primaryFailure;
         if(primaryFailure!==null){
@@ -1186,7 +1189,8 @@ function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRo
     operationMs,onReplicaStatus:status=>statuses.push(status),slotsFactory:(fetchBound,delayImpl)=>createOperationalEvidenceR2Slots({
       accountId:'a'.repeat(32),accessKeyId:'synthetic-id',secretAccessKey:'synthetic-secret',bucketId:bucket,fetchImpl:fetchBound,delayImpl})});
   return {clients,primary,slots,events,statuses,decode,rawFetch:fetchImpl,setForeignBytes:value=>{foreignBytes=value;},hangBucket:value=>{bucketHang=value;},hangReplicaPointer:value=>{pointerHang=value;},row:()=>clone(row),setRow:value=>{row=clone(value);},
-    failPrimary:value=>{primaryFailure=value;},failR2:value=>{r2Failure=value;},nextPut:value=>{nextPut=value;},
+    failPrimary:value=>{primaryFailure=value;},setPrimaryBucketRead:value=>{primaryBucketRead=value;},
+    failR2:value=>{r2Failure=value;},nextPut:value=>{nextPut=value;},
     nextCas:value=>{nextCas=value;},releaseCas:()=>{const apply=lateCas;lateCas=null;return apply();},
     releasePuts:()=>pending.splice(0).map(apply=>apply()),check:()=>assert.deepEqual(unexpected,[])};
 }
@@ -1217,6 +1221,57 @@ test('operational slots restore exact gzip on authenticated Storage 404 or the o
         assert.deepEqual(await fs.readFile(path.join(restored,file)),await fs.readFile(path.join(directory,file)));
       }
     }
+    const restore = name => restoreProtectedOperationalEvidence({
+      directory: path.join(work, name), deploymentId: built.descriptor.deploymentId, repository,
+      request: t.clients.documentRequest, storage: t.clients.storage,
+    });
+    const missingBucketStatus = () => new Response('', { status: 404 });
+    for (const [name, metadataResponse, objectResponse] of [
+      ['whole-bucket-missing', missingBucketStatus, legacyMissingBucket('404')],
+      ['whole-bucket-missing-legacy', legacyMissingBucket('404'), null],
+    ]) {
+      t.setPrimaryBucketRead(metadataResponse);
+      t.failPrimary(objectResponse);
+      const beforeWholeBucketRestore = t.events.length;
+      assert.equal((await restore(name)).restored, true);
+      assert.equal(t.statuses.at(-1), 'OPERATIONAL_REPLICA_BUCKET_RESTORE_VERIFIED');
+      assert.deepEqual(t.events.slice(beforeWholeBucketRestore),
+        ['primary-bucket-get', 'primary-get', ...Array(6).fill('r2-GET')]);
+      for (const file of await fs.readdir(directory)) {
+        assert.deepEqual(await fs.readFile(path.join(work, name, file)),
+          await fs.readFile(path.join(directory, file)));
+      }
+    }
+
+    t.setPrimaryBucketRead(missingBucketStatus);
+    t.failPrimary(403);
+    let beforeRejected = t.events.length;
+    await assert.rejects(restore('missing-bucket-denied-object'));
+    assert.deepEqual(t.events.slice(beforeRejected), ['primary-bucket-get', 'primary-get']);
+    t.failPrimary(null);
+    t.primary.set(built.descriptor.objectPath, built.archive);
+    beforeRejected = t.events.length;
+    await assert.rejects(restore('contradictory-bucket'), /bucket changed during restore/);
+    assert.deepEqual(t.events.slice(beforeRejected), ['primary-bucket-get', 'primary-get']);
+    t.primary.delete(built.descriptor.objectPath);
+    t.failPrimary(legacyMissingBucket('404'));
+    const rejectedBucketReads = [
+      ['bucket-authorization', () => new Response('', { status: 403 })],
+      ['bucket-unknown', () => new Response('', { status: 400 })],
+      ['bucket-transport', () => { throw new Error('SYNTHETIC_BUCKET_TRANSPORT'); }],
+      ['bucket-public', () => Response.json({
+        id: policy.bucketId, name: policy.bucketId, public: true,
+        file_size_limit: PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,
+        allowed_mime_types: ['application/gzip'],
+      })],
+    ];
+    for (const [name, response] of rejectedBucketReads) {
+      t.setPrimaryBucketRead(response);
+      beforeRejected = t.events.length;
+      await assert.rejects(restore(name));
+      assert(t.events.slice(beforeRejected).every(event => event === 'primary-bucket-get'));
+    }
+    t.setPrimaryBucketRead(null);
     for(const failure of [400,401,403,500,new Error('synthetic404',{cause:{status:404}}),
       legacyMissingBucket(404),legacyMissingBucket('404','NoSuchKey'),legacyMissingBucket('403'),
       legacyMissingBucket('404','NoSuchBucket',403),legacyMissingBucket('404','AccessDenied'),

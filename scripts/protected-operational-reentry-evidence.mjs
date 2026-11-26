@@ -440,10 +440,10 @@ async function decodeArchive(archive, descriptor, policy) {
 // No message/status-shaped error supplied by a caller can mint this type.
 class OperationalEvidenceStorageNotFound extends Error {}
 
-async function isLegacyMissingOperationalBucket(response) {
+async function isLegacyMissingOperationalBucket(response, { preserveBody = false } = {}) {
   const type = response.headers.get('content-type') ?? '';
   if (response.status !== 400 || !/^application\/json(?:\s*;|$)/i.test(type)) return false;
-  const reader = response.body?.getReader();
+  const reader = (preserveBody ? response.clone() : response).body?.getReader();
   if (!reader) return false;
   const chunks = [];
   let bytes = 0;
@@ -541,8 +541,8 @@ export function createProtectedOperationalEvidenceClients({
       +encodeURIComponent(PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.bucketId)+'/'+objectPath;
     const reader=client(async(url,options)=>{
       missing = false;
-      const response=await fetchBound(url,options);
-      if(url===expected&&(options?.method??'GET')==='GET'){
+      const response=await fetchBound(url,{...options,redirect:'error'});
+      if(url===expected&&(options?.method??'GET')==='GET'&&!response.redirected){
         missing = response.status === 404 || await isLegacyMissingOperationalBucket(response);
       }
       return response;
@@ -640,10 +640,34 @@ export function createProtectedOperationalEvidenceClients({
       try{onReplicaStatus(status);}catch{}return {status}; // Replica trouble never changes primary publication.
     }
   }
-  async function download(objectPath) {
-    try{return await readPrimary(objectPath);}catch(error){
-      if(!(error instanceof OperationalEvidenceStorageNotFound))throw error;
-      return withinBudget(async({remote,check,pointerRequest})=>{
+  async function restoreBucketExists() {
+    const bucketUrl = supabaseUrl.replace(/\/$/, '') + '/storage/v1/bucket/'
+      + encodeURIComponent(PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.bucketId);
+    let missing = false;
+    const reader = client(async (url, options) => {
+      missing = false;
+      const response = await fetchImpl(url, { ...options, redirect: 'error' });
+      missing = url === bucketUrl && (options?.method ?? 'GET') === 'GET'
+        && !response.redirected
+        && (response.status === 404 || await isLegacyMissingOperationalBucket(response, { preserveBody: true }));
+      return response;
+    });
+    try {
+      await reader.storage.ensurePrivateBucket({ allowCreate: false });
+      return true;
+    } catch (error) {
+      if (!missing) throw error;
+      return false;
+    }
+  }
+
+  async function download(objectPath, { bucketExists = true } = {}) {
+    let archive;
+    try {
+      archive = await readPrimary(objectPath);
+    } catch (error) {
+      if (!(error instanceof OperationalEvidenceStorageNotFound)) throw error;
+      const replica = await withinBudget(async({remote,check,pointerRequest})=>{
         const row=await readPointer(pointerRequest,{allowMissing:false,policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
         const descriptor=retainedDescriptors(row.payload).find(d=>d.objectPath===objectPath);
         if(!descriptor)throw new Error('OPERATIONAL_SLOT_NOT_REFERENCED');
@@ -653,9 +677,17 @@ export function createProtectedOperationalEvidenceClients({
         if(!same(row,fresh))throw new Error('OPERATIONAL_REPLICA_REFERENCE_CHANGED');
         check();return Buffer.from(slot.archive);
       });
+      try {
+        onReplicaStatus(bucketExists ? 'OPERATIONAL_REPLICA_OBJECT_RESTORE_VERIFIED'
+          : 'OPERATIONAL_REPLICA_BUCKET_RESTORE_VERIFIED');
+      } catch {}
+      return replica;
     }
+    if (!bucketExists) throw new Error('Operational evidence bucket changed during restore');
+    return archive;
   }
   return {documentRequest:primary.documentRequest,storage:Object.freeze({...primary.storage,download,
+    downloadForRestore: async objectPath => download(objectPath, { bucketExists: await restoreBucketExists() }),
     prepareReplica:({request,row,incoming})=>maintain({request,row,incoming}),
     // Only a newly verified normal pointer-CAS caller invokes this method. A GET
     // or no-op publication grants no authority to reuse another descriptor's slot.
@@ -927,8 +959,13 @@ export async function restoreProtectedOperationalEvidence({
   if (repository !== null && descriptor.repository !== repository) {
     throw new Error('Protected operational evidence belongs to another repository');
   }
-  await storage.ensurePrivateBucket();
-  const archive = await storage.download(descriptor.objectPath);
+  let archive;
+  if (typeof storage.downloadForRestore === 'function') {
+    archive = await storage.downloadForRestore(descriptor.objectPath);
+  } else {
+    await storage.ensurePrivateBucket({ allowCreate: false });
+    archive = await storage.download(descriptor.objectPath);
+  }
   const files = await decodeArchive(archive, descriptor, policy);
   const destination = path.resolve(directory);
   const existing = await fs.lstat(destination).catch(() => null);
@@ -2200,7 +2237,12 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   // Supabase remains primary. Six bounded R2 slots copy the exact sealed bytes;
   // an optional replica refusal cannot grant or block a primary publication.
-  const clients = createProtectedOperationalEvidenceClients();
+  const clients = createProtectedOperationalEvidenceClients({
+    onReplicaStatus: status => {
+      if (status === 'OPERATIONAL_REPLICA_OBJECT_RESTORE_VERIFIED'
+        || status === 'OPERATIONAL_REPLICA_BUCKET_RESTORE_VERIFIED') console.log(status);
+    },
+  });
   const own = () => phaseOwner({repository:process.env.GITHUB_REPOSITORY,runId:Number(process.env.GITHUB_RUN_ID),
     runAttempt:Number(process.env.GITHUB_RUN_ATTEMPT),headSha:process.env.GITHUB_SHA,
     attemptId:options.deploymentId??('pages-recovery-'+process.env.GITHUB_RUN_ID+'-'+process.env.GITHUB_RUN_ATTEMPT)});
@@ -2268,6 +2310,12 @@ async function main() {
       storage: clients.storage,
     });
   await writeJsonAtomic(options.output, result);
+  if (result.replica) {
+    console.log('OPERATIONAL_REPLICA_PUBLICATION ' + JSON.stringify({
+      published: result.published,
+      ...result.replica,
+    }));
+  }
   if(options.mode==='begin-terminal-pre-activation')console.log('Resumed the prepared historical BEGIN with its original target and actual repair executor.');
   else console.log(`${options.mode === 'publish' ? 'Published' : 'Restored'} protected operational evidence.`);
 }

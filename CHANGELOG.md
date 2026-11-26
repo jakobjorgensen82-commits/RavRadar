@@ -12,7 +12,7 @@
 
 ## Drift — lokal R2-kopi af forseglede genoptagelsesbeviser
 
-- Forbered seks private R2-pladser til bytepræcise kopier af de driftsbeviser, som den aktuelle genoptagelse kan bruge. Supabase er primær. Reservelæsning kræver HTTP 404 eller det observerede Supabase-svar HTTP 400 med `statusCode: "404"` og `code: "NoSuchBucket"`, samt samme verificerede arkiv og central reference. Kildekvalifikation og hosted gendannelsesprøve udestår.
+- Forbered seks private R2-pladser til bytepræcise kopier af de driftsbeviser, som den aktuelle genoptagelse kan bruge. Den normale genlæsning undersøger Supabase-lageret skrivefrit og kan hente den eksakte R2-kopi, når det autentificerede objektsvar bekræfter fravær. Kvitteringen viser, når en R2-kopi er genlæst. Kildekvalifikation og hosted gendannelsesprøve udestår.
 
 ## Drift — genlæsning af råcachekvitteringen
 
