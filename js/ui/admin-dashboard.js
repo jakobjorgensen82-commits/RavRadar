@@ -319,6 +319,18 @@ async function loadPriorityWaterStationAdminData(){
  }
 }
 
+async function loadPointStagingStatus(){
+ const unavailable=readState=>({schemaVersion:null,entries:[],available:false,readState});
+ if(!centralAdminStorageEnabled())return unavailable('read-unavailable');
+ try{
+  const row=await readAdminDocumentNow('coastal-point-staging-status');
+  // An authenticated empty response can also reflect visibility restrictions.
+  // It is not proof of a global absence or a verified empty candidate list.
+  if(row===null)return unavailable('no-visible-row');
+  return Array.isArray(row?.payload?.entries)?row.payload:unavailable('invalid-payload');
+ }catch{return unavailable('read-unavailable');}
+}
+
 async function boot(){
  if(!authEnabled()||!currentSession()?.access_token){location.replace('./');return;}
  const gate=document.querySelector('.admin-auth-gate');
@@ -336,7 +348,7 @@ async function boot(){
  const coastlineDrafts=refreshAdminCoastlineDrafts();
  const diagnostics=(async()=>{
   const [health,runtime,stationRoutingAudit,oceanDiagnostics,cacheAudit,implementationAudit,pointStagingStatus]=await Promise.all([
-   loadAdminDocument('weather-health',null).catch(()=>null),loadAdminDocument('runtime-diagnostics',null).catch(()=>null),loadAdminDocument('water-station-routing-audit',null).catch(()=>null),loadAdminDocument('ocean-diagnostics',null).catch(()=>null),loadAdminDocument('cache-audit',null).catch(()=>null),loadAdminDocument('implementation-audit',null).catch(()=>null),loadAdminDocument('coastal-point-staging-status',{schemaVersion:null,entries:[],available:false}).catch(()=>({schemaVersion:null,entries:[],available:false}))]);
+   loadAdminDocument('weather-health',null).catch(()=>null),loadAdminDocument('runtime-diagnostics',null).catch(()=>null),loadAdminDocument('water-station-routing-audit',null).catch(()=>null),loadAdminDocument('ocean-diagnostics',null).catch(()=>null),loadAdminDocument('cache-audit',null).catch(()=>null),loadAdminDocument('implementation-audit',null).catch(()=>null),loadPointStagingStatus()]);
   const runtimeDetails=runtime?await decodeRuntimeDiagnosticsEnvelope(runtime).catch(()=>null):null;if(!current())return;
   state.health=health;state.runtime=runtime;state.runtimeDetails=runtimeDetails;state.stationRoutingAudit=stationRoutingAudit;state.oceanDiagnostics=oceanDiagnostics;state.cacheAudit=cacheAudit;state.implementationAudit=implementationAudit;state.pointStagingStatus=Array.isArray(pointStagingStatus?.entries)?pointStagingStatus:{schemaVersion:null,entries:[],available:false};updateAdminOverviewReadiness();updatePendingAdminWeather();
   const remoteReviews=await loadAdminDocument('direction-reviews',{zones:directionReviews()});if(!current())return;
@@ -685,7 +697,13 @@ function renderDirectionAudit(){
 }
 
 function mountAdminDirectionEditor(host){
- destroyPartDirectionEditor=createDirectionEditor(host,{zones:state.zones,coastalParts:state.coastalParts,reviews:directionReviews(),pointStagingStatus:state.pointStagingStatus,saveNow:saveDirectionReviewsNow,saveDraft:saveDirectionReviews});if(state.pointStagingStatus?.available===false)host.insertAdjacentHTML('afterbegin','<article class="admin-card status-warning"><h2>Kandidatstatus er utilgængelig</h2><p>Den beskyttede valideringsstatus kunne ikke hentes. Ingen punktændring kan derfor aktiveres fra denne visning.</p></article>');
+ destroyPartDirectionEditor=createDirectionEditor(host,{zones:state.zones,coastalParts:state.coastalParts,reviews:directionReviews(),pointStagingStatus:state.pointStagingStatus,saveNow:saveDirectionReviewsNow,saveDraft:saveDirectionReviews});
+ if(state.pointStagingStatus?.available===false){
+  const readState=state.pointStagingStatus.readState;
+  const title=readState==='no-visible-row'?'Ingen synlig kandidatstatus':readState==='invalid-payload'?'Kandidatstatus har ukendt format':'Kandidatstatus er utilgængelig';
+  const detail=readState==='no-visible-row'?'Den centrale læsning lykkedes, men gav ingen synlig statusrække. Status kan være ikke oprettet eller ikke synlig for denne adgang. Det bekræfter ikke, at der ingen kandidater er.':readState==='invalid-payload'?'Formatet på kandidatstatus kunne ikke bekræftes.':'Den beskyttede valideringsstatus kunne ikke hentes.';
+  host.insertAdjacentHTML('afterbegin',`<article class="admin-card status-warning"><h2>${title}</h2><p>${detail} Ingen punktændring kan derfor aktiveres fra denne visning.</p></article>`);
+ }
 }
 
 function renderObservations(){
