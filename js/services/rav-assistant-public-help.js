@@ -101,6 +101,12 @@ const FORMS={
     en:/^(?:can (?:currents?|the current) move amber|can amber(?: accumulations)? (?:shift|move)) between (?:two )?sandbars(?: without (?:new|fresh) wash)?(?:(?:,? and |[?.] )what can i (?:observe|see) from the beach(?: to notice it)?)?$/iu,
   },
 };
+// Both clauses compare a landing point with the area covered by the forecast.
+const LANDING_PRECISION_COMPARISON={
+  da:/^kan (?:du|ravradar) forudsige præcis,? hvor (?:rav(?:et)?|et ravstykke) skyller (?:op|i land),? eller gælder (?:prognosen|vurderingen) kun (?:for )?(?:zonen|kystområdet|kyststrækningen)$/iu,
+  de:/^(?:kann ravradar|kannst du) genau vorhersagen,? (?:wo|an welcher stelle (?:am strand|eines strandes)) bernstein angespült wird,? oder gilt (?:die einschätzung|die prognose) nur für (?:den küstenabschnitt|die zone)$/iu,
+  en:/^can (?:you|ravradar) predict exactly where (?:amber|a piece of amber) will wash (?:ashore|up)(?: on (?:the beach|a beach))?,? or is the (?:estimate|forecast) only for (?:the|a) (?:coastal area|stretch of coast|zone)$/iu,
+};
 const WATER={
   da:/^(?:(?:er det bedst(?: til ravjagt)? (?:med|ved)|hvad er bedst(?: til ravjagt)?,?) (?:(?:højvande|højt vand)(?: eller (?:lavvande|lavt vand|lav))?|(?:lavvande|lavt vand)(?: eller (?:højvande|højt vand|høj))?)|er (?:højvande eller lavvande|lavvande eller højvande) bedst(?: til ravjagt)?)$/iu,
   de:/^(?:ist (?:hochwasser oder niedrigwasser|niedrigwasser oder hochwasser) (?:für die bernsteinsuche )?besser|ist es (?:bei hochwasser oder niedrigwasser|bei niedrigwasser oder hochwasser) besser)$/iu,
@@ -132,7 +138,7 @@ const UV_FLUORESCENCE={
 };
 const NAMED_EQUIPMENT={
   da:/^er (?:en|et) rav[- ]?[\p{L}\p{N}-]{0,35}(?:scanner|skanner|sensor|måler|apparat|instrument) et (?:rigtigt|reelt) (?:værktøj|redskab|instrument) til (?:at finde rav|ravjagt)$/iu,
-  de:/^ist (?:ein|eine) bernstein[- ]?[\p{L}\p{N}-]{0,35}(?:scanner|sensor|messgerät|messer|instrument) ein (?:echtes|reales) (?:werkzeug|gerät|instrument) (?:zur bernsteinsuche|um bernstein zu finden)$/iu,
+  de:/^ist (?:ein|eine) (?:bernstein|rav)[- ]?[\p{L}\p{N}-]{0,35}(?:scanner|sensor|messgerät|messer|instrument) ein (?:echtes|reales) (?:werkzeug|gerät|instrument) (?:zur bernsteinsuche|um bernstein zu finden)$/iu,
   en:/^is (?:an?|the) amber (?:(?!(?:and|or|but|with)\b)[\p{L}\p{N}-]{1,30} ){0,3}(?:scanner|sensor|gauge|meter|detector|instrument) a (?:real|actual) (?:tool|device|instrument) (?:for finding amber|for amber hunting|to find amber)$/iu
 };
 const COMPOUND={da:/^hvad er (?:(?:en|et|den|det) )?(rav[\p{L}-]+)$/iu,de:/^was ist (?:(?:ein|eine|der|die|das) )?(bernstein[\p{L}-]+)$/iu,en:/^what is (?:(?:a|an|the) )?(amber[\p{L}-]+)$/iu};
@@ -212,6 +218,43 @@ function amberBubbleHelp(text, language) {
 
   const answer = units.join('\n\n');
   return answer.length <= 900 ? {kind:'local-public-help', id:'amber-bubble-identification', answer} : null;
+}
+
+// Both actions and the cracks must refer to the same find. Leave other
+// methods and any additional request on the existing whole-question route.
+const CRACKED_AMBER_FORMS = {
+  da: [
+    /^hvordan kan (?:jeg|vi) (?:(?:undersøge|tjekke|teste) et (?:muligt )?ravfund skånsomt|skånsomt (?:undersøge|tjekke|teste) et (?:muligt )?ravfund) og (?:derefter |bagefter )?(?:opbevare|gemme) det,? (?:hvis|når) det (?:allerede )?har (?:små )?revner$/iu,
+    /^hvordan (?:undersøger|tjekker|tester) (?:jeg|vi) skånsomt et (?:muligt )?ravfund med (?:små )?revner og (?:opbevarer|gemmer) det (?:derefter|bagefter)$/iu,
+  ],
+  de: [
+    /^wie (?:lässt sich ein (?:möglicher )?|(?:kann|sollte) ich einen (?:möglichen )?)bernsteinfund schonend (?:prüfen|untersuchen) und (?:ihn )?(?:anschließend |danach )?(?:lagern|aufbewahren),? wenn er (?:bereits |schon )?(?:kleine )?risse hat$/iu,
+    /^wie (?:kann|sollte) ich einen (?:möglichen )?bernsteinfund mit (?:kleinen )?rissen schonend (?:prüfen|untersuchen) und (?:ihn )?(?:anschließend |danach )?(?:lagern|aufbewahren)$/iu,
+  ],
+  en: [
+    /^how (?:can|should|do) (?:i|we) (?:gently (?:check|examine|test) (?:a(?: possible)?|an) amber find|(?:check|examine|test) (?:a(?: possible)?|an) amber find gently) and (?:then )?(?:store|keep) it,? if it (?:already )?has (?:small )?cracks$/iu,
+    /^how (?:can|should|do) (?:i|we) (?:check|examine|test) and store (?:a(?: possible)?|an) amber find with (?:small )?cracks without damaging it$/iu,
+  ],
+};
+
+// Apply the cracked/fragile exception from the clean-with-water guidance.
+const CRACKED_AMBER_PRECAUTION = {
+  da: 'Spring skylning og gnidning over, når fundet har revner.',
+  de: 'Verzichte bei einem Fund mit Rissen auf Abspülen und Reiben.',
+  en: 'Skip rinsing and rubbing when the find is cracked.',
+};
+
+function crackedAmberHelp(text, language) {
+  if (!CRACKED_AMBER_FORMS[language].some(pattern => pattern.test(text))) return null;
+  const units = [
+    t('assistant.local.identification', {}, language),
+    CRACKED_AMBER_PRECAUTION[language],
+    localRavKnowledgeAnswer('Hvordan opbevarer jeg rav mørkt og stabilt?', language),
+    localRavKnowledgeAnswer('Skal rav opbevares separat og blødt?', language),
+  ];
+  if (!units.every(Boolean)) return null;
+  const answer = units.join('\n\n');
+  return answer.length <= 900 ? {kind:'local-public-help', id:'cracked-amber-care', answer} : null;
 }
 
 const FIND_IDENTIFICATION_FORMS = Object.freeze({
@@ -305,6 +348,8 @@ export function publicRavAssistantHelp(question,language,previousTopic=null){
   }
   const bubbles=amberBubbleHelp(text,language);
   if(bubbles)return bubbles;
+  const crackedAmber=crackedAmberHelp(text,language);
+  if(crackedAmber)return crackedAmber;
   const practical=practicalBeachEquipmentHelp(text,language);
   if(practical)return practical;
   if(UV_FLUORESCENCE_DAYLIGHT[language].test(text)){
@@ -312,6 +357,7 @@ export function publicRavAssistantHelp(question,language,previousTopic=null){
       answer:UV_FLUORESCENCE[language]+'\n\n'+ANSWERS.daylight[language]};
   }
   let id=Object.keys(FORMS).find(key=>FORMS[key][language].test(text));
+  if(!id&&LANDING_PRECISION_COMPARISON[language].test(text))id='landing-precision';
   if(!id&&WATER[language].test(text))id='water';
   if(!id&&(UV_DAYLIGHT[language].test(text)||UV_IDENTIFICATION_DAYLIGHT[language].test(text)))id='daylight';
   if(!id&&NAMED_EQUIPMENT[language].test(text))id='named-equipment';
