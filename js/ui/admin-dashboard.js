@@ -327,6 +327,7 @@ async function loadPointStagingStatus(){
   // An authenticated empty response can also reflect visibility restrictions.
   // It is not proof of a global absence or a verified empty candidate list.
   if(row===null)return unavailable('no-visible-row');
+  if(row?.payload?.available===false)return unavailable('read-unavailable');
   return Array.isArray(row?.payload?.entries)?row.payload:unavailable('invalid-payload');
  }catch{return unavailable('read-unavailable');}
 }
@@ -701,8 +702,8 @@ function mountAdminDirectionEditor(host){
  if(state.pointStagingStatus?.available===false){
   const readState=state.pointStagingStatus.readState;
   const title=readState==='no-visible-row'?'Ingen synlig kandidatstatus':readState==='invalid-payload'?'Kandidatstatus har ukendt format':'Kandidatstatus er utilgængelig';
-  const detail=readState==='no-visible-row'?'Den centrale læsning lykkedes, men gav ingen synlig statusrække. Status kan være ikke oprettet eller ikke synlig for denne adgang. Det bekræfter ikke, at der ingen kandidater er.':readState==='invalid-payload'?'Formatet på kandidatstatus kunne ikke bekræftes.':'Den beskyttede valideringsstatus kunne ikke hentes.';
-  host.insertAdjacentHTML('afterbegin',`<article class="admin-card status-warning"><h2>${title}</h2><p>${detail} Ingen punktændring kan derfor aktiveres fra denne visning.</p></article>`);
+  const detail=readState==='no-visible-row'?'Databasen svarede uden at vise en kandidatstatus for din konto.':readState==='invalid-payload'?'Formatet på kandidatstatus kunne ikke bekræftes.':'Den beskyttede valideringsstatus kunne ikke hentes.';
+  host.insertAdjacentHTML('afterbegin',`<article class="admin-card status-warning"><h2>${title}</h2><p>${detail} Aktivering af en punktændring kræver en bekræftet kandidatstatus.</p></article>`);
  }
 }
 

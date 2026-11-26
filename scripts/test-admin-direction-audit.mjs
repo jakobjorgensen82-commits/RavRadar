@@ -13,8 +13,7 @@ if(js.includes('ravradar-runtime-diagnostics.json?t=${Date.now()}'))throw new Er
 if(!js.includes("allowed('diagnostics_download')")||!js.includes('decodeRuntimeDiagnosticsEnvelope(state.runtime)')||!js.includes("download('ravradar-runtime-diagnostics.json',runtime)"))throw new Error('Admin mangler rettighedskontrolleret og verificeret download af beskyttet runtime');
 for(const required of ['loadVerifiedPublicRuntime','loadDataManifest','loadConditions({manifest})','loadZones({manifest})'])if(!js.includes(required))throw new Error(`Admin bruger ikke den manifest- og hashverificerede offentlige runtimekæde: ${required}`);
 if(!js.includes('runtime.zones.coastalParts'))throw new Error('Admin skal udpakke den hashverificerede kystdelspakke fra loadZones-resultatet');
-if(!js.includes("loadAdminDocument('coastal-point-staging-status'"))throw new Error('Admin henter ikke kandidatstatus gennem den beskyttede dokumentport');
-if(!js.includes('Kandidatstatus er utilgængelig')||!js.includes('Ingen punktændring kan derfor aktiveres'))throw new Error('Manglende beskyttet kandidatstatus skal vises og blokere aktivering fail-closed');
+// The normal protected status read and activation refusal run through the admin bootstrap test.
 for(const forbidden of [
  "getJson('./data/live/conditions.json')",
  'data/live/conditions.json?t=',

@@ -761,7 +761,7 @@ async function pointStagingReadStates(){
  const editor=fs.readFileSync('js/ui/admin-direction-editor.js','utf8');
  const approve=editor.split('\n').find(line=>line.includes("host.querySelector('#directionApprove').onclick=async()=>"));
  assert(approve,'the normal activation handler must exist');
- for(const mode of ['no-visible-row','stale-cache','read-denied','transport-error','invalid-response','invalid-payload','disabled','empty-document','ready-document']){
+ for(const mode of ['no-visible-row','stale-cache','read-denied','transport-error','invalid-response','invalid-payload','explicitly-unavailable','disabled','empty-document','ready-document']){
   const x=normalCaller({initialPublicReject:false}),memory=new Map();let statusReads=0;
   const ready={schemaVersion:1,available:true,entries:[{zoneId:'one',revision:'synthetic',status:'ready-for-activation'}]};
   const payload=mode==='empty-document'?{schemaVersion:1,available:true,entries:[]}:ready;
@@ -774,7 +774,8 @@ async function pointStagingReadStates(){
     statusReads++;
     if(mode==='transport-error')throw Error('synthetic transport rejection');
     if(mode==='read-denied')return{response:{ok:false,status:403},body:[]};
-    const body=mode==='invalid-response'?{}:(mode==='no-visible-row'||mode==='stale-cache')?[]:[{payload:mode==='invalid-payload'?{entries:null}:payload}];
+    const document=mode==='invalid-payload'?{entries:null}:mode==='explicitly-unavailable'?{...ready,available:false}:payload;
+    const body=mode==='invalid-response'?{}:(mode==='no-visible-row'||mode==='stale-cache')?[]:[{payload:document}];
     return{response:{ok:true},body};
    },
   };
@@ -797,8 +798,8 @@ async function pointStagingReadStates(){
   }else{
    assert.equal(status.available,false);assert.equal(status.entries.length,0);
    assert.equal(status.readState,(mode==='no-visible-row'||mode==='stale-cache')?'no-visible-row':mode==='invalid-payload'?'invalid-payload':'read-unavailable');
-   assert(notice.includes('Ingen punktændring kan derfor aktiveres'));
-   if(mode==='no-visible-row'||mode==='stale-cache'){assert(notice.includes('Ingen synlig kandidatstatus'));assert(notice.includes('ikke oprettet eller ikke synlig'));assert(!notice.includes('kunne ikke hentes'));}
+   assert(notice.includes('Aktivering af en punktændring kræver en bekræftet kandidatstatus'));
+   if(mode==='no-visible-row'||mode==='stale-cache'){assert(notice.includes('Ingen synlig kandidatstatus'));assert(notice.includes('Databasen svarede uden at vise en kandidatstatus'));assert(!notice.includes('kunne ikke hentes'));}
    else if(mode==='invalid-payload')assert(notice.includes('Formatet på kandidatstatus kunne ikke bekræftes'));
    else assert(notice.includes('Den beskyttede valideringsstatus kunne ikke hentes'));
   }
