@@ -4,7 +4,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as pause } from 'node:timers/promises';
-import { CADENCE_ACTIVE_STATES, readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
+import { CADENCE_ACTIVE_STATES, readCacheIndependentValidationRuns, readWeatherCadenceGithub }
+  from './read-weather-cadence-github.mjs';
 import { DMI_PRODUCER_JOB } from './lib/terminal-dmi-cache.mjs';
 import { WEATHER_FAILURE_OWNER } from './notify-weather-failure.mjs';
 
@@ -233,7 +234,7 @@ function sameOwnerWorkflow(priorHead, headSha) {
   } catch { return false; }
 }
 
-function ownerOrderReadersClear({ requestId, headSha, activity }) {
+function ownerOrderReadersClear({ requestId, headSha, activity, independentValidationRuns }) {
   if (!Array.isArray(activity) || activity.length !== CADENCE_ACTIVE_STATES.length) return false;
   const observed = new Set();
   for (const [index, status] of CADENCE_ACTIVE_STATES.entries()) {
@@ -247,10 +248,19 @@ function ownerOrderReadersClear({ requestId, headSha, activity }) {
       if (String(row.id) === requestId && row.path === WATCHDOG_PATH && row.head_sha === headSha
         && row.head_branch === 'main' && row.status === 'in_progress' && row.run_attempt === 1) continue;
       if (row.path === LEGACY_PATH && row.head_branch === 'main' && isInertLegacyQueue(row)) continue;
+      if (independentValidationRuns?.has(row.id)) continue;
       return false;
     }
   }
   return observed.has(Number(requestId));
+}
+
+function readIndependentValidationRuns(activity, read) {
+  return readCacheIndependentValidationRuns({
+    runs: activity.flatMap(document => document?.workflow_runs ?? []),
+    repository: REPOSITORY,
+    readWorkflowFile: workflowRef => read({kind: 'source-validation-workflow-file', workflowRef}),
+  });
 }
 
 export function assessWeatherCadenceWatchdog({
@@ -348,9 +358,10 @@ export async function inspectRawReaderRetry({ failedRunId, requestId, headSha, w
         read({ kind: 'recovery-jobs', recoveryRunId: failedRunId }),
         ...CADENCE_ACTIVE_STATES.map(activeRunStatus => read({ kind: 'owner-active-runs', activeRunStatus })),
       ]);
+      const independentValidationRuns = await readIndependentValidationRuns(activity, read);
       if (clock() >= cutoffMs) return no('owner-weather-order-window-closed');
       const result = assessWeatherCadenceWatchdog({ normalRuns, manualRuns: freshManual, nowMs: clock(),
-        ownerOrder: { failedRunId, requestId, headSha, history, rawReaderJobs, activity } });
+        ownerOrder: { failedRunId, requestId, headSha, history, rawReaderJobs, activity, independentValidationRuns } });
       if (!waitForReaders || result.reason !== 'owner-weather-order-actions-active-or-unproved') return result;
     } else if (!waitForReaders || source.status !== 'in_progress' || source.conclusion !== null) {
       return no('raw-reader-retry-source-not-terminal');
@@ -423,7 +434,9 @@ async function main() {
     ]);
     normalRuns = freshNormal;
     manualRuns = freshManual;
-    ownerOrder = { failedRunId, requestId, headSha, history, activity, priorJobs, samePriorWorkflow };
+    const independentValidationRuns = await readIndependentValidationRuns(activity, read);
+    ownerOrder = { failedRunId, requestId, headSha, history, activity, priorJobs, samePriorWorkflow,
+      independentValidationRuns };
   }
   let recoveryHandoff;
   if (sourceId) {

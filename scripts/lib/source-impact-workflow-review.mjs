@@ -140,15 +140,25 @@ export function hasDependencyOnlySourceSetup(value){
 // Current source execution is checked by its actual read-only job, critical
 // entrypoints and ordered source/PG/upload evidence. It is not projected into
 // a historical whole-workflow hash or a claim to the old blanket self-tests.
+export function verifyReadOnlySourceWorkflowHeader(source){
+  const cacheDisabled=/^cache-mode: none$/m.test(source);
+  assert.deepEqual(source.match(/^[a-z][a-z-]*:/gm),
+    ['name:','on:',...(cacheDisabled?['cache-mode:']:[]),'permissions:','concurrency:','jobs:']);
+  assert.match(source,/\non:\n  pull_request:\n\n(?:cache-mode: none\n\n)?permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n\nconcurrency:/);
+  const keys=source.split('\n').filter(line=>/^ {0,4}[^ #\t]/.test(line));
+  assert(keys.every(line=>/^ {0,4}[a-zA-Z][\w-]*:( |$)/.test(line)));
+  assert(!keys.some(line=>/^ {2}[\w-]+: *[\[{*&]/.test(line)));
+  assert.doesNotMatch(source,/^[ \t]+(?:cache-mode|permissions|continue-on-error|defaults|strategy|needs):|\bsecrets\.|:\s*write\b/m);
+  return cacheDisabled;
+}
+
 export function verifyCurrentSourceWorkflow(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
   const source=value.replace(/\r\n/g,'\n').replace(/^ *#[^\n]*\n/gm,'');
+  verifyReadOnlySourceWorkflowHeader(source);
   assert(hasDependencyOnlySourceSetup(source),'CURRENT_SOURCE_DEPENDENCY_ONLY_SETUP_REQUIRED');
-  assert.deepEqual(source.match(/^[a-z][a-z-]*:/gm),['name:','on:','permissions:','concurrency:','jobs:']);
-  assert.match(source,/\non:\n  pull_request:\n\npermissions:\n  contents: read\n  actions: read\n  pull-requests: read\n\nconcurrency:/);
   assert.match(source,/\njobs:\n  validate:\n    name: Source validation and release gate\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 180\n    steps:\n/);
   assert.deepEqual(source.slice(source.indexOf('\njobs:')).match(/^  \S[^\n]*:/gm),['  validate:']);
-  assert.doesNotMatch(source,/^[ \t]+(?:permissions|continue-on-error|defaults|strategy|needs):|\bsecrets\.|:\s*write\b/m);
   const rows=[...source.matchAll(/^      - (name|uses):([^\n]+)\n/gm)];
   const blocks=rows.map((row,index)=>source.slice(row.index,rows[index+1]?.index??source.length));
   const names=rows.map(row=>(row[1]==='uses'?'Run ':'')+row[2].trim());

@@ -1,3 +1,9 @@
+## 26. november — ret sammenblandingen af CI og aktive råcachelæsere
+
+- [x] #404 standsede efter den verificerede råcachegenlæsning og før DMI. Den tidsbegrænsede genoptagelse startede #405 automatisk, da køen var fri.
+- [x] Afgræns den normale PR-kontrol med GitHubs eksisterende cacheadgang og del den samme kontrol af tilknyttede workflowfiler mellem rotation og genforsøg. Afprøv uændret og ændret workflow, ukendt konfiguration og aktive rigtige læsere.
+- [ ] Verificér GitHubs cacheadgang i den normale PR-kontrol, og efterprøv samtidig vejrhentning og verificeret automatisk rotation.
+
 ## 26. november — vandstandsfiler, der kommer under den almindelige DMI-hentning
 
 - [x] Sammenhold #402 med den foregående prognose, den faktiske kørelog og DMI’s officielle katalog. De fire helt nye timer manglede vandstand. De relevante nye filer blev tilgængelige inden DMI-processens afslutning.

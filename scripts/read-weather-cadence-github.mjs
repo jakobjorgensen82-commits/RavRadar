@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // Only the watchdog's existing metadata GETs may retry. Dispatch is separate.
+import {createHash} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {verifyReadOnlySourceWorkflowHeader} from './lib/source-impact-workflow-review.mjs';
 
 const routes = {
   workflow: 'run-current-weather-once.yml',
@@ -16,13 +19,59 @@ const fail = (code, routeLabel) => {
 };
 export const CADENCE_ACTIVE_STATES = Object.freeze(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 
+export const PR_SOURCE_VALIDATION = '.github/workflows/validate-pull-request.yml';
+const COMMIT_SHA = /^[0-9a-f]{40}$/;
+
+async function readCacheDisabledValidationBlob() {
+  const bytes = await readFile(new URL('../' + PR_SOURCE_VALIDATION, import.meta.url));
+  const yaml = bytes.toString('utf8').replace(/\r\n/g, '\n').replace(/^ *#[^\n]*\n/gm, '');
+  if (!verifyReadOnlySourceWorkflowHeader(yaml)) return null;
+  return createHash('sha1').update('blob ' + bytes.length + '\0').update(bytes).digest('hex');
+}
+
+export async function readCacheIndependentValidationRuns({runs, repository, readWorkflowFile}) {
+  const independent = new Set();
+  if (typeof readWorkflowFile !== 'function') return independent;
+  const refs = new Map();
+  let expectedBlob;
+  for (const run of runs) {
+    if (run?.path !== PR_SOURCE_VALIDATION || run.event !== 'pull_request' || run.run_attempt !== 1
+        || !Array.isArray(run.referenced_workflows) || run.referenced_workflows.length !== 0) continue;
+    const pr = run.pull_requests?.length === 1 && run.pull_requests[0];
+    const repoId = run.repository?.id;
+    if (!Number.isSafeInteger(repoId) || repoId < 1 || run.repository.full_name !== repository
+        || run.head_repository?.id !== repoId || run.head_repository.full_name !== repository
+        || pr?.base?.repo?.id !== repoId || pr.base.ref !== 'main' || pr.head?.repo?.id !== repoId
+        || pr.head.ref !== run.head_branch || pr.head.sha !== run.head_sha
+        || !COMMIT_SHA.test(pr.head.sha ?? '') || !COMMIT_SHA.test(pr.base.sha ?? '')) continue;
+    try {
+      expectedBlob ??= readCacheDisabledValidationBlob();
+      const expected = await expectedBlob;
+      if (!expected) break;
+      const files = await Promise.all([pr.base.sha, pr.head.sha].map(ref => {
+        if (!refs.has(ref)) refs.set(ref, Promise.resolve().then(() => readWorkflowFile(ref)));
+        return refs.get(ref);
+      }));
+      // The pull_request event uses the merge revision. Both of its source
+      // commits must contain the same reviewed, cache-disabled workflow.
+      if (files.every(file => file?.type === 'file' && file.path === PR_SOURCE_VALIDATION
+          && file.sha === expected)) independent.add(run.id);
+    } catch {
+      // An unavailable workflow file leaves the run in the reader inventory.
+    }
+  }
+  return independent;
+}
+
 export async function readWeatherCadenceGithub({ kind, repository, token, recoveryRunId,
-  ownerOrdersSince, activeRunStatus, waitForInProgress = false,
+  ownerOrdersSince, activeRunStatus, workflowRef, waitForInProgress = false,
   request = fetch, wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) }) {
   const recovery = kind === 'recovery-jobs';
   const ownerOrders = kind === 'owner-orders';
   const activeRuns = kind === 'owner-active-runs';
-  if ((!recovery && !ownerOrders && !activeRuns && !Object.hasOwn(routes, kind))
+  const workflowFile = kind === 'source-validation-workflow-file';
+  if ((!recovery && !ownerOrders && !activeRuns && !workflowFile && !Object.hasOwn(routes, kind))
+    || (workflowFile ? !COMMIT_SHA.test(workflowRef ?? '') : workflowRef !== undefined)
     || (recovery ? !/^[1-9][0-9]{0,14}$/.test(recoveryRunId ?? '') : recoveryRunId !== undefined)
     || (ownerOrders ? !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(ownerOrdersSince ?? '') : ownerOrdersSince !== undefined)
     || (activeRuns ? !CADENCE_ACTIVE_STATES.includes(activeRunStatus) : activeRunStatus !== undefined)
@@ -36,7 +85,9 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
       + encodeURIComponent('>=' + ownerOrdersSince)
     : activeRuns ? 'runs?status=' + activeRunStatus + '&per_page=100'
     : `workflows/${routes[kind]}`;
-  const url = `https://api.github.com/repos/${repository}/actions/${route}`;
+  const url = workflowFile
+    ? `https://api.github.com/repos/${repository}/contents/${PR_SOURCE_VALIDATION}?ref=${workflowRef}`
+    : `https://api.github.com/repos/${repository}/actions/${route}`;
   const routeLabel = activeRuns ? `${kind}:${activeRunStatus}` : kind;
   const reject = code => fail(code, routeLabel);
   const counted = recovery || ownerOrders || activeRuns;
@@ -67,6 +118,7 @@ export async function readWeatherCadenceGithub({ kind, repository, token, recove
           if (document.state !== 'active') reject('WEATHER_CADENCE_READ_METADATA_REJECTED');
           return document;
         }
+        if (workflowFile) return document;
         const rows = recovery ? document.jobs : document.workflow_runs;
         if (!Array.isArray(rows) || rows.length > 100 || (counted &&
           (!Number.isSafeInteger(document.total_count) || document.total_count < 0 || document.total_count > 100))) {
