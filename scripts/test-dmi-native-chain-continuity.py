@@ -397,15 +397,15 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
             **producer.sampling_identity(source_zone), "hourly": {}, "gridPoints": {}, "collections": {},
         }
         old_saved["diagnostics"]["currentOperationalLedger"] = original_ledger.ledger
-        first_gap, next_gap, trend_only = sorted(tail)[:3]
-        plan = v2(water=(113, 114), trend=(115,))
+        gap_hours, trend_only = sorted(tail)[:4], max(tail)
+        plan = v2(water=(113, 114, 115, 116), trend=(117,))
         stages = producer.late_water_tail_value_gaps(
             collection, catalogues[collection], hours, plan, [ZONE, source_zone], old_saved["zones"],
         )
-        self.assertEqual(set(stages), {first_gap, next_gap})
+        self.assertEqual(set(stages), set(gap_hours))
         self.assertNotIn(trend_only, stages)
 
-        def late_context(result, controller, slots=1, facts=plan):
+        def late_context(result, controller, slots=2, facts=plan):
             return dict(vars(producer), collection_is_maintenance=True, late_water_tail_checked=False,
                         allow_first_turn_catalogue=True, qualified_scalar_gap_plan=facts,
                         collection_turns=[(collection, "native"), (collection, "maintenance")],
@@ -416,10 +416,11 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                         checkpoint_controller=controller, fresh_zone_ids=set())
 
         attempted_captures = []
+        attempted_times = []
 
         def synthetic_download(href, expected_size, budget, *, work_deadline, **details):
             self.assertEqual(work_deadline, producer.WORK_DEADLINE)
-            self.assertEqual(details["valid_time"], first_gap)
+            attempted_times.append(details["valid_time"])
             budget["bytes"] += 128
             attempted_captures.append({
                 **CAPTURE, "itemId": details["item_id"],
@@ -439,7 +440,7 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
         controller = Mock()
         controller.can_start_asset.return_value = True
         context = late_context(copy.deepcopy(old_saved), controller)
-        handles = iter(("sea-mean-deviation", "current-u", None))
+        handles = iter(("sea-mean-deviation", "current-u", None) * len(gap_hours))
         with (
             patch.object(producer.time, "monotonic", return_value=2500.0),
             patch.object(producer, "request_json", return_value=new_page) as request,
@@ -458,28 +459,32 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
             exec(late, context)
             exec(late, context)
         request.assert_called_once()
-        download.assert_called_once()
-        controller.note_committed_asset.assert_called_once()
-        self.assertEqual(context["primary_refresh_assets_remaining"], 0)
-        self.assertEqual(context["budget"]["bytes"], 128)
+        self.assertEqual(attempted_times, gap_hours)
+        self.assertEqual(download.call_count, len(gap_hours))
+        self.assertEqual(controller.note_committed_asset.call_count, len(gap_hours))
+        self.assertEqual(context["primary_refresh_assets_remaining"], 2)
+        self.assertEqual(context["budget"]["bytes"], 128 * len(gap_hours))
         self.assertEqual(context["prefetched_marine"], first)
         actual = context["result"]
         for target in [ZONE, source_zone]:
             current_hours = actual["zones"][target["id"]]["hourly"]
-            self.assertEqual(current_hours[first_gap]["sea-mean-deviation"], 0.4)
-            self.assertEqual(set(current_hours[first_gap]["sources"]), {"waterLevel"})
-            self.assertEqual(current_hours[first_gap]["sources"]["waterLevel"]["modelRun"],
-                             producer.canonical_time(next_model))
-            self.assertEqual({key: row for key, row in current_hours.items() if key != first_gap},
+            for gap_hour in gap_hours:
+                self.assertEqual(current_hours[gap_hour]["sea-mean-deviation"], 0.4)
+                self.assertEqual(set(current_hours[gap_hour]["sources"]), {"waterLevel"})
+                self.assertEqual(current_hours[gap_hour]["sources"]["waterLevel"]["modelRun"],
+                                 producer.canonical_time(next_model))
+            self.assertEqual({key: row for key, row in current_hours.items() if key not in gap_hours},
                              old_saved["zones"][target["id"]]["hourly"])
         self.assertEqual(actual["runs"], old_saved["runs"])
         self.assertEqual(actual["diagnostics"]["currentOperationalLedger"], original_ledger.ledger)
         after = producer.build_current_operational_ledger_result(actual, targets, reference, catalogues, preserved)
         self.assertEqual(after.ledger, original_ledger.ledger)
 
-        for slots, facts, remaining, expected_requests in (
-            (0, plan, True, 0), (1, None, True, 0), (1, v2(trend=(115,)), True, 0),
-            (1, plan, False, 0), (1, plan, True, 1),
+        normal_cap = producer.MAX_ASSETS_PER_COLLECTION
+        for slots, facts, remaining, cap, expected_requests in (
+            (0, plan, True, normal_cap, 1), (1, None, True, normal_cap, 0),
+            (1, v2(trend=(117,)), True, normal_cap, 0), (1, plan, False, normal_cap, 0),
+            (1, plan, True, len(catalogues[collection][1]), 0),
         ):
             controller = Mock()
             controller.can_start_asset.return_value = remaining
@@ -490,11 +495,13 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                 patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
                 patch.object(producer, "should_stop_work", return_value=False),
                 patch.object(producer, "progress"),
+                patch.object(producer, "MAX_ASSETS_PER_COLLECTION", cap),
                 patch.object(producer, "download_asset") as download,
             ):
                 exec(late, context)
             self.assertEqual(request.call_count, expected_requests)
             download.assert_not_called()
+            self.assertEqual(context["primary_refresh_assets_remaining"], slots)
             self.assertEqual(context["result"], old_saved)
 
 

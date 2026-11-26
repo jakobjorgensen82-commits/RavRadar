@@ -15359,12 +15359,20 @@ def late_water_tail_value_gaps(collection, catalogue, required_times, plan, zone
 
 def fill_late_water_tail(
     collection, catalogue, *, observed_at, reference, required_times, plan, zones,
-    result, bytes_per_original, budget, remaining_assets, checkpoint_controller, fresh_zone_ids,
+    result, bytes_per_original, budget, checkpoint_controller, fresh_zone_ids,
 ):
-    """Spend existing optional asset slots on water-level holes before upgrades."""
+    """Fill proven remaining water-level gaps inside the existing collection cap."""
     gaps = late_water_tail_value_gaps(collection, catalogue, required_times, plan, zones, result["zones"])
     if not gaps:
-        return 0
+        return
+    # Native, maintenance and the private replay use the same selected
+    # collection assets. Reserve the entire list, including unvisited originals.
+    remaining_assets = MAX_ASSETS_PER_COLLECTION - len(catalogue[1])
+    if remaining_assets <= 0:
+        progress(f"DMI_LATE_WATER_TAIL_CATALOGUE {collection} COLLECTION_ASSET_LIMIT")
+        return
+    progress(f"DMI_LATE_WATER_TAIL_CAPACITY {collection} "
+             f"remaining_assets={remaining_assets} work_seconds={max(0, int(runtime_remaining()))}")
     offer = first_marine_tail_catalogue(
         collection, catalogue, observed_at=observed_at, reference=reference,
         required_times=required_times, missing_tail_times=set(gaps),
@@ -15373,7 +15381,7 @@ def fill_late_water_tail(
         pending_reserve=0, preserves_plan=None,
     )
     if offer is None:
-        return 0
+        return
     run, assets, _stats = offer
     attempted = 0
     component = "waterLevel"
@@ -15444,7 +15452,6 @@ def fill_late_water_tail(
         checkpoint_controller.note_committed_asset(seconds=time.monotonic() - started, cost_family=collection)
         count = sum(zone_id.startswith("PART::") for zone_id in touched)
         progress(f"DMI_LATE_WATER_TAIL {collection} {hour} VERIFIED_PARTS={count}")
-    return attempted
 
 
 def main() -> int:
@@ -16542,20 +16549,19 @@ def main() -> int:
                 # Real remaining water holes precede optional native upgrades.
                 for late_collection, turn in collection_turns:
                     if (turn != "maintenance" or late_collection not in prefetched_marine_at
-                            or primary_refresh_assets_remaining <= 0 or should_stop_work()):
+                            or should_stop_work()):
                         continue
                     known_bytes = max((
                         proof["sourceAsset"]["contentLengthBytes"]
                         for proof in retained_current_asset_proofs
                         if proof["sourceAsset"]["collection"] == late_collection
                     ), default=0)
-                    primary_refresh_assets_remaining -= fill_late_water_tail(
+                    fill_late_water_tail(
                         late_collection, prefetched_marine[late_collection],
                         observed_at=prefetched_marine_at[late_collection],
                         reference=locked_production_reference, required_times=required_current_valid_times,
                         plan=qualified_scalar_gap_plan, zones=zones, result=result,
                         bytes_per_original=known_bytes, budget=budget,
-                        remaining_assets=primary_refresh_assets_remaining,
                         checkpoint_controller=checkpoint_controller, fresh_zone_ids=fresh_zone_ids,
                     )
         if collection_is_maintenance and (
