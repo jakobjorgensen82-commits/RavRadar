@@ -3355,6 +3355,25 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     failed.report.intermediateRuntime[key]=false;
     assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(failed,current),new RegExp(key));
   }
+
+  const {execFileSync}=await import('node:child_process');
+  const realHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+  const exactCurrent={...current,head:realHead};
+  const input=await native.captureAssistantAfter601PgInput({ref:realHead,physical:false});
+  const v2={...receipt,current:exactCurrent,schemaVersion:2,kind:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
+    nativeInput:input};
+  const readGit=(args,options)=>execFileSync('git',args,{...options,maxBuffer:32*1024*1024});
+  assert.equal(await native.verifyAssistantAfter601ExecutedV2Receipt(v2,exactCurrent,readGit),v2);
+  assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(v2,exactCurrent));
+  for(const mutate of [
+    value=>value.status='REUSED',
+    value=>value.origin={run:receipt.current.run-1},
+    value=>value.nativeInput.inputSha256='a'.repeat(64),
+    value=>value.runtime.overrides.push('NODE_PATH'),
+  ]){
+    const changed=copy(v2);mutate(changed);
+    await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(changed,exactCurrent));
+  }
 });
 
 test('current80 typed receipt requires the exact fresh nine-case result and cannot retag original79',()=>withAuthenticatedReceipt80Source(async root=>{
@@ -3476,3 +3495,83 @@ test('current80 actual PG input includes the pure leaf, refuses partial pairs an
   await fs.rmdir(dir);
  }
 }));
+
+test('after601 native input distinguishes a Pages edit from SQL and module-resolution changes', async t => {
+  const {captureAssistantAfter601PgInput,parseTree}=await import('./native-postgres-evidence.mjs');
+  const {ACTIVE_ASSISTANT_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {SOURCE601_ORIGINAL_DATA_PROFILE}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const {execFileSync}=await import('node:child_process');
+  const path=await import('node:path'),os=await import('node:os');
+  const temporary=await fs.realpath(os.tmpdir());
+  const directory=await fs.mkdtemp(path.join(temporary,'rr-after601-inputs-'));
+  t.after(async()=>{
+    assert.equal(path.dirname(path.resolve(directory)),temporary);
+    await fs.rm(directory,{recursive:true,force:true});
+  });
+  const objectDirectory=path.join(directory,'objects');
+  await fs.mkdir(objectDirectory);
+  const authority=execFileSync('git',['rev-parse','--path-format=absolute','--git-path','objects'],
+    {encoding:'utf8'}).trim();
+  const env={...process.env,GIT_INDEX_FILE:path.join(directory,'index'),
+    GIT_OBJECT_DIRECTORY:objectDirectory,GIT_ALTERNATE_OBJECT_DIRECTORIES:authority,
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',
+    GIT_AUTHOR_NAME:'Synthetic source',GIT_AUTHOR_EMAIL:'fixture@example.invalid',
+    GIT_COMMITTER_NAME:'Synthetic source',GIT_COMMITTER_EMAIL:'fixture@example.invalid'};
+  const rawGit=(args,input)=>execFileSync('git',args,{env,input,timeout:10000,maxBuffer:32*1024*1024});
+  const git=(args,input)=>rawGit(args,input).toString('utf8').trim();
+  const trees=new Map(),blobs=new Map(),anchors=new Map();
+  const treeFor=ref=>{
+    if(!trees.has(ref)){
+      const raw=rawGit(['ls-tree','-rz','--full-tree',ref]);
+      trees.set(ref,{raw,paths:new Map(parseTree(raw).map(row=>[row[0],row[3]]))});
+    }
+    return trees.get(ref);
+  };
+  const readGit=args=>{
+    if(args[0]==='ls-tree')return treeFor(args.at(-1)).raw;
+    if(args[0]==='cat-file'){
+      const [ref,file]=args[2].split(':');
+      const oid=treeFor(ref).paths.get(file);
+      assert(oid);
+      if(!blobs.has(oid))blobs.set(oid,rawGit(['cat-file','blob',oid]));
+      return blobs.get(oid);
+    }
+    const key=JSON.stringify(args);
+    if(!anchors.has(key))anchors.set(key,git(args));
+    return anchors.get(key);
+  };
+  const head=git(['rev-parse','HEAD']);
+  const variant=(file,bytes)=>{
+    git(['read-tree',head]);
+    if(bytes===null)git(['update-index','--force-remove','--',file]);
+    else {
+      const blob=git(['hash-object','-w','--stdin'],bytes);
+      git(['update-index','--add','--cacheinfo','100644,'+blob+','+file]);
+    }
+    return git(['commit-tree',git(['write-tree']),'-p',head,'-m','Synthetic PostgreSQL input comparison']);
+  };
+  const capture=ref=>captureAssistantAfter601PgInput({ref,readGit,physical:false});
+  const current=await captureAssistantAfter601PgInput({ref:head,physical:false});
+  assert.equal(current.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
+  assert.equal(current.sqlFiles,81);
+  assert.equal(current.complete,true);
+  assert.ok(current.frozenGitTrees.some(({head,tree})=>head===SOURCE601_ORIGINAL_DATA_PROFILE.head
+    &&tree===SOURCE601_ORIGINAL_DATA_PROFILE.tree));
+
+  const appendTo=(file,text)=>Buffer.concat([readGit(['cat-file','blob',head+':'+file]),Buffer.from(text)]);
+  const pages='.github/workflows/reusable-weather-build.yml';
+  assert.deepEqual(await capture(variant(pages,appendTo(pages,'\n# Synthetic Pages change\n'))),current);
+
+  const migration='supabase/migrations/'+ACTIVE_ASSISTANT_SUCCESSOR.migration().filename;
+  const changedSql=await capture(variant(migration,appendTo(migration,'\n-- Synthetic SQL input change\n')));
+  assert.notEqual(changedSql.inputSha256,current.inputSha256);
+  await assert.rejects(capture(variant(migration,null)),/complete current81/);
+
+  const scope='js/core/package.json';
+  const changedScope=await capture(variant(scope,Buffer.from('{"type":"commonjs"}\n')));
+  assert.equal(changedScope.inputSha256,current.inputSha256);
+  assert.notDeepEqual(changedScope.packageScopes,current.packageScopes);
+  const module='scripts/lib/checkpoint-cas-native-postgres.mjs';
+  const changedModule=variant(module,appendTo(module,"\nimport '../weather-source-gate.mjs';\n"));
+  await assert.rejects(capture(changedModule),/Unqualified after601 native import/);
+});
