@@ -42,8 +42,10 @@ function fixture(placements = [], { bindingProposal = true } = {}) {
   if(bindingProposal)dbs[0].exec(schema('006_trip_weather_aggregate_job_binding.sql'));
   for (const [shard, row] of placements) dbs[shard].prepare(insert).run(...columns.map(key => row[key]));
   const execute = statement => {
-    const result = dbs[statement.shard].prepare(statement.sql).run(...statement.args);
-    return { success: true, meta: { changes: Number(result.changes) } };
+    const db = dbs[statement.shard], before = db.prepare('select total_changes() n').get().n;
+    db.prepare(statement.sql).run(...statement.args);
+    // Native D1 includes trigger changes; statement.changes would hide charges.
+    return { success: true, meta: { changes: Number(db.prepare('select total_changes() n').get().n - before) } };
   };
   const d1 = dbs.map((db, shard) => ({ prepare(sql) {
     assert(new TextEncoder().encode(sql).length <= 100000, 'actual D1 SQL length cap');
@@ -53,7 +55,9 @@ function fixture(placements = [], { bindingProposal = true } = {}) {
     return { ...statement, async all() {
       trace.push({ method: 'all', shard, sql, args });
       if (hooks.beforeRead) await hooks.beforeRead(statement);
-      return { success: true, results: plain(db.prepare(sql).all(...args)) };
+      const before = db.prepare('select total_changes() n').get().n;
+      const results = plain(db.prepare(sql).all(...args));
+      return { success: true, results, meta: { changes: Number(db.prepare('select total_changes() n').get().n - before) } };
     }, async run() {
       trace.push({ method: 'run', shard, sql, args });
       const answer = execute(statement); if (hooks.afterRun) await hooks.afterRun(statement); return answer;
@@ -1346,5 +1350,91 @@ test('private-study monthly OFF is a successful no-op before account or aggregat
     const bad=await invokePrivateStudyOperatorFixture({env,...options});
     assert.equal(bad.failure.phase,'PRIVATE_ACTIVATION');assert.equal(bad.failure.writeOutcome,'NOT_STARTED');
     assert.deepEqual(bad.calls,{read:5,aggregate:0,publish:0});
+  }
+});
+
+
+test('native D1 RETURNING acknowledgement binds the exact ledger and preserves unknown/replay', async () => {
+  const { createSyntheticTripPayload } = await import('./aggregate-private-fixture.mjs');
+  const { startTripWeatherAggregateJob } = await import('../cloudflare/trip-gateway/trip-aggregate-job.js');
+  const { prepareReadyInputPolicyBoundReview } = await import('../cloudflare/trip-gateway/trip-aggregate-policy-gate.js');
+  const { sha256Hex } = await import('../supabase/functions/_shared/trip-storage.js');
+  const payload = createSyntheticTripPayload(27101, { observation_origin: 'self-reported' });
+  const row = { ...await externalTripRecord({ owner, payload, source: 'supabase-migration' }),
+    created_at: new Date(now - 60000).toISOString() };
+  const request = { schemaVersion: 1, period, modelBinding: binding,
+    preferenceSnapshot: { schemaVersion: 2, snapshotAt: new Date(now).toISOString(),
+      accounts: [{ ownerSubject: owner.subject, enabled: true, revision: '0', source: 'default' }] } };
+  const draft = fs.readFileSync(new URL('./fixtures/trip-categorical-policy-007-proposal.sql.txt', import.meta.url), 'utf8');
+  for (const mode of ['positive', 'extra-row', 'wrong-key', 'wrong-hash', 'extra-field', 'sparse-row',
+    'unknown-after-commit', 'no-insert', 'changed-report-readback', 'changed-subjects-readback']) {
+    const f = fixture([[0, row]]);
+    try {
+      f.dbs[0].exec(draft);
+      await startTripWeatherAggregateJob(f.d1, request);
+      let progress;
+      for (let i = 0; i < 11; i++) {
+        progress = await advance(f.d1, request);
+        if (progress.phase === 'READY_INPUT') break;
+      }
+      assert.equal(progress.phase, 'READY_INPUT');
+      const originals = f.originals(), originalControl = f.d1[0];
+      let attempts = 0, ackChanges = null, randomCalls = 0, inserted = false;
+      const wrapped = { ...originalControl, prepare(sql) {
+        const statement = originalControl.prepare(sql);
+        return { bind(...args) {
+          const bound = statement.bind(...args);
+          return { ...bound, async all() {
+            const write = /^insert into trip_weather_aggregate_releases\b/.test(sql);
+            if (write) {
+              attempts++;
+              assert.match(sql, /returning release_key,report_sha256$/);
+              if (mode === 'no-insert') return { success: true, results: [], meta: { changes: 0 } };
+            }
+            const answer = await bound.all();
+            if (write) {
+              inserted = true; ackChanges = answer.meta.changes;
+              assert.equal(ackChanges, 2, 'one report plus its trigger-created charge');
+              assert.deepEqual(Object.keys(answer.results[0]).sort(), ['release_key', 'report_sha256']);
+              if (mode === 'unknown-after-commit') throw Error('SYNTHETIC_LOST_WRITE_RESPONSE');
+              if (mode === 'extra-row') answer.results.push({ ...answer.results[0] });
+              if (mode === 'wrong-key') answer.results[0].release_key = 'f'.repeat(64);
+              if (mode === 'wrong-hash') answer.results[0].report_sha256 = 'f'.repeat(64);
+              if (mode === 'extra-field') answer.results[0].unexpected = true;
+              if (mode === 'sparse-row') answer.results = Array(1);
+            } else if (inserted && /^select .* from trip_weather_aggregate_releases where period_start=/.test(sql)) {
+              if (mode === 'changed-report-readback') {
+                const changed = JSON.parse(answer.results[0].report_json);
+                changed.cells[0].noisyCount = changed.cells[0].noisyCount === 1000 ? 999 : changed.cells[0].noisyCount + 1;
+                answer.results[0].report_json = canonicalJson(changed);
+                answer.results[0].report_sha256 = await sha256Hex(answer.results[0].report_json);
+              }
+              if (mode === 'changed-subjects-readback') answer.results[0].contributor_subjects_json = '[]';
+            }
+            return answer;
+          } };
+        } };
+      } };
+      const databases = [wrapped, ...f.d1.slice(1)];
+      const invoke = dbs => prepareReadyInputPolicyBoundReview(dbs, request,
+        { randomFill: bytes => { randomCalls++; return bytes.fill(0); } });
+      if (mode === 'positive') {
+        const first = await invoke(databases);
+        assert.equal(first.status, 'PERSISTED'); assert.equal(first.report.cells.length, 160);
+        assert.deepEqual(f.accounting(), [1, 1]);
+      } else {
+        await assert.rejects(invoke(databases), { message: mode === 'no-insert'
+          ? 'DP_ACCOUNT_BUDGET_BASIS_CHANGED'
+          : mode.startsWith('changed-') ? 'DP_LEDGER_INTEGRITY_INVALID' : 'DP_LEDGER_WRITE_OUTCOME_UNKNOWN' });
+        assert.deepEqual(f.accounting(), mode === 'no-insert' ? [0, 0] : [1, 1]);
+      }
+      assert.equal(attempts, 1, 'no blind repeat of an ambiguous write');
+      assert.deepEqual(f.originals(), originals);
+      if (mode !== 'no-insert') {
+        const beforeReplay = randomCalls, replay = await invoke(f.d1);
+        assert.equal(replay.status, 'REPLAY'); assert.equal(randomCalls, beforeReplay, 'existing month never resamples');
+        assert.deepEqual(f.accounting(), [1, 1]);
+      }
+    } finally { f.close(); }
   }
 });
