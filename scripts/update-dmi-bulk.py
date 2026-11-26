@@ -15237,9 +15237,10 @@ def first_marine_tail_catalogue(
     missing_tail_times, remaining_bytes, known_asset_bytes, checkpoint_controller,
     pending_reserve, preserves_plan,
 ):
-    """Offer a newer catalogue once, before this collection changes any rows."""
+    """Offer a complete newer catalogue and guard any current-plan adoption."""
     def refuse(reason: str) -> None:
-        progress(f"DMI_FIRST_MARINE_TAIL_CATALOGUE {collection} {reason}")
+        kind = "DMI_LATE_WATER_TAIL_CATALOGUE" if preserves_plan is None else "DMI_FIRST_MARINE_TAIL_CATALOGUE"
+        progress(f"{kind} {collection} {reason}")
 
     old_run, old_assets, old_stats = old_catalogue
     old_times = set(old_stats.get("officialRequiredValidTimes") or ())
@@ -15302,8 +15303,11 @@ def first_marine_tail_catalogue(
             elif not any(type(size) is int and 0 < size <= remaining_bytes for size in sizes):
                 reason = "TAIL_ASSET_OUTSIDE_BYTE_BUDGET"
             else:
+                # A late water-only reader never adopts the offered catalogue
+                # into the current plan; only the native turn can do so.
                 phase = "EVIDENCE"
-                reason = None if preserves_plan(offer) else "EVIDENCE_NOT_PRESERVED"
+                reason = ("EVIDENCE_NOT_PRESERVED"
+                          if preserves_plan is not None and not preserves_plan(offer) else None)
     except AssetDownloadCleanupUnproven:
         raise
     except AssetDownloadRuntimeBudget:
@@ -15315,6 +15319,132 @@ def first_marine_tail_catalogue(
     if not checkpoint_controller.can_start_asset(pending_reserve, cost_family=collection):
         return refuse("RESERVE_AFTER")
     return offer
+
+
+def late_water_tail_value_gaps(collection, catalogue, required_times, plan, zones, cached_zones):
+    """Select actual public water-level gaps independently of current or T+3 needs."""
+    _run, _assets, stats = catalogue
+    listed_times = stats.get("officialRequiredValidTimes") or []
+    if plan is None or not listed_times:
+        return {}
+    end = max(map(epoch, listed_times))
+    component = "waterLevel"
+    fields = tuple(COMPONENT_FIELD_SET[component])
+    eligible = parameter_zones(collection, fields[0], zones)
+    part_zones = {
+        zone["id"].removeprefix("PART::"): zone for zone in eligible
+        if zone["id"].startswith("PART::") and zone["id"].removeprefix("PART::") in plan["partIndexes"]
+    }
+    sources = [zone for zone in eligible if zone.get("waterSource")]
+    needed = {}
+    for hour in sorted(required_times, key=epoch):
+        if epoch(hour) <= end:
+            continue
+        missing = [
+            zone for part, zone in part_zones.items()
+            if qualified_scalar_gap_reasons_at(plan, hour, [(part, component)])[1] > 0
+            and not _exact_validated_dmi_component_present(
+                zone["id"], cached_zones.get(zone["id"]), hour, component, fields,
+            )
+        ]
+        if missing:
+            needed[hour] = missing + [
+                zone for zone in sources
+                if not _exact_validated_dmi_component_present(
+                    zone["id"], cached_zones.get(zone["id"]), hour, component, fields,
+                )
+            ]
+    return needed
+
+
+def fill_late_water_tail(
+    collection, catalogue, *, observed_at, reference, required_times, plan, zones,
+    result, bytes_per_original, budget, remaining_assets, checkpoint_controller, fresh_zone_ids,
+):
+    """Spend existing optional asset slots on water-level holes before upgrades."""
+    gaps = late_water_tail_value_gaps(collection, catalogue, required_times, plan, zones, result["zones"])
+    if not gaps:
+        return 0
+    offer = first_marine_tail_catalogue(
+        collection, catalogue, observed_at=observed_at, reference=reference,
+        required_times=required_times, missing_tail_times=set(gaps),
+        remaining_bytes=MAX_DOWNLOAD_BYTES - budget["bytes"],
+        known_asset_bytes=bytes_per_original, checkpoint_controller=checkpoint_controller,
+        pending_reserve=0, preserves_plan=None,
+    )
+    if offer is None:
+        return 0
+    run, assets, _stats = offer
+    attempted = 0
+    component = "waterLevel"
+    fields = tuple(COMPONENT_FIELD_SET[component])
+    # Most verified holes first, then exact chronological order.
+    for asset in sorted(
+        (asset for asset in assets if asset["valid"] in gaps),
+        key=lambda asset: (-sum(not zone.get("waterSource") for zone in gaps[asset["valid"]]),
+                           epoch(asset["valid"])),
+    ):
+        if attempted >= remaining_assets or not checkpoint_controller.can_start_asset(cost_family=collection):
+            break
+        hour = asset["valid"]
+        expected = official_current_asset_identity(collection, run, asset)
+        if expected is None:
+            continue
+        targets = gaps[hour]
+        attempted += 1
+        started = time.monotonic()
+        identity = supervised_asset_identity(collection, run, asset)
+        details = dict(
+            collection=collection, model_run=run, valid_time=hour,
+            item_id=asset.get("id"), item_created_at=asset.get("itemCreatedAt"),
+            item_updated_at=asset.get("itemUpdatedAt"),
+        )
+
+        def verified_water_only(stage, _private_stage, outcome):
+            found, touched, _interrupted, _messages, _lookups = outcome
+            return found == set(fields) and all(
+                _exact_validated_dmi_component_present(
+                    zone_id, stage["zones"].get(zone_id), hour, component, fields,
+                )
+                for zone_id in touched
+            )
+
+        try:
+            with supervised_asset_operation(identity):
+                raw, reused = download_asset(asset["href"], asset.get("size"), budget,
+                                             work_deadline=WORK_DEADLINE, **details)
+                with _grib_read_scope(raw, collection, run, hour) as reader:
+                    if not cached_capture_matches_official(
+                        reader.capture, href=asset["href"], item_id=expected["itemId"],
+                        item_created_at=expected["itemCreatedAt"], item_updated_at=expected["itemUpdatedAt"],
+                        expected_size=expected["assetSizeBytes"],
+                    ):
+                        raise RuntimeError("DMI_LATE_WATER_TAIL_CAPTURE_UNVERIFIED")
+                    _, touched, interrupted, _, _ = process_grib_transactionally(
+                        raw, collection, run, hour, targets, result, result["diagnostics"],
+                        allowed_parameters=set(fields), stage_validator=verified_water_only,
+                        locked_operational_reference=canonical_time(reference), _owned_read=reader,
+                        failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+                    )
+        except AssetDownloadCleanupUnproven:
+            raise
+        except (OSError, RuntimeError, ValueError, TypeError, KeyError) as error:
+            checkpoint_controller.observe_asset_duration(time.monotonic() - started, cost_family=collection)
+            progress(f"DMI_LATE_WATER_TAIL {collection} {hour} {collection_failure_code(error)}")
+            continue
+        if interrupted or not touched:
+            checkpoint_controller.observe_asset_duration(time.monotonic() - started, cost_family=collection)
+            if interrupted:
+                break
+            continue
+        fresh_zone_ids.update(touched)
+        if reused:
+            diagnostics = result["diagnostics"]
+            diagnostics["reusedAssets"] = int(diagnostics.get("reusedAssets") or 0) + 1
+        checkpoint_controller.note_committed_asset(seconds=time.monotonic() - started, cost_family=collection)
+        count = sum(zone_id.startswith("PART::") for zone_id in touched)
+        progress(f"DMI_LATE_WATER_TAIL {collection} {hour} VERIFIED_PARTS={count}")
+    return attempted
 
 
 def main() -> int:
@@ -16400,9 +16530,34 @@ def main() -> int:
         scheduled, schedule_coverage, result.get("collectionState") or {},
         primary_mode=DKSS_PRIMARY_MODE,
     )
+    late_water_tail_checked = False
     for collection, collection_turn in collection_turns:
         collection_is_maintenance = collection_turn == "maintenance"
         collection_is_horizon = collection_turn == "horizon"
+        if collection_is_maintenance and not late_water_tail_checked:
+            late_water_tail_checked = True
+            if (allow_first_turn_catalogue and qualified_scalar_gap_plan is not None
+                    and not should_stop_work()):
+                # The scheduled native and horizon work has had its turn.
+                # Real remaining water holes precede optional native upgrades.
+                for late_collection, turn in collection_turns:
+                    if (turn != "maintenance" or late_collection not in prefetched_marine_at
+                            or primary_refresh_assets_remaining <= 0 or should_stop_work()):
+                        continue
+                    known_bytes = max((
+                        proof["sourceAsset"]["contentLengthBytes"]
+                        for proof in retained_current_asset_proofs
+                        if proof["sourceAsset"]["collection"] == late_collection
+                    ), default=0)
+                    primary_refresh_assets_remaining -= fill_late_water_tail(
+                        late_collection, prefetched_marine[late_collection],
+                        observed_at=prefetched_marine_at[late_collection],
+                        reference=locked_production_reference, required_times=required_current_valid_times,
+                        plan=qualified_scalar_gap_plan, zones=zones, result=result,
+                        bytes_per_original=known_bytes, budget=budget,
+                        remaining_assets=primary_refresh_assets_remaining,
+                        checkpoint_controller=checkpoint_controller, fresh_zone_ids=fresh_zone_ids,
+                    )
         if collection_is_maintenance and (
             primary_refresh_assets_remaining <= 0
             or collection not in prefetched_marine
@@ -16501,6 +16656,7 @@ def main() -> int:
                 pending_reserve=reserve_for_pending_critical,
                 preserves_plan=lambda candidate: first_turn_preserves_plan(collection, candidate),
             )
+            prefetched_marine_at[collection] = time.monotonic()
             if offer is not None:
                 run, assets, stats = offer
                 stats = {**stats, "firstTurnCatalogueRefreshed": True}

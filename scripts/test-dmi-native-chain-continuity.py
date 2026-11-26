@@ -17,7 +17,7 @@ import types
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -373,6 +373,129 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
         for reason in ("EVIDENCE_TIMEOUT", "EVIDENCE_NOT_PRESERVED"):
             with self.subTest(reason=reason):
                 refuse_current_evidence(reason)
+
+
+        # Replay the normal first-native/late-maintenance boundary. The offered
+        # native model arrives while the worker is still open, after a genuine
+        # first-turn negative, and shares no current-plan authority.
+        first, requests = execute(
+            offers=page(collection, (old_model, 121)), expected_reason="NO_NEWER_COMPLETE_RUN",
+        )
+        self.assertEqual(first, catalogues)
+        self.assertEqual(requests, 1)
+        late_step = next(node for node in turn.body if isinstance(node, ast.If)
+                         and any(isinstance(x, ast.Call) and isinstance(x.func, ast.Name)
+                                 and x.func.id == "fill_late_water_tail" for x in ast.walk(node)))
+        late = compile(ast.fix_missing_locations(ast.Module(
+            body=copy.deepcopy([late_step]), type_ignores=[],
+        )), producer.__file__, "exec")
+
+        source_zone = {"id": "SOURCE::tidewater:TEST", "waterSource": True,
+                       "coastType": "east", "lon": 2.0, "lat": 1.0}
+        old_saved = copy.deepcopy(saved)
+        old_saved["zones"][source_zone["id"]] = {
+            **producer.sampling_identity(source_zone), "hourly": {}, "gridPoints": {}, "collections": {},
+        }
+        old_saved["diagnostics"]["currentOperationalLedger"] = original_ledger.ledger
+        first_gap, next_gap, trend_only = sorted(tail)[:3]
+        plan = v2(water=(113, 114), trend=(115,))
+        stages = producer.late_water_tail_value_gaps(
+            collection, catalogues[collection], hours, plan, [ZONE, source_zone], old_saved["zones"],
+        )
+        self.assertEqual(set(stages), {first_gap, next_gap})
+        self.assertNotIn(trend_only, stages)
+
+        def late_context(result, controller, slots=1, facts=plan):
+            return dict(vars(producer), collection_is_maintenance=True, late_water_tail_checked=False,
+                        allow_first_turn_catalogue=True, qualified_scalar_gap_plan=facts,
+                        collection_turns=[(collection, "native"), (collection, "maintenance")],
+                        prefetched_marine_at={collection: 2235.5}, prefetched_marine=catalogues,
+                        retained_current_asset_proofs=preserved, locked_production_reference=reference,
+                        required_current_valid_times=hours, zones=[ZONE, source_zone], result=result,
+                        budget={"bytes": 0}, primary_refresh_assets_remaining=slots,
+                        checkpoint_controller=controller, fresh_zone_ids=set())
+
+        attempted_captures = []
+
+        def synthetic_download(href, expected_size, budget, *, work_deadline, **details):
+            self.assertEqual(work_deadline, producer.WORK_DEADLINE)
+            self.assertEqual(details["valid_time"], first_gap)
+            budget["bytes"] += 128
+            attempted_captures.append({
+                **CAPTURE, "itemId": details["item_id"],
+                "assetIdentitySha256": producer.asset_identity_sha256(href),
+                "itemCreatedAt": details["item_created_at"], "itemUpdatedAt": details["item_updated_at"],
+                "assetSizeBytes": expected_size, "acquiredAt": producer.canonical_time(reference),
+            })
+            return Path("synthetic.grib"), False
+
+        def synthetic_reader(_path, _collection, _run, _hour, borrowed=None):
+            return nullcontext(borrowed or types.SimpleNamespace(
+                capture=attempted_captures[-1], handle=io.BytesIO(b"synthetic"),
+                check=lambda *args: None, remember_commit=lambda *args: None,
+                commits=[], failure_flushes=[], native_handles=[],
+            ))
+
+        controller = Mock()
+        controller.can_start_asset.return_value = True
+        context = late_context(copy.deepcopy(old_saved), controller)
+        handles = iter(("sea-mean-deviation", "current-u", None))
+        with (
+            patch.object(producer.time, "monotonic", return_value=2500.0),
+            patch.object(producer, "request_json", return_value=new_page) as request,
+            patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
+            patch.object(producer, "should_stop_work", return_value=False),
+            patch.object(producer, "progress"),
+            patch.object(producer, "download_asset", side_effect=synthetic_download) as download,
+            patch.object(producer, "_grib_read_scope", side_effect=synthetic_reader),
+            patch.object(producer, "codes_grib_new_from_file", lambda _: next(handles)),
+            patch.object(producer, "field_signature", lambda _: {"shortName": "smd"}),
+            patch.object(producer, "classify_parameter", lambda handle, _: handle),
+            patch.object(producer, "nearest_valid_batch", lambda _handle, _collection, wanted: {
+                zone["id"]: {**POINT, "value": 0.4} for zone in wanted
+            }),
+        ):
+            exec(late, context)
+            exec(late, context)
+        request.assert_called_once()
+        download.assert_called_once()
+        controller.note_committed_asset.assert_called_once()
+        self.assertEqual(context["primary_refresh_assets_remaining"], 0)
+        self.assertEqual(context["budget"]["bytes"], 128)
+        self.assertEqual(context["prefetched_marine"], first)
+        actual = context["result"]
+        for target in [ZONE, source_zone]:
+            current_hours = actual["zones"][target["id"]]["hourly"]
+            self.assertEqual(current_hours[first_gap]["sea-mean-deviation"], 0.4)
+            self.assertEqual(set(current_hours[first_gap]["sources"]), {"waterLevel"})
+            self.assertEqual(current_hours[first_gap]["sources"]["waterLevel"]["modelRun"],
+                             producer.canonical_time(next_model))
+            self.assertEqual({key: row for key, row in current_hours.items() if key != first_gap},
+                             old_saved["zones"][target["id"]]["hourly"])
+        self.assertEqual(actual["runs"], old_saved["runs"])
+        self.assertEqual(actual["diagnostics"]["currentOperationalLedger"], original_ledger.ledger)
+        after = producer.build_current_operational_ledger_result(actual, targets, reference, catalogues, preserved)
+        self.assertEqual(after.ledger, original_ledger.ledger)
+
+        for slots, facts, remaining, expected_requests in (
+            (0, plan, True, 0), (1, None, True, 0), (1, v2(trend=(115,)), True, 0),
+            (1, plan, False, 0), (1, plan, True, 1),
+        ):
+            controller = Mock()
+            controller.can_start_asset.return_value = remaining
+            context = late_context(copy.deepcopy(old_saved), controller, slots=slots, facts=facts)
+            with (
+                patch.object(producer.time, "monotonic", return_value=2500.0),
+                patch.object(producer, "request_json", return_value=page(collection, (old_model, 121))) as request,
+                patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
+                patch.object(producer, "should_stop_work", return_value=False),
+                patch.object(producer, "progress"),
+                patch.object(producer, "download_asset") as download,
+            ):
+                exec(late, context)
+            self.assertEqual(request.call_count, expected_requests)
+            download.assert_not_called()
+            self.assertEqual(context["result"], old_saved)
 
 
 class ComponentContinuityTests(unittest.TestCase):
