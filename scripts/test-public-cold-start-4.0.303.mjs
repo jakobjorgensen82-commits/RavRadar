@@ -101,7 +101,8 @@ const previousTopicTabSuffix = `${previousUvSuffix}&assistant-locale=topic-tab-2
 const tripTestTag = '&trip-test=20261125';
 const previousCareSuffix = previousTopicTabSuffix.replace('assistant-help=20261125-uv-identification-daylight', 'assistant-help=20261126-cracked-amber-care');
 const previousTripTestSuffix = `${previousTopicTabSuffix}${tripTestTag}`;
-const suffix = `${previousCareSuffix}${tripTestTag}`;
+const previousCareTripTestSuffix = `${previousCareSuffix}${tripTestTag}`;
+const suffix = previousCareTripTestSuffix.replace('assistant-help=20261126-cracked-amber-care', 'assistant-help=20261126-winter-wave-sorting');
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const oldAccountPanelSuffix = `?v=${releaseVersion}&ui=account-20261006`;
@@ -182,6 +183,7 @@ const previousDeliveredAssets = [
   [previousTabLanguageSuffix, 'previous-tab-language'],
   [previousTopicTabSuffix, 'previous-topic-tab'],
   [previousCareSuffix, 'previous-care'], [previousTripTestSuffix, 'previous-trip-test'],
+  [previousCareTripTestSuffix, 'previous-care-trip-test'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
@@ -235,7 +237,8 @@ const previousLandingHelpPath = previousRamanHelpPath.replace('ui=public-help-20
 const previousWaterChangeHelpPath = previousLandingHelpPath.replace('ui=public-help-20261124-landing-precision', 'ui=public-help-20261124-water-change');
 const previousUvHelpPath = previousWaterChangeHelpPath.replace('ui=public-help-20261124-water-change', 'ui=public-help-20261125-uv-identification-daylight');
 const previousTopicTabHelpPath = `${previousUvHelpPath}&locale=topic-tab-20261125`;
-const helpPath = previousTopicTabHelpPath.replace('ui=public-help-20261125-uv-identification-daylight', 'ui=public-help-20261126-cracked-amber-care');
+const previousCareHelpPath = previousTopicTabHelpPath.replace('ui=public-help-20261125-uv-identification-daylight', 'ui=public-help-20261126-cracked-amber-care');
+const helpPath = previousCareHelpPath.replace('ui=public-help-20261126-cracked-amber-care', 'ui=public-help-20261126-winter-wave-sorting');
 const previousAssistantPath = `./js/services/rav-assistant.js?v=${releaseVersion}`;
 const assistantPath = `${previousAssistantPath}&locale=topic-tab-20261125`;
 assert.ok(app.includes(`from "${assistantPath}"`));
@@ -262,6 +265,8 @@ const previousAssistantUrl = new URL(previousAssistantPath, origin).href;
 cached.set(previousUvHelpUrl, new Response('previous-uv-help-module'));
 const previousTopicTabHelpUrl = new URL(previousTopicTabHelpPath, origin).href;
 cached.set(previousTopicTabHelpUrl, new Response('previous-topic-tab-help-module'));
+const previousCareHelpUrl = new URL(previousCareHelpPath, origin).href;
+cached.set(previousCareHelpUrl, new Response('previous-care-help-module'));
 cached.set(previousAssistantUrl, new Response('previous-assistant-module'));
 const assistantModuleUrls = [helpPath, assistantPath].map(path => new URL(path, origin).href);
 for (const url of assistantModuleUrls) {
@@ -274,6 +279,7 @@ for (const url of assistantModuleUrls) {
 }
 assert.equal(await cached.get(previousUvHelpUrl).clone().text(), 'previous-uv-help-module');
 assert.equal(await cached.get(previousTopicTabHelpUrl).clone().text(), 'previous-topic-tab-help-module');
+assert.equal(await cached.get(previousCareHelpUrl).clone().text(), 'previous-care-help-module');
 assert.equal(await cached.get(previousAssistantUrl).clone().text(), 'previous-assistant-module');
 assert.equal(await cached.get(oldHelpUrl).clone().text(), 'old-help-module');
 assert.equal(await cached.get(previousHelpUrl).clone().text(), 'previous-help-module');
