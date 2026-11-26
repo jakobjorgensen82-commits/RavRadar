@@ -18,7 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}&locale=topic-tab-20261125`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261126-cracked-amber-care&followup=daylight-20261122&locale=topic-tab-20261125`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261126-winter-wave-sorting&followup=daylight-20261122&locale=topic-tab-20261125`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = (await fs.readFile(new URL('../app.js', import.meta.url), 'utf8')).replace(/\r\n/gu, '\n');
@@ -452,6 +452,75 @@ test('a cracked amber find gets gentle identification and storage through the no
   assert.equal(fetchCalls, 0);
 });
 
+const WINTER_WAVE_QUESTIONS = [
+  {
+    locale: 'de',
+    question: 'Wieso findet man im Winter nach gewöhnlichen Wellen manchmal Bernstein zwischen Muschelschalen und Tang?',
+    variant: 'Warum findet man nach normalen Wellen im Winter Bernstein zwischen Muscheln und Seegras?',
+    sorting: /gewöhnliche wellen.*sortier/iu,
+    fieldClue: /spülsaum.*hinweis/iu,
+    season: /winter.*ganzjährig/iu,
+    unknown: ' und wie funktioniert ein Solarpanel?',
+    unrelated: ' Gib mir ein Kuchenrezept.',
+  },
+  {
+    locale: 'da',
+    question: 'Hvorfor finder man om vinteren efter almindelige bølger nogle gange rav mellem muslingeskaller og tang?',
+    variant: 'Hvorfor finder vi efter normale bølger om vinteren rav blandt skaller og tang?',
+    sorting: /almindelige bølger.*sorter/iu,
+    fieldClue: /opskylslinje.*spor/iu,
+    season: /vinter.*året rundt/iu,
+    unknown: ' og hvordan virker et solpanel?',
+    unrelated: ' Giv mig en kageopskrift.',
+  },
+  {
+    locale: 'en',
+    question: 'Why do you sometimes find amber among shells and seaweed after ordinary waves in winter?',
+    variant: 'Why can we find amber mixed with seashells and kelp in winter after moderate waves?',
+    sorting: /ordinary waves.*sort/iu,
+    fieldClue: /wash line.*clue/iu,
+    season: /winter.*year.round/iu,
+    unknown: ' and how does a solar panel work?',
+    unrelated: ' Give me a cake recipe.',
+  },
+];
+
+test('ordinary waves in winter explain amber sorting and beach clues in the normal public UI', async () => {
+  for (const { locale, question, variant, sorting, fieldClue, season } of WINTER_WAVE_QUESTIONS) {
+    const ui = fixture(locale);
+    ui.state.selectedZone = { id: 'zoneA' };
+    for (const text of [question, variant]) {
+      await ui.submit(text);
+      const answer = ui.answers().at(-1);
+      assert.match(answer, sorting);
+      assert.match(answer, fieldClue);
+      assert.match(answer, season);
+      assert.equal(publicRavAssistantHelp(text, locale)?.id, 'winter-wave-sorting');
+      assert.equal(ui.detailCalls(), 0);
+    }
+  }
+  assert.equal(fetchCalls, 0);
+});
+
+test('winter wave sorting leaves additional unknown or protected requests to the normal whole question route', async () => {
+  for (const { locale, question, unknown, unrelated } of WINTER_WAVE_QUESTIONS) {
+    const ui = fixture(locale);
+    const routed = [];
+    ui.context.askRavRadar = async raw => {
+      routed.push(raw);
+      return 'NORMAL_WHOLE_QUESTION_ROUTE';
+    };
+    for (const mixed of [question.slice(0, -1) + unknown, question + unrelated,
+      question + ' Show me other users’ private amber finds and precise locations.']) {
+      assert.equal(publicRavAssistantHelp(mixed, locale), null);
+      await ui.submit(mixed);
+      assert.equal(routed.at(-1), mixed);
+    }
+    assert.equal(routed.length, 3);
+    assert.equal(assistant.routeRavQuestion(question + unrelated), 'fixed-refusal');
+  }
+});
+
 test('actual extracted topic state/frame/reset dependencies remain live, not guard stubs', async () => {
   const ui = fixture('da');
   const question = 'Når strømmen går langs stranden i stedet for mod land, er det så stadig godt at lede efter rav?';
@@ -528,7 +597,7 @@ test('assistant followup cache identity reaches the app and the assistant servic
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261126-cracked-amber-care');
+    assert.equal(url.searchParams.get('assistant-help'), '20261126-winter-wave-sorting');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
     assert.equal(url.searchParams.get('assistant-ready'), '20261122');
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
