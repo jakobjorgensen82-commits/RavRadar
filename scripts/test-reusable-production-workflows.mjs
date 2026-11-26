@@ -1235,7 +1235,7 @@ await withFrozenNative0600TestSource('routing',async frozenRoot=>{
   }
   const remoteSeal = indentedBody(build, '      - name: Current-grid pre-Edge - Resolve and seal the exact uploaded Pages artifact');
   for (const required of ['steps.current-grid-pages-upload.outputs.artifact_id',
-    'actions/artifacts/$artifact_id', '.expired == false', '.workflow_run.id == $runId',
+    'node scripts/read-pages-artifact-metadata.mjs "$artifact_id"', '.expired == false', '.workflow_run.id == $runId',
     '.workflow_run.head_sha == $headSha', 'normalizeArtifactDigestSha256', '.size_in_bytes',
     'targetPublicManifestSha256', 'targetImplementationClosureSha256', 'targetModelBinding'])
     assert(remoteSeal.includes(required), required);

@@ -56,7 +56,11 @@ test('ordinary Pages uses bounded metadata before the unchanged exact identity a
   const workflow = fs.readFileSync(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8');
   const section = workflow.split('      - name: Resolve and seal the exact uploaded Pages artifact')[1]
     .split('      - name: Upload privacy-safe operational handoff evidence after Pages artifact seal')[0];
-  assert.equal(workflow.split('node scripts/read-pages-artifact-metadata.mjs').length, 2);
+  const currentGrid = workflow.split('      - name: Current-grid pre-Edge - Resolve and seal the exact uploaded Pages artifact')[1]
+    .split('      - name: Current-grid pre-activation - Observe and seal the currently public source manifest')[0];
+  const exactArtifact = /node scripts\/read-pages-artifact-metadata\.mjs "\$artifact_id"[\s\S]*\.id == \$artifactId and \.name == "github-pages" and \.expired == false and \.workflow_run\.id == \$runId and \.workflow_run\.head_sha == \$headSha[\s\S]*normalizeArtifactDigestSha256/;
+  assert.match(currentGrid, exactArtifact);
+  assert.match(currentGrid, /targetPublicManifestSha256:\$targetPublicManifestSha256/);
   assert.match(section, /node scripts\/read-pages-artifact-metadata\.mjs "\$artifact_id"[\s\S]*\.id == \$artifactId and \.name == "github-pages" and \.expired == false and \.workflow_run\.id == \$runId and \.workflow_run\.head_sha == \$headSha[\s\S]*normalizeArtifactDigestSha256/);
   assert.match(section, /targetPublicManifestSha256:\$targetPublicManifestSha256/);
   assert.ok(section.includes('if [[ "$status" == ' + PAGES_ARTIFACT_VISIBILITY_EXIT + ' ]]'));

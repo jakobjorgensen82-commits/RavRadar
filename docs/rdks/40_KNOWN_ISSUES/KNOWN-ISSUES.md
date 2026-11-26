@@ -1,3 +1,9 @@
+## 26. november — Pages-pakken i #400 var kortvarigt usynlig efter upload
+
+Den første 603-overgang i almindelig vejrhentning #400 afsluttede hentning, beregning, databevarelse, beskyttet gemning, validering og upload. Et metadataopslag på pakkens eksakte ID fik HTTP 404 omkring et halvt sekund efter GitHubs uploadkvittering. Samme ID blev senere genlæst med det forventede kørselsnummer, hovedcommit, navn og SHA-256. Pages-bestillingen var sprunget over. [Vejrkørsel #400](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45754581564)
+
+Overgangen genbruger nu den normale Pages-læser, der genlæser præcis det samme ID inden for en samlet frist på 50 sekunder ved HTTP 404. De eksisterende identitets-, manifest- og indholdskrav består. Fejl ved fortsat usynlighed, forkert identitet eller en anden HTTP-status stopper stadig udgivelsen. Den udregnede prognose kan udgives gennem den eksisterende gemte fortsættelse, når det beskyttede resultat kan genlæses. Den ændrede vej skal kildekvalificeres og efterprøves i GitHub.
+
 ## 25. november — opfølgning efter sprogskift i en anden fane
 
 Den lokale rettelse til den tyske formular bruger fanens aktive sprog, når et emne til opfølgning vælges. Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. Den første kandidat bestod kildekontrol og PostgreSQL i #1720. Efter indarbejdelse af #1095 skal det aktuelle træ bestå sin egen kontrol. Derefter følger genlæsning af den installerede overgang og verifikation på den første nye, senere ordinære vejrprognose.
