@@ -24,6 +24,7 @@ import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,
 import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
 import {ASSISTANT_AFTER599_DATABASE_LEDGER} from './lib/assistant-later-h0-successor-source.mjs';
 import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE,FROZEN599_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
   projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
   hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow,verifyTargetedSourceStepShape}
@@ -2218,7 +2219,20 @@ function loadAfter599GitBlobs(readBatch, oids, objects) {
 }
 export async function captureAssistantAfter599PgInput(options){
   requireAssistantAfter599Output(); // FIRST, including before option getters.
-  assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert(arguments.length<=1);
+  return captureAssistantNativePgInput(options,false);
+}
+
+// This measures the current source inputs. It grants no phase or reuse authority.
+export async function captureAssistantAfter601PgInput(options){
+  assert.equal(ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
+  ACTIVE.requireOutput();
+  assert(arguments.length<=1);
+  return captureAssistantNativePgInput(options,true);
+}
+
+async function captureAssistantNativePgInput(options,after601){
+  options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
   assert(Object.keys(options).every(key=>['ref','readGit','root','physical'].includes(key)));
   const {ref='HEAD',root=process.cwd(),physical=true}=options;
   const readGit=after599BoundedGit(options.readGit??git,performance.now()+60000);
@@ -2262,7 +2276,10 @@ export async function captureAssistantAfter599PgInput(options){
   const receiptSource='scripts/lib/account-native-activity-receipt-source.mjs';
   const receiptPresent=index.has(receiptSql);
   assert.equal(index.has(receiptSource),receiptPresent,'Incomplete current80 source dependency');
-  if(receiptPresent)assert.equal(sql.length,80,'Receipt input requires the complete current80 source');
+  if(after601){
+    assert(receiptPresent&&sql.length===81,'After601 requires the complete current81 source');
+    assert(sql.includes('supabase/migrations/'+ACTIVE.migration().filename),'After601 migration is missing');
+  }else if(receiptPresent)assert.equal(sql.length,80,'Receipt input requires the complete current80 source');
   const modules=new Set([...profile.postgresModules,'scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs',
     ...(receiptPresent?[receiptSource]:[])]);
   const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
@@ -2278,9 +2295,25 @@ export async function captureAssistantAfter599PgInput(options){
     for(const row of manifest.files){assert(typeof row[definition.rowKey]==='string');selected.add(row[definition.rowKey]);}
   }
   load([...selected]);
+  if(after601){
+    // Fixed native modules and both model manifests already own the current
+    // imports. A new literal dependency must be admitted before reuse.
+    for(const file of modules){
+      assert(index.has(file),'Missing after601 native module: '+file);
+      const raw=content(file,index.get(file));
+      const {imports}=scanAllSourceDependencies(new TextDecoder('utf8',{fatal:true}).decode(raw));
+      for(const {specifier} of imports){
+        if(specifier===null||specifier.startsWith('node:'))continue;
+        assert(specifier.startsWith('./')||specifier.startsWith('../'),'Unqualified after601 native package import');
+        const dependency=path.posix.join(path.posix.dirname(file),specifier.split(/[?#]/,1)[0]);
+        assert(selected.has(dependency)&&index.has(dependency),'Unqualified after601 native import: '+dependency);
+      }
+    }
+  }
   for(const file of [...selected].sort())await read(file);
   const scopePaths=new Set(['package.json']);
-  for(const file of modules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
+  const scopedModules=after601?[...selected].filter(file=>/\.[cm]?js$/.test(file)):modules;
+  for(const file of scopedModules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
   const scopes=[];
   for(const file of [...scopePaths].sort()){
     if(!index.has(file)){
@@ -2298,10 +2331,12 @@ export async function captureAssistantAfter599PgInput(options){
     scopes.push({file,present:true,mode:row[1],type:value.type??null,name:value.name??null,main:value.main??null,imports:value.imports??null,exports:value.exports??null});
   }
   const anchors=[...profile.frozenGitAnchors,{head:FROZEN599_NATIVE_SOURCE.codeHead,tree:FROZEN599_NATIVE_SOURCE.codeTree}];
+  if(after601)anchors.push({head:SOURCE601_ORIGINAL_DATA_PROFILE.head,tree:SOURCE601_ORIGINAL_DATA_PROFILE.tree});
   const frozenGitTrees=[...new Map(anchors.map(row=>[row.head,row])).values()].sort((a,b)=>a.head.localeCompare(b.head));
   for(const row of frozenGitTrees)assert.equal(readGit(['rev-parse',row.head+'^{tree}']).trim(),row.tree);
   const files=[...rows.values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
-  return {schemaVersion:1,kind:'AFTER599_ACTUAL_PG_INPUT_V1',files:files.length,sqlFiles:sql.length,
+  return {schemaVersion:1,kind:after601?'AFTER601_ACTUAL_PG_INPUT_V1':'AFTER599_ACTUAL_PG_INPUT_V1',
+    files:files.length,sqlFiles:sql.length,
     complete:files.every(row=>row.present!==false),inputSha256:sha(JSON.stringify(files)),packageScopes:scopes,frozenGitTrees};
 }
 export function verifyAssistantAfter599PgInput(value,prior=value){
