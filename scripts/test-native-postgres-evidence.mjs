@@ -3355,6 +3355,25 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     failed.report.intermediateRuntime[key]=false;
     assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(failed,current),new RegExp(key));
   }
+
+  const {execFileSync}=await import('node:child_process');
+  const realHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+  const exactCurrent={...current,head:realHead};
+  const input=await native.captureAssistantAfter601PgInput({ref:realHead,physical:false});
+  const v2={...receipt,current:exactCurrent,schemaVersion:2,kind:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
+    nativeInput:input};
+  const readGit=(args,options)=>execFileSync('git',args,{...options,maxBuffer:32*1024*1024});
+  assert.equal(await native.verifyAssistantAfter601ExecutedV2Receipt(v2,exactCurrent,readGit),v2);
+  assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(v2,exactCurrent));
+  for(const mutate of [
+    value=>value.status='REUSED',
+    value=>value.origin={run:receipt.current.run-1},
+    value=>value.nativeInput.inputSha256='a'.repeat(64),
+    value=>value.runtime.overrides.push('NODE_PATH'),
+  ]){
+    const changed=copy(v2);mutate(changed);
+    await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(changed,exactCurrent));
+  }
 });
 
 test('current80 typed receipt requires the exact fresh nine-case result and cannot retag original79',()=>withAuthenticatedReceipt80Source(async root=>{
