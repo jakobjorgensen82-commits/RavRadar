@@ -1,3 +1,7 @@
+## 26. november — almindelige bølger, rav og opskyl om vinteren
+
+Det almindelige tyske spørgefelt gav sæsonsvaret på et samlet spørgsmål om, hvorfor rav kan ligge mellem muslingeskaller og tang efter almindelige bølger om vinteren. Samme svar blev genskabt lokalt gennem brugerformularen. Appens lokale svar bruger det eksisterende faggrundlag om bevægelse, sortering og opskyl til at besvare hele spørgsmålet på dansk, tysk og engelsk. Et frisk opskyl og lommer med let materiale er spor til, hvor det kan være værd at lede. Ved et ekstra led sendes hele spørgsmålet gennem den normale behandling. Offentlig levering udestår.
+
 ## 26. november — den første filoversigt overså nye DKSS-timer i #402
 
 Den almindelige DMI-læsning valgte kataloget, før de nye originaler til prognosens sidste fire timer ankom. Senere drift genbrugte listen. En afprøvet kandidat kan optage verificerede nye vandstandsværdier, hvis der er plads inden for den eksisterende tid og downloadgrænse. Landsdækkende effekt og resttid skal måles i en almindelig kørsel med rettelsen. [Kørsel #402](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45782337031)
