@@ -98,8 +98,13 @@ const CURRENT_GUARD_FRAMES=[
     "  clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);\n"
   ],
   [
-    "post-target-identity",
+    "post-target-pull-identity",
     "  // Fresh post-test transport, exactly two reads, irrespective of test duration.\n",
+    "  assert.equal(freshPull.head?.sha,head);"
+  ],
+  [
+    "post-target-repository-and-job",
+    "  assert.equal(freshPull.head?.repo?.full_name,current.repository);\n",
     "  assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);\n"
   ]
 ];

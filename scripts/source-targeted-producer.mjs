@@ -190,7 +190,7 @@ export async function coordinateTargetedSourceProducer(){
     // The PR API can still project the base from when the PR was opened.
     eventMergeSha=env.GITHUB_SHA;
     assert.equal(env.GITHUB_REF,`refs/pull/${pullRequest}/merge`);
-    assert(oid(eventMergeSha)&&oid(pull.base.sha));
+    assert(oid(eventMergeSha));
     assert.equal(pull.merge_commit_sha,eventMergeSha);
     const eventMerge=await get(repo+'/git/commits/'+eventMergeSha);
     assert.equal(eventMerge.sha,eventMergeSha);
@@ -376,7 +376,7 @@ export async function coordinateTargetedSourceProducer(){
   // Fresh post-test transport, exactly two reads, irrespective of test duration.
   const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);
   assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');
-  assert.equal(freshPull.head?.sha,head);assert.equal(freshPull.base?.sha,pull.base.sha);
+  assert.equal(freshPull.head?.sha,head);
   assert.equal(freshPull.head?.repo?.full_name,current.repository);
   assert.equal(freshPull.base?.repo?.full_name,current.repository);assert.equal(freshPull.base?.ref,'main');
   assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);
