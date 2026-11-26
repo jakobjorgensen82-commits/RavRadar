@@ -13,7 +13,8 @@ import {verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic591V2
   SCALAR597_LATER_H0_PHASE_KIND,verifyScalar597LaterH0PhaseReceipt,
   ASSISTANT_AFTER597_PHASE_KIND,verifyAssistantAfter597PhaseReceipt,ASSISTANT_AFTER598_PHASE_KIND,verifyAssistantAfter598PhaseReceipt,ASSISTANT_AFTER599_PHASE_KIND,ASSISTANT_AFTER599_REUSE_KIND,verifyAssistantAfter599PhaseReceipt,
   ASSISTANT_AFTER601_PHASE_KIND,verifyAssistantAfter601PhaseReceipt,
-  ASSISTANT_AFTER601_EXECUTED_V2_KIND,verifyAssistantAfter601ExecutedV2Receipt} from './native-postgres-evidence.mjs';
+  ASSISTANT_AFTER601_EXECUTED_V2_KIND,verifyAssistantAfter601ExecutedV2Receipt,
+  ASSISTANT_AFTER601_REUSE_V2_KIND,verifyAssistantAfter601ReuseV2Receipt} from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL_ORIGIN,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,
   ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,INSTALLED593_ORIGINAL591_SOURCE_COMMAND,installed593Original591NativeClaims,
   scalar597LaterH0NativeClaims,assistantAfter597NativeClaims,assistantAfter598NativeClaims,assistantAfter599NativeClaims}
@@ -97,7 +98,8 @@ function artifactMetadata(metadata,reference,kind,phase){
 
 async function nativeProof(proof,reference,current,releaseVersion,readGit){
   const after601=proof.kind===ASSISTANT_AFTER601_PHASE_KIND;
-  const after601V2=proof.kind===ASSISTANT_AFTER601_EXECUTED_V2_KIND;
+  const after601Reuse=proof.kind===ASSISTANT_AFTER601_REUSE_V2_KIND;
+  const after601V2=after601Reuse||proof.kind===ASSISTANT_AFTER601_EXECUTED_V2_KIND;
   const after599Reuse=proof.kind===ASSISTANT_AFTER599_REUSE_KIND;
   const after599=after599Reuse||proof.kind===ASSISTANT_AFTER599_PHASE_KIND;
   if(releaseVersion==='4.0.601')assert(after599);
@@ -112,12 +114,15 @@ async function nativeProof(proof,reference,current,releaseVersion,readGit){
   assert([1,2].includes(proof.schemaVersion));
   const v2Installed594=proof.kind===INSTALLED593_ORIGINAL591_V2_KIND;
   const installed594=proof.kind===INSTALLED593_ORIGINAL591_PHASE_KIND;
-  assert.equal(proof.kind,after601V2?ASSISTANT_AFTER601_EXECUTED_V2_KIND:after601?ASSISTANT_AFTER601_PHASE_KIND:after599Reuse?ASSISTANT_AFTER599_REUSE_KIND:after599?ASSISTANT_AFTER599_PHASE_KIND:after598?ASSISTANT_AFTER598_PHASE_KIND:after597?ASSISTANT_AFTER597_PHASE_KIND:scalar597?SCALAR597_LATER_H0_PHASE_KIND:v2Installed594?INSTALLED593_ORIGINAL591_V2_KIND:proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:
+  assert.equal(proof.kind,after601Reuse?ASSISTANT_AFTER601_REUSE_V2_KIND:after601V2?ASSISTANT_AFTER601_EXECUTED_V2_KIND:after601?ASSISTANT_AFTER601_PHASE_KIND:after599Reuse?ASSISTANT_AFTER599_REUSE_KIND:after599?ASSISTANT_AFTER599_PHASE_KIND:after598?ASSISTANT_AFTER598_PHASE_KIND:after597?ASSISTANT_AFTER597_PHASE_KIND:scalar597?SCALAR597_LATER_H0_PHASE_KIND:v2Installed594?INSTALLED593_ORIGINAL591_V2_KIND:proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:
     installed594?INSTALLED593_ORIGINAL591_PHASE_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND);
   assert.equal(proof.repository,reference.repository);assert.equal(proof.headSha,reference.producerHead);
   assert.equal(proof.sourceTreeSha256,reference.sourceTreeSha256);assert.equal(proof.privatePayloadIncluded,false);
   const native=proof.nativePostgres;
-  if(after601V2){assert.equal(proof.schemaVersion,2);await verifyAssistantAfter601ExecutedV2Receipt(native,current,readGit);}
+  if(after601V2){assert.equal(proof.schemaVersion,2);
+    if(after601Reuse)await verifyAssistantAfter601ReuseV2Receipt(native,current,readGit);
+    else await verifyAssistantAfter601ExecutedV2Receipt(native,current,readGit);
+  }
   else if(after601){assert.equal(proof.schemaVersion,1);verifyAssistantAfter601PhaseReceipt(native,current,readGit);}
   else if(after599){assert.equal(proof.schemaVersion,after599Reuse?2:1);await verifyAssistantAfter599PhaseReceipt(native,current,{readGit:args=>String(readGit(args))});}
   else if(after598){assert.equal(proof.schemaVersion,1);await verifyAssistantAfter598PhaseReceipt(native,current);}
@@ -306,7 +311,7 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       pullRequest:reference.pullRequest,branch:run.head_branch};
     const native=await nativeProof(phaseProof,reference,current,baselineVersion,git);assert.deepEqual(full.nativePostgres,native);
     if([ASSISTANT_AFTER598_PHASE_KIND,ASSISTANT_AFTER599_PHASE_KIND,ASSISTANT_AFTER599_REUSE_KIND,
-      ASSISTANT_AFTER601_PHASE_KIND,ASSISTANT_AFTER601_EXECUTED_V2_KIND].includes(phaseProof.kind)){
+      ASSISTANT_AFTER601_PHASE_KIND,ASSISTANT_AFTER601_EXECUTED_V2_KIND,ASSISTANT_AFTER601_REUSE_V2_KIND].includes(phaseProof.kind)){
       // Appversionen kommer fra producentens autentiske Git-træ; native beholder sin faste modelrelease.
       const raw=git(['cat-file','blob',reference.producerHead+':version.json']);
       assert(raw.length>0&&raw.length<=65536);
@@ -317,7 +322,7 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       assert.equal(metadata.releaseContract.modelBindings.integrated.modelBundleSha256,native.binding.I);
       assert.equal(metadata.releaseContract.modelBindings.candidateGRollback.modelBundleSha256,native.binding.C);
     }
-    if([ASSISTANT_AFTER601_PHASE_KIND,ASSISTANT_AFTER601_EXECUTED_V2_KIND].includes(phaseProof.kind))
+    if([ASSISTANT_AFTER601_PHASE_KIND,ASSISTANT_AFTER601_EXECUTED_V2_KIND,ASSISTANT_AFTER601_REUSE_V2_KIND].includes(phaseProof.kind))
       assert(phase.historicalNationalOmitted);
     if(phase.historicalNationalOmitted)assert(!Object.hasOwn(full,'historical584National'));
     else await historicalNational(full,current,native,git);
