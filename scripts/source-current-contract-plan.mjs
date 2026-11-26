@@ -147,6 +147,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   mailOwnerProbe:[
     'node --test scripts/test-owner-notice-probe-ci.mjs',
   ],
+  dmiWaveHistory:['node scripts/test-dmi-wave-history-source.mjs'],
   dmiBudget:[
     'node scripts/test-dmi-budget-rotation-4.0.189.mjs',
   ],
@@ -292,7 +293,10 @@ const PATH_AREAS=freeze({
   ],
   accountSchemaFixture:[ACCOUNT_SCHEMA_FIXTURE],
   accountTripUI:[
+    'js/services/trip-evidence-controller.js',
+    'js/services/trip-evidence-runtime.js',
     'js/ui/account-panel.js',
+    'js/ui/trip-evidence-dialog.js',
     'scripts/test-user-account-trip-log-4.0.264.mjs',
     'scripts/test-trip-evidence-upload-receipt.mjs',
   ],
@@ -436,6 +440,7 @@ const PATH_AREAS=freeze({
     'scripts/fixtures/owner-notice-probe/reservation.mjs',
     'scripts/fixtures/owner-notice-probe/hosted-owner-adapter-v1/hosted-owner-notice-probe.mjs',
   ],
+  dmiWaveHistory:['scripts/lib/dmi_wave_history_bootstrap.py','scripts/test_dmi_wave_history_bootstrap.py','scripts/test-dmi-wave-history-source.mjs'],
   dmiBudget:[
     'scripts/plan-dmi-recovery.py','scripts/lib/dmi_adaptive_recovery.py',
     'scripts/run-dmi-bulk-supervised.py','scripts/update-dmi-bulk.py',
