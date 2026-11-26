@@ -4,6 +4,8 @@ Den første 603-overgang i almindelig vejrhentning #400 afsluttede hentning, ber
 
 Overgangen genbruger nu den normale Pages-læser, der genlæser præcis det samme ID inden for en samlet frist på 50 sekunder ved HTTP 404. De eksisterende identitets-, manifest- og indholdskrav består. Fejl ved fortsat usynlighed, forkert identitet eller en anden HTTP-status stopper stadig udgivelsen. Den udregnede prognose kan udgives gennem den eksisterende gemte fortsættelse, når det beskyttede resultat kan genlæses. Den ændrede vej skal kildekvalificeres og efterprøves i GitHub.
 
+Udgivelsen af den gemte prognose i #401 brugte den rettede læser og blev verificeret offentligt. Den særskilte genoptagelse af et afbrudt forberedelsestrin kan også uploade den samme forseglede pakke igen. Efter denne upload bruger den nu samme afgrænsede genlæsning af det præcise nye ID. Den normale kontrol af navn, kørsel, commit, størrelse og hash kræves fortsat, før udgivelsen går videre. Denne vej er afprøvet lokalt og afventer kildekvalifikation.
+
 ## 25. november — opfølgning efter sprogskift i en anden fane
 
 Den lokale rettelse til den tyske formular bruger fanens aktive sprog, når et emne til opfølgning vælges. Lokal kandidat. Versionsværktøjet har synkroniseret de aktuelle modelfakta og begge håndbogsformater. Den normale kildekontrol vælger de fem aktuelle assistentprøver, herunder genlæsning af den installerede 601-forgænger og kontrol af den ene forberedte SQL-tilføjelse. Den første kandidat bestod kildekontrol og PostgreSQL i #1720. Efter indarbejdelse af #1095 skal det aktuelle træ bestå sin egen kontrol. Derefter følger genlæsning af den installerede overgang og verifikation på den første nye, senere ordinære vejrprognose.
