@@ -1,3 +1,9 @@
+## 26. november — genlæs metadata til Pages ved den første 603-udgivelse
+
+- [x] Fastslå første fejl i #400. GitHub kvitterede for upload, og det næste opslag på samme ID fik HTTP 404. Det udregnede vejrpar og de beståede valideringer er gemt.
+- [x] Brug den eksisterende tidsbegrænsede Pages-læser i det tidlige udgivelsestrin. Identitets- og indholdskontrollerne består, og den almindelige læserprøve består lokalt.
+- [ ] Kvalificér kildeændringen på GitHub. Udgiv det allerede beregnede vejrpar via den normale fortsættelse. Verificér offentlig prognose og fortsat automatisk beskæring af råcachen.
+
 ## 26. november — verificér råcachen ved den første assistentovergang
 
 - [x] Find stoppet i #399. Historikplanen bestod. Det første 603-forløb gendannede det godkendte gamle vejrpar, men den almindelige råcachekontrol forudsatte, at den nye model allerede var aktiv.
