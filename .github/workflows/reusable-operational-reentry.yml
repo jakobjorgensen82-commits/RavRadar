@@ -1359,7 +1359,7 @@ jobs:
           set -euo pipefail
           artifact_id="${{ steps.phase-pages-upload.outputs.artifact_id }}"
           [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]
-          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" > "$RAVRADAR_OPERATIONAL_WORK/new-artifact-rest.json"
+          node scripts/read-pages-artifact-metadata.mjs "$artifact_id" > "$RAVRADAR_OPERATIONAL_WORK/new-artifact-rest.json"
           ARTIFACT_ID="$artifact_id" node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
           import fs from 'node:fs';

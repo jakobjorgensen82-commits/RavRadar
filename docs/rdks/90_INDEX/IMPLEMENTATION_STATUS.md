@@ -1,8 +1,18 @@
+## 26. november — reelle huller først i Copernicus' vejrfelter
+
+- [x] Genskab en kørsel med ét ledigt forsøg, hvor en opdatering af en dækket time kom før et hul.
+- [x] Forsøg de manglende timer først gennem den eksisterende rotation. Medtag kun dækkede timer i første fase, når de ligger inden for samme nødvendige tidsinterval.
+- [ ] Verificér den normale kildekontrol og den efterfølgende ordinære prognose. Kørsel #400 viste 472 temperaturhuller ved kystdelene. Den afgør ikke, om køens rækkefølge var årsag til netop de huller.
+
 ## 26. november — genlæs metadata til Pages ved den første 603-udgivelse
 
 - [x] Fastslå første fejl i #400. GitHub kvitterede for upload, og det næste opslag på samme ID fik HTTP 404. Det udregnede vejrpar og de beståede valideringer er gemt.
 - [x] Brug den eksisterende tidsbegrænsede Pages-læser i det tidlige udgivelsestrin. Identitets- og indholdskontrollerne består, og den almindelige læserprøve består lokalt.
-- [ ] Kvalificér kildeændringen på GitHub. Udgiv det allerede beregnede vejrpar via den normale fortsættelse. Verificér offentlig prognose og fortsat automatisk beskæring af råcachen.
+- [x] Kildekontrol #1739 bestod. #401 udgav det allerede beregnede vejrpar, og den offentlige prognose er verificeret.
+- [ ] Verificér efterfølgende automatisk råcacherotation i en almindelig kørsel.
+
+- [x] Find det tilsvarende øjeblikkelige opslag efter upload i den særskilte genoptagelse. Genbrug den samme læser med de eksisterende identitetskrav.
+- [ ] Kvalificér den ændrede genoptagelsesvej på GitHub. Den normale levering i #401 er allerede offentlig verificeret.
 
 ## 26. november — verificér råcachen ved den første assistentovergang
 

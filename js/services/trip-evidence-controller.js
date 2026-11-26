@@ -1,4 +1,4 @@
-import { openTripEvidenceDialog } from '../ui/trip-evidence-dialog.js?v=4.0.603';
+import { openTripEvidenceDialog } from '../ui/trip-evidence-dialog.js?v=4.0.603&trip-test=20261125';
 import { t } from '../i18n.js?v=4.0.603';
 import {
   beginTripEvidence,

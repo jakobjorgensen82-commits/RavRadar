@@ -534,6 +534,7 @@ for (const kind of ['other-owner new login', 'same-owner new login', 'logout', '
         assert.ok(panel.content.innerHTML.includes(t('account.reportRemote')));
         await panel.showTripHistory(panel.dialog, {});
         assert.equal((panel.content.innerHTML.match(/class="trip-log-row"/g) || []).length, 1);
+        assert.doesNotMatch(panel.content.innerHTML, /<span>Testtur<\/span>/);
       }
     } finally { form.resolve(null); if (operation) await operation; h.finish(); }
   });
@@ -1496,9 +1497,28 @@ test('manual row receipt: ordinary failed own report stays queued',async()=>{
     form.resolve(reportAnswer);operation=panel.showAccountTripReport(panel.dialog,{});await operation;
     assert.equal(h.service.getObservationSyncStatus().pending,1);
     assert.equal(h.service.getLocalObservations()[0].sync_status,'pending');
+    assert.equal(JSON.parse(h.state.submits[0]).observation_origin,'self-reported');
     assert.ok(panel.content.innerHTML.includes(t('account.reportQueued')));
     assert.equal(panel.content.innerHTML.includes(t('account.reportRemote')),false);
   }finally{form.resolve(null);if(operation)await operation;h.finish();}
+});
+
+test('manual row receipt: marked test trip stays marked across retry',async()=>{
+  const h=harness(),form=deferred(),panel=ui(h,form);
+  try{
+    form.resolve({...reportAnswer,observationOrigin:'synthetic-test'});
+    await panel.showAccountTripReport(panel.dialog,{});
+    assert.equal(h.service.getObservationSyncStatus().pending,1);
+    const [first]=h.state.submits;
+    assert.equal(JSON.parse(first).observation_origin,'synthetic-test');
+    h.state.failSubmit=false;
+    await h.service.syncPendingObservations();
+    assert.deepEqual(h.state.submits,[first,first]);
+    assert.equal(h.service.getObservationSyncStatus().pending,0);
+    assert.equal(h.service.getLocalObservations()[0].observation_origin,'synthetic-test');
+    await panel.showTripHistory(panel.dialog, {});
+    assert.match(panel.content.innerHTML, /<span>Testtur<\/span>/);
+  }finally{h.finish();}
 });
 
 function virtualDeadlineClock(){

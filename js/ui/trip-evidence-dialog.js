@@ -1,6 +1,11 @@
-import { t } from "../i18n.js?v=4.0.603";
+import { getLanguage, t } from "../i18n.js?v=4.0.603";
 
 const STYLE_ID = 'ravradar-trip-evidence-dialog-style';
+const testTripLabels = {
+  da: 'Testtur (udelades fra samlet statistik)',
+  de: 'Testtour (wird in der Gesamtstatistik nicht berücksichtigt)',
+  en: 'Test trip (excluded from aggregate statistics)'
+};
 
 function createElement(tag, attributes = {}, text = '') {
   const element = document.createElement(tag);
@@ -34,6 +39,7 @@ function ensureStyles() {
     .trip-evidence-form select,.trip-evidence-form input[type=search],.trip-evidence-form input[type=number],.trip-evidence-form input[type=datetime-local]{width:100%;min-height:3rem;padding:.65rem .8rem;border:1px solid var(--border,#cad3ca);border-radius:.75rem;background:var(--surface-raised,#fff);color:inherit;font:inherit}
     .trip-zone-search-status{min-height:1.25rem;color:var(--text-muted,#536057)}
     .trip-evidence-note{padding:.75rem .85rem;border-radius:.75rem;background:var(--info-soft,#eaf4ef);font-size:.92rem;line-height:1.4}
+    .trip-evidence-test-trip{display:flex;align-items:center;gap:.5rem;min-height:2.75rem;cursor:pointer}
     .trip-evidence-actions{display:flex;justify-content:flex-end;gap:.65rem;padding-top:.25rem}
     .trip-evidence-actions button{min-height:2.85rem;padding:.65rem 1rem;border:0;border-radius:999px;font:inherit;font-weight:800;cursor:pointer}
     .trip-evidence-later{background:var(--surface-muted,#e9ece7);color:inherit}
@@ -371,6 +377,11 @@ export function openAccountTripReportDialog({
     noteForSelection: () => t('trip.form.reportPrivacy')
   });
 
+  const testTripLabel = createElement('label', { className: 'trip-evidence-test-trip' });
+  const testTripInput = createElement('input', { type: 'checkbox', name: 'testTrip' });
+  testTripLabel.append(testTripInput, document.createTextNode(testTripLabels[getLanguage()]));
+  form.append(testTripLabel);
+
   const status = createElement('p', { className: 'form-status', role: 'status' });
   form.append(status);
   const actions = createElement('div', { className: 'trip-evidence-actions' });
@@ -398,6 +409,7 @@ export function openAccountTripReportDialog({
         return;
       }
       answer = { ...readQuestions(), mode: form.elements.mode.value, startedAt: startedAt.toISOString(), searchMinutes };
+      if (testTripInput.checked) answer.observationOrigin = 'synthetic-test';
       dialog.close('save');
     });
     actions.querySelector('.trip-evidence-later').addEventListener('click', () => dialog.close('cancel'));

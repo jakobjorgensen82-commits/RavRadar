@@ -25,6 +25,10 @@ def plan(ids, *, purpose="GAP", reference=REFERENCE, times=None):
     if purpose == "AGED_DMI_CHALLENGE":
         for need in needs:
             need["protectedModelRun"] = "2026-09-20T00:00:00Z"
+    return plan_for_needs(needs, reference=reference)
+
+
+def plan_for_needs(needs, *, reference=REFERENCE):
     return build_component_plan(
         targets=PARTS, production_reference_at=reference, needs=needs,
         product_routes={part["partId"]: {"wave": ["nws-wave"]} for part in PARTS},
@@ -33,12 +37,14 @@ def plan(ids, *, purpose="GAP", reference=REFERENCE, times=None):
     )
 
 
-def turn(value, previous, *, limit=1):
+def turn(value, previous, *, limit=1, observed_requests=None):
     """One bounded invocation, including the runner's real cursor checkpoints."""
     state = copy.deepcopy(previous)
     attempts = []
     def acquire(request):
         attempts.append(request["target"]["partId"])
+        if observed_requests is not None:
+            observed_requests.append((request["target"]["partId"], request["expectedTimes"]))
         raise RuntimeError("CP_COMPONENT_REQUEST_TIMEOUT")
     def checkpoint(bank, rows):
         nonlocal state
@@ -110,6 +116,35 @@ class ComponentCursorTests(unittest.TestCase):
     def test_aged_dmi_challenges_share_critical_not_upgrade_lane(self):
         self.assertEqual(LANE(plan(["GAP-A"], purpose="AGED_DMI_CHALLENGE")), "critical")
         self.assertEqual(LANE(plan(["UPGRADE-A"], purpose="OPEN_METEO_UPGRADE")), "upgrade")
+
+    def test_gap_groups_get_the_budget_before_an_earlier_aged_group(self):
+        mixed = plan_for_needs([
+            *plan(["GAP-A"], purpose="AGED_DMI_CHALLENGE")["needs"],
+            *plan(["GAP-B", "GAP-C"])["needs"],
+        ])
+        attempts, after = turn(mixed, {})
+        self.assertEqual(attempts, ["GAP-B"])
+        self.assertEqual(CURSORS(after)["critical"], ["GAP-B", "nws-wave"])
+        attempts, _ = turn(mixed, after, limit=3)
+        self.assertEqual(attempts, ["GAP-C", "GAP-B", "GAP-A"])
+
+    def test_mixed_group_refresh_can_share_but_not_extend_a_gap_subset(self):
+        hour09 = "2026-09-26T09:00:00Z"
+        hour10 = "2026-09-26T10:00:00Z"
+        hour11 = "2026-09-26T11:00:00Z"
+        aged = plan(["GAP-A"], purpose="AGED_DMI_CHALLENGE", times={"GAP-A": hour09})["needs"][0]
+        mixed = plan_for_needs([
+            *plan(["GAP-A", "GAP-B"])["needs"],
+            {**aged, "purpose": "GAP", "validTime": hour10},
+            aged, {**aged, "validTime": hour11},
+        ])
+        observed = []
+        turn(mixed, {}, limit=3, observed_requests=observed)
+        self.assertEqual(observed, [
+            ("GAP-A", [REFERENCE, hour09, hour10]),
+            ("GAP-B", [REFERENCE]),
+            ("GAP-A", [hour11]),
+        ])
 
     def test_invalid_scheduling_hint_does_not_become_data_or_block_work(self):
         attempts, _ = turn(plan(["GAP-A"]), {"schemaVersion": 2,

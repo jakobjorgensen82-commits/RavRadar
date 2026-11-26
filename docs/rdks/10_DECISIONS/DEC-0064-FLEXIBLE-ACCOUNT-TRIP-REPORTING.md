@@ -64,3 +64,11 @@ Under udvikling køres kun de målrettede tests for denne kontrakt samt nødvend
 PR #111 bestod exact-head `32658661075` og blev merged som `cb7d2232`. Produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er version 4.0.265 på 210 zoner og 673 kystdele. Den målrettede, ikke-dataskrivende livekontrol bekræfter den udgivne efterregistreringsformular, dens krævede selvvalgte dato og tid uden forudfyldning samt **Afslut uden at indberette**.
 
 Den efterfølgende interaktive ejerprøve viste, at den autentificerede upload og turlog ikke var omfattet af dette produktionsbevis: den aktive tabel manglede `data_quality_flags` og ejerens SELECT-policy. DEC-0065/4.0.266 er den bindende produktionskorrektion. Formular- og fravalgskontrakten ovenfor består uændret.
+
+## Tillæg 2026-11-25 — markering af testture
+
+Manuelle indberetninger kan mærkes som testture i den eksisterende turlog. Markeringen er frivillig og som udgangspunkt slået fra. Den gemmes med turen og bevares ved genforsøg. Ture med den eksisterende oprindelsesmarkør vises som »Testtur« i den personlige turlog og filtreres fra den samlede statistik. Ældre umærkede ture skal ikke ommærkes ud fra gæt. Statistikfunktionen har fortsat sin egen kvalifikation og aktivering. Den normale kildekontrol vælger de eksisterende prøver af turlog og gemmekvitteringer for denne dialog.
+
+Den offentlige app bruger nye cacheadresser fra forsiden til konto- og turdialogerne i samme appversion. Indberetning fra kontoen og almindelig turstart og -afslutning henter det samme turdialogmodul. Browseren kan derfor hente ændringen, selv om den har gemt de tidligere 4.0.603-moduler.
+
+Den eksisterende kortprøve af cacheidentiteten kontrollerer appversionen samt udgaverne af transport og kort. Prøven af den nye turlogadresse efterprøver, at en tidligere cache ikke leverer den gamle formular.
