@@ -15281,7 +15281,7 @@ def first_marine_tail_catalogue(
             new_support = marine_catalogue_support_times(assets, required_times)
             extra_tail = (new_times | new_support) & uncovered_tail
             sizes = (
-                asset["size"] if asset.get("size") is not None else known_asset_bytes
+                asset["size"] if asset.get("size") is not None else known_asset_bytes or None
                 for asset in assets if asset["valid"] in extra_tail
             )
             if not run or not epoch(old_run) < epoch(run) <= reference.timestamp():
@@ -15300,7 +15300,14 @@ def first_marine_tail_catalogue(
                 reason = "CATALOGUE_LOSES_EXISTING_TIMES"
             elif not extra_tail:
                 reason = "NO_QUALIFIED_TAIL_IN_OFFER"
-            elif not any(type(size) is int and 0 < size <= remaining_bytes for size in sizes):
+            elif not any(
+                (type(size) is int and 0 < size <= remaining_bytes)
+                # Only the isolated water reader can defer an unknown size to
+                # download_asset's positive Content-Length and RAW checks,
+                # which run before either a temporary file or body reads.
+                or (size is None and preserves_plan is None)
+                for size in sizes
+            ):
                 reason = "TAIL_ASSET_OUTSIDE_BYTE_BUDGET"
             else:
                 # A late water-only reader never adopts the offered catalogue
@@ -15395,6 +15402,9 @@ def fill_late_water_tail(
         if attempted >= remaining_assets or not checkpoint_controller.can_start_asset(cost_family=collection):
             break
         hour = asset["valid"]
+        size = asset.get("size")
+        if size is not None and budget["bytes"] + size > MAX_DOWNLOAD_BYTES:
+            continue
         expected = official_current_asset_identity(collection, run, asset)
         if expected is None:
             continue
@@ -15419,11 +15429,12 @@ def fill_late_water_tail(
 
         try:
             with supervised_asset_operation(identity):
-                raw, reused = download_asset(asset["href"], asset.get("size"), budget,
+                raw, reused = download_asset(asset["href"], size, budget,
                                              work_deadline=WORK_DEADLINE, **details)
                 with _grib_read_scope(raw, collection, run, hour) as reader:
+                    capture = dict(reader.capture) if reader.capture is not None else None
                     if not cached_capture_matches_official(
-                        reader.capture, href=asset["href"], item_id=expected["itemId"],
+                        capture, href=asset["href"], item_id=expected["itemId"],
                         item_created_at=expected["itemCreatedAt"], item_updated_at=expected["itemUpdatedAt"],
                         expected_size=expected["assetSizeBytes"],
                     ):
@@ -15436,7 +15447,9 @@ def fill_late_water_tail(
                     )
         except AssetDownloadCleanupUnproven:
             raise
-        except (OSError, RuntimeError, ValueError, TypeError, KeyError) as error:
+        except Exception as error:
+            # A settled parser error rolls back this file just like a failure
+            # in the normal marine turn. The next eligible file can still help.
             checkpoint_controller.observe_asset_duration(time.monotonic() - started, cost_family=collection)
             progress(f"DMI_LATE_WATER_TAIL {collection} {hour} {collection_failure_code(error)}")
             continue
