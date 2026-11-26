@@ -1,3 +1,7 @@
+## 26. november — rækkefølge for Copernicus' kritiske forespørgsler
+
+Den almindelige plan blandede reelle datamangler med forsøg på at opdatere ældre dækning. Én ledig forespørgsel kunne gå til den allerede dækkede time. Den lokale rettelse lader hullerne få første tur i den fælles rotation. Et opslag til et hul kan også give verificerede data for allerede dækkede timer inden for samme tidsinterval. Kildekvalifikation og en efterfølgende ordinær kørsel udestår.
+
 ## 26. november — Pages-pakken i #400 var kortvarigt usynlig efter upload
 
 Den første 603-overgang i almindelig vejrhentning #400 afsluttede hentning, beregning, databevarelse, beskyttet gemning, validering og upload. Et metadataopslag på pakkens eksakte ID fik HTTP 404 omkring et halvt sekund efter GitHubs uploadkvittering. Samme ID blev senere genlæst med det forventede kørselsnummer, hovedcommit, navn og SHA-256. Pages-bestillingen var sprunget over. [Vejrkørsel #400](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45754581564)
