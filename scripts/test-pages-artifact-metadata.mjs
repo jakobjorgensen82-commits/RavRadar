@@ -68,3 +68,14 @@ test('ordinary Pages uses bounded metadata before the unchanged exact identity a
   assert.match(marker, /failure\(\)[\s\S]*steps\.pages-upload\.outcome == 'success'[\s\S]*steps\.pages-artifact-seal\.outcome == 'failure'[\s\S]*metadata_visibility_exhausted == 'true'/);
   assert.match(marker, /GH_TOKEN: \$\{\{ github\.token \}\}[\s\S]*gh api --method GET[\s\S]*artifacts\?per_page=100[\s\S]*jq -e/);
 });
+
+test('pre-activation recovery uses the same bounded read on the exact reuploaded artifact before sealing', () => {
+  const workflow = fs.readFileSync(new URL('../.github/workflows/reusable-operational-reentry.yml', import.meta.url), 'utf8');
+  const section = workflow.split('      - name: Reupload the same verified Pages bytes under this recovery attempt')[1]
+    .split('      - uses: supabase/setup-cli@')[0];
+  assert.match(section, /id: phase-pages-upload[\s\S]*steps\.phase-pages-upload\.outputs\.artifact_id/);
+  assert.match(section, /node scripts\/read-pages-artifact-metadata\.mjs "\$artifact_id"[\s\S]*assert\.equal\(a\.id,Number\(process\.env\.ARTIFACT_ID\)\)/);
+  assert.match(section, /assert\.equal\(a\.name,artifactName\);assert\.equal\(a\.expired,false\);assert\.equal\(a\.workflow_run\.id,runId\)/);
+  assert.match(section, /assert\.equal\(a\.workflow_run\.head_sha,process\.env\.GITHUB_SHA\)/);
+  assert.match(section, /normalizeArtifactDigestSha256\(a\.digest\)[\s\S]*--publish-pre-activation/);
+});
