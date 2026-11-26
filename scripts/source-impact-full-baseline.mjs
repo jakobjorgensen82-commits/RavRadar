@@ -118,7 +118,7 @@ async function nativeProof(proof,reference,current,releaseVersion,readGit){
   assert.equal(proof.sourceTreeSha256,reference.sourceTreeSha256);assert.equal(proof.privatePayloadIncluded,false);
   const native=proof.nativePostgres;
   if(after601V2){assert.equal(proof.schemaVersion,2);await verifyAssistantAfter601ExecutedV2Receipt(native,current,readGit);}
-  else if(after601){assert.equal(proof.schemaVersion,1);verifyAssistantAfter601PhaseReceipt(native,current);}
+  else if(after601){assert.equal(proof.schemaVersion,1);verifyAssistantAfter601PhaseReceipt(native,current,readGit);}
   else if(after599){assert.equal(proof.schemaVersion,after599Reuse?2:1);await verifyAssistantAfter599PhaseReceipt(native,current,{readGit:args=>String(readGit(args))});}
   else if(after598){assert.equal(proof.schemaVersion,1);await verifyAssistantAfter598PhaseReceipt(native,current);}
   else if(after597){assert.equal(proof.schemaVersion,1);await verifyAssistantAfter597PhaseReceipt(native,current);}

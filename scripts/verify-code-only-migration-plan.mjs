@@ -10,6 +10,8 @@ import {
   REQUIRED_CUTOVER_MIGRATIONS,
   ACCOUNT_ASSISTANT_SOURCE_MIGRATION,
   assertSupabaseMigrationPlan,
+  verifyIntegratedDatabaseReadback,
+  CHECKPOINT_SCALAR_WALK_MIGRATION,
 } from './integrated-cutover-readiness.mjs';
 import * as accountInactivityCutover from './integrated-cutover-readiness.mjs';
 const ACCOUNT_ERASURE_APP_MIGRATION=accountInactivityCutover.ACCOUNT_ERASURE_APP_MIGRATION;
@@ -130,6 +132,18 @@ const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
 const currentGridRoute = process.argv.includes('--current-grid-prewrite-plan');
 const inactivityOffRoute=process.argv.includes('--account-erasure-plan');
 const receiptRoute=process.argv.includes('--account-native-receipt-plan');
+const scalarWalkRoute=process.argv.includes('--checkpoint-scalar-walk-plan');
+if(scalarWalkRoute){
+  assert.equal(process.argv.length,9);
+  assert.deepEqual([process.argv[2],process.argv[3],process.argv[5],process.argv[7]],
+    ['--checkpoint-scalar-walk-plan','--migration-list','--dry-run','--migrations-directory']);
+  assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch');
+  assert.equal(process.env.GITHUB_REF,'refs/heads/main');
+  assert.equal(process.env.GITHUB_JOB,'apply-binding');
+  assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
+  assert.equal(process.env.GITHUB_WORKFLOW_REF,
+    'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main');
+}
 if(receiptRoute){
   assert.equal(process.argv.length,9);assert.deepEqual([process.argv[2],process.argv[3],process.argv[5],process.argv[7]],
     ['--account-native-receipt-plan','--migration-list','--dry-run','--migrations-directory']);
@@ -161,7 +175,16 @@ const plan = await assertSupabaseMigrationPlan({
   allowAccountAssistantPrewritePlan: process.argv.includes('--account-assistant-prewrite-plan'),
   allowAccountErasurePlan:inactivityOffRoute,
   allowAccountNativeReceiptPlan:receiptRoute,
+  allowCheckpointScalarWalkPlan:scalarWalkRoute,
 });
+if(scalarWalkRoute){
+  const pending=plan.pendingVersions.includes(CHECKPOINT_SCALAR_WALK_MIGRATION.version);
+  await verifyIntegratedDatabaseReadback({
+    url:process.env.SUPABASE_URL,
+    serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
+    checkpointScalarWalkInstalled:!pending,
+  });
+}
 if (process.argv.includes('--require-prewrite-gate')
     && plan.pendingVersions.includes('20261010120000')) {
   assert.equal(process.env.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED, 'true',

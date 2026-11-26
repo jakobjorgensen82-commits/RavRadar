@@ -84,6 +84,12 @@ const READINESS_SCHEMA = 'ravscore-integrated-cutover-readiness-v1';
 const DATABASE_READBACK_SCHEMA = 'ravscore-integrated-cutover-db-v1';
 const CHECKPOINT_DATABASE_READBACK_SCHEMA = 'ravscore-checkpoint-db-v1';
 export const CHECKPOINT_CAS_CONTRACT_ID = 'ravscore-checkpoint-metadata-cas-v1';
+// Operational SQL for the current checkpoint, independent of model issuance.
+export const CHECKPOINT_SCALAR_WALK_MIGRATION = Object.freeze({
+  version: '20261126152500',
+  filename: '20261126152500_checkpoint_scalar_privacy_walk.sql',
+  sha256: '23f863a6ba9d3cebdae3944f010fb0517b632200cc2c4eac89e84efc59e78df2',
+});
 const MODEL_BINDING_FIELDS = Object.freeze([
   'modelId', 'stateSchemaVersion', 'variantId', 'profileId', 'componentSchemaId',
   'explanationSchemaId', 'rankingPolicyId', 'bestTimePolicyId',
@@ -813,6 +819,14 @@ function fixedAssistantRows(migrationListText,profile){
   const allowed=new Set(required.map(row=>row.version)),next=required.at(-1);
   // One ancillary OFF app migration; historical model profiles remain closed.
   const offVersions=new Set([ASSISTANT_AFTER598_ROWS,ASSISTANT_AFTER599_ROWS].includes(profile)?[ACCOUNT_ERASURE_APP_MIGRATION.version]:[]);
+  if(profile===ASSISTANT_AFTER601_ROWS){
+    const {version}=CHECKPOINT_SCALAR_WALK_MIGRATION;
+    offVersions.add(version);
+    if(local.has(version)||remote.has(version)){
+      assert(local.has(version)&&remote.has(next.version),
+        'Checkpoint scalar walk requires exact local source and installed 603');
+    }
+  }
   if(profile===ASSISTANT_AFTER599_ROWS){
     for(const row of ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS)offVersions.add(row.version);
     const [notice,capture]=ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
@@ -1178,6 +1192,40 @@ export async function expectedCheckpointCasContract({
   return checkpointCasContractFromCanonicalSource(migration,{sourcePhase});
 }
 
+export async function readCheckpointScalarWalkSource(migrationsDirectory = MIGRATIONS_DIRECTORY) {
+  const migration = CHECKPOINT_SCALAR_WALK_MIGRATION;
+  const file = path.join(migrationsDirectory, migration.filename);
+  const stat = await fs.lstat(file);
+  assert(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= 16_384,
+    'Checkpoint scalar-walk migration must be a bounded regular file');
+  const bytes = await fs.readFile(file);
+  assert.equal(bytes.length, stat.size);
+  const sql = new TextDecoder('utf-8', {fatal: true}).decode(bytes).replaceAll('\r\n', '\n');
+  assert.equal(sha256(sql), migration.sha256, 'Checkpoint scalar-walk migration source changed');
+  return sql;
+}
+
+export async function expectedCheckpointScalarWalkContract({
+  migrationsDirectory = MIGRATIONS_DIRECTORY,
+} = {}) {
+  const sql = await readCheckpointScalarWalkSource(migrationsDirectory);
+  const {id, definition} = await expectedCheckpointCasContract({
+    migrationsDirectory, sourcePhase: 'assistant-after601-successor',
+  });
+  const replacement = sql.match(
+    /create or replace function public\.ravradar_ravscore_checkpoint_has_forbidden_key\(\s*p_value jsonb\s*\)[\s\S]*?\bas \$\$([\s\S]*?)\$\$;/i,
+  );
+  assert(replacement, 'Checkpoint scalar-walk migration must replace the exact privacy function');
+  const firstMarker = '\n-- forbidden-key-validator --\n';
+  const start = definition.indexOf(firstMarker) + firstMarker.length;
+  const end = definition.indexOf('\n-- ', start);
+  assert(start >= firstMarker.length && end > start, 'Issued checkpoint privacy definition is missing');
+  assert.equal(sha256(definition.slice(start, end)),
+    '7efd040c084a2d99c6ceb1b12d431374196ec151a86950a3b9ba5e7ea0d1c4d7');
+  const updated = definition.slice(0, start) + replacement[1].trim() + definition.slice(end);
+  return Object.freeze({id, definition: updated, sha256: sha256(updated)});
+}
+
 export function checkpointCasContractFromCanonicalSource(migration,{sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   assert.equal(typeof migration,'string');
   assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(sourcePhase));
@@ -1501,6 +1549,10 @@ export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWor
   if(includeAccountNativeReceiptSource)await fs.copyFile(
     path.join(MIGRATIONS_DIRECTORY,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename),
     path.join(migrationsDirectory,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename));
+  if(sourcePhase==='assistant-after601-successor'){
+    const sql=await readCheckpointScalarWalkSource();
+    await fs.writeFile(path.join(migrationsDirectory,CHECKPOINT_SCALAR_WALK_MIGRATION.filename),sql,{flag:'wx'});
+  }
   // Statistics230 is now a required historical source and was copied above.
   // Its explicit legacy option still verifies the immutable source, not a grant.
   return Object.freeze({ workdir, migrationsDirectory });
@@ -1703,6 +1755,7 @@ export async function assertSupabaseMigrationPlan({
   allowStatisticsPreferenceRevisionPlan = false,
   allowAccountErasurePlan = false,
   allowAccountNativeReceiptPlan = false,
+  allowCheckpointScalarWalkPlan = false,
 } = {}) {
   ACTIVE.requireOutput(); // Fast aktiv familie; UNISSUED må ikke falde tilbage.
   assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
@@ -1717,7 +1770,20 @@ export async function assertSupabaseMigrationPlan({
     assert(['assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase));
     assert.equal(allowAccountAssistantPrewritePlan,false);assert.equal(allowStatisticsPreferenceRevisionPlan,false);
   }
+  assert.equal(typeof allowCheckpointScalarWalkPlan,'boolean');
+  if(allowCheckpointScalarWalkPlan){
+    assert(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
+    assert(!allowAccountAssistantPrewritePlan&&!allowStatisticsPreferenceRevisionPlan
+      &&!allowAccountErasurePlan&&!allowAccountNativeReceiptPlan);
+  }
   const inspected=await inspectMigrationSources({ migrationsDirectory });
+  const scalarWalk=CHECKPOINT_SCALAR_WALK_MIGRATION;
+  const hasScalarWalk=inspected.versionToFilename.has(scalarWalk.version);
+  if(hasScalarWalk||allowCheckpointScalarWalkPlan){
+    assert(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
+    assert.equal(inspected.versionToFilename.get(scalarWalk.version),scalarWalk.filename);
+    await readCheckpointScalarWalkSource(migrationsDirectory);
+  }
   if(['assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase)&&ACCOUNT_ERASURE_APP_MIGRATION){
     assert.equal(inspected.versionToFilename.get(ACCOUNT_ERASURE_APP_MIGRATION.version),ACCOUNT_ERASURE_APP_MIGRATION.filename,
       'The active app dependency may not be omitted through a special migration view');
@@ -1762,8 +1828,15 @@ export async function assertSupabaseMigrationPlan({
       for(const row of required)assert(remote.has(row.version),'OFF installation requires installed601 and app600');
     }else assertAssistantAfter599MigrationsApplied(migrationListText);
   }
-  if(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR)
-    assertAssistantAfter601MigrationsApplied(migrationListText);
+  if(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR){
+    if(allowCheckpointScalarWalkPlan){
+      fixedAssistantRows(migrationListText,ASSISTANT_AFTER601_ROWS);
+      assert(local.has(scalarWalk.version));
+      assert.deepEqual([...local].filter(version=>!remote.has(version)),
+        remote.has(scalarWalk.version)?[]:[scalarWalk.version],
+        'Only the exact checkpoint scalar-walk migration may be pending');
+    }else assertAssistantAfter601MigrationsApplied(migrationListText);
+  }
   if(ACTIVE.sourcePhase==='assistant-after598-successor'){
     assert.ok(remote.has(assistantAfter598Migration().version),'ASSISTANT_AFTER598_PREWRITE_ROUTE_REQUIRED');
     assertAssistantAfter598MigrationsApplied(migrationListText,{allowPendingAccountErasure:allowAccountErasurePlan});
@@ -1796,7 +1869,8 @@ export async function assertSupabaseMigrationPlan({
   if(!['assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(ACTIVE.sourcePhase))assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
   const plannedMigrations = allowAccountNativeReceiptPlan
     ? [...REQUIRED_CUTOVER_MIGRATIONS,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION]
-    : allowAccountErasurePlan? [...REQUIRED_CUTOVER_MIGRATIONS,...selectedAppMigrations] : REQUIRED_CUTOVER_MIGRATIONS;
+    : allowAccountErasurePlan? [...REQUIRED_CUTOVER_MIGRATIONS,...selectedAppMigrations]
+    : hasScalarWalk? [...REQUIRED_CUTOVER_MIGRATIONS,scalarWalk] : REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
   for (const migration of REQUIRED_CUTOVER_MIGRATIONS) {
@@ -1866,6 +1940,9 @@ export function assertSupabaseMigrationsApplied(migrationListText,{requireAccoun
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');
   const requiredVersions = REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version);
+  if(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR&&local.has(CHECKPOINT_SCALAR_WALK_MIGRATION.version)){
+    requiredVersions.push(CHECKPOINT_SCALAR_WALK_MIGRATION.version);
+  }
   for (const version of requiredVersions) {
     assert.ok(local.has(version), `required local migration ${version} disappeared after db push`);
     assert.ok(remote.has(version), `required migration ${version} was not recorded remotely after db push`);
@@ -2057,7 +2134,10 @@ export async function verifyIntegratedDatabaseReadback({
   candidateModelBinding = null,
   tripBindingPolicy = null,
   tripActiveAdmissionPolicy = null, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
+  checkpointScalarWalkInstalled = sourcePhase==='assistant-after601-successor',
 } = {}) {
+  assert.equal(typeof checkpointScalarWalkInstalled,'boolean');
+  if(checkpointScalarWalkInstalled)assert.equal(sourcePhase,'assistant-after601-successor');
   assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor','assistant-after601-successor'].includes(sourcePhase));
   if(sourcePhase === 'current-memory-warmup')requireCurrentMemoryWarmupOutput();
   if(sourcePhase === 'established-native-current-origin')requireEstablishedNativeCurrentOriginOutput();
@@ -2091,7 +2171,9 @@ export async function verifyIntegratedDatabaseReadback({
   const expectedPolicy = tripBindingPolicy ?? await expectedTripBindingPolicy({sourcePhase});
   const expectedActiveAdmissionPolicy = tripActiveAdmissionPolicy
     ?? await expectedTripActiveAdmissionPolicy();
-  const expectedCheckpointContract = await expectedCheckpointCasContract({sourcePhase});
+  const expectedCheckpointContract = checkpointScalarWalkInstalled
+    ? await expectedCheckpointScalarWalkContract()
+    : await expectedCheckpointCasContract({sourcePhase});
   assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPolicy);
   const checkpointResponse = await fetchImpl(
     `${baseUrl}/rest/v1/rpc/ravradar_ravscore_checkpoint_contract`,
