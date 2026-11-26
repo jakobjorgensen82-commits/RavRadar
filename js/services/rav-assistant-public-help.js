@@ -73,6 +73,12 @@ const ANSWERS={
     da:'Ja. Når bølger sætter let materiale ved bunden i bevægelse, kan strømmen flytte det mellem revler og render. Det kan ske uden nyt opskyl på stranden. '+SANDBAR_SURFACE_CLUES.da,
     de:'Ja. Wenn Wellen leichtes Material am Boden aufwirbeln, kann die Strömung es zwischen Sandbänken und Rinnen verlagern. Das ist auch ohne neuen Spülsaum möglich. '+SANDBAR_SURFACE_CLUES.de,
     en:'Yes. When waves stir up light material near the seabed, currents can move it between sandbars and channels. This can happen without fresh wash on the beach. '+SANDBAR_SURFACE_CLUES.en
+  },
+  // DEC-0067 and the existing swash-backwash, light-fraction and fresh-wash facts.
+  'winter-wave-sorting':{
+    da:'Almindelige bølger kan sætte rav i bevægelse, hvis det allerede ligger løst nær kysten. Når vandet skyller op og trækker sig tilbage, sorterer det materialet efter blandt andet størrelse, form og tæthed. Derfor kan rav ende samme sted som skaller og tang. En frisk opskylslinje og små lommer med let materiale er spor, der viser, hvor det kan være værd at lede. Om vinteren er der ofte kraftigere vejrhændelser. Rav kan findes året rundt.',
+    de:'Gewöhnliche Wellen können bereits lockeren Bernstein in Küstennähe bewegen. Wenn das Wasser am Strand aufläuft und zurückströmt, sortiert es das Material unter anderem nach Größe, Form und Dichte. So kann Bernstein neben Muschelschalen und Tang liegen. Ein frischer Spülsaum und kleine Mulden mit leichtem Material sind Suchhinweise. Im Winter gibt es häufiger kräftige Wetterereignisse. Bernstein lässt sich ganzjährig finden.',
+    en:'Ordinary waves can move loose amber already lying near the coast. As water washes up the beach and flows back, it sorts material partly by size, shape and density. Amber can end up among shells and seaweed. A fresh wash line and pockets of light debris are clues to where to look. Stronger weather events are more common in winter. Amber can be found year-round.'
   }
 };
 const FORMS={
@@ -99,6 +105,11 @@ const FORMS={
     da:/^(?:kan (?:hav)?strøm(?:men)? flytte rav|kan rav(?:ansamlinger)? (?:flytte sig|flyttes)) mellem (?:to )?revler(?: uden nyt opskyl)?(?:(?:,? og |[?.] )hvad kan jeg (?:se|observere) fra stranden)?$/iu,
     de:/^(?:kann bernstein zwischen (?:zwei )?sandbänken durch (?:die )?strömung verlagert werden|(?:kann die strömung bernstein|können sich bernsteinansammlungen) zwischen (?:zwei )?sandbänken(?: ohne neuen spülsaum)? verlagern)(?:(?:,? und |[?.] )was kann ich vom strand aus beobachten(?:,? um das zu erkennen)?)?$/iu,
     en:/^(?:can (?:currents?|the current) move amber|can amber(?: accumulations)? (?:shift|move)) between (?:two )?sandbars(?: without (?:new|fresh) wash)?(?:(?:,? and |[?.] )what can i (?:observe|see) from the beach(?: to notice it)?)?$/iu,
+  },
+  'winter-wave-sorting':{
+    da:/^hvorfor finder (?:man|vi) (?:om vinteren efter (?:almindelige|normale|moderate) bølger|efter (?:almindelige|normale|moderate) bølger om vinteren) (?:nogle gange )?rav (?:mellem|blandt) (?:muslinge)?skaller og tang$/iu,
+    de:/^(?:warum|wieso) (?:findet man|finden wir) (?:im winter nach (?:gewöhnlichen|normalen|mäßigen) wellen|nach (?:gewöhnlichen|normalen|mäßigen) wellen im winter) (?:manchmal )?bernstein zwischen (?:muschelschalen|muscheln) und (?:tang|seegras)$/iu,
+    en:/^why (?:do|can) (?:you|we) (?:sometimes )?find amber (?:among|between|mixed with) (?:sea)?shells and (?:seaweed|kelp) (?:in winter after (?:ordinary|normal|moderate) waves|after (?:ordinary|normal|moderate) waves in winter)$/iu,
   },
 };
 // Both clauses compare a landing point with the area covered by the forecast.
