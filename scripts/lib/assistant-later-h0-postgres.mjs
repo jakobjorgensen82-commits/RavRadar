@@ -46,7 +46,8 @@ import {currentMemoryWarmupPreservationInventorySql} from './current-memory-warm
 import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0RequiredMigrations,
   assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations,assistantPublic591SuccessorRequiredMigrations,installed593Original591RequiredMigrations,
   accountStatisticsAssistantRequiredMigrations,scalar597LaterH0RequiredMigrations,assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,
-  assistantAfter599RequiredMigrations,assistantAfter601RequiredMigrations}
+  assistantAfter599RequiredMigrations,assistantAfter601RequiredMigrations,
+  CHECKPOINT_SCALAR_WALK_MIGRATION,expectedCheckpointScalarWalkContract,readCheckpointScalarWalkSource}
   from '../integrated-cutover-readiness.mjs';
 import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata}
   from '../verify-account-assistant-schema.mjs';
@@ -686,8 +687,16 @@ export async function compareAssistantAfter601Successor(options){
     }
   });
 
-  const report=await compareFixedSuccessor(ASSISTANT_AFTER601_NATIVE_PROFILE,{...options,originalProfile});
-  assert.deepEqual(await nativeLedgerRows(psql),next.map(row=>row.version));
+  const scalarWalkFile=path.join(ROOT,'supabase/migrations',CHECKPOINT_SCALAR_WALK_MIGRATION.filename);
+  const scalarWalkPresent=await fs.lstat(scalarWalkFile).then(()=>true,error=>{
+    if(error.code==='ENOENT')return false;
+    throw error;
+  });
+  const scalarWalkSource=scalarWalkPresent?await readCheckpointScalarWalkSource():null;
+  const report=await compareFixedSuccessor(ASSISTANT_AFTER601_NATIVE_PROFILE,{...options,originalProfile,scalarWalkSource});
+  const expectedLedger=next.map(row=>row.version);
+  if(scalarWalkPresent)expectedLedger.push(CHECKPOINT_SCALAR_WALK_MIGRATION.version);
+  assert.deepEqual(await nativeLedgerRows(psql),expectedLedger);
   assert.deepEqual(await readNative601AccountOff(psql,app,inactivity,append),accountBefore);
   return {...report,installedLedgerBeforeRows:installed.length,installedLedgerAfterRows:next.length,
     accountOffCatalogPreserved:true,predecessorExecutedInSameHost:true,
@@ -1266,12 +1275,15 @@ async function compareFixedSuccessor(profile,options){
       cases.push([incomingName,PREFIX+'same',incomingName,1,'22023',null,1]);
     }
     const bank=await psql(currentMemoryWarmupPreservationInventorySql('original-bank')),account=await psql(accountRowsSql()),reports=[];
+    const invokeCas=async(central,incoming,version)=>JSON.parse(await psql(reset(central)
+      +"set statement_timeout='55s';set request.jwt.claim.role='service_role';set role service_role;select public.native_checkpoint_attempt(false,"
+      +version+",(select payload from native_checkpoint_payloads where name='"+incoming+"'));"));
+    let newerCurrentBefore;
     for(const[name,central,incoming,version,code,disposition,storedVersion]of cases){
       phase='CASE_'+name.toUpperCase().replaceAll('-','_');
-      const observed=JSON.parse(await psql(reset(central)
-        +"set statement_timeout='55s';set request.jwt.claim.role='service_role';set role service_role;select public.native_checkpoint_attempt(false,"
-        +version+",(select payload from native_checkpoint_payloads where name='"+incoming+"'));"));
+      const observed=await invokeCas(central,incoming,version);
       assertObserved(observed,code,disposition,storedVersion);
+      if(options.scalarWalkSource&&name==='newer-current')newerCurrentBefore=observed;
       reports.push({case:name,sqlstate:code,disposition,storedVersion});
     }
     phase='PRESERVED';assert.equal(await psql(currentMemoryWarmupPreservationInventorySql('original-bank')),bank);
@@ -1286,8 +1298,51 @@ async function compareFixedSuccessor(profile,options){
       assert(after597Window);assert.equal(await psql(after597Window.historySql),after597Window.beforeHistory,'WHOLE597→NEXT history preserved');
     }else assert.equal(await psql('select count(*) from admin_document_versions;'),'0');
     assert.deepEqual(JSON.parse(await psql(catalogSql(allNames))),catalogAfter);
+    let checkpointScalarWalk;
+    if(options.scalarWalkSource){
+      phase='CHECKPOINT_SCALAR_WALK';
+      assert.equal(profile,ASSISTANT_AFTER601_NATIVE_PROFILE);
+      assert(newerCurrentBefore&&after601Window);
+      const append=CHECKPOINT_SCALAR_WALK_MIGRATION;
+      assert.equal(sha(options.scalarWalkSource),append.sha256);
+      const beforeAppendLedger=inventory.map(row=>row.version);
+      assert.deepEqual(await nativeLedgerRows(psql),beforeAppendLedger);
+      const helper=CP+'has_forbidden_key';
+      const privacyCases="select array(select public."+helper+"(value) from unnest(array["
+        +"null::jsonb,'false','0','\"rawu\"','{\"ok\":[null,\"rawu\",{}]}',"
+        +"'[0,{\"L-a_t\":0}]','{\"ok\":[[{\"rawu\":null}]]}']) with ordinality sample(value,ordinal) order by ordinal);";
+      assert.equal(await psql(privacyCases),'{f,f,f,f,f,t,t}');
+      const checkpointRows="select jsonb_agg(encode(extensions.digest(convert_to(to_jsonb(d)::text,'UTF8'),'sha256'),'hex')"
+        +" order by d.document_key)::text from public.admin_documents d;";
+      const beforeAppendCheckpoint=await psql(checkpointRows);
+      const appendContract=await expectedCheckpointScalarWalkContract();
+      await psql(options.scalarWalkSource);
+      await psql('insert into supabase_migrations.schema_migrations values('+literal(append.version)+');');
+      assert.deepEqual(await nativeLedgerRows(psql),[...beforeAppendLedger,append.version]);
+      assert.equal(await psql(checkpointRows),beforeAppendCheckpoint);
+      const scalarCatalog=JSON.parse(await psql(catalogSql(allNames)));
+      const helperBody=/\n-- forbidden-key-validator --\n([\s\S]+?)\n-- /.exec(appendContract.definition);
+      assert(helperBody);
+      assert.notEqual(sha(helperBody[1]),catalogAfter[helper].body);
+      assert.deepEqual(scalarCatalog,{...catalogAfter,[helper]:{...catalogAfter[helper],body:sha(helperBody[1])}});
+      const appendReadback=JSON.parse(await psql("set request.jwt.claim.role='service_role';set role service_role;select public."+CP+'contract();'));
+      assert.deepEqual(appendReadback,{...contract,checkpointContract:{id:appendContract.id,definition:appendContract.definition}});
+      assert.equal(await psql(privacyCases),'{f,f,f,f,f,t,t}');
+      const {elapsedMs:beforeMs,...beforeCas}=newerCurrentBefore;
+      const {elapsedMs:afterMs,...afterCas}=await invokeCas(PREFIX+'same',PREFIX+'newer',1);
+      assert(Number.isFinite(beforeMs)&&Number.isFinite(afterMs));
+      assert.deepEqual(afterCas,beforeCas);
+      assert.equal(await psql(currentMemoryWarmupPreservationInventorySql('original-bank')),bank);
+      assert.equal(await psql(accountRowsSql()),account);
+      assert.equal(await psql(after601Window.historySql),after601Window.beforeHistory);
+      checkpointScalarWalk={migrationVersion:append.version,migrationSha256:append.sha256,
+        installedLedgerBeforeRows:beforeAppendLedger.length,installedLedgerAfterRows:beforeAppendLedger.length+1,
+        sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,
+        priorDataPreserved:true,forbiddenKeysUnchanged:true,normalCasUnchanged:true};
+    }
     for(const[file,pin]of archivePins)assert.equal(sha(await fs.readFile(path.join(ROOT,'supabase/migrations',file))),pin);
     return {kind:profile.resultKind,sourceMigrationInventory:profile.migrationCount,sqlExecuted:true,wholeMigrationExecuted:true,
+      ...(checkpointScalarWalk?{checkpointScalarWalk}:{}),
       ...(profile.databaseBefore?{databaseBeforeVersion:DATABASE_BEFORE.version,originalStateRelease:profile.previousRelease,
         existingOriginalAliasesPreserved:ORIGINAL_ALIASES.length}:{}),
       migrationVersion:migration.version,partCount:673,checkpointOidSlots:checkpointShape?.oidSlots??profile.oidSlots,contractBodies:checkpointShape?.contractBodies??profile.contractBodies,

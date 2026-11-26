@@ -339,7 +339,8 @@ test('active after601 treats all OFF account migrations as installed dependencie
  const app=[...cutover.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,cutover.ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION];
  assert.equal(required.length,70);
  assert.deepEqual(required.slice(-4,-1),app);
- const list=(pending,missing)=>'Local | Remote | Time\n'+required.map(({version})=>
+ const staged=[...required,cutover.CHECKPOINT_SCALAR_WALK_MIGRATION];
+ const list=(pending,missing)=>'Local | Remote | Time\n'+staged.map(({version})=>
   (version===missing?'':version)+' | '+(version===pending?'':version)+' |').join('\n');
  const noPending='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
  const parent=await fs.promises.realpath(os.tmpdir());
@@ -347,12 +348,12 @@ test('active after601 treats all OFF account migrations as installed dependencie
  try{
   const prepared=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:work});
   const names=(await fs.promises.readdir(prepared.migrationsDirectory)).sort();
-  assert.deepEqual(names,required.map(row=>row.filename).sort());
+  assert.deepEqual(names,staged.map(row=>row.filename).sort());
   for(const row of app)assert.deepEqual(await fs.promises.readFile(path.join(prepared.migrationsDirectory,row.filename)),
    await fs.promises.readFile(new URL('../supabase/migrations/'+row.filename,import.meta.url)));
   const input={migrationListText:list(),dryRunText:noPending,migrationsDirectory:prepared.migrationsDirectory};
   assert.deepEqual((await cutover.assertSupabaseMigrationPlan(input)).pendingVersions,[]);
-  assert.deepEqual(cutover.assertSupabaseMigrationsApplied(input.migrationListText).appliedVersions,required.map(row=>row.version));
+  assert.deepEqual(cutover.assertSupabaseMigrationsApplied(input.migrationListText).appliedVersions,staged.map(row=>row.version));
   assert.deepEqual((await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list()})).placeholders,[]);
   for(const row of app){
    await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list(row.version)}));
