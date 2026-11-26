@@ -10,6 +10,7 @@ import { PUBLIC_CONFIG } from '../config.js';
 import { createSupabaseAdminRequester } from './lib/supabase-admin-rest.mjs';
 import { fileURLToPath } from 'node:url';
 import { gzip, gunzip } from 'node:zlib';
+import { createOperationalEvidenceR2Slots, OPERATIONAL_EVIDENCE_SLOT_LIMIT } from './lib/operational-evidence-r2-slots.mjs';
 import { readAuthenticPagesAttemptClosure, authenticPagesPublicCompletionObservation } from './github-pages-attempt-evidence.mjs';
 
 import { assertExactPublicRavScoreModelBindingShape } from '../js/core/ravscore-public-profile-contract.js';
@@ -435,6 +436,236 @@ async function decodeArchive(archive, descriptor, policy) {
   return files;
 }
 
+// A request-local observation of the unchanged authenticated Storage reader.
+// No message/status-shaped error supplied by a caller can mint this type.
+class OperationalEvidenceStorageNotFound extends Error {}
+
+async function isLegacyMissingOperationalBucket(response) {
+  const type = response.headers.get('content-type') ?? '';
+  if (response.status !== 400 || !/^application\/json(?:\s*;|$)/i.test(type)) return false;
+  const reader = response.body?.getReader();
+  if (!reader) return false;
+  const chunks = [];
+  let bytes = 0;
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    void reader.cancel().catch(() => {});
+  }, 3000);
+  try {
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (timedOut) return false;
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > 4096) {
+        void reader.cancel().catch(() => {});
+        return false;
+      }
+      chunks.push(value);
+    }
+    const body = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(Buffer.concat(chunks, bytes)));
+    return body?.statusCode === '404' && body.code === 'NoSuchBucket';
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+    reader.releaseLock();
+  }
+}
+class OperationalEvidenceCasNotApplied extends Error {}
+// Only normal exact-CAS readbacks mint this in-process admission; a fresh GET
+// or caller's version/boolean cannot authorize replacement of another archive.
+const operationalReplicaCasReadbacks=new WeakSet();
+const operationalObjectPath = /^operational-evidence\/sha256\/([a-f0-9]{64})\.json\.gz$/;
+
+async function eligibleOperationalReplica(objectPath, bytes) {
+  const match = operationalObjectPath.exec(objectPath);
+  if (!match || !Buffer.isBuffer(bytes) || bytes.length < 1
+    || bytes.length > PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.maximumArchiveBytes
+    || sha256(bytes) !== match[1]) throw new Error('Operational replica bytes are invalid');
+  let envelope;
+  try { envelope = JSON.parse((await gunzipAsync(bytes, {
+    maxOutputLength: PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.maximumEnvelopeBytes,
+  })).toString('utf8')); } catch { throw new Error('Operational replica envelope is invalid'); }
+  const policy = envelope?.kind === PRE_ACTIVATION_POLICY.archiveKind ? PRE_ACTIVATION_POLICY
+    : PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  const descriptor = validateProtectedOperationalEvidenceDescriptor({ ...envelope?.descriptor,
+    objectPath, objectSha256: match[1], objectBytes: bytes.length }, { policy });
+  await decodeArchive(bytes, descriptor, policy);
+  return descriptor;
+}
+
+
+// The original gzip is embedded unchanged after a bounded, self-describing header.
+// A fresh nonce lives IN the body: reintroduction cannot recreate an old ETag/ABA.
+const SLOT_KIND = 'RAVRADAR_OPERATIONAL_EVIDENCE_SLOT_V3';
+const SLOT_MAGIC = Buffer.from(SLOT_KIND + '\n');
+function encodeOperationalSlot(slot, descriptor, archive, admittedPointerVersion) {
+  const header = Buffer.from(JSON.stringify({ kind:SLOT_KIND, slot,
+    generation:crypto.randomBytes(32).toString('hex'), admittedPointerVersion, descriptor }));
+  if (header.length > 16_000) throw new Error('OPERATIONAL_SLOT_HEADER_BOUND');
+  return Buffer.concat([SLOT_MAGIC, header, Buffer.from('\n'), archive]);
+}
+async function decodeOperationalSlot(record) {
+  if (!record) return null;
+  const {bytes,slot} = record;
+  if (!bytes.subarray(0,SLOT_MAGIC.length).equals(SLOT_MAGIC)) throw new Error('OPERATIONAL_SLOT_HEADER_INVALID');
+  const end=bytes.indexOf(10,SLOT_MAGIC.length);
+  if(end<0||end-SLOT_MAGIC.length>16_000)throw new Error('OPERATIONAL_SLOT_HEADER_BOUND');
+  let header;try{header=JSON.parse(bytes.subarray(SLOT_MAGIC.length,end).toString('utf8'));}
+  catch{throw new Error('OPERATIONAL_SLOT_HEADER_INVALID');}
+  exactKeys(header,['kind','slot','generation','admittedPointerVersion','descriptor'],'Operational slot');
+  if(header.kind!==SLOT_KIND||header.slot!==slot||!Number.isInteger(slot)||slot<1||slot>6
+    ||!SHA256_PATTERN.test(header.generation??'')||!Number.isSafeInteger(header.admittedPointerVersion)
+    ||header.admittedPointerVersion<0||JSON.stringify(header)!==bytes.subarray(SLOT_MAGIC.length,end).toString('utf8'))
+    throw new Error('OPERATIONAL_SLOT_HEADER_INVALID');
+  const archive=bytes.subarray(end+1),descriptor=await eligibleOperationalReplica(header.descriptor?.objectPath,archive);
+  if(!same(descriptor,header.descriptor))throw new Error('OPERATIONAL_SLOT_DESCRIPTOR_CHANGED');
+  return {...record,header,archive};
+}
+export function createProtectedOperationalEvidenceClients({
+  supabaseUrl=process.env.SUPABASE_URL, serviceRoleKey=process.env.SUPABASE_SERVICE_ROLE_KEY,
+  fetchImpl=globalThis.fetch, operationMs=10_000, onReplicaStatus=()=>{},
+  slotsFactory=(fetchBound,delayImpl)=>createOperationalEvidenceR2Slots({
+    bucketId:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.bucketId,fetchImpl:fetchBound,delayImpl}),
+}={}) {
+  if(!Number.isInteger(operationMs)||operationMs<1||operationMs>10_000)throw new Error('Operational replica budget is invalid');
+  const client=(fetchBound,delayImpl)=>createProtectedPrivateRuntimeClients({supabaseUrl,serviceRoleKey,
+    fetchImpl:fetchBound,delayImpl,storageBackend:'supabase'});
+  const primary=client(fetchImpl);
+  async function readPrimary(objectPath,fetchBound=fetchImpl,delayImpl) {
+    if(!operationalObjectPath.test(objectPath))throw new Error('Operational replica path is invalid');
+    let missing = false;
+    const expected=supabaseUrl.replace(/\/$/,'')+'/storage/v1/object/authenticated/'
+      +encodeURIComponent(PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.bucketId)+'/'+objectPath;
+    const reader=client(async(url,options)=>{
+      missing = false;
+      const response=await fetchBound(url,options);
+      if(url===expected&&(options?.method??'GET')==='GET'){
+        missing = response.status === 404 || await isLegacyMissingOperationalBucket(response);
+      }
+      return response;
+    },delayImpl);
+    try{return await reader.storage.download(objectPath);}catch(error){
+      if (!missing) throw error;
+      throw new OperationalEvidenceStorageNotFound('Exact operational Storage object is absent',{cause:error});
+    }
+  }
+  async function withinBudget(action) {
+    const controller=new AbortController(),deadline=Date.now()+operationMs;
+    const timer=setTimeout(()=>controller.abort(),operationMs);
+    const check=()=>{if(controller.signal.aborted||Date.now()>=deadline)throw new Error('OPERATIONAL_REPLICA_DEADLINE');};
+    const boundedFetch=async(url,options)=>{
+      check();const response=await fetchImpl(url,{...options,signal:controller.signal});
+      if(controller.signal.aborted){await response.body?.cancel?.().catch(()=>{});check();}return response;
+    };
+    const delay=ms=>new Promise((resolve,reject)=>{
+      check();const abort=()=>{clearTimeout(handle);reject(new Error('OPERATIONAL_REPLICA_DEADLINE'));};
+      const handle=setTimeout(()=>{controller.signal.removeEventListener('abort',abort);resolve();},ms);
+      controller.signal.addEventListener('abort',abort,{once:true});
+    });
+    const pointerRequest=createSupabaseAdminRequester({endpoint:supabaseUrl.replace(/\/$/,'')+'/rest/v1/admin_documents',
+      key:serviceRoleKey,fetchImpl:boundedFetch,delayImpl:delay});
+    try{return await action({remote:slotsFactory(boundedFetch,delay),check,fetchBound:boundedFetch,delay,pointerRequest});}
+    catch(error){if(controller.signal.aborted)throw new Error('OPERATIONAL_REPLICA_DEADLINE',{cause:error});throw error;}
+    finally{clearTimeout(timer);controller.abort();}
+  }
+  async function inventory(remote,check) {
+    const slots=[];
+    for(let slot=1;slot<=OPERATIONAL_EVIDENCE_SLOT_LIMIT;slot++){
+      slots.push(await decodeOperationalSlot(await remote.read(slot)));check();
+    }
+    // A previously unanswered replacement can settle after another slot copied
+    // the same descriptor. Exact duplicates are bounded by the same six keys.
+    return slots;
+  }
+  async function maintain({request,row,incoming=null,afterCommittedCas=false}) {
+    try {
+      const result=await withinBudget(async({remote,check,fetchBound,delay,pointerRequest})=>{
+        const fresh=async()=>{check();const observed=await readPointer(pointerRequest,{allowMissing:true,
+          policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});check();
+          if(!same(observed,row))throw new Error('OPERATIONAL_REPLICA_REFERENCE_CHANGED');return observed;};
+        await fresh();const slots=await inventory(remote,check),version=row?.version??0;
+        const references=retainedDescriptors(row?.payload);
+        const unique=new Map(references.map(d=>[d.objectPath,d]));
+        if(incoming)unique.set(incoming.descriptor.objectPath,incoming.descriptor);
+        if(unique.size>6)throw new Error('OPERATIONAL_SLOT_REFERENCE_BOUND');
+        const pinned=new Set(references.map(d=>d.objectPath));
+        let usage=null,written=0;const fencedSlots=new Set();
+        const candidates=[...unique.values()];
+        if(afterCommittedCas)candidates.sort((a,b)=>Number(!slots.some(entry=>entry?.header.descriptor.objectPath===a.objectPath))
+          -Number(!slots.some(entry=>entry?.header.descriptor.objectPath===b.objectPath)));
+        // Fence one existing match for EVERY live descriptor before allocating a
+        // missing one. An old duplicate is expendable only after that exact fence.
+        for(const d of candidates) {
+          check();const matching=slots.find(entry=>entry?.header.descriptor.objectPath===d.objectPath);
+          if(matching&&!same(matching.header.descriptor,d))throw new Error('OPERATIONAL_SLOT_DESCRIPTOR_CHANGED');
+          // Incoming is always renewed, even when it matches a previously retired
+          // descriptor. Existing continuously live copies need no mutation.
+          if(matching&&!afterCommittedCas&&incoming?.descriptor.objectPath!==d.objectPath)continue;
+          const empty=slots.findIndex(entry=>entry===null);
+          const replacement=afterCommittedCas?slots.findIndex(entry=>entry
+            &&(!pinned.has(entry.header.descriptor.objectPath)||slots.some(other=>other&&other.slot!==entry.slot&&fencedSlots.has(other.slot)
+              &&same(other.header.descriptor,entry.header.descriptor)))
+            &&entry.header.admittedPointerVersion<version):-1;
+          const index=matching?matching.slot-1:empty>=0?empty:replacement;
+          if(index<0)throw new Error('OPERATIONAL_SLOT_CAPACITY_HOLD');
+          const old=slots[index],bytes=incoming?.descriptor.objectPath===d.objectPath
+            ?incoming.archive:matching?.archive??await readPrimary(d.objectPath,fetchBound,delay);
+          check();const actual=await eligibleOperationalReplica(d.objectPath,bytes);
+          if(!same(actual,d))throw new Error('OPERATIONAL_SLOT_DESCRIPTOR_CHANGED');
+          const wire=encodeOperationalSlot(index+1,d,bytes,version);
+          await fresh();
+          if(usage===null){await remote.ensurePrivateBucket();usage=await remote.bucketUsage();check();}
+          // Reserve the complete six-slot maximum ON TOP of observed stock.
+          // Never subtract an earlier GET size: an unresolved old PUT may change
+          // it before the listing. This conservative bound preserves the normal
+          // next350MB archive + retirement marker +100MB reserve admission.
+          const reserve=OPERATIONAL_EVIDENCE_SLOT_LIMIT*(PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.maximumArchiveBytes+16_384);
+          if(usage.usedBytes+reserve>remote.maximumBucketBytes)throw new Error('OPERATIONAL_SLOT_BUCKET_HOLD');
+          check();let writeError=null;
+          try{await remote.compareAndSwap(index+1,wire,old?.etag??null);}catch(error){writeError=error;}
+          check();const observed=await remote.read(index+1);check();
+          if(!observed?.bytes.equals(wire))throw writeError??new Error('OPERATIONAL_SLOT_WRITE_UNKNOWN');
+          slots[index]=await decodeOperationalSlot(observed);fencedSlots.add(index+1);written++;
+          await fresh();
+        }
+        return {status:'OPERATIONAL_REPLICA_VERIFIED',slotCount:slots.filter(Boolean).length,
+          protectedDescriptorCount:unique.size,writtenSlotCount:written};
+      });
+      try{onReplicaStatus(result.status);}catch{}return result;
+    }catch(error){
+      const status=/^OPERATIONAL_(?:SLOT|REPLICA)_[A-Z_]+$/.test(error.message??'')?error.message:'OPERATIONAL_REPLICA_HOLD';
+      try{onReplicaStatus(status);}catch{}return {status}; // Replica trouble never changes primary publication.
+    }
+  }
+  async function download(objectPath) {
+    try{return await readPrimary(objectPath);}catch(error){
+      if(!(error instanceof OperationalEvidenceStorageNotFound))throw error;
+      return withinBudget(async({remote,check,pointerRequest})=>{
+        const row=await readPointer(pointerRequest,{allowMissing:false,policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
+        const descriptor=retainedDescriptors(row.payload).find(d=>d.objectPath===objectPath);
+        if(!descriptor)throw new Error('OPERATIONAL_SLOT_NOT_REFERENCED');
+        const slots=await inventory(remote,check),slot=slots.find(entry=>entry?.header.descriptor.objectPath===objectPath);
+        if(!slot||!same(slot.header.descriptor,descriptor))throw new Error('OPERATIONAL_SLOT_RESTORE_MISSING');
+        const fresh=await readPointer(pointerRequest,{allowMissing:false,policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
+        if(!same(row,fresh))throw new Error('OPERATIONAL_REPLICA_REFERENCE_CHANGED');
+        check();return Buffer.from(slot.archive);
+      });
+    }
+  }
+  return {documentRequest:primary.documentRequest,storage:Object.freeze({...primary.storage,download,
+    prepareReplica:({request,row,incoming})=>maintain({request,row,incoming}),
+    // Only a newly verified normal pointer-CAS caller invokes this method. A GET
+    // or no-op publication grants no authority to reuse another descriptor's slot.
+    settleReplica:({request,row,incoming})=>{
+      if(!row||!operationalReplicaCasReadbacks.delete(row))return {status:'OPERATIONAL_REPLICA_CAS_REQUIRED'};
+      return maintain({request,row,incoming,afterCommittedCas:true});
+    },
+  })};
+}
+
 async function requestDocument(request, suffix, options, label) {
   try { return await request(suffix, options, label); }
   catch (error) {
@@ -551,6 +782,7 @@ export async function publishProtectedOperationalEvidence({
   if (sameDeployment && !same(sameDeployment, built.descriptor)) {
     throw new Error('Operational evidence conflicts for one deployment id');
   }
+  const replicaBefore=await storage.prepareReplica?.({request,row:existing,incoming:built});
   await storage.ensurePrivateBucket();
   const upload = await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
   await verifyObject(storage, built.descriptor, policy);
@@ -604,7 +836,8 @@ export async function publishProtectedOperationalEvidence({
       );
     }
     if (!Array.isArray(rows) || rows.length !== 1 || Number(rows[0].version) !== expectedVersion) {
-      throw new Error('Operational evidence pointer compare-and-swap lost a concurrent write');
+      const ErrorType=Array.isArray(rows)&&rows.length===0?OperationalEvidenceCasNotApplied:Error;
+      throw new ErrorType('Operational evidence pointer compare-and-swap lost a concurrent write');
     }
     readback = await readPointer(request, { allowMissing: false, policy });
     if (readback.version !== expectedVersion || !same(readback.payload, pointer)) {
@@ -623,7 +856,7 @@ export async function publishProtectedOperationalEvidence({
       // payload are proved by a fresh readback. Never retry an ambiguous write.
     }
     if (!committedDespiteLostResponse) {
-      if (upload?.created === true) {
+      if (upload?.created === true && error instanceof OperationalEvidenceCasNotApplied) {
         try {
           await removeCreatedEvidenceIfUnreferenced({
             request,
@@ -640,6 +873,8 @@ export async function publishProtectedOperationalEvidence({
     }
   }
 
+  operationalReplicaCasReadbacks.add(readback);
+  const replicaAfter=await storage.settleReplica?.({request,row:readback,incoming:built});
   const retainedPaths = new Set(retainedDescriptors(readback.payload).map(item => item.objectPath));
   let cleanupFailureCount = 0;
   for (const retired of existingDescriptors) {
@@ -658,6 +893,7 @@ export async function publishProtectedOperationalEvidence({
     retainedDeploymentId: other?.deploymentId ?? null,
     objectSha256: built.descriptor.objectSha256,
     objectCreated: upload?.created === true,
+    ...(replicaAfter?{replica:replicaAfter}:replicaBefore?{replica:replicaBefore}:{}),
     retentionCleanupComplete: cleanupFailureCount === 0,
     retentionCleanupFailureCount: cleanupFailureCount,
     privatePayloadIncluded: false,
@@ -1132,13 +1368,16 @@ async function phaseCas(request,existing,pointer) {
     const rows=await requestDocument(request,'?document_key=eq.'+encodeURIComponent(policy.documentKey)
       +'&version=eq.'+existing.version+'&select=document_key,payload,version',
       {method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({payload:pointer,updated_by:null})},'pre-activation compare-and-swap');
-    if(!Array.isArray(rows)||rows.length!==1||Number(rows[0].version)!==expected) throw new Error('Pre-activation CAS lost');
+    if(!Array.isArray(rows)||rows.length!==1||Number(rows[0].version)!==expected) {
+      const ErrorType=Array.isArray(rows)&&rows.length===0?OperationalEvidenceCasNotApplied:Error;
+      throw new ErrorType('Pre-activation CAS lost');
+    }
     const row=await readPointer(request,{allowMissing:false,policy});
     if(row.version!==expected||!same(row.payload,pointer)) throw new Error('Pre-activation readback differs');
-    return row;
+    operationalReplicaCasReadbacks.add(row);return row;
   } catch(first) {
     try { const row=await readPointer(request,{allowMissing:false,policy});
-      if(row.version===expected&&same(row.payload,pointer)) return row; } catch {}
+      if(row.version===expected&&same(row.payload,pointer)){operationalReplicaCasReadbacks.add(row);return row;} } catch {}
     throw first; // never retry an ambiguous write, including falsy first causes
   }
 }
@@ -1218,13 +1457,15 @@ export async function publishProtectedPreActivationTarget({directory,deploymentI
       throw new Error('Recovery attempted to substitute target bytes');
   }
   const slot=validatePhaseSlot({originalTarget:old?.originalTarget??built.descriptor,target:built.descriptor,owner});
+  await storage.prepareReplica?.({request,row:existing,incoming:built});
   await storage.ensurePrivateBucket();
   const upload=await storage.uploadImmutable(built.descriptor.objectPath,built.archive);
   await verifyObject(storage,built.descriptor,phasePolicy());
   let row;
   try {row=await phaseCas(request,existing,{...existing.payload,schemaVersion:Object.hasOwn(existing.payload,'pagesWrite')?'3.0.0':'2.0.0',preActivation:slot});}
-  catch(first){if(upload?.created===true){try{await removeCreatedEvidenceIfUnreferenced({request,storage,objectPath:built.descriptor.objectPath,policy});}catch{}}throw first;}
-  return {published:true,centralVersion:row.version,slot};
+  catch(first){if(upload?.created===true&&first instanceof OperationalEvidenceCasNotApplied){try{await removeCreatedEvidenceIfUnreferenced({request,storage,objectPath:built.descriptor.objectPath,policy});}catch{}}throw first;}
+  const replica=await storage.settleReplica?.({request,row,incoming:built});
+  return {published:true,centralVersion:row.version,slot,...(replica?{replica}:{})};
 }
 export async function claimProtectedPreActivationTarget({request,storage,repository,sourceHead,owner,attempt,fetchImpl=fetch}={}) {
   phaseOwner(owner);
@@ -1957,9 +2198,9 @@ async function main() {
     return;
   }
   const options = parseArgs(process.argv.slice(2));
-  // Operational evidence is a separate, small Supabase object family. The
-  // R2 cutover only moves the large production weather/runtime generations.
-  const clients = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
+  // Supabase remains primary. Six bounded R2 slots copy the exact sealed bytes;
+  // an optional replica refusal cannot grant or block a primary publication.
+  const clients = createProtectedOperationalEvidenceClients();
   const own = () => phaseOwner({repository:process.env.GITHUB_REPOSITORY,runId:Number(process.env.GITHUB_RUN_ID),
     runAttempt:Number(process.env.GITHUB_RUN_ATTEMPT),headSha:process.env.GITHUB_SHA,
     attemptId:options.deploymentId??('pages-recovery-'+process.env.GITHUB_RUN_ID+'-'+process.env.GITHUB_RUN_ATTEMPT)});

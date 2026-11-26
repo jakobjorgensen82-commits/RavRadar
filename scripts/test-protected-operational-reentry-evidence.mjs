@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { createOperationalEvidenceR2Slots } from './lib/operational-evidence-r2-slots.mjs';
+import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+import { PRIVATE_WEATHER_PUBLICATION_POLICY } from './publish-private-weather-runtime.mjs';
+import { RETIREMENT_MARKER_BYTES } from './lib/private-weather-runtime-retirement.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,6 +18,7 @@ import { computeRavScorePublicBrowserClosure } from './lib/ravscore-public-brows
 import {
   PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY as policy,
   buildProtectedOperationalEvidenceArchive,
+  createProtectedOperationalEvidenceClients,
   publishProtectedOperationalEvidence,
   readReentryMainHead,
   restoreProtectedOperationalEvidence,
@@ -555,6 +561,57 @@ test('pre-activation terminal takeover retains the same target through runner lo
     await write(targetDir,'pre-activation.json',phase);
     await publishProtectedPreActivationTarget({...common,directory:targetDir,deploymentId:targetId});
     const original=clone(server.row()),originalFiles=new Map(server.objects);
+    // Exercise all FIVE real reference roles with eligible original phase archives.
+    // This remains the parent's synthetic metadata fixture, never B/S admission.
+    {
+      const phasePolicy={...policy,descriptorKind:'RAVRADAR_PRE_ACTIVATION_EDGE_TARGET_OBJECT',
+        archiveKind:'RAVRADAR_PRE_ACTIVATION_EDGE_TARGET_ARCHIVE'};
+      const objects=new Map(server.objects),ordinary=[];
+      for(const id of ['pages-43009-1','pages-43010-1']){
+        const dir=path.join(work,id);await fixture(dir,{deploymentId:id,sourceHead});
+        const built=await buildProtectedOperationalEvidenceArchive({directory:dir,deploymentId:id,repository});
+        ordinary.push(built.descriptor);objects.set(built.descriptor.objectPath,built.archive);
+      }
+      const nextPhase=path.join(work,'replica-second-phase');await fs.cp(targetDir,nextPhase,{recursive:true});
+      const phaseSeal=await read(nextPhase,'pages-artifact-seal.json');
+      Object.assign(phaseSeal,{attemptId:'pages-43011-1',runId:43011,runAttempt:1});
+      await write(nextPhase,'pages-artifact-seal.json',phaseSeal);
+      const later=await buildProtectedOperationalEvidenceArchive({directory:nextPhase,deploymentId:'pages-43011-1',repository,policy:phasePolicy});
+      objects.set(later.descriptor.objectPath,later.archive);
+      const ownerOf=d=>({repository,runId:d.runId,runAttempt:d.runAttempt,headSha:d.sourceHead,attemptId:d.deploymentId});
+      let row={...original,version:100,payload:{...original.payload,schemaVersion:'3.0.0',previous:ordinary[0],
+        preActivation:{...original.payload.preActivation,target:later.descriptor,owner:ownerOf(later.descriptor)},
+        pagesWrite:{target:ordinary[1],owner:ownerOf(ordinary[1])}}};
+      validateProtectedOperationalEvidencePointer(row.payload);
+      const replica=slotTransportFixture({primaryMap:objects,initialRow:row});
+      const request=replica.clients.documentRequest;
+      assert.equal((await replica.clients.storage.prepareReplica({request,row:clone(row),incoming:null})).status,'OPERATIONAL_REPLICA_VERIFIED');
+      assert.equal(replica.slots.size,5);
+      const strandedDir=path.join(work,'stranded');await fixture(strandedDir,{deploymentId:'pages-43012-1',sourceHead});
+      const stranded=await buildProtectedOperationalEvidenceArchive({directory:strandedDir,deploymentId:'pages-43012-1',repository});
+      await replica.clients.storage.prepareReplica({request,row:clone(row),incoming:stranded});
+      assert.equal(replica.slots.size,6,'one unanswered publication may occupy the sixth slot');
+      const nextDir=path.join(work,'next-ordinary');await fixture(nextDir,{deploymentId:'pages-43013-1',sourceHead});
+      const incoming=await buildProtectedOperationalEvidenceArchive({directory:nextDir,deploymentId:'pages-43013-1',repository});
+      const before=new Map(replica.slots);
+      assert.equal((await replica.clients.storage.prepareReplica({request,row:clone(row),incoming})).status,'OPERATIONAL_SLOT_CAPACITY_HOLD');
+      assert.deepEqual(replica.slots,before,'a fresh GET does not retire a slot or fence an unknown primary CAS');
+      assert.equal((await replica.clients.storage.settleReplica({request,row:clone(row),incoming})).status,'OPERATIONAL_REPLICA_CAS_REQUIRED');
+      assert.deepEqual(replica.slots,before,'a fabricated readback/version cannot authorize replacement');
+      const publication=await publishProtectedOperationalEvidence({directory:nextDir,deploymentId:'pages-43013-1',repository,
+        request,storage:replica.clients.storage});
+      assert.equal(publication.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+      row=replica.row();assert.equal(row.version,101,'the normal actual CAS supplies the replacement frontier');
+      for(const d of [row.payload.current,row.payload.previous,row.payload.preActivation.originalTarget,
+        row.payload.preActivation.target,row.payload.pagesWrite.target]){
+        const matches=[...replica.slots.values()].filter(wire=>replica.decode(wire).header.descriptor.objectPath===d.objectPath);
+        assert(matches.length>=1,'every current/previous/original/target/PAGES role stays protected');
+        assert(matches.some(wire=>replica.decode(wire).header.admittedPointerVersion===101));
+      }
+      assert.equal(replica.slots.size,6);assert.equal(replica.events.includes('r2-DELETE'),false);
+      replica.check();
+    }
+
     assert.equal((await (await import('./protected-operational-reentry-evidence.mjs')).retireClosedUnpublishedOrdinaryPreActivationTarget({
       ...common,sourceHead,baseUrl:'https://ravradar.dk'})).reason,'ORIGINAL_INTENTION_NOT_PROVED');
     assert.deepEqual(server.row(),original,'an old phase never acquires new retirement authority');
@@ -1040,4 +1097,316 @@ test('closed ordinary phase retires only its authenticated unchanged-model defau
     assert.equal((await p.retireClosedUnpublishedOrdinaryPreActivationTarget(args)).retired,false);assert.equal(phaseWrites,1);
   }finally{if(savedToken===undefined)delete process.env.GH_TOKEN;else process.env.GH_TOKEN=savedToken;
     await fs.rm(work,{recursive:true,force:true});}
+});
+
+
+// Real normal clients and SigV4 slot transport; only the HTTP boundary is synthetic.
+function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRow=null}={}) {
+  const primary=primaryMap,slots=new Map(),events=[],unexpected=[],statuses=[],pending=[];
+  let row=initialRow,primaryFailure=null,r2Failure=false,nextPut=null,lateCas=null,nextCas=null,pointerHang=false,bucketHang=false,foreignBytes=0;
+  const bucket=policy.bucketId,base='https://synthetic.supabase.co';
+  const readPath='/storage/v1/object/authenticated/'+bucket+'/',writePath='/storage/v1/object/'+bucket+'/';
+  const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+  const fail=label=>{unexpected.push(label);throw Error('UNEXPECTED_SYNTHETIC_TRANSPORT');};
+  const decode=wire=>{const at=wire.indexOf(10),end=wire.indexOf(10,at+1);
+    return {header:JSON.parse(wire.subarray(at+1,end)),archive:wire.subarray(end+1)};};
+  const etag=bytes=>'"'+hash(bytes)+'"';
+  const fetchImpl=async(url,options={})=>{
+    const u=new URL(url),method=options.method??'GET';
+    if(u.host==='synthetic.supabase.co'){
+      if(u.pathname==='/rest/v1/admin_documents'){
+        if(method==='GET'){
+          if(pointerHang&&options.signal)return new Promise((_resolve,reject)=>options.signal.addEventListener('abort',
+            ()=>reject(Error('SYNTHETIC_POINTER_ABORTED')),{once:true}));
+          return Response.json(row?[clone(row)]:[]);
+        }
+        events.push('pointer-'+method);const payload=JSON.parse(options.body).payload;
+        const apply=()=>{
+          if(method==='POST'&&row)return [];
+          if(method==='PATCH'&&Number(u.searchParams.get('version')?.slice(3))!==row?.version)return [];
+          row={document_key:policy.documentKey,version:row?row.version+1:1,payload};return [clone(row)];
+        };
+        if(nextCas==='before'){nextCas=null;lateCas=apply;throw Error('SYNTHETIC_UNKNOWN_CAS');}
+        if(nextCas==='after'){nextCas=null;apply();throw Error('SYNTHETIC_LOST_CAS_ACK');}
+        return Response.json(apply());
+      }
+      if(u.pathname==='/storage/v1/bucket/'+bucket)return Response.json({id:bucket,name:bucket,
+        public:false,file_size_limit:PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,allowed_mime_types:['application/gzip']});
+      if(u.pathname.startsWith(readPath)&&method==='GET'){
+        events.push('primary-get');if(primaryFailure instanceof Error)throw primaryFailure;
+        if(primaryFailure!==null){
+          if(typeof primaryFailure==='function')return primaryFailure();
+          return new Response('',{status:primaryFailure});
+        }
+        const key=u.pathname.slice(readPath.length);
+        return primary.has(key)?new Response(primary.get(key)):new Response('',{status:404});
+      }
+      if(u.pathname.startsWith(writePath)&&method==='POST'){
+        events.push('primary-post');assert.equal(options.headers['x-upsert'],'false');const key=u.pathname.slice(writePath.length);
+        if(primary.has(key))return Response.json({code:'KeyAlreadyExists'},{status:409});
+        primary.set(key,Buffer.from(options.body));return new Response('',{status:200});
+      }
+      if(u.pathname==='/storage/v1/object/'+bucket&&method==='DELETE'){
+        events.push('primary-delete');for(const key of JSON.parse(options.body).prefixes)primary.delete(key);return new Response('',{status:200});
+      }
+      return fail('primary:'+method+u.pathname);
+    }
+    if(u.host!=='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.eu.r2.cloudflarestorage.com')return fail('host');
+    events.push('r2-'+method);const headers=new Headers(options.headers);
+    assert(headers.get('authorization').startsWith('AWS4-HMAC-SHA256 '));assert.equal(options.redirect,'manual');
+    if(r2Failure)return new Response('',{status:403});
+    if(u.pathname==='/'+bucket&&method==='HEAD')return new Response(null,{status:200});
+    if(u.pathname==='/'+bucket&&method==='GET'&&u.searchParams.get('list-type')==='2'){
+      if(bucketHang)return new Promise((_resolve,reject)=>options.signal.addEventListener('abort',()=>reject(Error('SYNTHETIC_BUCKET_ABORTED')),{once:true}));
+      return new Response('<ListBucketResult>'+(foreignBytes?'<Contents><Key>other-preserved-data.bin</Key><Size>'+foreignBytes+'</Size></Contents>':'')+[...slots].map(([n,b])=>'<Contents><Key>operational-evidence/slots/v3/slot-'+n+'.bin</Key><Size>'+b.length+'</Size></Contents>').join('')+'<IsTruncated>false</IsTruncated></ListBucketResult>');
+    }
+    const match=u.pathname.match(new RegExp('^/'+bucket+'/operational-evidence/slots/v3/slot-([1-6])\\.bin$'));
+    if(!match)return fail('R2:'+method+u.pathname);
+    const slot=Number(match[1]);
+    if(method==='GET')return slots.has(slot)?new Response(slots.get(slot),{headers:{etag:etag(slots.get(slot)),
+      'content-length':String(slots.get(slot).length)}}):new Response('',{status:404});
+    if(method!=='PUT')return fail('slot mutation:'+method);
+    const body=Buffer.from(options.body),signed=headers.get('authorization').match(/SignedHeaders=([^,]+)/)[1].split(';');
+    assert(signed.includes(headers.has('if-match')?'if-match':'if-none-match'),'the actual CAS condition is signed');
+    const apply=()=>{
+      const present=slots.get(slot);
+      if(present?headers.get('if-match')!==etag(present):headers.get('if-none-match')!=='*')return 412;
+      slots.set(slot,body);assert(slots.size<=6);return 200;
+    };
+    const mode=typeof nextPut==='function'?nextPut({slot,body,headers}):nextPut;
+    if(mode){nextPut=null;
+      if(mode==='before'){pending.push(apply);throw Error('SYNTHETIC_UNANSWERED_PUT');}
+      if(mode==='after'){apply();throw Error('SYNTHETIC_LOST_PUT_ACK');}
+      if(mode==='hang')return new Promise((_resolve,reject)=>{
+        pending.push(apply);options.signal.addEventListener('abort',()=>reject(Error('SYNTHETIC_ABORTED_PUT')),{once:true});});
+    }
+    return new Response('',{status:apply()});
+  };
+  const clients=createProtectedOperationalEvidenceClients({supabaseUrl:base,serviceRoleKey:'synthetic-service-secret-only',fetchImpl,
+    operationMs,onReplicaStatus:status=>statuses.push(status),slotsFactory:(fetchBound,delayImpl)=>createOperationalEvidenceR2Slots({
+      accountId:'a'.repeat(32),accessKeyId:'synthetic-id',secretAccessKey:'synthetic-secret',bucketId:bucket,fetchImpl:fetchBound,delayImpl})});
+  return {clients,primary,slots,events,statuses,decode,rawFetch:fetchImpl,setForeignBytes:value=>{foreignBytes=value;},hangBucket:value=>{bucketHang=value;},hangReplicaPointer:value=>{pointerHang=value;},row:()=>clone(row),setRow:value=>{row=clone(value);},
+    failPrimary:value=>{primaryFailure=value;},failR2:value=>{r2Failure=value;},nextPut:value=>{nextPut=value;},
+    nextCas:value=>{nextCas=value;},releaseCas:()=>{const apply=lateCas;lateCas=null;return apply();},
+    releasePuts:()=>pending.splice(0).map(apply=>apply()),check:()=>assert.deepEqual(unexpected,[])};
+}
+async function slotPublication(work,t,id,{retain=null}={}) {
+  const directory=path.join(work,String(id));
+  await fixture(directory,{deploymentId:'pages-'+id+'-1',sourceHead:(id%2?'a':'b').repeat(40)});
+  const built=await buildProtectedOperationalEvidenceArchive({directory,deploymentId:'pages-'+id+'-1',repository});
+  const result=await publishProtectedOperationalEvidence({directory,deploymentId:'pages-'+id+'-1',repository,
+    request:t.clients.documentRequest,storage:t.clients.storage,...(retain?{retainDeploymentId:'pages-'+retain+'-1',requireRetained:true}:{})});
+  return {directory,built,result};
+}
+test('operational slots restore exact gzip on authenticated Storage 404 or the observed legacy missing bucket',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-read-'));
+  try{
+    const t=slotTransportFixture(),{directory,built,result}=await slotPublication(work,t,8101);
+    assert.equal(result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');assert.equal(t.slots.size,1);
+    assert.deepEqual(t.decode([...t.slots.values()][0]).archive,built.archive);
+    const start=t.events.length;await t.clients.storage.download(built.descriptor.objectPath);
+    assert.deepEqual(t.events.slice(start),['primary-get']);
+    t.primary.delete(built.descriptor.objectPath);
+    const legacyMissingBucket = (statusCode, code='NoSuchBucket', status=400) => () => Response.json({statusCode,code},{status});
+    for(const [name,failure] of [['direct-404',null],['legacy-bucket',legacyMissingBucket('404')]]){
+      t.failPrimary(failure);
+      const restored=path.join(work,name);
+      await restoreProtectedOperationalEvidence({directory:restored,deploymentId:built.descriptor.deploymentId,repository,
+        request:t.clients.documentRequest,storage:t.clients.storage});
+      for(const file of await fs.readdir(directory)){
+        assert.deepEqual(await fs.readFile(path.join(restored,file)),await fs.readFile(path.join(directory,file)));
+      }
+    }
+    for(const failure of [400,401,403,500,new Error('synthetic404',{cause:{status:404}}),
+      legacyMissingBucket(404),legacyMissingBucket('404','NoSuchKey'),legacyMissingBucket('403'),
+      legacyMissingBucket('404','NoSuchBucket',403),legacyMissingBucket('404','AccessDenied'),
+      () => new Response('malformed',{status:400,headers:{'content-type':'application/json'}}),
+      () => Response.json({statusCode:'404',code:'NoSuchBucket',message:'x'.repeat(4096)},{status:400}),
+      () => new Response(JSON.stringify({statusCode:'404',code:'NoSuchBucket'}),{status:400})
+    ]){
+      t.failPrimary(failure);const before=t.events.filter(e=>e.startsWith('r2-')).length;
+      await assert.rejects(t.clients.storage.download(built.descriptor.objectPath));
+      assert.equal(t.events.filter(e=>e.startsWith('r2-')).length,before,'auth/network/status-shaped errors cannot authorize fallback');
+    }
+    t.failPrimary(null);t.primary.set(built.descriptor.objectPath,Buffer.from('corrupt'));
+    const before=t.events.filter(e=>e.startsWith('r2-')).length;
+    await assert.rejects(restoreProtectedOperationalEvidence({directory:path.join(work,'bad'),deploymentId:built.descriptor.deploymentId,
+      repository,request:t.clients.documentRequest,storage:t.clients.storage}),/integrity/);
+    assert.equal(t.events.filter(e=>e.startsWith('r2-')).length,before);
+    t.primary.delete(built.descriptor.objectPath);t.slots.set(1,Buffer.from('corrupt'));
+    await assert.rejects(t.clients.storage.download(built.descriptor.objectPath),/SLOT_HEADER/);t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+test('operational slots keep primary available on replica denial and stay at six keys through rotation and reintroduction',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-rotate-'));
+  try{
+    const t=slotTransportFixture();t.failR2(true);
+    const denied=await slotPublication(work,t,8200);assert.equal(denied.result.published,true);
+    assert.notEqual(denied.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+    t.failR2(false);
+    let first;
+    for(let i=8201;i<=8214;i++){
+      const value=await slotPublication(work,t,i);if(i===8201)first=value;
+      assert.equal(value.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');assert(t.slots.size<=6);
+      for(const d of [t.row().payload.current,t.row().payload.previous].filter(Boolean))
+        assert([...t.slots.values()].some(wire=>t.decode(wire).header.descriptor.objectPath===d.objectPath));
+    }
+    assert.equal(t.slots.size,6);assert.equal(t.events.includes('r2-DELETE'),false);
+    const again=await publishProtectedOperationalEvidence({directory:first.directory,deploymentId:first.built.descriptor.deploymentId,
+      repository,request:t.clients.documentRequest,storage:t.clients.storage});
+    assert.equal(again.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+    const before=t.decode([...t.slots.values()].find(wire=>t.decode(wire).header.descriptor.objectPath===first.built.descriptor.objectPath)).header.generation;
+    await slotPublication(work,t,8215);await slotPublication(work,t,8216);
+    await publishProtectedOperationalEvidence({directory:first.directory,deploymentId:first.built.descriptor.deploymentId,
+      repository,request:t.clients.documentRequest,storage:t.clients.storage});
+    const after=t.decode([...t.slots.values()].find(wire=>t.decode(wire).header.descriptor.objectPath===first.built.descriptor.objectPath)).header.generation;
+    assert.notEqual(after,before,'same archive reintroduction has a new body generation');t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+test('operational slots recover an absent unknown first PUT without permanent HOLD or a late resurrection',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-unknown-first-'));
+  try{
+    const t=slotTransportFixture();t.nextPut('before');const one=await slotPublication(work,t,8301);
+    assert.equal(one.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+    const before=new Map(t.slots);assert.deepEqual(t.releasePuts(),[412],'late initial PUT loses against the never-deleted born slot');
+    assert.deepEqual(t.slots,before);assert.equal(t.slots.size,1);
+    t.nextPut('after');const two=await slotPublication(work,t,8302);
+    assert.equal(two.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED','exact readback settles a lost ACK without another wire attempt');
+    assert.equal(t.events.includes('r2-DELETE'),false);t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+test('operational slots fence an old same-slot replacement before an archived reference is reintroduced',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-reintroduced-'));
+  try{
+    const t=slotTransportFixture();let first;
+    for(let id=8401;id<=8406;id++){const value=await slotPublication(work,t,id);if(id===8401)first=value;}
+    t.nextPut(({body,headers})=>t.decode(body).header.descriptor.deploymentId==='pages-8407-1'&&headers.has('if-match')?'before':null);
+    const held=await slotPublication(work,t,8407);assert.notEqual(held.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+    assert.equal(t.row().payload.current.deploymentId,'pages-8407-1','primary still advances');
+    const result=await publishProtectedOperationalEvidence({directory:first.directory,deploymentId:first.built.descriptor.deploymentId,
+      repository,request:t.clients.documentRequest,storage:t.clients.storage});
+    assert.equal(result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+    const before=new Map(t.slots);assert.deepEqual(t.releasePuts(),[412],'new generation fences the unanswered obsolete PUT');
+    assert.deepEqual(t.slots,before);t.primary.delete(first.built.descriptor.objectPath);
+    assert.deepEqual(await t.clients.storage.download(first.built.descriptor.objectPath),first.built.archive);t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+test('operational unknown primary CAS preserves original and replica for later exact readback without resending',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-primary-cas-'));
+  try{
+    const t=slotTransportFixture();await slotPublication(work,t,8501);
+    const directory=path.join(work,'pending');await fixture(directory,{deploymentId:'pages-8502-1'});
+    const built=await buildProtectedOperationalEvidenceArchive({directory,deploymentId:'pages-8502-1',repository});
+    t.nextCas('before');const before=t.events.filter(e=>e==='pointer-PATCH').length;
+    await assert.rejects(publishProtectedOperationalEvidence({directory,deploymentId:'pages-8502-1',repository,
+      request:t.clients.documentRequest,storage:t.clients.storage}),/compare-and-swap failed closed/);
+    assert(t.primary.has(built.descriptor.objectPath),'unknown write cannot delete its original');
+    assert.equal(t.row().payload.current.deploymentId,'pages-8501-1');
+    assert.equal(t.releaseCas().length,1);assert.equal(t.row().payload.current.deploymentId,'pages-8502-1');
+    assert.equal(t.events.filter(e=>e==='pointer-PATCH').length,before+1);
+    t.primary.delete(built.descriptor.objectPath);
+    assert.deepEqual(await t.clients.storage.download(built.descriptor.objectPath),built.archive,'pre-CAS copy covers the late committed pending target');
+    // Exact retry is the same immutable object, not another unknown original.
+    const retry=await publishProtectedOperationalEvidence({directory,deploymentId:'pages-8502-1',repository,
+      request:t.clients.documentRequest,storage:t.clients.storage});
+    assert.equal(retry.published,false);assert.equal(t.events.filter(e=>e==='pointer-PATCH').length,before+1);t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+test('operational slot mutation deadline preserves primary, and an aborted old PUT cannot replace the settled slot',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-deadline-'));
+  try{
+    const t=slotTransportFixture({operationMs:100});t.nextPut('hang');const start=Date.now();
+    const value=await slotPublication(work,t,8601);assert.equal(value.result.published,true);assert(Date.now()-start<2500);
+    assert.equal(value.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+    const before=new Map(t.slots);assert.deepEqual(t.releasePuts(),[412]);assert.deepEqual(t.slots,before);t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+
+test('operational slot transport has exactly six paths, no delete, and refuses malformed headers before body parsing',async()=>{
+  const calls=[];
+  const transport=createOperationalEvidenceR2Slots({accountId:'a'.repeat(32),accessKeyId:'synthetic',secretAccessKey:'synthetic',
+    bucketId:policy.bucketId,fetchImpl:async(url,options)=>{calls.push({url,method:options.method});
+      return new Response('x',{headers:{etag:'weak-or-unquoted','content-length':'1'}});}});
+  assert.equal(transport.removeExact,undefined);assert.equal(transport.compareAndSwap.length,3);
+  for(const slot of [0,7,'1',1.5])await assert.rejects(transport.read(slot),/SLOT_ID_INVALID/);
+  assert.equal(calls.length,0);
+  await assert.rejects(transport.compareAndSwap(1,Buffer.from('x'),'unquoted'),/SLOT_ETAG_INVALID/);
+  assert.equal(calls.length,0);
+  await assert.rejects(transport.read(1),/SLOT_HEADERS_INVALID/);assert.equal(calls.length,1);
+});
+
+test('operational replica pointer reads share the deadline while the original primary request remains available',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-pointer-budget-'));
+  try{
+    const t=slotTransportFixture({operationMs:100});t.hangReplicaPointer(true);const start=Date.now();
+    const value=await slotPublication(work,t,8701);
+    assert.equal(value.result.published,true);assert.equal(value.result.replica.status,'OPERATIONAL_REPLICA_DEADLINE');
+    assert(Date.now()-start<1500);assert.equal(t.slots.size,0);
+    t.hangReplicaPointer(false);await slotPublication(work,t,8702);
+    const d=t.row().payload.current;t.primary.delete(d.objectPath);t.hangReplicaPointer(true);
+    const fallbackStart=Date.now();await assert.rejects(t.clients.storage.download(d.objectPath),/REPLICA_DEADLINE/);
+    assert(Date.now()-fallbackStart<1000);t.hangReplicaPointer(false);t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+test('operational slots fence a retained duplicate before allocating a missing descriptor under six-slot saturation',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-duplicate-fence-'));
+  try{
+    const t=slotTransportFixture();await slotPublication(work,t,8801);
+    const original=t.decode(t.slots.get(1)),wire=(slot,header=original.header,archive=original.archive)=>Buffer.concat([
+      Buffer.from('RAVRADAR_OPERATIONAL_EVIDENCE_SLOT_V3\n'),Buffer.from(JSON.stringify({...header,slot,generation:crypto.randomBytes(32).toString('hex')})),Buffer.from('\n'),archive]);
+    // Two delayed replacements can leave duplicate exact archives. Model the
+    // complete six-key read state, not a caller-provided "safe duplicate" flag.
+    for(let slot=2;slot<=6;slot++)t.slots.set(slot,wire(slot));
+    const dir=path.join(work,'obsolete');await fixture(dir,{deploymentId:'pages-8803-1'});
+    const obsolete=await buildProtectedOperationalEvidenceArchive({directory:dir,deploymentId:'pages-8803-1',repository});
+    const normal=createOperationalEvidenceR2Slots({accountId:'a'.repeat(32),accessKeyId:'synthetic-id',secretAccessKey:'synthetic-secret',
+      bucketId:policy.bucketId,fetchImpl:t.rawFetch});
+    for(const slot of [1,2]){
+      const before=await normal.read(slot);t.nextPut('before');
+      const replacement=wire(slot,{...original.header,descriptor:obsolete.descriptor},obsolete.archive);
+      await assert.rejects(normal.compareAndSwap(slot,replacement,before.etag),/UNANSWERED_PUT/);
+    }
+    const value=await slotPublication(work,t,8802);
+    assert.equal(value.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED');
+    assert.equal(t.slots.size,6);assert.deepEqual(t.releasePuts(),[412,412]);
+    const descriptors=[...t.slots.values()].map(bytes=>t.decode(bytes).header.descriptor.objectPath);
+    assert(descriptors.includes(original.header.descriptor.objectPath));assert(descriptors.includes(value.built.descriptor.objectPath));t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+
+test('operational replica bucket read and normal transport retry delay share the same budget',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-bucket-budget-'));
+  try{
+    const t=slotTransportFixture({operationMs:100});t.hangBucket(true);const start=Date.now();
+    const value=await slotPublication(work,t,8901);
+    assert.equal(value.result.published,true);assert.equal(value.result.replica.status,'OPERATIONAL_REPLICA_DEADLINE');
+    assert(Date.now()-start<1200,'normal bucket retry cannot add its default second after the deadline');
+    assert.equal(t.slots.size,0);assert.equal(t.events.filter(e=>e==='r2-PUT').length,0);t.check();
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
+
+test('operational replica reserves the exact ordinary next-archive admission threshold and keeps primary on plus-one HOLD',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-next-archive-budget-'));
+  try{
+    const threshold=PRIVATE_WEATHER_PUBLICATION_POLICY.bucketCeilingBytes-PRIVATE_WEATHER_PUBLICATION_POLICY.reserveBytes
+      -PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes-RETIREMENT_MARKER_BYTES;
+    assert.equal(threshold,2_049_983_616,'the existing normal350MB+marker+100MB admission stays unchanged');
+    const reserve=6*(policy.maximumArchiveBytes+16_384),probe=slotTransportFixture();
+    await slotPublication(work,probe,9001);const exactWireBytes=probe.slots.get(1).length;
+    const at=slotTransportFixture();at.setForeignBytes(threshold-reserve-exactWireBytes);
+    const exact=await slotPublication(work,at,9001);
+    assert.equal(at.slots.get(1).length,exactWireBytes);
+    assert.equal(exact.result.replica.status,'OPERATIONAL_REPLICA_VERIFIED','projected final stock exactly at the ordinary frontier is accepted');
+    const over=slotTransportFixture();over.setForeignBytes(threshold-reserve-exactWireBytes+1);
+    const held=await slotPublication(work,over,9001);
+    assert.equal(held.result.published,true);assert.equal(held.result.replica.status,'OPERATIONAL_SLOT_BUCKET_HOLD');
+    assert(over.primary.has(held.built.descriptor.objectPath),'optional budget refusal leaves the original primary publication intact');
+    assert.equal(over.row().payload.current.deploymentId,'pages-9001-1');
+    assert.equal(over.events.filter(event=>event==='r2-PUT').length,1,'post-CAS plus-one refusal sends no replacement PUT');
+    const deniedBeforePut=slotTransportFixture();deniedBeforePut.setForeignBytes(threshold-reserve+1);
+    const primary=await slotPublication(work,deniedBeforePut,9001);
+    assert.equal(primary.result.published,true);assert.equal(primary.result.replica.status,'OPERATIONAL_SLOT_BUCKET_HOLD');
+    assert.equal(deniedBeforePut.events.filter(event=>event==='r2-PUT').length,0);
+    for(const t of [probe,at,over,deniedBeforePut]){assert.equal(t.events.includes('r2-DELETE'),false);t.check();}
+  }finally{await fs.rm(work,{recursive:true,force:true});}
 });
