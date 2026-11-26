@@ -1,3 +1,9 @@
+## 27. november — giv kataloget til vandstandshalen tid i det almindelige DMI-forløb
+
+- [x] #405 og #407 nåede først til den sene vandstandsrunde med henholdsvis 10 og 39 sekunders arbejdstid tilbage. Det var for lidt til katalogopslag og sikker færdiggørelse af selv én fil. #407 havde stadig ledige filpladser.
+- [x] Hold op til tre minutter af det eksisterende arbejdsbudget ved kvalificerede vandstandshuller. Giv først de kritiske familier deres eksisterende mulighed for at afslutte det første arbejde. Brug samme frist for tidligere download og GRIB-behandling. En fil, der har krydset sin frist før accept, forbliver rå og kan genbruges, mens de afledte rækker rulles tilbage.
+- [ ] Verificér normal Linux-kildekontrol og senere faktisk optagelse af de tilbudte timer. Sammenlign vind, bølger, strøm, vandstand og vandtemperatur for de samme zoner og timer. Lokal reserveplanlægning beviser ikke, at DMI tilbyder alle de nye timer.
+
 ## 26. november — ret sammenblandingen af CI og aktive råcachelæsere
 
 - [x] #404 standsede efter den verificerede råcachegenlæsning og før DMI. Den tidsbegrænsede genoptagelse startede #405 automatisk, da køen var fri.

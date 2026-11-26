@@ -8590,6 +8590,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                      tuple[str, str, str]
                  ] | None = None,
                  locked_operational_reference: str | None = None,
+                 work_deadline: float | None = None,
                  _owned_read: _OwnedGribRead | None = None) -> tuple[set[str], set[str], bool, int, int]:
     if _owned_read is None:
         return process_grib_transactionally(
@@ -8598,6 +8599,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             allowed_parameters,
             locked_operational_reference=locked_operational_reference,
             trusted_current_pair_source_keys=trusted_current_pair_source_keys,
+            work_deadline=work_deadline,
         )
     _owned_read.check(path, (collection, model_run, valid_time))
     found, touched = set(), set()
@@ -8650,7 +8652,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         handle = reader.handle
         while True:
             reader.check()
-            if should_stop_work():
+            if should_stop_work() or (work_deadline is not None and time.monotonic() >= work_deadline):
                 interrupted = True
                 break
             gid = codes_grib_new_from_file(handle)
@@ -9264,6 +9266,7 @@ def process_grib_transactionally(
         tuple[str, str, str]
     ] | None = None,
     validation_error: str = "GRIB asset stage validation failed",
+    work_deadline: float | None = None,
     _owned_read: _OwnedGribRead | None = None,
 ) -> tuple[set[str], set[str], bool, int, int]:
     """Parse one asset against copy-on-write state and commit only at EOF.
@@ -9314,6 +9317,7 @@ def process_grib_transactionally(
                 part_outcomes_stage,
                 allowed_parameters=allowed_parameters,
                 _owned_read=reader,
+                **({"work_deadline": work_deadline} if work_deadline is not None else {}),
                 **({
                     "locked_operational_reference": locked_operational_reference,
                 } if locked_operational_reference is not None else {}),
@@ -9323,7 +9327,7 @@ def process_grib_transactionally(
                 } if trusted_current_pair_source_keys is not None else {}),
             )
             found, touched, interrupted, messages_seen, zone_lookups = outcome
-            if interrupted:
+            if interrupted or (work_deadline is not None and time.monotonic() >= work_deadline):
                 restore_mapping(diagnostics, diagnostics_snapshot)
                 if failure_flush is not None:
                     reader.failure_flushes.append(failure_flush)
@@ -9346,6 +9350,11 @@ def process_grib_transactionally(
                 # Source proof and its regional samples form one private stage.
                 # No bulk or shadow mutation may escape if proof capture fails.
                 finalize_shadow_stage(shadow_stage)
+            if work_deadline is not None and time.monotonic() >= work_deadline:
+                restore_mapping(diagnostics, diagnostics_snapshot)
+                if failure_flush is not None:
+                    reader.failure_flushes.append(failure_flush)
+                return set(), set(), True, 0, 0
         except AssetDownloadCleanupUnproven:
             restore_mapping(diagnostics, diagnostics_snapshot)
             raise
@@ -15164,6 +15173,7 @@ def write_ordinary_wave_acquisition_report(
 
 DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS = 120.0
 DKSS_FIRST_TURN_CATALOGUE_MAX_SECONDS = 25.0
+DKSS_LATE_WATER_TAIL_RESERVE_SECONDS = 180.0
 
 
 def list_operational_marine_assets(
@@ -15362,6 +15372,24 @@ def late_water_tail_value_gaps(collection, catalogue, required_times, plan, zone
                 )
             ]
     return needed
+
+
+def late_water_tail_runtime_reserve(
+    collection_turns, catalogues, observed_at, *, required_times, plan, zones, cached_zones, remaining_bytes,
+):
+    if plan is None or remaining_bytes <= 0:
+        return 0.0
+    for collection, turn in collection_turns:
+        if turn != "maintenance" or collection not in observed_at:
+            continue
+        catalogue = catalogues[collection]
+        _run, assets, stats = catalogue
+        if (stats.get("catalogInventoryComplete") is True
+                and stats.get("selectedNativeRunComplete") is True
+                and len(assets) < MAX_ASSETS_PER_COLLECTION
+                and late_water_tail_value_gaps(collection, catalogue, required_times, plan, zones, cached_zones)):
+            return DKSS_LATE_WATER_TAIL_RESERVE_SECONDS
+    return 0.0
 
 
 def fill_late_water_tail(
@@ -16551,11 +16579,21 @@ def main() -> int:
         primary_mode=DKSS_PRIMARY_MODE,
     )
     late_water_tail_checked = False
+    late_water_tail_reserve = 0.0
+    if allow_first_turn_catalogue:
+        late_water_tail_reserve = late_water_tail_runtime_reserve(
+            collection_turns, prefetched_marine, prefetched_marine_at,
+            required_times=required_current_valid_times, plan=qualified_scalar_gap_plan,
+            zones=zones, cached_zones=result["zones"], remaining_bytes=MAX_DOWNLOAD_BYTES - budget["bytes"],
+        )
+        if late_water_tail_reserve:
+            progress(f"DMI_LATE_WATER_TAIL_RESERVATION seconds={int(late_water_tail_reserve)}")
     for collection, collection_turn in collection_turns:
         collection_is_maintenance = collection_turn == "maintenance"
         collection_is_horizon = collection_turn == "horizon"
         if collection_is_maintenance and not late_water_tail_checked:
             late_water_tail_checked = True
+            late_water_tail_reserve = 0.0
             if (allow_first_turn_catalogue and qualified_scalar_gap_plan is not None
                     and not should_stop_work()):
                 # The scheduled native and horizon work has had its turn.
@@ -16639,6 +16677,16 @@ def main() -> int:
                     strict_current_reserve,
                 ),
             )
+        # Foundation and wave work, plus any earlier turn still guarding
+        # them or another current collection, use the original admission.
+        may_hold_water_tail = (not pending_critical_wam and not pending_critical_current
+                               and not collection_is_critical_atmosphere and not collection_is_critical_wam)
+        protected_turn_seconds = (
+            strict_current_reserve.get(collection, 0.0) if collection_is_critical_current
+            else atmosphere_horizon_reserve if collection_is_horizon else 0.0
+        )
+        collection_turn_started = time.monotonic()
+        critical_reserve_for_turn = reserve_for_pending_critical
         if should_stop_work():
             result["diagnostics"]["errors"].append({
                 "collection": collection,
@@ -17416,6 +17464,7 @@ def main() -> int:
                 )
 
             for asset_number, asset in enumerate(assets, start=1):
+                reserve_for_pending_critical = critical_reserve_for_turn
                 bounded_primary_refresh = False
                 asset_phase_rank = int(
                     asset.get("operationalWavePhaseRank") or 0
@@ -17722,6 +17771,16 @@ def main() -> int:
                     )
                     budget_stop_code = "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT"
                     break
+                # Let the last current turn and the bounded wind horizon use
+                # their existing slice and finish a first asset before a hold.
+                water_tail_asset_reserve = 0.0
+                if late_water_tail_reserve and may_hold_water_tail and (
+                    not (collection_is_critical_current or collection_is_horizon)
+                    or (run_info["assetsProcessed"] > 0
+                        and time.monotonic() - collection_turn_started >= protected_turn_seconds)
+                ):
+                    water_tail_asset_reserve = late_water_tail_reserve
+                reserve_for_pending_critical = critical_reserve_for_turn + water_tail_asset_reserve
                 if not checkpoint_controller.can_start_asset(
                     reserve_seconds=reserve_for_pending_critical,
                     cost_family=collection,
@@ -18122,6 +18181,10 @@ def main() -> int:
                                 current_stage_validator=validate_operational_current_stage,
                                 finalize_shadow_stage=preserve_operational_regional_source,
                                 locked_operational_reference=canonical_time(locked_production_reference),
+                                work_deadline=(
+                                    WORK_DEADLINE - reserve_for_pending_critical
+                                    if water_tail_asset_reserve else None
+                                ),
                                 trusted_current_pair_source_keys=(
                                     actual_current_pair_source_keys
                                     if collection in MARINE_COLLECTIONS
@@ -18777,7 +18840,11 @@ def main() -> int:
                 )
                 if interrupted:
                     budget_stop = "bulk runtime budget reached inside GRIB processing"
-                    budget_stop_code = "RUNTIME_BUDGET_REACHED"
+                    budget_stop_code = (
+                        "CRITICAL_COLLECTION_RUNTIME_RESERVED"
+                        if water_tail_asset_reserve and not should_stop_work()
+                        else "RUNTIME_BUDGET_REACHED"
+                    )
                     break
                 if stop_for_native_wave_closure:
                     progress(

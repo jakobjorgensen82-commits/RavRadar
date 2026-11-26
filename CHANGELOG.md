@@ -6,6 +6,10 @@
 - Et tysk spørgsmål om et apparat med et dansk ravnavn får det samme afklarende svar som spørgsmålet med et tysk navn.
 - Spørg RavRadar besvarer også spørgsmålet om forskellen mellem et præcist landingssted for rav og en vurdering af kystområdet.
 
+## Drift — tid til vandstand sidst i prognosen
+
+- Den sene vandstandsrunde får en afgrænset del af DMI's arbejdsbudget, når den kvalificerede plan viser reelle huller. De kritiske henteopgaver får deres hidtidige første mulighed, og afbrudt fillæsning bevarer originale råfiler til genbrug. Den faktiske offentlige dækning måles efter almindelig drift.
+
 ## Drift — nye vandstandsfiler under DMI-hentningen
 
 - DMI kan genlæse kataloget sent i hentevinduet for at udfylde dokumenterede vandstandshuller. Den almindelige kontrollæsning af originaler, tidsfristen og downloadgrænserne gælder fortsat.
