@@ -2737,10 +2737,14 @@ async function buildNormalPublishedOrdinaryFixture(work,implementation) {
 // Same controlled DB/Edge responses as the normal readiness test; no network.
 async function ordinaryReadinessRuntimeFixture(readiness) {
   const {REQUIRED_CUTOVER_MIGRATIONS,LATEST_RAVSCORE_BINDING_MIGRATION,ASSISTANT_BINDING_HEADERS,
-    expectedTripBindingPolicy,expectedTripActiveAdmissionPolicy,expectedCheckpointCasContract}=
+    DEFAULT_CUTOVER_SOURCE_PHASE,expectedTripBindingPolicy,expectedTripActiveAdmissionPolicy,
+    expectedCheckpointCasContract,expectedCheckpointScalarWalkContract}=
     await import('./integrated-cutover-readiness.mjs');
   const expectedPolicy=await expectedTripBindingPolicy(),expectedActiveAdmissionPolicy=await expectedTripActiveAdmissionPolicy();
-  const expectedCheckpointContract=await expectedCheckpointCasContract();
+  // Match the installed checkpoint contract returned by the current database.
+  const expectedCheckpointContract=DEFAULT_CUTOVER_SOURCE_PHASE==='assistant-after601-successor'
+    ?await expectedCheckpointScalarWalkContract()
+    :await expectedCheckpointCasContract();
   const databaseReadback = {
   schemaVersion: 'ravscore-integrated-cutover-db-v1',
   tripSchemaVersion: 3,
