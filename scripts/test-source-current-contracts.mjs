@@ -197,8 +197,9 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],[modified('scripts/sourc
 // Slut på de nye rene transportassertions.
 assert.deepEqual(currentSourceTargets('scripts/verify-ravscore-operational-pages-deployment.mjs').owners,
   [{area:'sourceExecution',commands:[deploymentCommand,'node scripts/test-forecast-share-projection.mjs']}]);
-assert.deepEqual(currentSourceTargets('scripts/test-ravscore-operational-pages-deployment.mjs').owners,
-  [{area:'pages',commands:CURRENT_CONTRACT_COMMANDS.pages}]);
+for(const path of ['scripts/test-ravscore-operational-pages-deployment.mjs',
+  '.github/workflows/resume-operational-checkpoint.yml', 'scripts/lib/operational-evidence-r2-slots.mjs'])
+  assert.deepEqual(currentSourceTargets(path).owners,[{area:'pages',commands:CURRENT_CONTRACT_COMMANDS.pages}]);
 assert.equal(CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command.startsWith(deploymentEntry)).length,2);
 if(pagesCommandSelectionOnly){
   console.log('Pages command selection: public verification, complete owner cases and unchanged narrow refusals passed.');
