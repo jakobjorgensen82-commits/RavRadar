@@ -4,6 +4,10 @@
 
 Den lokale rettelse beder GitHub om at slå al cacheadgang fra for den normale PR-kildekontrol. Både cacheoprydningen og det automatiske genforsøg genkender kun den godkendte arbejdsgang, når GitHub viser samme repository og samme uændrede workflow på begge sider af den konkrete PR. Ukendte arbejdsforløb kan stadig blokere, og krav til hvilke kopier der sikkert kan slettes består. Verifikationen på GitHub udestår.
 
+## 26. november — installationskontrollen afviste den godkendte checkpointmigration
+
+Backendkørsel #25 fandt checkpointmigrationen og genlæste den gamle databasefunktion. Den afsluttende kontrol sammenlignede alligevel migrationsnummeret med det normale integrerede modelskift og standsede før skrivning. Checkpointinstallationen sammenligner nu med sin egen ene godkendte migration. Den kontrollerer fortsat den nøjagtige plan og den faktiske databasefunktion. Ny installation og genlæsning udestår. [Backendkørsel #25](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45882066574)
+
 ## 26. november — Supabase afbrød gemningen af den nye vejrtilstand
 
 Vejrkørsel #403 hentede og beregnede vejret. Supabase afbrød begge forsøg på at gemme det tilhørende checkpoint med PostgreSQL-kode 57014. Genoptagelse #217 kunne genlæse den bevarede prognose og blev standset ved samme checkpoint. Sidst verificerede offentlige prognose blev bevaret. Årsagen til den langsommere udførelse i drift er fortsat uafklaret. [Vejrkørsel #403](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45818877054) · [Genoptagelse #217](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45844344426)
