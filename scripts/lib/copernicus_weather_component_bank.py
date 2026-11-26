@@ -636,11 +636,13 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
     if trimmed["bankSha256"] != bank["bankSha256"]:
         checkpoint(copy.deepcopy(trimmed), [])
         bank = trimmed
-    grouped, challenges_by_component = {}, {}
+    primary_groups, aged_groups, challenges_by_component = {}, {}, {}
     for need in [*plan["needs"], *plan["privateSupportNeeds"]]:
+        is_aged = need["purpose"] == "AGED_DMI_CHALLENGE"
+        groups = aged_groups if is_aged else primary_groups
         for key in plan["productRoutes"].get(need["partId"], {}).get(need["component"], []):
-            grouped.setdefault((need["partId"], key), set()).add(need["validTime"])
-        if need["purpose"] == "AGED_DMI_CHALLENGE":
+            groups.setdefault((need["partId"], key), set()).add(need["validTime"])
+        if is_aged:
             challenges_by_component.setdefault((need["partId"], need["component"]), {})[need["validTime"]] = need
     existing_by_group = {}
     requests_by_sha = {row["requestSha256"]: row for row in bank["requests"]}
@@ -657,19 +659,27 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
     # A stable group order survives target-window shifts and needs disappearing
     # after another provider fills them. Membership-only rotation restarted at
     # the head whenever the last attempted group was no longer pending.
-    ordered = sorted(grouped)
+    ordered = sorted(primary_groups.keys() | aged_groups.keys())
     if (isinstance(start_after, tuple) and len(start_after) == 2
             and all(isinstance(value, str) and value for value in start_after)):
         ordered = ([group for group in ordered if group > start_after]
                    + [group for group in ordered if group <= start_after])
-    for part_id, key in ordered:
-        times = grouped[(part_id, key)]
+    # Both passes share the existing cursor and transport budget. The normal
+    # critical lane attempts all genuine gaps before spending time on refresh.
+    work = ([(group, False) for group in ordered if group in primary_groups]
+            + [(group, True) for group in ordered if group in aged_groups])
+    for group, is_aged in work:
+        times = (aged_groups if is_aged else primary_groups)[group]
+        if not times:
+            continue
+        part_id, key = group
         challenges = challenges_by_component.get((part_id, CONTRACTS[key].component), {})
         target = next(t for t in plan["targets"] if t["partId"] == part_id)
         group_entries = existing_by_group.get((part_id, key), [])
-        needs_static_repair = bool(admit_spatial is not None and group_entries and any(
+        relevant_entries = [entry for entry in group_entries if entry["native"]["validTime"] in times]
+        needs_static_repair = bool(admit_spatial is not None and any(
             not _spatially_admitted(entry, requests_by_sha[entry["requestSha256"]], plan, admit_spatial)
-            for entry in group_entries
+            for entry in relevant_entries
         ))
         if needs_static_repair and prepare_reusable_group is not None:
             if not should_continue():
@@ -685,14 +695,16 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
                 "reason": None if repaired else static_reason or "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"})
             checkpoint(copy.deepcopy(bank), copy.deepcopy(attempts))
             if not repaired:
+                if group in aged_groups:
+                    aged_groups[group].clear()
                 continue
             if refresh_unadmitted_static is not None and any(
                 not _spatially_admitted(entry, requests_by_sha[entry["requestSha256"]], plan, admit_spatial)
-                for entry in group_entries
+                for entry in relevant_entries
             ):
                 refreshed = refresh_unadmitted_static(key, copy.deepcopy(target),
                     [(copy.deepcopy(entry), copy.deepcopy(requests_by_sha[entry["requestSha256"]]))
-                     for entry in group_entries])
+                     for entry in relevant_entries])
                 if refreshed is not None:
                     attempts.append({"partId": part_id, "contractKey": key,
                         "status": "STATIC_EVIDENCE_READY" if refreshed else "RETRYABLE_ERROR",
@@ -729,6 +741,13 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
             continue
         if not should_continue():
             break
+        if not is_aged and group in aged_groups:
+            # Keep the provider interval set by the gaps. Planned refresh hours
+            # inside it can be verified from the very same subset.
+            covered_by_interval = {when for when in aged_groups[group] - existing
+                                   if pending[0] <= when <= pending[-1]}
+            aged_groups[group].difference_update(covered_by_interval)
+            pending = sorted([*pending, *covered_by_interval])
         request = _request(plan, part_id, key, pending)
         try:
             path = acquire_subset(copy.deepcopy(request))
@@ -756,6 +775,10 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
         # A persistence failure must propagate, not pretend that progress is safe.
         checkpoint(copy.deepcopy(updated), copy.deepcopy(attempts))
         bank = updated
+        if not is_aged and aged_groups.get(group):
+            existing_by_group[group] = [entry for entry in updated["records"]
+                                        if (entry["native"]["partId"], entry["native"]["contractKey"]) == group]
+            requests_by_sha[request["requestSha256"]] = request
     stage = project_component_candidates(plan, bank, admit_spatial=admit_spatial)
     return {"bank": bank, "stage": stage, "attempts": attempts}
 

@@ -450,9 +450,11 @@ const PATH_AREAS=freeze({
   ],
   weatherScalarPlanning:[
     'scripts/lib/weather-component-runtime.mjs',
+    'scripts/lib/copernicus_weather_component_bank.py',
     'scripts/test-weather-component-normal-wireup.mjs',
     'scripts/test-weather-component-runtime.mjs',
     'scripts/test-copernicus-component-index.mjs',
+    'scripts/test-copernicus-component-cursor.py',
   ],
   sharing:[
     SHARE_ZONE_BUNDLE_MODULE,'js/services/data-service.js','js/services/forecast-share-trust-index.js',

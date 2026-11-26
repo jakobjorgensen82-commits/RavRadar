@@ -1,3 +1,9 @@
+## 26. november — reelle huller først i Copernicus' vejrfelter
+
+- [x] Genskab en kørsel med ét ledigt forsøg, hvor en opdatering af en dækket time kom før et hul.
+- [x] Forsøg de manglende timer først gennem den eksisterende rotation. Medtag kun dækkede timer i første fase, når de ligger inden for samme nødvendige tidsinterval.
+- [ ] Verificér den normale kildekontrol og den efterfølgende ordinære prognose. Kørsel #400 viste 472 temperaturhuller ved kystdelene. Den afgør ikke, om køens rækkefølge var årsag til netop de huller.
+
 ## 26. november — genlæs metadata til Pages ved den første 603-udgivelse
 
 - [x] Fastslå første fejl i #400. GitHub kvitterede for upload, og det næste opslag på samme ID fik HTTP 404. Det udregnede vejrpar og de beståede valideringer er gemt.

@@ -14,6 +14,10 @@
 
 - Versionsværktøjet opdaterer håndbogens aktuelle modelfakta og installationskopien i samme kørsel. Den separate kontrol kan derefter læse det færdige resultat.
 
+## Drift — Copernicus forsøger reelle huller først
+
+- De manglende timer får første del af det fælles budget for Copernicus' vejrkomponenter. En allerede dækket time kan undersøges i samme svar, hvis den ligger inden for det nødvendige tidsinterval for hullerne. Øvrige opdateringer bruger den resterende tid.
+
 ## 4.0.602 — rav mellem revler
 
 - Spørg RavRadar kan forklare, hvordan strøm kan flytte materiale mellem revler uden nyt opskyl, og hvad man kan se fra stranden. Svaret findes på dansk, tysk og engelsk.

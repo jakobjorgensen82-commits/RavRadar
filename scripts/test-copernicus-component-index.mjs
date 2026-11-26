@@ -22,6 +22,8 @@ try {
     { status: 'PARSED', reason: 'CP_COMPONENT_SUBSET_FAILED' },
   ]), { CP_COMPONENT_REQUEST_RETRYABLE_ERROR: 1, CP_COMPONENT_SUBSET_FAILED: 2 });
   const python = process.env.PYTHON ?? 'python';
+  execFileSync(python, ['-B', fileURLToPath(new URL('./test-copernicus-component-cursor.py', import.meta.url))],
+    { stdio: 'pipe', env: copernicusOfflineEnvironment() });
   const runtimeEnvironment = { PATH: 'synthetic interpreter path', TEMP: 'synthetic temp',
     LD_LIBRARY_PATH: 'synthetic library path', LANG: 'C.UTF-8', PYTHONUTF8: '0',
     COPERNICUSMARINE_SERVICE_PASSWORD: 'synthetic-not-a-credential',
