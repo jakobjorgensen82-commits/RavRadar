@@ -1,3 +1,10 @@
+## 26. november — verificér råcachen ved den første assistentovergang
+
+- [x] Find stoppet i #399. Historikplanen bestod. Det første 603-forløb gendannede det godkendte gamle vejrpar, men den almindelige råcachekontrol forudsatte, at den nye model allerede var aktiv.
+- [x] Bind den første 603-kørsel til de faktisk gendannede originale vejrdata, den verificerede projektion af arbejdstilstanden og de aktuelle lagerversioner. Brug samme fysiske råfilskontrol og separate rotationskvittering som i den almindelige kørsel.
+- [x] Lad RAW-modtageren vente længere inden for et fast samlet loft, når det eksakte byggejob stadig er i en navngiven normal forberedelse af kvitteringen. Genbrug kontrol og rotation, også hvis der ligger en tredje færdig kopi fra en tidligere afbrudt udgivelse.
+- [ ] Kvalificér GitHub-kilden og verificér en ny ordinær offentlig prognose, lagernedbringelse og assistentens faktiske svar.
+
 ## 25. november — fanens sprog og den normale modelovergang
 
 - [x] Ret den åbne fanes emnevalg og saml de fem aktuelle kilde-/releaseprøver.

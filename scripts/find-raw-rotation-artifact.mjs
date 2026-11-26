@@ -12,6 +12,9 @@ const WORKFLOW = '.github/workflows/run-current-weather-once.yml';
 const OBSERVE = 'Observe exact restored RAW coverage for the locked successor before DMI';
 const PROOF_UPLOAD = 'Publish the bounded RAW rotation handoff before DMI';
 const PROOF_WAIT = 'Wait for the RAW rotation decision before DMI';
+const PROOF_ACTIVE_STEPS = new Set([
+  'Plan bounded current history from the actual selected continuation', OBSERVE, PROOF_UPLOAD, PROOF_WAIT,
+]);
 const RESULT_JOB = 'Retire verified older DMI RAW archives';
 const RESULT_UPLOAD = 'Publish the RAW rotation decision';
 const SAVED_OBSERVATION = 'Prove that this run saved the required DMI originals';
@@ -31,6 +34,7 @@ const TEMPORARY_METADATA_HTTP = [429, 500, 502, 503, 504];
 const TEMPORARY_METADATA_CONNECTION = ['EAI_AGAIN', 'ECONNRESET', 'ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET'];
 const MISSING_PROOF_PRODUCER_POLL_INTERVAL = 10;
 const DEADLINE_MS = { proof: 15 * 60_000, 'observe-proof': 90_000, result: 180_000, 'saved-coverage': 30_000 };
+const PROOF_HARD_DEADLINE_MS = 25 * 60_000;
 const positive = value => Number.isSafeInteger(value) && value > 0;
 const timestamp = value => typeof value === 'string' ? Date.parse(value) : NaN;
 const hold = reason => ({ status: 'HOLD', reason });
@@ -62,6 +66,39 @@ function normalRun(run, { repositoryId, runId, attempt, head }) {
     && run.head_repository?.id === repositoryId && run.path === WORKFLOW && run.event === 'workflow_dispatch'
     && run.status === 'in_progress' && run.conclusion === null
     && run.actor?.login === 'github-actions[bot]' && run.triggering_actor?.login === 'github-actions[bot]';
+}
+
+async function observeMissingProofProducer({ repositoryId, runId, attempt, head, getJson }, requireActiveAttempt = false) {
+  const attemptPath = `/repos/${REPOSITORY}/actions/runs/${runId}/attempts/${attempt}`;
+  try {
+    const response = await getJson(`${attemptPath}/jobs?per_page=100`);
+    if (!Array.isArray(response?.jobs) || response.total_count !== response.jobs.length
+        || response.jobs.length > 100) return pending();
+    const producers = response.jobs.filter(job => job?.name === DMI_PRODUCER_JOB);
+    const [producer] = producers;
+    if (producers.length !== 1 || !positive(producer.id) || producer.run_id !== runId
+        || producer.run_attempt !== attempt || producer.head_sha !== head
+        || producer.head_branch !== 'main') return pending();
+    const steps = Array.isArray(producer.steps) ? producer.steps : [];
+    const upload = steps.filter(step => step?.name === PROOF_UPLOAD);
+    if (producer.status === 'completed'
+        && (['failure', 'cancelled', 'timed_out', 'skipped'].includes(producer.conclusion)
+          || (upload.length === 1 && upload[0].status === 'completed' && upload[0].conclusion === 'skipped'))) {
+      return hold('producer-finished-without-proof');
+    }
+    if (requireActiveAttempt && producer.status === 'in_progress' && producer.conclusion === null) {
+      const active = steps.filter(step => step?.status === 'in_progress');
+      const [step] = active;
+      if (active.length === 1 && PROOF_ACTIVE_STEPS.has(step.name) && positive(step.number)
+          && step.conclusion === null && Number.isFinite(timestamp(step.started_at)) && step.completed_at == null
+          && normalRun(await getJson(attemptPath), { repositoryId, runId, attempt, head })) {
+        return { status: 'ACTIVE' };
+      }
+    }
+  } catch {
+    // An unavailable observation grants no extra time and proves no completion.
+  }
+  return pending();
 }
 
 function exactArtifact(row, { name, repositoryId, runId, head }, now) {
@@ -170,27 +207,7 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
     }
     if (!listing.total_count) {
       if (kind === 'proof' && inspectMissingProofProducer) {
-        let response;
-        try {
-          response = await getJson(`${attemptPath}/jobs?per_page=100`);
-        } catch {
-          // A failed optional observation says nothing about an absent proof.
-          return pending();
-        }
-        if (Array.isArray(response?.jobs) && response.total_count === response.jobs.length
-            && response.jobs.length <= 100) {
-          const producers = response.jobs.filter(job => job?.name === DMI_PRODUCER_JOB);
-          const [producer] = producers;
-          if (producers.length === 1 && positive(producer.id) && producer.run_id === runId
-              && producer.run_attempt === attempt && producer.head_sha === head && producer.head_branch === 'main'
-              && producer.status === 'completed') {
-            const upload = Array.isArray(producer.steps) ? producer.steps.filter(step => step?.name === PROOF_UPLOAD) : [];
-            if (['failure', 'cancelled', 'timed_out', 'skipped'].includes(producer.conclusion)
-                || (upload.length === 1 && upload[0].status === 'completed' && upload[0].conclusion === 'skipped')) {
-              return hold('producer-finished-without-proof');
-            }
-          }
-        }
+        return observeMissingProofProducer({ ...context, getJson });
       }
       return pending();
     }
@@ -227,15 +244,28 @@ export async function readRawRotationArtifactOnce({ kind, repositoryId, runId, a
 
 export async function findRawRotationArtifact({ pause = wait, signal, ...context } = {}) {
   if (!Object.hasOwn(DEADLINE_MS, context.kind)) return hold('invalid-context');
-  const lookups = Math.ceil(DEADLINE_MS[context.kind] / POLL_MS);
+  const isProof = context.kind === 'proof';
+  const originalDeadline = DEADLINE_MS[context.kind];
+  const startedAt = performance.now();
+  const normalLookups = Math.ceil(originalDeadline / POLL_MS);
+  const lookups = isProof ? Math.ceil(PROOF_HARD_DEADLINE_MS / POLL_MS) : normalLookups;
+  let lastProgressPoll = -MISSING_PROOF_PRODUCER_POLL_INTERVAL;
   let lastIncompleteObservation;
   let delay = POLL_MS;
   try {
     for (let poll = 0; poll < lookups && !signal?.aborted; poll += 1) {
       if (poll) await pause(delay, undefined, { signal });
       delay = POLL_MS;
+      const extending = isProof && (poll >= normalLookups || performance.now() - startedAt >= originalDeadline);
+      // Waiting longer is independent of authenticating any artifact that appears.
+      if (extending && poll - lastProgressPoll >= MISSING_PROOF_PRODUCER_POLL_INTERVAL) {
+        const builder = await observeMissingProofProducer(context, true);
+        if (builder.status === 'HOLD') return builder;
+        if (builder.status !== 'ACTIVE' || signal?.aborted) break;
+        lastProgressPoll = poll;
+      }
       const finding = await readRawRotationArtifactOnce({
-        ...context, inspectMissingProofProducer: poll % MISSING_PROOF_PRODUCER_POLL_INTERVAL === 0,
+        ...context, inspectMissingProofProducer: !extending && poll % MISSING_PROOF_PRODUCER_POLL_INTERVAL === 0,
       });
       if (signal?.aborted) break;
       if (finding.status === 'PENDING') continue;
@@ -245,7 +275,9 @@ export async function findRawRotationArtifact({ pause = wait, signal, ...context
       if (!retryable) return finding;
       lastIncompleteObservation = finding;
       delay = Math.max(POLL_MS, finding.retryDelayMs ?? 0);
-      if (delay >= DEADLINE_MS[context.kind]) return finding;
+      if (delay >= originalDeadline) return finding;
+      if (isProof && !extending && delay > POLL_MS
+          && performance.now() - startedAt + delay >= originalDeadline) return finding;
     }
   } catch {
     if (!signal?.aborted) return hold('metadata-unavailable');
@@ -349,7 +381,7 @@ async function main(env, args) {
     await writeFile(path.join(directory, name), bytes, { flag: 'wx', mode: 0o600 });
     return;
   }
-  const signal = AbortSignal.timeout(DEADLINE_MS[kind]);
+  const signal = AbortSignal.timeout(kind === 'proof' ? PROOF_HARD_DEADLINE_MS : DEADLINE_MS[kind]);
   const finding = await findRawRotationArtifact({ kind, repositoryId: Number(env.GITHUB_REPOSITORY_ID),
     runId: Number(env.GITHUB_RUN_ID), attempt: Number(env.GITHUB_RUN_ATTEMPT), head: env.GITHUB_SHA, signal,
     getJson: async route => {

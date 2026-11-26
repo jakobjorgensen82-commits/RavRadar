@@ -989,7 +989,7 @@ jobs:
       needs.current-main-target.outputs.ordinary_scheduled == 'true' &&
       needs.current-main-target.outputs.completed_private_runtime != 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       raw_reader_hold: ${{ steps.raw-reader-hold.outputs.confirmed }}
     permissions:

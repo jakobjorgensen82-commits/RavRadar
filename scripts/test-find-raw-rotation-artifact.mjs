@@ -332,6 +332,53 @@ test('initial rotation stops when the exact builder has failed without uploading
   assert.equal(subject.calls.length, 13);
 });
 
+test('RAW proof gets more time only for the exact active builder and keeps its hard deadline', async () => {
+  const stillPlanning = () => {
+    const subject = fixture();
+    subject.listing.total_count = 0;
+    subject.listing.artifacts.length = 0;
+    const publication = subject.job.steps;
+    subject.job.steps = [{
+      name: 'Plan bounded current history from the actual selected continuation', number: 1,
+      status: 'in_progress', conclusion: null, started_at: time(1),
+    }];
+    return {subject, publication};
+  };
+
+  const {subject, publication} = stillPlanning();
+  let pauses = 0;
+  subject.afterPause(() => {
+    if (++pauses !== 360) return; // 18 minutes after the receiver began.
+    subject.job.steps = publication;
+    subject.listing.total_count = 1;
+    subject.listing.artifacts.push(subject.artifact);
+  });
+  assert.deepEqual(await subject.find(), {status: 'FOUND', artifactId: 14, digest});
+  assert.equal(pauses, 360);
+
+  const wrongRun = stillPlanning().subject;
+  wrongRun.run.head_sha = 'b'.repeat(40);
+  const unrelatedStep = stillPlanning().subject;
+  unrelatedStep.job.steps[0].name = 'Update DMI bulk model cache';
+  const deadline = stillPlanning().subject;
+  for (const [source, expectedPauses] of [[wrongRun, 300], [unrelatedStep, 300], [deadline, 499]]) {
+    let waited = 0;
+    source.afterPause(() => { waited++; });
+    assert.deepEqual(await source.find(), {status: 'HOLD', reason: 'artifact-not-ready'});
+    assert.equal(waited, expectedPauses);
+  }
+
+  const stopped = stillPlanning().subject;
+  let waited = 0;
+  stopped.afterPause(() => {
+    if (++waited !== 305) return;
+    stopped.job.status = 'completed';
+    stopped.job.conclusion = 'failure';
+  });
+  assert.deepEqual(await stopped.find(), {status: 'HOLD', reason: 'producer-finished-without-proof'});
+  assert.equal(waited, 310);
+});
+
 test('an unavailable optional builder status does not stop an arriving proof', async () => {
   const subject = fixture();
   subject.listing.total_count = 0;

@@ -75,6 +75,8 @@ async function readJson(file, maximum) {
 let phase = 'ENTRY';
 async function main(env) {
   phase = 'RUN_SCOPE';
+  const assistantSuccessor = env.OPERATIONAL_ACTION === 'integrated-historical-maintenance'
+    && env.RAW_ASSISTANT_LATER_H0_BASELINE_PROVED === 'true';
   const run = { runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, sourceHead: env.GITHUB_SHA,
     targetReferenceAt: env.RAVRADAR_PRODUCTION_TARGET_HOUR };
   requireProof(process.platform === 'linux' && env.GITHUB_ACTIONS === 'true' && env.RUNNER_ENVIRONMENT === 'github-hosted'
@@ -83,7 +85,7 @@ async function main(env) {
     && env.GITHUB_REF === 'refs/heads/main' && env.GITHUB_ACTOR === 'github-actions[bot]'
     && env.GITHUB_TRIGGERING_ACTOR === 'github-actions[bot]' && run.runAttempt === '1'
     && env.RAW_NORMAL_PRE_DMI_STEPS_VERIFIED === 'true' && env.GITHUB_WORKSPACE === ROOT
-    && env.OPERATIONAL_ACTION === 'integrated' && path.isAbsolute(env.RUNNER_TEMP ?? '')
+    && (env.OPERATIONAL_ACTION === 'integrated' || assistantSuccessor) && path.isAbsolute(env.RUNNER_TEMP ?? '')
     && path.isAbsolute(env.GITHUB_OUTPUT ?? ''), 'RUN_ENVIRONMENT');
   phase = 'CHECKOUT_SCOPE';
   requireProof(execFileSync('git', ['rev-parse', 'HEAD^{commit}'], {cwd: ROOT, encoding: 'utf8'}).trim() === run.sourceHead
@@ -96,7 +98,9 @@ async function main(env) {
     readJson(path.join(ROOT, '.cache/dmi-restored-raw-identity.json'), 512),
   ]);
   phase = 'READ_RETAINED_GENERATION';
-  const retainedGeneration = await collectPublishedRawCurrentCaptureUnion(await readRetainedRawRotationInputs({demand}));
+  const retainedGeneration = await collectPublishedRawCurrentCaptureUnion(
+    await readRetainedRawRotationInputs({demand, assistantSuccessor}),
+  );
   phase = 'BIND_INPUTS';
   const { planBytes, expected, boundary } = preparePreDmiRawSuccessorProof({
     demand, retainedGeneration, pairedBaseline, identity, run, matchedKey: env.RAW_MATCHED_CACHE_KEY,
