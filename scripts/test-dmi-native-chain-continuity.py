@@ -415,83 +415,121 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                         budget={"bytes": 0}, primary_refresh_assets_remaining=slots,
                         checkpoint_controller=controller, fresh_zone_ids=set())
 
-        attempted_captures = []
-        attempted_times = []
+        class SyntheticGribInternalError(Exception):
+            pass
 
-        def synthetic_download(href, expected_size, budget, *, work_deadline, **details):
-            self.assertEqual(work_deadline, producer.WORK_DEADLINE)
-            attempted_times.append(details["valid_time"])
-            budget["bytes"] += 128
-            attempted_captures.append({
-                **CAPTURE, "itemId": details["item_id"],
-                "assetIdentitySha256": producer.asset_identity_sha256(href),
-                "itemCreatedAt": details["item_created_at"], "itemUpdatedAt": details["item_updated_at"],
-                "assetSizeBytes": expected_size, "acquiredAt": producer.canonical_time(reference),
-            })
-            return Path("synthetic.grib"), False
+        bad_hour = gap_hours[1]
+        for run_fault in ("no fault", "unknown size", "truncated GRIB", "different capture", "unsettled read"):
+            with self.subTest(late_water_fault=run_fault):
+                attempted_captures = []
+                attempted_times = []
 
-        def synthetic_reader(_path, _collection, _run, _hour, borrowed=None):
-            return nullcontext(borrowed or types.SimpleNamespace(
-                capture=attempted_captures[-1], handle=io.BytesIO(b"synthetic"),
-                check=lambda *args: None, remember_commit=lambda *args: None,
-                commits=[], failure_flushes=[], native_handles=[],
-            ))
+                def synthetic_download(href, expected_size, budget, *, work_deadline, **details):
+                    self.assertEqual(work_deadline, producer.WORK_DEADLINE)
+                    if run_fault == "unknown size":
+                        self.assertIsNone(expected_size, "Keep Content-Length admission in the normal download")
+                    attempted_times.append(details["valid_time"])
+                    budget["bytes"] += 128
+                    digest = producer.asset_identity_sha256(href)
+                    if run_fault == "different capture" and details["valid_time"] == bad_hour:
+                        digest = "d" * 64
+                    attempted_captures.append(types.MappingProxyType({
+                        **CAPTURE, "itemId": details["item_id"], "assetIdentitySha256": digest,
+                        "itemCreatedAt": details["item_created_at"], "itemUpdatedAt": details["item_updated_at"],
+                        "assetSizeBytes": expected_size, "acquiredAt": producer.canonical_time(reference),
+                    }))
+                    return Path("synthetic.grib"), False
 
-        controller = Mock()
-        controller.can_start_asset.return_value = True
-        context = late_context(copy.deepcopy(old_saved), controller)
-        handles = iter(("sea-mean-deviation", "current-u", None) * len(gap_hours))
-        with (
-            patch.object(producer.time, "monotonic", return_value=2500.0),
-            patch.object(producer, "request_json", return_value=new_page) as request,
-            patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
-            patch.object(producer, "should_stop_work", return_value=False),
-            patch.object(producer, "progress"),
-            patch.object(producer, "download_asset", side_effect=synthetic_download) as download,
-            patch.object(producer, "_grib_read_scope", side_effect=synthetic_reader),
-            patch.object(producer, "codes_grib_new_from_file", lambda _: next(handles)),
-            patch.object(producer, "field_signature", lambda _: {"shortName": "smd"}),
-            patch.object(producer, "classify_parameter", lambda handle, _: handle),
-            patch.object(producer, "nearest_valid_batch", lambda _handle, _collection, wanted: {
-                zone["id"]: {**POINT, "value": 0.4} for zone in wanted
-            }),
-        ):
-            exec(late, context)
-            exec(late, context)
-        request.assert_called_once()
-        self.assertEqual(attempted_times, gap_hours)
-        self.assertEqual(download.call_count, len(gap_hours))
-        self.assertEqual(controller.note_committed_asset.call_count, len(gap_hours))
-        self.assertEqual(context["primary_refresh_assets_remaining"], 2)
-        self.assertEqual(context["budget"]["bytes"], 128 * len(gap_hours))
-        self.assertEqual(context["prefetched_marine"], first)
-        actual = context["result"]
-        for target in [ZONE, source_zone]:
-            current_hours = actual["zones"][target["id"]]["hourly"]
-            for gap_hour in gap_hours:
-                self.assertEqual(current_hours[gap_hour]["sea-mean-deviation"], 0.4)
-                self.assertEqual(set(current_hours[gap_hour]["sources"]), {"waterLevel"})
-                self.assertEqual(current_hours[gap_hour]["sources"]["waterLevel"]["modelRun"],
-                                 producer.canonical_time(next_model))
-            self.assertEqual({key: row for key, row in current_hours.items() if key not in gap_hours},
-                             old_saved["zones"][target["id"]]["hourly"])
-        self.assertEqual(actual["runs"], old_saved["runs"])
-        self.assertEqual(actual["diagnostics"]["currentOperationalLedger"], original_ledger.ledger)
-        after = producer.build_current_operational_ledger_result(actual, targets, reference, catalogues, preserved)
-        self.assertEqual(after.ledger, original_ledger.ledger)
+                def synthetic_reader(_path, _collection, _run, hour, borrowed=None):
+                    next_message = "current-u"
+                    if hour == bad_hour:
+                        if run_fault == "truncated GRIB":
+                            next_message = SyntheticGribInternalError("synthetic incomplete GRIB")
+                        elif run_fault == "unsettled read":
+                            next_message = producer.GribReadUnproven("synthetic unsettled original")
+                    return nullcontext(borrowed or types.SimpleNamespace(
+                        capture=attempted_captures[-1],
+                        handle=iter(("sea-mean-deviation", next_message, None)),
+                        check=lambda *args: None, remember_commit=lambda *args: None,
+                        commits=[], failure_flushes=[], native_handles=[],
+                    ))
+
+                def next_grib_message(handle):
+                    message = next(handle)
+                    if isinstance(message, Exception):
+                        raise message
+                    return message
+
+                controller = Mock()
+                controller.can_start_asset.return_value = True
+                context = late_context(copy.deepcopy(old_saved), controller)
+                if run_fault == "unknown size":
+                    context["retained_current_asset_proofs"] = []
+                with (
+                    patch.object(producer.time, "monotonic", return_value=2500.0),
+                    patch.object(producer, "request_json", return_value=new_page) as request,
+                    patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
+                    patch.object(producer, "should_stop_work", return_value=False),
+                    patch.object(producer, "progress"),
+                    patch.object(producer, "download_asset", side_effect=synthetic_download) as download,
+                    patch.object(producer, "_grib_read_scope", side_effect=synthetic_reader),
+                    patch.object(producer, "codes_grib_new_from_file", next_grib_message),
+                    patch.object(producer, "field_signature", lambda _: {"shortName": "smd"}),
+                    patch.object(producer, "classify_parameter", lambda handle, _: handle),
+                    patch.object(producer, "nearest_valid_batch", lambda _handle, _collection, wanted: {
+                        zone["id"]: {**POINT, "value": 0.4} for zone in wanted
+                    }),
+                ):
+                    if run_fault == "unsettled read":
+                        with self.assertRaises(producer.GribReadUnproven):
+                            exec(late, context)
+                    else:
+                        exec(late, context)
+                        exec(late, context)
+                expected_attempts = gap_hours[:2] if run_fault == "unsettled read" else gap_hours
+                committed_hours = [
+                    hour for hour in expected_attempts
+                    if run_fault in ("no fault", "unknown size") or hour != bad_hour
+                ]
+                request.assert_called_once()
+                self.assertEqual(attempted_times, expected_attempts)
+                self.assertEqual(download.call_count, len(expected_attempts))
+                self.assertEqual(controller.note_committed_asset.call_count, len(committed_hours))
+                self.assertEqual(context["primary_refresh_assets_remaining"], 2)
+                self.assertEqual(context["budget"]["bytes"], 128 * len(expected_attempts))
+                self.assertEqual(context["prefetched_marine"], first)
+                actual = context["result"]
+                for target in [ZONE, source_zone]:
+                    current_hours = actual["zones"][target["id"]]["hourly"]
+                    for gap_hour in committed_hours:
+                        self.assertEqual(current_hours[gap_hour]["sea-mean-deviation"], 0.4)
+                        self.assertEqual(set(current_hours[gap_hour]["sources"]), {"waterLevel"})
+                        self.assertEqual(current_hours[gap_hour]["sources"]["waterLevel"]["modelRun"],
+                                         producer.canonical_time(next_model))
+                    self.assertEqual({key: row for key, row in current_hours.items() if key not in committed_hours},
+                                     old_saved["zones"][target["id"]]["hourly"])
+                self.assertEqual(actual["runs"], old_saved["runs"])
+                self.assertEqual(actual["diagnostics"]["currentOperationalLedger"], original_ledger.ledger)
+                after = producer.build_current_operational_ledger_result(actual, targets, reference, catalogues, preserved)
+                self.assertEqual(after.ledger, original_ledger.ledger)
 
         normal_cap = producer.MAX_ASSETS_PER_COLLECTION
-        for slots, facts, remaining, cap, expected_requests in (
-            (0, plan, True, normal_cap, 1), (1, None, True, normal_cap, 0),
-            (1, v2(trend=(117,)), True, normal_cap, 0), (1, plan, False, normal_cap, 0),
-            (1, plan, True, len(catalogues[collection][1]), 0),
+        old_page = page(collection, (old_model, 121))
+        oversized_offer = copy.deepcopy(new_page)
+        for feature in oversized_offer["features"]:
+            feature["assets"]["data"]["file:size"] = producer.MAX_DOWNLOAD_BYTES + 1
+        for slots, facts, remaining, cap, offered, expected_requests in (
+            (0, plan, True, normal_cap, old_page, 1), (1, None, True, normal_cap, old_page, 0),
+            (1, v2(trend=(117,)), True, normal_cap, old_page, 0), (1, plan, False, normal_cap, old_page, 0),
+            (1, plan, True, len(catalogues[collection][1]), old_page, 0),
+            (1, plan, True, normal_cap, oversized_offer, 1),
         ):
             controller = Mock()
             controller.can_start_asset.return_value = remaining
             context = late_context(copy.deepcopy(old_saved), controller, slots=slots, facts=facts)
             with (
                 patch.object(producer.time, "monotonic", return_value=2500.0),
-                patch.object(producer, "request_json", return_value=page(collection, (old_model, 121))) as request,
+                patch.object(producer, "request_json", return_value=offered) as request,
                 patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
                 patch.object(producer, "should_stop_work", return_value=False),
                 patch.object(producer, "progress"),
