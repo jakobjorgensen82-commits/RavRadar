@@ -10,9 +10,19 @@ Vejrkørsel #403 hentede og beregnede vejret. Supabase afbrød begge forsøg på
 
 Den lokale SQL-tilføjelse gennemgår kun værdier, der kan indeholde JSON-nøgler. Reglerne for afvisning, rettigheder, checkpointformat og scoreberegning er de samme. På lokal PostgreSQL 17 tog den fulde skriveprøve med syntetiske data for 673 kystdele ca. 12 sekunder mod 19–20 med den installerede funktionsdefinition. Kvittering og gemt tilstand var identiske. Det eksisterende backendforløb kan installere den ene migration efter kildekvalifikation og kontrollere både migrationshistorik og den faktiske funktionsdefinition. Installation, genoptagelse af den gemte prognose og måling i drift udestår.
 
+## 26. november — almindelige bølger, rav og opskyl om vinteren
+
+Det almindelige tyske spørgefelt gav sæsonsvaret på et samlet spørgsmål om, hvorfor rav kan ligge mellem muslingeskaller og tang efter almindelige bølger om vinteren. Samme svar blev genskabt lokalt gennem brugerformularen. Appens lokale svar bruger det eksisterende faggrundlag om bevægelse, sortering og opskyl til at besvare hele spørgsmålet på dansk, tysk og engelsk. Et frisk opskyl og lommer med let materiale er spor til, hvor det kan være værd at lede. Ved et ekstra led sendes hele spørgsmålet gennem den normale behandling. Offentlig levering udestår.
+
 ## 26. november — den første filoversigt overså nye DKSS-timer i #402
 
 Den almindelige DMI-læsning valgte kataloget, før de nye originaler til prognosens sidste fire timer ankom. Senere drift genbrugte listen. En afprøvet kandidat kan optage verificerede nye vandstandsværdier, hvis der er plads inden for den eksisterende tid og downloadgrænse. Landsdækkende effekt og resttid skal måles i en almindelig kørsel med rettelsen. [Kørsel #402](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45782337031)
+
+## 26. november — lokal D1-kvittering for privat statistik
+
+D1 kan tælle den indsatte rapport og dens triggeroprettede budgetposter samlet i meta.changes. Den lokale rettelse bruger i stedet den samme atomiske skrivnings præcise RETURNING-row og genlæser rapport, bidragyderliste, budgetposter og uændret præference-/slettebasis. En allerede gemt måned genbruges uden ny støj eller budgetbetaling. Ukendt skriveudfald stopper fortsat uden automatisk gentagelse.
+
+Status er lokal kildekandidat, ikke installeret eller aktiveret statistik. Den senest verificerede Worker er OFF. Privat månedskørsel, faktisk hosted kapacitet, anonymitets-/frigivelsespolitik og offentlig statistik har fortsat særskilte åbne beviser. Numerisk model, migrations-SQL, originale ture, sampler, kvoter og adgang ændres ikke.
 
 ## 26. november — rækkefølge for Copernicus' kritiske forespørgsler
 

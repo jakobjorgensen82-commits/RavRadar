@@ -10,6 +10,63 @@ const REPOSITORY = 'jakobjorgensen82-commits/RavRadar';
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const REQUEST_TIMEOUT_MS = 12000;
 const VERIFIED_NATIVE_RECEIPT_STATES = new Set(['NATIVE_RECEIPT_UNARMED', 'NATIVE_RECEIPT_ARMED', 'NATIVE_CAPTURE_OBSERVED']);
+const SIGNUP_BOOTSTRAP_BODIES = new Map([
+  // Immutable shipped installer bodies, trimmed like the existing catalog hashes.
+  ['c505d852be7a5000f4068e6b3f69dc130a34403d1e491664f1be1b6cc019f247', '4.0.43'],
+  ['d4df42879d3f192c86ef8a33fd094e21bbdd30835006531793c5f5ba08a4dbd3', '4.0.41'],
+]);
+
+// Project the trigger and its target function directly from the catalogs.
+// In particular, the query never reads rows from auth.users or public.profiles.
+function includeSignupBootstrapMetadata(receiptQuery) {
+  return String.raw`select receipt.*, (
+    select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+      'triggerMatches', not t.tgisinternal and t.tgenabled = 'O' and t.tgtype = 21
+        and t.tgnargs = 0 and t.tgqual is null and t.tgattr::text = email.attnum::text
+        and t.tgoldtable is null and t.tgnewtable is null,
+      'functionMatches', pn.nspname = 'public' and p.proname = 'handle_new_ravradar_user'
+        and p.pronargs = 0 and p.prokind = 'f' and p.prorettype = 'pg_catalog.trigger'::pg_catalog.regtype
+        and p.prosecdef and not p.proretset and p.provolatile = 'v' and l.lanname = 'plpgsql'
+        and p.proconfig = array['search_path=public'],
+      'ownerMatches', owner.rolname = 'postgres' and (owner.rolsuper or owner.rolbypassrls),
+      'bodySha256', pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(
+        pg_catalog.btrim(p.prosrc, E' \n\r\t'), 'UTF8')), 'hex'),
+      'executeAcl', case
+        when exists (select 1 from pg_catalog.aclexplode(
+          coalesce(p.proacl, pg_catalog.acldefault('f', p.proowner))) a
+          where a.grantee <> p.proowner and
+            (a.grantee <> 0 or a.grantor <> p.proowner or a.privilege_type <> 'EXECUTE' or a.is_grantable))
+          then 'UNREVIEWED'
+        when exists (select 1 from pg_catalog.aclexplode(
+          coalesce(p.proacl, pg_catalog.acldefault('f', p.proowner))) a where a.grantee = 0)
+          then 'HISTORICAL_PUBLIC_EXECUTE'
+        else 'OWNER_ONLY' end))
+    from pg_catalog.pg_trigger t
+    join pg_catalog.pg_class c on c.oid = t.tgrelid
+    join pg_catalog.pg_namespace cn on cn.oid = c.relnamespace
+    join pg_catalog.pg_attribute email on email.attrelid = c.oid
+      and email.attname = 'email' and email.attnum > 0 and not email.attisdropped
+    join pg_catalog.pg_proc p on p.oid = t.tgfoid
+    join pg_catalog.pg_namespace pn on pn.oid = p.pronamespace
+    join pg_catalog.pg_language l on l.oid = p.prolang
+    join pg_catalog.pg_roles owner on owner.oid = p.proowner
+    where cn.nspname = 'auth' and c.relname = 'users' and c.relkind = 'r'
+      and t.tgname = 'on_auth_user_created_ravradar'
+  ) as "signupBootstrap" from (${receiptQuery.trim().replace(/;$/, '')}) receipt;`;
+}
+
+function projectSignupBootstrap(rows) {
+  if (rows === null) return { status: 'SIGNUP_BOOTSTRAP_MISSING' };
+  const row = Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+  if (!onlyKeys(row, ['triggerMatches', 'functionMatches', 'ownerMatches', 'bodySha256', 'executeAcl'])
+    || row.triggerMatches !== true || row.functionMatches !== true || row.ownerMatches !== true)
+    return { status: 'SIGNUP_BOOTSTRAP_REFUSED' };
+  const installerVersion = SIGNUP_BOOTSTRAP_BODIES.get(row.bodySha256);
+  if (!installerVersion) return { status: 'SIGNUP_BOOTSTRAP_UNRECOGNIZED_BODY' };
+  if (!['OWNER_ONLY', 'HISTORICAL_PUBLIC_EXECUTE'].includes(row.executeAcl))
+    return { status: 'SIGNUP_BOOTSTRAP_UNREVIEWED_ACL', installerVersion };
+  return { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion, executeAcl: row.executeAcl };
+}
 
 export function isFixedActivityHookReadOwner(env) {
   return env.GITHUB_ACTIONS === 'true'
@@ -461,7 +518,9 @@ async function nativeReceiptQueryAndSource() {
   return { base, append, query, source: { ...source, bodies: { ...source.bodies, account_native_activity_token_hook: append.hookBodySha256 } } };
 }
 
-async function readFixedNativeActivityReceiptState({ accessToken, fetchImpl = globalThis.fetch, expectedCheckReference }) {
+async function readFixedNativeActivityReceiptState({
+  accessToken, fetchImpl = globalThis.fetch, expectedCheckReference, includeSignupBootstrap = false,
+}) {
   if (typeof accessToken !== 'string' || !accessToken.trim()) return { status: 'CREDENTIAL_UNAVAILABLE' };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -471,7 +530,7 @@ async function readFixedNativeActivityReceiptState({ accessToken, fetchImpl = gl
     const response = await fetchImpl(DATABASE_QUERY_URL, {
       method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
       headers: { Authorization: 'Bearer ' + accessToken, Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, read_only: true }),
+      body: JSON.stringify({ query: includeSignupBootstrap ? includeSignupBootstrapMetadata(query) : query, read_only: true }),
     });
     if (response.redirected) return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
     if (response.status === 401 || response.status === 403) return { status: 'NATIVE_RECEIPT_PERMISSION_REFUSED' };
@@ -479,7 +538,9 @@ async function readFixedNativeActivityReceiptState({ accessToken, fetchImpl = gl
     const value = await readBoundedJson(response);
     if (value === null) return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
     const rows = Array.isArray(value) ? value : onlyKeys(value, ['result']) ? value.result : onlyKeys(value, ['data']) ? value.data : null;
-    if (!Array.isArray(rows) || rows.length !== 1 || !onlyKeys(rows[0], ['metadata', 'authAdminPublicUsage', 'policyEpoch', 'observedAt', 'receipt'])
+    const rowKeys = ['metadata', 'authAdminPublicUsage', 'policyEpoch', 'observedAt', 'receipt'];
+    if (includeSignupBootstrap) rowKeys.push('signupBootstrap');
+    if (!Array.isArray(rows) || rows.length !== 1 || !onlyKeys(rows[0], rowKeys)
       || rows[0].authAdminPublicUsage !== true || !coverageTime(rows[0].observedAt)) return { status: 'NATIVE_RECEIPT_REFUSED' };
     const metadata = structuredClone(rows[0].metadata);
     const table = metadata?.tables?.account_native_activity_receipt;
@@ -522,6 +583,7 @@ async function readFixedNativeActivityReceiptState({ accessToken, fetchImpl = gl
       appendSha256: append.sha256, sourceBodyAndAclVerified: true, checkExpressionSemanticsVerified: false, nativeCaptureObserved: captured,
       authResponseObserved: false, activityEligibility: 'HOLD', coverageStartAuthority: false,
       noticesEnabled: false, automaticDeletionEnabled: false,
+      ...(includeSignupBootstrap ? { signupBootstrap: projectSignupBootstrap(rows[0].signupBootstrap) } : {}),
       ...(expectedCheckReference===undefined?{}:{originalOffCheckExpressionSemanticsVerified:true}) };
   } catch {
     return { status: 'NATIVE_RECEIPT_UNAVAILABLE' };
@@ -568,15 +630,15 @@ export async function verifyFixedNativeActivityReceiptInstallState({phase,access
 // catalogue oracle remains used exclusively by its existing callers.
 export async function runFixedAccountActivityCatalogRead({ env, accessToken, fetchImpl = globalThis.fetch }) {
   if (!isFixedActivityHookCatalogReadOwner(env)) return { status: 'OWNER_REQUIRED' };
-  const result = await readFixedNativeActivityReceipt({ accessToken, fetchImpl });
+  const result = await readFixedNativeActivityReceipt({ accessToken, fetchImpl, includeSignupBootstrap: true });
   if (!VERIFIED_NATIVE_RECEIPT_STATES.has(result.status)) return { status: result.status };
   const {
     status, sourceBodyAndAclVerified, nativeCaptureObserved, authResponseObserved,
-    activityEligibility, coverageStartAuthority, noticesEnabled, automaticDeletionEnabled,
+    activityEligibility, coverageStartAuthority, noticesEnabled, automaticDeletionEnabled, signupBootstrap,
   } = result;
   return {
     status, sourceBodyAndAclVerified, nativeCaptureObserved, authResponseObserved,
-    activityEligibility, coverageStartAuthority, noticesEnabled, automaticDeletionEnabled,
+    activityEligibility, coverageStartAuthority, noticesEnabled, automaticDeletionEnabled, signupBootstrap,
   };
 }
 
