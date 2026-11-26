@@ -43,7 +43,7 @@ async function assertBasisUnchanged(control,request,expected){
   const actual=await readBasis(control,request);
   if(actual.preferenceSha256!==expected.preferenceSha256||actual.erasureSha256!==expected.erasureSha256)fail('DP_REVIEW_BASIS_CHANGED');
 }
-async function readFrozen(control,period,requiredExportBasis=null){
+async function readFrozen(control,period,requiredExportBasis=null,expectedInserted=null){
   let reply;try{reply=await control.prepare(`select ${COLUMNS.join(',')} from trip_weather_aggregate_releases where period_start=?`).bind(period.start).all();}
   catch{fail('DP_LEDGER_READ_FAILED');}
   if(reply?.success!==true||!Array.isArray(reply.results)||reply.results.length>1)fail('DP_LEDGER_READ_FAILED');
@@ -62,6 +62,8 @@ async function readFrozen(control,period,requiredExportBasis=null){
     ||![row.preference_basis_sha256,row.erasure_basis_sha256].every(x=>/^[a-f0-9]{64}$/.test(x)))fail('DP_LEDGER_INTEGRITY_INVALID');
   if(requiredExportBasis&&(row.preference_basis_sha256!==requiredExportBasis.preferenceSha256
     ||row.erasure_basis_sha256!==requiredExportBasis.erasureSha256))fail('DP_STUDY_CONSENT_BASIS_CHANGED');
+  if(expectedInserted&&(row.report_sha256!==expectedInserted.reportSha256
+    ||row.contributor_subjects_json!==expectedInserted.subjects))fail('DP_LEDGER_INTEGRITY_INVALID');
   const subjects=subjectsFromJson(row.contributor_subjects_json);
   let charges;try{charges=await control.prepare(`select owner_subject,period_start,budget_units from trip_weather_aggregate_account_charges
     where release_key=? order by owner_subject`).bind(key).all();}catch{fail('DP_LEDGER_INTEGRITY_INVALID');}
@@ -108,7 +110,7 @@ async function preparePersistedReviewUsing(databaseList,request,prepareCandidate
   const subjects=canonicalJson(aggregateContributionSubjects(candidate));subjectsFromJson(subjects);
   const report=await (categorical?makePrivateCategoricalProposal:makePrivateNoisyProposal)(candidate,request,{randomFill}),body=canonicalJson(report);
   const key=await sha256Hex(canonicalJson({ledgerId:POLICY.namespace,period:report.period}));
-  const accountingSha256=await accountingPolicySha256();let reply;
+  const accountingSha256=await accountingPolicySha256(),reportSha256=await sha256Hex(body);let reply;
   try{
     // Report AND all account charges commit in ONE control-shard SQLite statement.
     // The AFTER INSERT trigger creates charges atomically; a failed trigger rolls back all.
@@ -119,15 +121,21 @@ async function preparePersistedReviewUsing(databaseList,request,prepareCandidate
       where not exists(select 1 from trip_weather_aggregate_releases where period_start=?)
       and not exists(select 1 from json_each(?) selected where
         (select coalesce(sum(budget_units),0) from trip_weather_aggregate_account_charges where owner_subject=selected.value)+4>8)
-      and ${ERASURE_AT_INSERT}=?`)
+      and ${ERASURE_AT_INSERT}=?
+      returning release_key,report_sha256`)
       .bind(POLICY.namespace,key,request.period.start,request.period.end,await sha256Hex(canonicalJson(report.modelBinding)),
-        report.policySha256,body,await sha256Hex(body),basis.preferenceSha256,basis.erasureSha256,subjects,accountingSha256,
-        request.period.start,subjects,basis.erasureJson).run();
+        report.policySha256,body,reportSha256,basis.preferenceSha256,basis.erasureSha256,subjects,accountingSha256,
+        request.period.start,subjects,basis.erasureJson).all();
   }catch{fail('DP_LEDGER_WRITE_OUTCOME_UNKNOWN');}
-  if(reply?.success!==true||![0,1].includes(reply.meta?.changes))fail('DP_LEDGER_WRITE_OUTCOME_UNKNOWN');
+  // D1 meta.changes includes trigger-created charges; RETURNING names only our row.
+  const rows=reply?.results,ack=rows?.[0];
+  if(reply?.success!==true||!Array.isArray(rows)||rows.length>1
+    ||(rows.length===1&&(!ack||Object.keys(ack).sort().join(',')!=='release_key,report_sha256'
+      ||ack.release_key!==key||ack.report_sha256!==reportSha256)))fail('DP_LEDGER_WRITE_OUTCOME_UNKNOWN');
+  const inserted=rows.length===1;
   await assertBasisUnchanged(control,request,basis);
-  const frozen=await readFrozen(control,request.period);
-  if(!frozen)fail(reply.meta.changes===0?'DP_ACCOUNT_BUDGET_BASIS_CHANGED':'DP_LEDGER_WRITE_OUTCOME_UNKNOWN');
+  const frozen=await readFrozen(control,request.period,inserted?basis:null,inserted?{reportSha256,subjects}:null);
+  if(!frozen)fail(inserted?'DP_LEDGER_WRITE_OUTCOME_UNKNOWN':'DP_ACCOUNT_BUDGET_BASIS_CHANGED');
   await assertBasisUnchanged(control,request,basis);
-  return{kind:'PRIVATE_REVIEW_RESULT_DO_NOT_RELEASE',status:reply.meta.changes===1?'PERSISTED':'REPLAY',report:frozen,accountingSha256};
+  return{kind:'PRIVATE_REVIEW_RESULT_DO_NOT_RELEASE',status:inserted?'PERSISTED':'REPLAY',report:frozen,accountingSha256};
 }
