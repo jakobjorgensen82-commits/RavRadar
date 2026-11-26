@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { checkFixedSupabaseAccountReadIdle } from './check-fixed-supabase-account-read-idle.mjs';
 import { readAccountInactivitySource, accountInactivityCatalogQuery } from './verify-account-erasure-schema.mjs';
@@ -747,7 +748,7 @@ function nativeReceiptRows(state = 'UNARMED') {
   return rows;
 }
 
-test('normal catalogue read observes only the installed native receipt under its existing read owner', async () => {
+test('normal catalogue read qualifies the installed signup bootstrap without reading user rows', async () => {
   const env = { ...hostedHookOwner('enable'), GITHUB_JOB: 'read-fixed-supabase-metadata',
     RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: 'catalog-read' };
   delete env.RAVRADAR_FIXED_ACTIVITY_HOOK_CONFIRMATION;
@@ -760,26 +761,58 @@ test('normal catalogue read observes only the installed native receipt under its
     const body = JSON.parse(request.body);
     assert.equal(body.read_only, true);
     assert.match(body.query, /from public\.account_native_activity_receipt/);
+    assert.match(body.query, /from pg_catalog\.pg_trigger t/);
+    assert.match(body.query, /t\.tgtype = 21/);
+    assert.match(body.query, /t\.tgattr::text = email\.attnum::text/);
+    assert.match(body.query, /p\.oid = t\.tgfoid/);
+    assert.match(body.query, /where cn\.nspname = 'auth' and c\.relname = 'users'/);
+    assert.doesNotMatch(body.query, /\b(?:from|join)\s+(?:auth\.users|public\.profiles)\b/i);
+    assert.doesNotMatch(body.query, /\b(?:insert|update|delete|create|alter|grant|revoke)\s/i);
     return Response.json(rows, { status: 201 });
   };
   const read = overrides => runFixedAccountActivityCatalogRead({ env, accessToken: 'test', fetchImpl, ...overrides });
   assert.deepEqual(await read({ env: { ...env, RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: 'enable' } }), { status: 'OWNER_REQUIRED' });
   assert.equal(calls, 0);
-  for (const [fixture, status] of [
-    ['UNARMED', 'NATIVE_RECEIPT_UNARMED'],
-    ['ARMED', 'NATIVE_RECEIPT_ARMED'],
-    ['CAPTURED', 'NATIVE_CAPTURE_OBSERVED'],
-  ]) {
+  const installedBody = async file => {
+    const source = await fs.readFile(new URL('../supabase/' + file, import.meta.url), 'utf8');
+    const body = /^create or replace function public\.handle_new_ravradar_user\(\)[\s\S]*?\bas\s+\$\$([\s\S]*?)\$\$;/mi
+      .exec(source)?.[1];
+    assert(body);
+    return createHash('sha256').update(body.replaceAll('\r\n', '\n').trim()).digest('hex');
+  };
+  const valid = { triggerMatches: true, functionMatches: true, ownerMatches: true,
+    bodySha256: await installedBody('INSTALL-RAVRADAR-4.0.43.sql'), executeAcl: 'HISTORICAL_PUBLIC_EXECUTE' };
+  const legacy = { ...valid, bodySha256: await installedBody('RavRadar-4.0.41-permissions.sql'),
+    executeAcl: 'OWNER_ONLY' };
+  const cases = [
+    ['UNARMED', 'NATIVE_RECEIPT_UNARMED', [valid],
+      { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion: '4.0.43', executeAcl: valid.executeAcl }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [legacy],
+      { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion: '4.0.41', executeAcl: legacy.executeAcl }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', null, { status: 'SIGNUP_BOOTSTRAP_MISSING' }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, triggerMatches: false }], { status: 'SIGNUP_BOOTSTRAP_REFUSED' }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, functionMatches: false }], { status: 'SIGNUP_BOOTSTRAP_REFUSED' }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, ownerMatches: false }], { status: 'SIGNUP_BOOTSTRAP_REFUSED' }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [valid, legacy], { status: 'SIGNUP_BOOTSTRAP_REFUSED' }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, bodySha256: 'e'.repeat(64) }],
+      { status: 'SIGNUP_BOOTSTRAP_UNRECOGNIZED_BODY' }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, executeAcl: 'UNREVIEWED' }],
+      { status: 'SIGNUP_BOOTSTRAP_UNREVIEWED_ACL', installerVersion: '4.0.43' }],
+    ['CAPTURED', 'NATIVE_CAPTURE_OBSERVED', [valid],
+      { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion: '4.0.43', executeAcl: valid.executeAcl }],
+  ];
+  for (const [fixture, status, metadata, signupBootstrap] of cases) {
     rows = nativeReceiptRows(fixture);
+    rows[0].signupBootstrap = metadata;
     assert.deepEqual(await read(), {
       status, sourceBodyAndAclVerified: true, nativeCaptureObserved: fixture === 'CAPTURED',
       authResponseObserved: false, activityEligibility: 'HOLD', coverageStartAuthority: false,
-      noticesEnabled: false, automaticDeletionEnabled: false,
+      noticesEnabled: false, automaticDeletionEnabled: false, signupBootstrap,
     });
   }
   rows = goodHookCatalog();
   assert.deepEqual(await read(), { status: 'NATIVE_RECEIPT_REFUSED' });
-  assert.equal(calls, 4, 'one read per permitted attempt, with no further transport on refusal');
+  assert.equal(calls, cases.length + 1, 'one read per permitted attempt, with no further transport on refusal');
 });
 
 test('arm admits exactly unarmed, Auth disabled with an empty URI, and the same epochs on readback', async () => {
