@@ -1,3 +1,7 @@
+## 26. november — den første filoversigt overså nye DKSS-timer i #402
+
+Den almindelige DMI-læsning valgte kataloget, før de nye originaler til prognosens sidste fire timer ankom. Senere drift genbrugte listen. En afprøvet kandidat kan optage verificerede nye vandstandsværdier, hvis der er plads inden for den eksisterende tid og downloadgrænse. Landsdækkende effekt og resttid skal måles i en almindelig kørsel med rettelsen. [Kørsel #402](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45782337031)
+
 ## 26. november — rækkefølge for Copernicus' kritiske forespørgsler
 
 Den almindelige plan blandede reelle datamangler med forsøg på at opdatere ældre dækning. Én ledig forespørgsel kunne gå til den allerede dækkede time. Den lokale rettelse lader hullerne få første tur i den fælles rotation. Et opslag til et hul kan også give verificerede data for allerede dækkede timer inden for samme tidsinterval. Kildekvalifikation og en efterfølgende ordinær kørsel udestår.

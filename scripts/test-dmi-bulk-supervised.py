@@ -711,10 +711,11 @@ identity = supervised_asset_identity(capture["collection"], capture["modelRun"],
                 guarded,
                 f"{node.func.id} at line {node.lineno} is outside the exact watchdog",
             )
-        # The cached-only historical CURRENT replay adds one real transaction.
-        # It is covered by the same exact watchdog requirement above, not a
-        # second decoder-entry exemption beside the unchanged None adapter.
-        self.assertEqual(len(guarded_calls), 9)
+        late_calls = self.assert_late_water_tail_supervision(tree, parents)
+        self.assertTrue(late_calls <= set(guarded_calls))
+        # Preserve the complete legacy inventory, including cached-only
+        # historical CURRENT replay and the unchanged library adapter.
+        self.assertEqual(len(set(guarded_calls) - late_calls), 9)
         restore_entries = [node for node in tree.body
                            if isinstance(node, ast.FunctionDef)
                            and node.name == "restore_exact_original_assets"]
@@ -729,6 +730,85 @@ identity = supervised_asset_identity(capture["collection"], capture["modelRun"],
         self.assertEqual(sum(node in guarded_calls
                              for node in ast.walk(history_entries[0])), 1)
 
+    def assert_late_water_tail_supervision(self, tree, parents):
+        owners = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+                  and node.name == "fill_late_water_tail"]
+        self.assertEqual(len(owners), 1)
+        owner = owners[0]
+        calls = {node for node in ast.walk(owner) if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Name)
+                 and node.func.id in {"download_asset", "process_grib_transactionally"}}
+        self.assertCountEqual([call.func.id for call in calls], ["download_asset", "process_grib_transactionally"])
+        watches = [node for node in ast.walk(owner) if isinstance(node, ast.With)
+                   and any(isinstance(item.context_expr, ast.Call)
+                           and isinstance(item.context_expr.func, ast.Name)
+                           and item.context_expr.func.id == "supervised_asset_operation"
+                           for item in node.items)]
+        self.assertEqual(len(watches), 1)
+        watched = watches[0]
+        # The download, official capture check and transactional parse all
+        # belong to one watchdog. The parser must borrow the same owned read.
+        expected_watch = ast.parse("""
+with supervised_asset_operation(identity):
+    raw, reused = download_asset(asset["href"], size, budget,
+                                 work_deadline=WORK_DEADLINE, **details)
+    with _grib_read_scope(raw, collection, run, hour) as reader:
+        capture = dict(reader.capture) if reader.capture is not None else None
+        if not cached_capture_matches_official(
+            capture, href=asset["href"], item_id=expected["itemId"],
+            item_created_at=expected["itemCreatedAt"], item_updated_at=expected["itemUpdatedAt"],
+            expected_size=expected["assetSizeBytes"],
+        ):
+            raise RuntimeError("DMI_LATE_WATER_TAIL_CAPTURE_UNVERIFIED")
+        _, touched, interrupted, _, _ = process_grib_transactionally(
+            raw, collection, run, hour, targets, result, result["diagnostics"],
+            allowed_parameters=set(fields), stage_validator=verified_water_only,
+            locked_operational_reference=canonical_time(reference), _owned_read=reader,
+            failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+        )
+""").body[0]
+        self.assertEqual(ast.dump(watched), ast.dump(expected_watch),
+                         "late water must use the normal controller, exact capture and shared owned GRIB scope")
+
+        expected_bindings = ast.parse("""
+run, assets, _stats = offer
+component = "waterLevel"
+fields = tuple(COMPONENT_FIELD_SET[component])
+hour = asset["valid"]
+size = asset.get("size")
+expected = official_current_asset_identity(collection, run, asset)
+targets = gaps[hour]
+identity = supervised_asset_identity(collection, run, asset)
+details = dict(
+    collection=collection, model_run=run, valid_time=hour,
+    item_id=asset.get("id"), item_created_at=asset.get("itemCreatedAt"),
+    item_updated_at=asset.get("itemUpdatedAt"),
+)
+""").body
+        for binding in expected_bindings:
+            names = {node.id for node in ast.walk(binding.targets[0]) if isinstance(node, ast.Name)}
+            matches = [node for node in ast.walk(owner) if isinstance(node, ast.Assign)
+                       and names.intersection(name.id for target in node.targets for name in ast.walk(target)
+                                              if isinstance(name, ast.Name))]
+            self.assertEqual([ast.dump(node) for node in matches], [ast.dump(binding)])
+
+        recovery = parents[watched]
+        self.assertIsInstance(recovery, ast.Try)
+        media_failures = ast.parse("""
+try:
+    pass
+except AssetDownloadCleanupUnproven:
+    raise
+except Exception as error:
+    continue
+""").body[0].handlers
+        self.assertEqual(len(recovery.handlers), len(media_failures))
+        self.assertEqual(ast.dump(recovery.handlers[0]), ast.dump(media_failures[0]),
+                         "unproved physical closure is terminal")
+        self.assertEqual(ast.dump(recovery.handlers[1].type), ast.dump(media_failures[1].type))
+        self.assertIsInstance(recovery.handlers[1].body[-1], ast.Continue)
+        return calls
+
     def test_asset_supervision_rejects_extra_calls_changed_adapter_and_missing_guard(self):
         source = supervisor.PRODUCER.read_text(encoding="utf-8")
 
@@ -741,15 +821,17 @@ identity = supervised_asset_identity(capture["collection"], capture["modelRun"],
                         for item in node.items)]
 
         watchdog_count = len(watchdogs(ast.parse(source)))
-        self.assertEqual(watchdog_count, 11,
-                         "nine download/process watchdogs, the exact local verifier, and the separately owned OLD decoder remain")
+        self.assertEqual(watchdog_count, 12,
+                         "the late water download and parser share one new watchdog")
         mutations = ("extra-call", "adapter-guard", "adapter-argument",
                      "adapter-keyword", "adapter-return", "callback-reader",
                      "local-verifier-missing", "local-verifier-extra", "local-verifier-capture",
                      "local-verifier-deadline", "local-capture-required-false",
                      "local-capture-required-missing", "local-watchdog-identity",
                      "legacy-extra-call", "legacy-reader", "legacy-read-binding",
-                     "legacy-watchdog-identity", "legacy-identity-input", "legacy-operations")
+                     "legacy-watchdog-identity", "legacy-identity-input", "legacy-operations",
+                     "late-identity", "late-deadline", "late-capture", "late-reader",
+                     "late-component", "late-lost-closure")
         for mutation in (*mutations, *(f"missing-watchdog-{index}" for index in range(watchdog_count))):
             with self.subTest(mutation=mutation):
                 tree = ast.parse(source)
@@ -805,6 +887,32 @@ identity = supervised_asset_identity(capture["collection"], capture["modelRun"],
                     else:
                         next(keyword for keyword in callback.keywords
                              if keyword.arg == "operations").value = ast.Name(id="other_operations", ctx=ast.Load())
+                elif mutation.startswith("late-"):
+                    late = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                                and node.name == "fill_late_water_tail")
+                    if mutation == "late-lost-closure":
+                        attempt = next(node for node in ast.walk(late) if isinstance(node, ast.Try))
+                        attempt.handlers[0].body = [ast.Pass()]
+                    elif mutation == "late-component":
+                        assignment = next(node for node in ast.walk(late)
+                                          if isinstance(node, ast.Assign)
+                                          and isinstance(node.targets[0], ast.Name)
+                                          and node.targets[0].id == "component")
+                        assignment.value = ast.Constant(value="current")
+                    else:
+                        targets = {
+                            "late-identity": ("supervised_asset_identity", None),
+                            "late-deadline": ("download_asset", "work_deadline"),
+                            "late-capture": ("cached_capture_matches_official", "item_id"),
+                            "late-reader": ("process_grib_transactionally", "_owned_read"),
+                        }
+                        function, keyword = targets[mutation]
+                        call = next(node for node in ast.walk(late) if isinstance(node, ast.Call)
+                                    and isinstance(node.func, ast.Name) and node.func.id == function)
+                        if keyword is None:
+                            call.args[2] = ast.Name(id="another_asset", ctx=ast.Load())
+                        else:
+                            next(arg for arg in call.keywords if arg.arg == keyword).value = ast.Constant(value=None)
                 elif mutation.startswith("local-"):
                     local = next(node for node in tree.body
                                  if isinstance(node, ast.FunctionDef)

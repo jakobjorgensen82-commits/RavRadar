@@ -6,6 +6,10 @@
 - Et tysk spørgsmål om et apparat med et dansk ravnavn får det samme afklarende svar som spørgsmålet med et tysk navn.
 - Spørg RavRadar besvarer også spørgsmålet om forskellen mellem et præcist landingssted for rav og en vurdering af kystområdet.
 
+## Drift — nye vandstandsfiler under DMI-hentningen
+
+- DMI kan genlæse kataloget sent i hentevinduet for at udfylde dokumenterede vandstandshuller. Den almindelige kontrollæsning af originaler, tidsfristen og downloadgrænserne gælder fortsat.
+
 ## Drift — genlæsning af råcachekvitteringen
 
 - Råcacherotationen venter på en entydig kvittering, hvis GitHub kortvarigt viser et antal på nul eller én, der afviger fra listen. To kvitteringer eller et fortsat uafklaret svar stopper som før.

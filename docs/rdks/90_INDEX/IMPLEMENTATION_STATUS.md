@@ -1,3 +1,9 @@
+## 26. november — vandstandsfiler, der kommer under den almindelige DMI-hentning
+
+- [x] Sammenhold #402 med den foregående prognose, den faktiske kørelog og DMI’s officielle katalog. De fire helt nye timer manglede vandstand. De relevante nye filer blev tilgængelige inden DMI-processens afslutning.
+- [x] Afprøv en sen læsning af de dokumenterede vandstandshuller med almindelig original-, punkt- og slutkontrol samt uændrede kapacitetsgrænser. Lokalt bevares tidligere rækker og strømbeviser.
+- [ ] Verificér kilden på GitHub og mål den faktiske tidsplads, accepterede originaler samt offentlig vandstandsdækning i den næste ordinære kørsel med rettelsen.
+
 ## 26. november — reelle huller først i Copernicus' vejrfelter
 
 - [x] Genskab en kørsel med ét ledigt forsøg, hvor en opdatering af en dækket time kom før et hul.
