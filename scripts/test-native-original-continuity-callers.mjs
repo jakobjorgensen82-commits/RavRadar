@@ -1361,7 +1361,7 @@ test('assistant later-H0 original RAW boundary preserves working hashes and actu
     '\n}\nexport async function readAssistantLaterH0RetentionInput');
   const construct=compileFunction('return (async()=>{'+returned+'})();',
     ['snapshot','result','conditionsPath','bytes','verify','fs','sha','same','assert','json',
-      'removeVerifiedAssistantWorkingProjection','parent','work','workIdentity','firstInventory']);
+      'removeVerifiedAssistantWorkingProjection','parent','work','workIdentity','firstInventory','installing']);
   const boundarySource=cut(planner,
     '    ? await readDmiBulkDocument(process.env.DMI_PART_CONTINUITY_DONOR_PATH) : null;\n',
     '  const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed(\'data/zones.geojson\')).json;');
@@ -2304,6 +2304,61 @@ test('assistant593 exact outer source DATA and closed direct591 migration plan',
 
 // Same normal returned-view seam, with the actual owned cleanup and inventory.
 // Synthetic I/O boundaries below do not claim authenticated B/S or production capacity.
+test('assistant after601 RAW receipt binds the projected S to the numbered original pair',async()=>{
+  const {compileFunction}=await import('node:vm'),{createHash}=await import('node:crypto');
+  const source=(await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-runtime-transition.mjs'),'utf8')).replace(/\r\n/g,'\n');
+  const start=source.indexOf('async function recordAssistantAfter601RawBaseline(');
+  const end=source.indexOf('async function readWorking(',start);
+  assert(start>=0&&end>start);
+  const build=compileFunction(source.slice(start,end)+'\nreturn recordAssistantAfter601RawBaseline;',
+    ['process','ACTIVE','INACTIVE_ASSISTANT_AFTER601_SUCCESSOR','ROOT','assert','path','fs','noLinks','sha','ACTIVE_PREDECESSOR']);
+  const repository='jakobjorgensen82-commits/RavRadar',temp='/tmp/assistant-raw-baseline-test';
+  const env={GITHUB_ACTIONS:'true',RUNNER_ENVIRONMENT:'github-hosted',GITHUB_REPOSITORY:repository,
+    GITHUB_WORKFLOW_REF:repository+'/.github/workflows/run-current-weather-once.yml@refs/heads/main',
+    GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_ACTOR:'github-actions[bot]',
+    GITHUB_TRIGGERING_ACTOR:'github-actions[bot]',GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1',
+    GITHUB_JOB:'build-and-prepare',GITHUB_WORKSPACE:'/repo',OPERATIONAL_ACTION:'integrated-historical-maintenance',
+    RAVRADAR_RAW_BOOTSTRAP_PROOF:'enforce',RUNNER_TEMP:temp,GITHUB_OUTPUT:temp+'/output'};
+  const sha=value=>createHash('sha256').update(value).digest('hex');
+  const boundary={datasetId:'rr-synthetic-original',productionReferenceAt:'2026-11-25T20:00:00.000Z',
+    bundleContentSha256:sha('old-B'),checkpointGenerationSha256:sha('working-S'),conditionsSha256:sha('original conditions')};
+  const handle={},profile={},snapshot={verified:{...boundary},descriptor:{sourceHead:'a'.repeat(40)},
+    pointerVersion:11,checkpointVersion:12};
+  const checkpoint={datasetId:boundary.datasetId,productionReferenceAt:boundary.productionReferenceAt,
+    generationSha256:boundary.checkpointGenerationSha256};
+  const expected={schemaVersion:1,kind:'DMI_PAIRED_RAW_BASELINE_V1',bVersion:11,sVersion:12,bSourceHead:'a'.repeat(40),
+    boundarySha256:sha(JSON.stringify(boundary,Object.keys(boundary).sort()))};
+  for(const [overrides,failFresh,reason,events] of [
+    [{},0,null,['fresh','write','fresh','output']],
+    [{},1,/synthetic stale pair/,['fresh']],
+    [{},2,/synthetic stale pair/,['fresh','write','fresh']],
+    [{GITHUB_RUN_ATTEMPT:'2'},0,/ASSISTANT_AFTER601_RAW_BASELINE_CALLER/,[]],
+  ]){
+    const history=[];let checks=0;
+    const readWrite={
+      realpath:async file=>file,
+      writeFile:async (file,body,options)=>{
+        assert.equal(file,temp+'/ravradar-raw-baseline-evidence.json');
+        assert.deepEqual(JSON.parse(body),expected);
+        assert.deepEqual(options,{flag:'wx',mode:0o600});
+        history.push('write');
+      },
+      appendFile:async (file,output)=>{
+        assert.equal(file,env.GITHUB_OUTPUT);assert.equal(output,'raw_baseline_proved=true\n');
+        history.push('output');
+      },
+    };
+    const operation=build({platform:'linux',env:{...env,...overrides}},profile,profile,'/repo',assert,path.posix,
+      readWrite,async file=>assert.equal(file,temp),sha,{fresh:async actual=>{
+        assert.equal(actual,handle);history.push('fresh');
+        if(++checks===failFresh)throw new Error('synthetic stale pair');
+      }});
+    const result=operation(handle,snapshot,checkpoint,boundary.conditionsSha256);
+    if(reason)await assert.rejects(result,reason);else await result;
+    assert.deepEqual(history,events);
+  }
+});
+
 test('assistant later-H0 owned reprojection is released only after full verification',async t=>{
   const crypto=await import('node:crypto'),{createReadStream}=await import('node:fs');
   const {compileFunction}=await import('node:vm'),os=await import('node:os');
@@ -2326,7 +2381,7 @@ test('assistant later-H0 owned reprojection is released only after full verifica
   assert(returned.indexOf('await verify();')<returned.indexOf('await removeVerifiedAssistantWorkingProjection('));
   const construct=compileFunction('return (async()=>{'+returned+'})();',
     ['snapshot','result','conditionsPath','bytes','verify','fs','sha','same','assert',
-      'removeVerifiedAssistantWorkingProjection','parent','work','workIdentity','firstInventory']);
+      'removeVerifiedAssistantWorkingProjection','parent','work','workIdentity','firstInventory','installing']);
   const verifyStart=source.indexOf('  const verify=async()=>{',source.indexOf('async function readWorking('));
   const verifyEnd=source.indexOf('\n  };',verifyStart)+'\n  };'.length;
   const verifyFactory=compileFunction(source.slice(verifyStart,verifyEnd)+'\nreturn verify;',

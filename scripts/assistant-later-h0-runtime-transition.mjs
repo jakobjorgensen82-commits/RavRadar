@@ -248,6 +248,48 @@ async function removeVerifiedAssistantWorkingProjection(parent,work,owned,expect
     'Owned assistant reprojection directory changed before removal');
   await fs.rm(work,{recursive:true,force:false});
 }
+async function recordAssistantAfter601RawBaseline(handle,snapshot,workingCheckpoint,conditionsSha256){
+  const env=process.env;
+  assert(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR&&process.platform==='linux'
+    &&env.GITHUB_ACTIONS==='true'&&env.RUNNER_ENVIRONMENT==='github-hosted'
+    &&env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'
+    &&env.GITHUB_WORKFLOW_REF==='jakobjorgensen82-commits/RavRadar/.github/workflows/run-current-weather-once.yml@refs/heads/main'
+    &&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_EVENT_NAME==='workflow_dispatch'
+    &&env.GITHUB_ACTOR==='github-actions[bot]'&&env.GITHUB_TRIGGERING_ACTOR==='github-actions[bot]'
+    &&/^[1-9][0-9]{0,19}$/.test(env.GITHUB_RUN_ID??'')&&env.GITHUB_RUN_ATTEMPT==='1'
+    &&env.GITHUB_JOB==='build-and-prepare'&&env.GITHUB_WORKSPACE===ROOT
+    &&env.OPERATIONAL_ACTION==='integrated-historical-maintenance'
+    &&env.RAVRADAR_RAW_BOOTSTRAP_PROOF==='enforce','ASSISTANT_AFTER601_RAW_BASELINE_CALLER');
+  const temp=env.RUNNER_TEMP;
+  assert(path.isAbsolute(temp??'')&&path.isAbsolute(env.GITHUB_OUTPUT??'')
+    &&await fs.realpath(temp)===temp,'ASSISTANT_AFTER601_RAW_BASELINE_PATH');
+  await noLinks(temp);
+  const {verified,descriptor,pointerVersion,checkpointVersion}=snapshot;
+  const boundary={
+    datasetId:verified.datasetId,productionReferenceAt:verified.productionReferenceAt,
+    bundleContentSha256:verified.bundleContentSha256,
+    checkpointGenerationSha256:workingCheckpoint.generationSha256,conditionsSha256,
+  };
+  assert(boundary.datasetId===workingCheckpoint.datasetId
+    &&boundary.productionReferenceAt===workingCheckpoint.productionReferenceAt
+    &&/^[a-f0-9]{40}$/.test(descriptor.sourceHead)
+    &&[boundary.bundleContentSha256,boundary.checkpointGenerationSha256,conditionsSha256]
+      .every(value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value))
+    &&[pointerVersion,checkpointVersion].every(value=>Number.isSafeInteger(value)&&value>0),
+  'ASSISTANT_AFTER601_RAW_BASELINE_IDENTITY');
+  const evidence=JSON.stringify({
+    schemaVersion:1,kind:'DMI_PAIRED_RAW_BASELINE_V1',
+    bVersion:pointerVersion,sVersion:checkpointVersion,bSourceHead:descriptor.sourceHead,
+    boundarySha256:sha(JSON.stringify(boundary,Object.keys(boundary).sort())),
+  });
+  // The working generation is a deterministic projection. Both numbered
+  // protected documents remain the authenticated, unmodified predecessor.
+  await ACTIVE_PREDECESSOR.fresh(handle);
+  await fs.writeFile(path.join(temp,'ravradar-raw-baseline-evidence.json'),evidence,{flag:'wx',mode:0o600});
+  await ACTIVE_PREDECESSOR.fresh(handle);
+  await fs.appendFile(env.GITHUB_OUTPUT,'raw_baseline_proved=true\n');
+}
+
 async function readWorking(targetReferenceAt,installing){
   requireActiveAssistantOutput();assertActiveAssistantCaller(process.env);
   const p=paths(),handle=await ACTIVE_PREDECESSOR.read(),snapshot=ACTIVE_PREDECESSOR.snapshot(handle);
@@ -290,6 +332,9 @@ async function readWorking(targetReferenceAt,installing){
   await verify();
   // No finally: failed/unknown preparation or verification retains its scratch.
   await removeVerifiedAssistantWorkingProjection(parent,work,workIdentity,firstInventory);
+  if(installing&&process.env.RAVRADAR_RAW_BOOTSTRAP_PROOF==='enforce'){
+    await recordAssistantAfter601RawBaseline(handle,snapshot,result.checkpoint,originalConditionsSha256);
+  }
   return {verified:snapshot.verified,conditions:result.conditions,originalConditions:JSON.parse(originalBytes),
     originalConditionsSha256,conditionsPath,conditionsSha256:sha(bytes),verify};
 }
