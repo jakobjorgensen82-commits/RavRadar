@@ -104,6 +104,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   adminUI:[
     'node scripts/test-admin-initial-dashboard-4.0.77.mjs',
+    'node scripts/test-admin-direction-audit.mjs',
     'node scripts/test-admin-active-ravscore-runtime.mjs',
     'node scripts/test-admin-config-production-contract-4.0.94.mjs',
     'node scripts/test-private-visitor-statistics-4.0.215.mjs',
@@ -322,6 +323,7 @@ const PATH_AREAS=freeze({
     'admin.html','js/ui/admin-dashboard.js',
     'js/services/admin-document-store.js','js/services/visitor-report-service.js',
     'scripts/test-admin-initial-dashboard-4.0.77.mjs',
+    'scripts/test-admin-direction-audit.mjs',
     'scripts/test-admin-active-ravscore-runtime.mjs',
     'scripts/test-admin-config-production-contract-4.0.94.mjs',
     'scripts/test-private-visitor-statistics-4.0.215.mjs',
