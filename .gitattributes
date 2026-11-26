@@ -65,7 +65,3 @@ scripts/lib/archived-weather-restart-workflow-review.json text eol=lf
 scripts/lib/account-statistics-assistant-package-review.json text eol=lf
 scripts/lib/account-statistics-assistant-workflow-review.json text eol=lf
 scripts/lib/frozen584-normal-source-target-inventory.json text eol=lf
-# Source impact planning verifies exact bytes of the issued JSON inventories.
-scripts/lib/source-impact-domain-inputs-594.json text eol=lf
-scripts/lib/source-impact-domain-inputs-597.json text eol=lf
-scripts/lib/source-impact-domain-inputs-598.json text eol=lf
