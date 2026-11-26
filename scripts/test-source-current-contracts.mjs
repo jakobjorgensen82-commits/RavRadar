@@ -1002,8 +1002,8 @@ let actualCurrentAfter598SourceVerified=false;
 let actualCurrentAfter599SourceVerified=false;
 let actualCurrentAfter601SourceVerified=false;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
-const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
-  baseTip:null,projectedBase:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
+const state={movedReview:false,movedEventMerge:false,missingReview:false,wrongPlan:false,merged:false,
+  baseTip:null,projectedBase:null,refreshProjectedBase:false,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
 const fallbackOnlyCommits=new Set();let observedRoutes=[],unexpectedRoutes=[],fixtureFailures=[],fallbackDiscoveries=[];
 const scenarios=[];
 const moduleAt=async file=>import(pathToFileURL(path.join(root,file)).href);
@@ -1080,10 +1080,12 @@ function currentPull(){
     if(state.movedReview&&rows.length)review.reviewSha256='e'.repeat(64);
     body=('Synthetic fixture only\n<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 '+JSON.stringify(review)+' -->\n').repeat(state.duplicateReview?2:1);
   }
-  return {number:selectedPr,state:state.merged?'closed':'open',merge_commit_sha:state.merged?main:currentEventMerge().sha,
+  const projectedBase=state.refreshProjectedBase&&rows.length?state.baseTip??base:state.projectedBase;
+  const openMerge=state.movedEventMerge&&rows.length?'e'.repeat(40):currentEventMerge().sha;
+  return {number:selectedPr,state:state.merged?'closed':'open',merge_commit_sha:state.merged?main:openMerge,
     ...(state.merged?{merged_at:stamp(24)}:{}),
     user:{login:native.ORIGIN.repository.split('/')[0]},head:{sha:head,ref:'codex/synthetic-domain-current',repo:{full_name:native.ORIGIN.repository}},
-    base:{sha:state.merged&&state.closedBaseTip?state.closedBaseTip:state.projectedBase??state.baseTip??base,
+    base:{sha:state.merged&&state.closedBaseTip?state.closedBaseTip:projectedBase??state.baseTip??base,
       ref:'main',repo:{full_name:native.ORIGIN.repository}},
     body};
 }
@@ -1184,9 +1186,9 @@ async function transport(url,options){
 }
 function configure(candidate){
   head=candidate;checkout(head);rows=[];observedRoutes=[];unexpectedRoutes=[];fixtureFailures=[];fallbackDiscoveries=[];
-  state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;state.closedBaseTip=null;
+  state.missingReview=false;state.movedReview=false;state.movedEventMerge=false;state.wrongPlan=false;state.merged=false;state.closedBaseTip=null;
   state.modernWorkflow=false;state.ownedCacheNativeWorkflow=false;state.fullModernWorkflow=false;state.sdkStepFault=null;
-  state.baseTip=null;state.projectedBase=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
+  state.baseTip=null;state.projectedBase=null;state.refreshProjectedBase=false;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
   Object.assign(process.env,{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,SOURCE_GATE_HEAD_SHA:head,
     PULL_REQUEST_NUMBER:String(selectedPr),GITHUB_RUN_ID:String(selectedRun),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'validate',
     GITHUB_TOKEN:'synthetic-never-live'});
@@ -1954,7 +1956,7 @@ try{
     ['app.js',Buffer.from('// Synthetic previously delivered public UI delta\n')],
     ['admin.html',Buffer.from('<!-- Synthetic previously delivered admin delta -->\n')]]);
   const positiveHead=commit(candidateTree,[base],'synthetic reviewed current-control child');
-  configure(positiveHead);state.projectedBase='f'.repeat(40);
+  configure(positiveHead);state.projectedBase='f'.repeat(40);state.refreshProjectedBase=true;
   baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
   assert.equal(baselinePlan.selection,'CURRENT_CONTRACTS',JSON.stringify(baselinePlan.reasonCodes));
   assert.equal(baselinePlan.controlQualificationRequired,true);
@@ -2157,6 +2159,11 @@ try{
     cases++;
   }
   scenarios.push('missing wrong or changed independent review gives no receipt');
+  configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  state.movedEventMerge=true;rebuildMaps();
+  await assert.rejects(coordinate(),/SOURCE_TARGETED_EVENT_MERGE_MOVED/);
+  assert.equal(rows.length,baselinePlan.commands.length);
+  cases++;scenarios.push('a changed GitHub merge commit gives no receipt after otherwise successful targets');
 
   const target='scripts/test-source-current-contracts.mjs';
   assert(targetFiles.includes(target));
