@@ -436,7 +436,7 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
 
 // Existing whole account target also owns its normally imported month/controller modules.
 function assertPrivateStudyPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
-  const paths=[".github/workflows/private-trip-weather-study.yml","scripts/publish-private-trip-weather-study.mjs","scripts/deploy-private-trip-study.mjs","scripts/test-trip-aggregate-month-rollover.mjs","scripts/test-private-trip-study-categorical-controller.mjs","scripts/test-account-statistics-assistant-callers.mjs","cloudflare/trip-gateway/trip-aggregate-row.js"],command='node --test scripts/test-account-statistics-assistant-callers.mjs';
+  const paths=[".github/workflows/private-trip-weather-study.yml","scripts/publish-private-trip-weather-study.mjs","scripts/deploy-private-trip-study.mjs","scripts/test-trip-aggregate-month-rollover.mjs","scripts/test-private-trip-study-categorical-controller.mjs","scripts/test-account-statistics-assistant-callers.mjs","cloudflare/trip-gateway/trip-aggregate-row.js","cloudflare/trip-gateway/trip-aggregate-ledger.js"],command='node --test scripts/test-account-statistics-assistant-callers.mjs';
   assert.deepEqual(CURRENT_CONTRACT_COMMANDS.privateStudy,[command]);
   // The one normal account target executes its imported month/controller cases.
   // Check the exact registration of every input, then qualify their union
@@ -469,14 +469,14 @@ function assertPrivateStudyPlanScope({baselineCommit,baselineTree,rewriteTree,ma
   try{
     const together=select(paths);safe(together);assert.deepEqual(together.areas.privateStudy.changedPaths,[...paths].sort());
     assert.deepEqual(together.commands,[...CURRENT_CONTRACT_COMMANDS.core,command]);
-    for(const neighbour of ['scripts/publish-private-trip-weather-study-extra.mjs','.github/workflows/private-trip-weather-study-extra.yml','cloudflare/trip-gateway/trip-aggregate-row-extra.js']){
+    for(const neighbour of ['scripts/publish-private-trip-weather-study-extra.mjs','.github/workflows/private-trip-weather-study-extra.yml','cloudflare/trip-gateway/trip-aggregate-row-extra.js','cloudflare/trip-gateway/trip-aggregate-ledger-extra.js']){
       const result=select([paths[0]],[[neighbour,Buffer.from('// Unknown adjacent owner\n')]]);refused(result);
       assert.deepEqual(result.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);
     }
     const protectedFile='config.js',before=git(root,['cat-file','blob',prior+':'+protectedFile]);
     const protectedResult=select([paths[0]],[[protectedFile,Buffer.concat([before,Buffer.from('\n// Protected drift\n')])]]);
     refused(protectedResult);assert.deepEqual(protectedResult.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
-    for(const file of paths.slice(0,3)){
+    for(const file of [...paths.slice(0,3),'cloudflare/trip-gateway/trip-aggregate-ledger.js']){
       checkoutCommit(prior);git(root,['update-index','--force-remove','--',file]);
       const absent=makeCommit(text(root,['write-tree']),[prior],'synthetic absent private-study caller');
       checkoutCommit(absent);const deleted=plan({baselineCommit:prior,candidateCommit:absent,expectedHead:absent});refused(deleted);
