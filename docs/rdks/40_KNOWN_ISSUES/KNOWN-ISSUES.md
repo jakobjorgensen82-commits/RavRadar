@@ -2,6 +2,22 @@
 
 Den almindelige plan blandede reelle datamangler med forsøg på at opdatere ældre dækning. Én ledig forespørgsel kunne gå til den allerede dækkede time. Den lokale rettelse lader hullerne få første tur i den fælles rotation. Et opslag til et hul kan også give verificerede data for allerede dækkede timer inden for samme tidsinterval. Kildekvalifikation og en efterfølgende ordinær kørsel udestår.
 
+## 26. november — spørgsmål om hvor præcist prognosen gælder
+
+Det normale tyske spørgefelt viste et valideret eksternt AI-svar, som bad brugeren vælge mellem to led i ét spørgsmål om prognosens præcision. Den lokale hjælp svarer nu på hele det almindelige spørgsmål om landingssted og kystområde på dansk, tysk og engelsk. Den bruger den eksisterende forklaring af hvad RavRadar kan angive. Afventer offentlig levering.
+
+## 26. november — tomt leverandørsvar om et apparat til ravjagt
+
+Det almindelige tyske spørgsmål om et apparat med dansk ravnavn fik HTTP 502 kl. 09.24. Supabase loggede, at Cloudflare besvarede kaldet med HTTP 200 og afsluttede uden synlig sluttekst. RavRadar kunne derfor ikke validere noget svar. Det er endnu uafklaret, om det eksisterende, begrænsede genforsøg blev kørt.
+
+Den lokale hjælp genkender nu også denne form af det fulde tyske spørgsmål og beder om oplysninger om apparatet. Den lover ingen virkning. Private og andre uvedkommende tillæg må ikke skjules. Det lokale svar er afprøvet gennem det almindelige spørgefelt og afventer udgivelse.
+
+## 26. november — ét spørgsmål om at undersøge og opbevare et revnet ravfund
+
+Den offentlige version svarede på undersøgelsen og udelod opbevaring og revner i det samlede tyske spørgsmål. Den brede genkendelse af spørgsmål om identifikation sendte hele spørgsmålet til et svar, der kun dækkede det første led.
+
+Den lokale ændring bruger eksisterende godkendt viden til at besvare begge led på dansk, tysk og engelsk, når spørgsmålet handler om det samme revnede fund. Ved andre tillæg følger hele spørgsmålet den almindelige svarvej. Appens cacheadresser er opdateret. Test af den normale brugerformular og opstart bestod lokalt. Offentlig levering afventes.
+
 ## 26. november — Pages-pakken i #400 var kortvarigt usynlig efter upload
 
 Den første 603-overgang i almindelig vejrhentning #400 afsluttede hentning, beregning, databevarelse, beskyttet gemning, validering og upload. Et metadataopslag på pakkens eksakte ID fik HTTP 404 omkring et halvt sekund efter GitHubs uploadkvittering. Samme ID blev senere genlæst med det forventede kørselsnummer, hovedcommit, navn og SHA-256. Pages-bestillingen var sprunget over. [Vejrkørsel #400](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45754581564)
