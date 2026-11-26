@@ -16,6 +16,7 @@ import {RAVSCORE_CONTINUATION_CHECKPOINT_POLICY, saveRavScoreContinuationCheckpo
   from './ravscore-continuation-checkpoint.mjs';
 
 
+import {requireAssistantAfter601Binding} from './lib/assistant-later-h0-successor-source.mjs';
 import {assertPrivateConditionsHourly} from './lib/private-conditions-hourly.mjs';
 import {PRIVATE_CONDITIONS_MAX_BYTES} from './lib/bounded-json-writer.mjs';
 import {PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE, privateWeatherComponentMarker}
@@ -59,6 +60,8 @@ async function readPublishedRawRotationRuntime() {
   const lockedHour = env.RAVRADAR_PRODUCTION_TARGET_HOUR;
   const target = lockedHour?.replace(/Z$/, '.000Z');
   const timestamp = Date.parse(target ?? '');
+  const admittedAssistantSuccessor = env.OPERATIONAL_ACTION === 'integrated-historical-maintenance'
+    && env.RAW_ASSISTANT_LATER_H0_UPLOAD_ADMITTED === 'true';
   requireProof(process.platform === 'linux' && env.RUNNER_ENVIRONMENT === 'github-hosted'
     && env.GITHUB_ACTIONS === 'true' && env.GITHUB_REPOSITORY === REPO && env.GITHUB_WORKFLOW_REF === WORKFLOW
     && env.GITHUB_EVENT_NAME === 'workflow_dispatch' && env.GITHUB_REF === 'refs/heads/main'
@@ -68,7 +71,8 @@ async function readPublishedRawRotationRuntime() {
     && env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE === BUNDLE
     && ['CURRENT_FAMILY_COLD_START', 'EPOCH_BOOTSTRAP', 'EPOCH_REENTRY', 'NATIVE_IDENTITY_RECOVERY',
       'COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION'].every(key => env[key] === 'false')
-    && env.OPERATIONAL_ACTION === 'integrated' && env.RAW_POWERED_BY_ORDINARY_PUBLICATION === 'true'
+    && (env.OPERATIONAL_ACTION === 'integrated' || admittedAssistantSuccessor)
+    && env.RAW_POWERED_BY_ORDINARY_PUBLICATION === 'true'
     && env.RAW_PRIOR_CONTINUITY_SCHEMA === '2' && env.COMPLETED_STAGE_SOURCE === ''
     && env.COMPLETED_PRIVATE_RUNTIME_PIN === '' && env.QUICK_PROGRESS_SOURCE === ''
     && env.PRODUCE_HANDOFF === 'false' && env.GITHUB_JOB === 'build-and-prepare'
@@ -93,6 +97,12 @@ async function readPublishedRawRotationRuntime() {
     && current.expectedZoneCount === 210 && current.expectedPartCount === 673
     && SHA256.test(current.bundleContentSha256) && Number.isSafeInteger(current.centralVersion)
     && current.centralVersion > 0, 'B_POINTER');
+  const successorBinding = admittedAssistantSuccessor ? requireAssistantAfter601Binding() : null;
+  if (successorBinding) {
+    requireProof(current.modelBinding?.modelBundleSha256 === successorBinding.I
+      && current.contractHashes?.continuationStateContractSha256 === successorBinding.T,
+    'ASSISTANT_AFTER601_BINDING');
+  }
   const postedVersion = Number(env.RAW_PUBLISHED_S_VERSION);
   const postedGeneration = env.RAW_PUBLISHED_S_GENERATION_SHA256;
   requireProof(/^[1-9][0-9]*$/.test(env.RAW_PUBLISHED_S_VERSION ?? '')
@@ -136,6 +146,10 @@ async function readPublishedRawRotationRuntime() {
       repositoryRoot: ROOT, sourcePath: conditionsPath, checkpointPath: expectedPath,
     });
     const fromB = await readCheckpoint(expectedPath);
+    if (successorBinding) {
+      requireProof(fromB.data.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256 === successorBinding.C,
+        'ASSISTANT_AFTER601_CHECKPOINT_BINDING');
+    }
     requireProof(fromB.data.datasetId === current.datasetId && fromB.data.productionReferenceAt === target
       && fromB.data.generationSha256 === postedGeneration && isDeepStrictEqual(fromB.data, built.data), 'B_S_PUBLISHED');
   } finally {
