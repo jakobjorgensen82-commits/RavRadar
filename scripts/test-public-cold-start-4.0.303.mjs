@@ -109,7 +109,8 @@ const previousStudyEntrypointSuffix = `${previousAdminEntrypointSuffix}&study=fr
 const previousProbeEntrypointSuffix = `${previousStudyEntrypointSuffix}&probe=owner-notice-20261109`;
 const previousVisitEntrypointSuffix = `${previousProbeEntrypointSuffix}&visits=scope-20261108`;
 const adminEntrypointSuffix = previousVisitEntrypointSuffix
-  .replace('ui=admin-model-startup-20261101', 'ui=admin-read-surfaces-20261112');
+  .replace('ui=admin-model-startup-20261101', 'ui=admin-read-surfaces-20261112')
+  .replace('&probe=', '&points=visible-status-20261126&probe=');
 assert.ok(admin.includes(`src="js/ui/admin-dashboard.js${adminEntrypointSuffix}"`));
 assert.ok(dashboard.includes(`../services/data-service.js${adminDependencySuffix}`));
 assert.ok(dashboard.includes(`./admin-private-trip-study.js${adminStudySuffix}`));

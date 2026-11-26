@@ -456,6 +456,7 @@ const serviceWorker=fs.readFileSync('service-worker.js','utf8');
 const cacheSource=html.match(/src="(js\/ui\/admin-dashboard\.js\?[^"]+)"/)?.[1];
 assert.ok(cacheSource?.endsWith('&probe=owner-notice-20261109&visits=scope-20261108'));
 assert.equal(new URL(cacheSource,'https://synthetic.invalid/').searchParams.get('ui'),'admin-read-surfaces-20261112');
+assert.equal(new URL(cacheSource,'https://synthetic.invalid/').searchParams.get('points'),'visible-status-20261126');
 assert.ok(serviceWorker.includes('./'+cacheSource.replace('v='+pkg.version,'v=${APP_VERSION}')
   .replace('map=plain-map-v3-20261104','map=${COMPACT_MAP}')));
 assert.match(serviceWorker,/const CACHE = [^\n]*-owner-notice-20261109/);
