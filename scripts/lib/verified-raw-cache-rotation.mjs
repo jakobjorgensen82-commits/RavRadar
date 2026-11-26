@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {isInertLegacyQueue} from '../check-weather-cadence-watchdog.mjs';
+import {readCacheIndependentValidationRuns, PR_SOURCE_VALIDATION} from '../read-weather-cadence-github.mjs';
 import {isDeepStrictEqual} from 'node:util';
 import {WEATHER_STATE_EPOCH_ORIGINAL_DATASET} from '../weather-state-epoch-budget.mjs';
 import {isMainRawCache, rawCacheStockRows, readGithubActionsCacheStock} from './github-actions-cache-stock.mjs';
@@ -278,12 +279,18 @@ async function readRawCacheReaderCensus({repository, sourceHead, ownerRunId, get
     return hold('rotation-owner-unconfirmed');
   }
   const potentialLegacy = [];
+  const independentRuns = await readCacheIndependentValidationRuns({
+    runs: [...runs.values()],
+    repository,
+    readWorkflowFile: ref => getJson('/repos/' + repository + '/contents/' + PR_SOURCE_VALIDATION + '?ref=' + ref),
+  });
   for (const run of runs.values()) {
     if (run.id === ownerRunId) continue;
     if (run.path === LEGACY_WEATHER && run.head_branch === 'main' && isInertLegacyQueue(run)) {
       potentialLegacy.push(run);
       continue;
     }
+    if (independentRuns.has(run.id)) continue;
     // Until a caller is positively known to be independent of this stock,
     // new workflows on main are also a reason to keep the existing copies.
     return hold('possible-raw-reader-active-or-queued');

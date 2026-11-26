@@ -3,6 +3,9 @@ name: Validate RavRadar pull request
 on:
   pull_request:
 
+# Source checks use artificial data and do not need repository caches.
+cache-mode: none
+
 permissions:
   contents: read
   actions: read

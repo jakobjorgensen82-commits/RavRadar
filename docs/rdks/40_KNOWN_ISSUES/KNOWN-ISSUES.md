@@ -1,3 +1,9 @@
+## 26. november — kildekontrol kan blokere vejr før DMI
+
+#404 genlæste den beskyttede vejrtilstand og dens råfiler. GitHub-kontrollen for rotation fandt en mulig samtidig læser. Den beholdt alle kopier og standsede før DMI. Det automatiske genforsøg startede den almindelige #405, efter at køen var fri.
+
+Den lokale rettelse beder GitHub om at slå al cacheadgang fra for den normale PR-kildekontrol. Både cacheoprydningen og det automatiske genforsøg genkender kun den godkendte arbejdsgang, når GitHub viser samme repository og samme uændrede workflow på begge sider af den konkrete PR. Ukendte arbejdsforløb kan stadig blokere, og krav til hvilke kopier der sikkert kan slettes består. Verifikationen på GitHub udestår.
+
 ## 26. november — Supabase afbrød gemningen af den nye vejrtilstand
 
 Vejrkørsel #403 hentede og beregnede vejret. Supabase afbrød begge forsøg på at gemme det tilhørende checkpoint med PostgreSQL-kode 57014. Genoptagelse #217 kunne genlæse den bevarede prognose og blev standset ved samme checkpoint. Sidst verificerede offentlige prognose blev bevaret. Årsagen til den langsommere udførelse i drift er fortsat uafklaret. [Vejrkørsel #403](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45818877054) · [Genoptagelse #217](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45844344426)
