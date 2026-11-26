@@ -1,3 +1,7 @@
+## 26. november – ændret produktion af PostgreSQL-kvitteringen
+
+Ændres koden, der faktisk kører PostgreSQL-prøven og skriver kvitteringen, kræver den almindelige kildekontrol én ny udførelse af prøven. En prøvekørsel af læseren kan stadig gå den korte vej. Uændrede SQL- og modelinput dokumenteres stadig som uændrede. Når den første faktiske udførelse på den nye kode er verificeret, kan efterfølgende ændringer måles mod det nye kildegrundlag. De tidligere kvitteringer bevarer deres form og betydning.
+
 ## 24. november – Candidate G-prøver ud af den almindelige kildekontrol
 
 Candidate G er pensioneret som offentligt rollbackvalg efter DEC-0213. Den isolerede rollback-prøve brugte 8 min. 46 sek. i GitHub-kørslen til #1054 og 12 min. 35 sek. til #1053. Den lokale efterfølger fjerner de to direkte Candidate G-kald fra den almindelige fulde PR-kontrol. Prøverne kan fortsat køres med `npm run test:candidate-g-operational-rollback`. Tidligere kvitteringer læses efter den arbejdsgang, der faktisk kørte, og den aktuelle kildekontrol og den almindelige produktionskontrol skal fortsat bestås. Gevinsten måles igen på den nye arbejdsgang.

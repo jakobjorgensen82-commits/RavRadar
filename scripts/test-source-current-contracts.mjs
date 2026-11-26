@@ -813,11 +813,17 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
     assert.deepEqual(cadence.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.rawCacheRotation,commands[7]]);
     assert.deepEqual(cadence.areas.sourceControls.changedPaths,cadenceFixturePaths);
     assert.deepEqual(cadence.areas.rawCacheRotation.changedPaths,[cadenceFixturePaths[0]]);
+    const nativeProducer='scripts/native-postgres-evidence.mjs';
+    const producerChange=select('changed-postgres-producer',[nativeProducer]);
+    assert.equal(producerChange.selection,'FULL');
+    assert.deepEqual(producerChange.reasonCodes,['CURRENT_NATIVE_POSTGRES_PRODUCER_CHANGED']);
+    assert.deepEqual(producerChange.requiredQualifications,['ACTUAL_POSTGRES']);
+    const shortControlFiles=files.filter(file=>file!==nativeProducer);
     const selectorFiles=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
-    const all=select('all-controller-owners-with-selector-and-docs',[...files,
+    const all=select('current-control-readers-with-selector-and-docs',[...shortControlFiles,
       ...selectorFiles,'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
     positive(all);assert.deepEqual(Object.keys(all.areas),['core','documentation','sourceControls','actionVersions']);
-    assert.deepEqual(all.areas.sourceControls.changedPaths,[...files,...selectorFiles].sort());
+    assert.deepEqual(all.areas.sourceControls.changedPaths,[...shortControlFiles,...selectorFiles].sort());
     assert.deepEqual(all.areas.actionVersions.changedPaths,[files[0]]);
     assert.deepEqual(all.commands,[...new Set([
       ...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.documentation,...commands,...CURRENT_CONTRACT_COMMANDS.actionVersions])]);
