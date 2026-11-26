@@ -1474,6 +1474,7 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
           SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_URL || '' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || steps.assistant-later-h0-source.outputs.required == 'true') && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ inputs.enforce_raw_cache_rotation == true && steps.assistant-later-h0-source.outputs.required == 'true' && 'enforce' || '' }}
           PREDECESSOR_TRANSITION_KIND: ${{ steps.historical-wave-predecessor.outputs.transition_kind }}
           MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
           EXACT_WEATHER_MIGRATED_ROOT: ${{ steps.exact-weather-pair-migration.outputs.restored_path }}
@@ -2459,22 +2460,32 @@ jobs:
           inputs.quick_confirmation != true && inputs.quick_progress_source == '' &&
           inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&
           inputs.native_sampling_identity_original_recovery != true && inputs.produce_weather_handoff != true &&
-          steps.operational-action.outputs.action == 'integrated' && steps.operational-model.outputs.binding_current == 'true' &&
           steps.private-runtime-install.outcome == 'success' &&
-          steps.paired-checkpoint-reconcile.outcome == 'success' && steps.paired-checkpoint-reconcile.outputs.paired == 'true' &&
-          steps.paired-checkpoint-reconcile.outputs.raw_baseline_proved == 'true' &&
+          ((steps.operational-action.outputs.action == 'integrated' &&
+            steps.operational-model.outputs.binding_current == 'true' &&
+            steps.paired-checkpoint-reconcile.outcome == 'success' &&
+            steps.paired-checkpoint-reconcile.outputs.paired == 'true' &&
+            steps.paired-checkpoint-reconcile.outputs.raw_baseline_proved == 'true') ||
+           (steps.operational-action.outputs.action == 'integrated-historical-maintenance' &&
+            steps.operational-model.outputs.binding_current == 'false' &&
+            steps.assistant-later-h0-source.outputs.required == 'true' &&
+            steps.assistant-later-h0-prepare.outcome == 'success' &&
+            steps.private-runtime-install.outputs.raw_baseline_proved == 'true')) &&
           steps.dmi-part-continuity-donor.outputs.continuity_schema == '2' &&
           steps.dmi-grib-cache-restore.outcome == 'success' &&
           steps.dmi-raw-restore-identity.outcome == 'success' && steps.dmi-raw-restore-identity.outputs.observed == 'true' &&
           steps.current-history-demand.outcome == 'success'
         continue-on-error: true
-        timeout-minutes: 5
+        timeout-minutes: ${{ steps.private-runtime-install.outputs.raw_baseline_proved == 'true' && 10 || 5 }}
         env:
           NODE_OPTIONS: --max-old-space-size=6144
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           RAVRADAR_RAW_BOOTSTRAP_PROOF: ${{ inputs.enforce_raw_cache_rotation && 'enforce' || vars.RAVRADAR_RAW_BOOTSTRAP_PROOF }}
           RAW_NORMAL_PRE_DMI_STEPS_VERIFIED: 'true'
+          RAW_ASSISTANT_LATER_H0_BASELINE_PROVED: ${{ steps.private-runtime-install.outputs.raw_baseline_proved }}
           RAW_MATCHED_CACHE_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
+          SUPABASE_URL: ${{ steps.private-runtime-install.outputs.raw_baseline_proved == 'true' && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.private-runtime-install.outputs.raw_baseline_proved == 'true' && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
         run: node scripts/prove-pre-dmi-restored-raw-successor.mjs
 
       - name: Publish the bounded RAW rotation handoff before DMI
@@ -2514,6 +2525,7 @@ jobs:
         run: node scripts/find-raw-rotation-artifact.mjs --download-result
 
       - name: Require successful RAW rotation for this exact target
+        id: raw-rotation-decision-confirmed
         if: inputs.enforce_raw_cache_rotation == true && steps.preflight.outputs.should_run == 'true'
         env:
           RAVRADAR_RAW_BOOTSTRAP_PROOF: enforce
@@ -5008,8 +5020,13 @@ jobs:
           steps.private-runtime-publish.outcome == 'success' && steps.checkpoint-publish.outcome == 'success' &&
           steps.dmi-raw-save.outputs.saved_inventory != '' && steps.checkpoint-publish.outputs.raw_s_central_version != '' &&
           steps.dmi-part-continuity-donor.outputs.continuity_schema == '2' &&
-          steps.operational-action.outputs.action == 'integrated' && inputs.completed_private_runtime != true &&
-          github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+          (steps.operational-action.outputs.action == 'integrated' ||
+           (steps.operational-action.outputs.action == 'integrated-historical-maintenance' &&
+            steps.assistant-later-h0-source.outputs.required == 'true' &&
+            steps.private-runtime-install.outputs.raw_baseline_proved == 'true' &&
+            steps.raw-rotation-decision-confirmed.outcome == 'success')) &&
+          inputs.completed_private_runtime != true && github.ref == 'refs/heads/main' &&
+          github.event_name == 'workflow_dispatch' &&
           github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' &&
           github.run_attempt == '1'
         continue-on-error: true
@@ -5020,6 +5037,7 @@ jobs:
           RAW_PUBLISHED_S_GENERATION_SHA256: ${{ steps.checkpoint-publish.outputs.raw_s_generation_sha256 }}
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           RAW_POWERED_BY_ORDINARY_PUBLICATION: 'true'
+          RAW_ASSISTANT_LATER_H0_UPLOAD_ADMITTED: ${{ steps.assistant-later-h0-source.outputs.required == 'true' && steps.private-runtime-install.outputs.raw_baseline_proved == 'true' && steps.raw-rotation-decision-confirmed.outcome == 'success' && 'true' || 'false' }}
           RAW_PRIOR_CONTINUITY_SCHEMA: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

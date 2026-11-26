@@ -373,18 +373,22 @@ async function readRawRotationBulkInputs(verified, boundary, registry) {
 // Read the authenticated B/S that remains live if this weather run stops.
 // Use its immutable companion roles, even when the work copies were changed
 // by the progressive DMI setup for the newly locked target.
-export async function readRetainedRawRotationInputs({demand}) {
+export async function readRetainedRawRotationInputs({demand, assistantSuccessor = false}) {
   const boundary = demand?.rawRetention?.boundary;
   const expectedCheckpoint = demand?.sourceHashes?.checkpoint;
   const expectedRegistry = demand?.registrySha256;
   requireProof(boundary && /^sha256:[a-f0-9]{64}$/.test(expectedCheckpoint ?? '')
     && /^sha256:[a-f0-9]{64}$/.test(expectedRegistry ?? ''), 'BASELINE_INPUT');
-  const {verified, conditions, conditionsSha256, originalConditions, verify: verifyBundle} =
+  const {verified, conditions, conditionsSha256, originalConditions, originalConditionsSha256, verify: verifyBundle} =
     await readCurrentPrivateRuntimeCompanionInput(demand.productionReferenceAt);
-  requireProof(originalConditions === undefined && verified.datasetId === boundary.datasetId
+  // The exact assistant transition preserves the original B while its
+  // validated working S belongs to the projected conditions.
+  const boundaryConditionsMatch = assistantSuccessor
+    ? originalConditions !== undefined && originalConditionsSha256 === boundary.conditionsSha256
+    : originalConditions === undefined && conditionsSha256 === boundary.conditionsSha256;
+  requireProof(boundaryConditionsMatch && verified.datasetId === boundary.datasetId
     && verified.productionReferenceAt === boundary.productionReferenceAt
-    && verified.bundleContentSha256 === boundary.bundleContentSha256
-    && conditionsSha256 === boundary.conditionsSha256, 'BASELINE_INPUT');
+    && verified.bundleContentSha256 === boundary.bundleContentSha256, 'BASELINE_INPUT');
   const checkpointPath = path.join(ROOT, CHECKPOINT);
   const checkpoint = await readCheckpoint(checkpointPath);
   requireProof('sha256:' + checkpoint.sha256 === expectedCheckpoint
@@ -397,7 +401,7 @@ export async function readRetainedRawRotationInputs({demand}) {
     'REGISTRY_SCOPE');
   const registry = JSON.parse(registryFile.bytes.toString('utf8'));
   const inputs = await readRawRotationBulkInputs(verified, boundary, registry);
-  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, conditions);
+  const protectedCompanionContexts = await readAuthenticatedCurrentCompanions(verified, originalConditions ?? conditions);
   return {
     ...inputs, registry, zones: JSON.parse(zonesFile.bytes.toString('utf8')),
     conditions, checkpoint: checkpoint.data, boundary, protectedCompanionContexts,

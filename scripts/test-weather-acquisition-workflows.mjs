@@ -233,6 +233,69 @@ test('normal DMI save uses its measured allowance and must actually finalize bef
   assert.deepEqual(order, [...order].sort((a, b) => a - b));
 });
 
+test('first assistant continuation must prove its restored RAW and use the ordinary retirement result', () => {
+  const proof = step(actualNormalWorkflow, 'Observe exact restored RAW coverage for the locked successor before DMI');
+  const wait = step(actualNormalWorkflow, 'Wait for the RAW rotation decision before DMI');
+  const requireDecision = step(actualNormalWorkflow, 'Require successful RAW rotation for this exact target');
+  const savedProof = step(actualNormalWorkflow, 'Prove that this run saved the required DMI originals');
+  const run = {
+    inputs:{enforce_raw_cache_rotation:true,completed_private_runtime:false,
+      completed_stage_source:'',quick_progress_source:''},
+    github:{repository:'jakobjorgensen82-commits/RavRadar',ref:'refs/heads/main',
+      event_name:'workflow_dispatch',actor:'github-actions[bot]',triggering_actor:'github-actions[bot]',run_attempt:'1'},
+    vars:{},success:()=>true,
+  };
+  const successful = {outcome:'success'};
+  const steps = {
+    preflight:{outputs:{should_run:'true'}},
+    'assistant-later-h0-source':{outputs:{required:'true'}},
+    'assistant-later-h0-prepare':successful,
+    'operational-action':{outputs:{action:'integrated-historical-maintenance'}},
+    'operational-model':{outputs:{binding_current:'false'}},
+    'private-runtime-install':{outcome:'success',outputs:{raw_baseline_proved:'true'}},
+    'paired-checkpoint-reconcile':{outcome:'skipped',outputs:{}},
+    'dmi-part-continuity-donor':{outputs:{continuity_schema:'2'}},
+    'dmi-grib-cache-restore':successful,
+    'dmi-raw-restore-identity':{outcome:'success',outputs:{observed:'true'}},
+    'current-history-demand':successful,
+    'handoff-upload':successful,
+    'private-runtime-publish':successful,
+    'checkpoint-publish':{outcome:'success',outputs:{raw_s_central_version:'12'}},
+    'dmi-raw-save':{outputs:{saved_inventory:'fixture-inventory'}},
+    'raw-rotation-decision-confirmed':successful,
+  };
+  const enabled = (block, overrides={}) => {
+    const expression = (block.match(/^        if: >-\n((?:          .*\n)+)/m)?.[1]
+      ?? block.match(/^        if: (.*)$/m)?.[1]).trim();
+    return runInNewContext(expression.replace(/\bsteps\.([a-z]+(?:-[a-z0-9]+)+)\./g, 'steps["$1"].'),
+      {...run,steps:{...steps,...overrides}});
+  };
+  assert.equal(enabled(proof),true);
+  for (const [id, denied] of [
+    ['assistant-later-h0-source',{outputs:{required:'false'}}],
+    ['assistant-later-h0-prepare',{outcome:'skipped'}],
+    ['private-runtime-install',{outcome:'success',outputs:{}}],
+    ['operational-model',{outputs:{binding_current:'true'}}],
+    ['dmi-part-continuity-donor',{outputs:{continuity_schema:'1'}}],
+    ['dmi-raw-restore-identity',{outcome:'success',outputs:{observed:'false'}}],
+    ['current-history-demand',{outcome:'failure'}],
+  ]) assert.equal(enabled(proof,{[id]:denied}),false,id);
+  assert.equal(enabled(proof,{
+    'assistant-later-h0-source':{outputs:{required:'false'}},
+    'operational-action':{outputs:{action:'integrated'}},
+    'operational-model':{outputs:{binding_current:'true'}},
+    'private-runtime-install':successful,
+    'paired-checkpoint-reconcile':{outcome:'success',outputs:{paired:'true',raw_baseline_proved:'true'}},
+  }),true);
+  assert.equal(enabled(wait),true);
+  assert.equal(enabled(requireDecision),true);
+  assert.match(requireDecision, /retire-verified-raw-caches\.mjs --require-decision/);
+  assert.equal(enabled(savedProof),true);
+  assert.equal(enabled(savedProof,{'raw-rotation-decision-confirmed':{outcome:'skipped'}}),false);
+  assert.equal(enabled(savedProof,{'checkpoint-publish':{outcome:'success',outputs:{raw_s_central_version:''}}}),false);
+  assert.equal(enabled(savedProof,{'dmi-raw-save':{outputs:{saved_inventory:''}}}),false);
+});
+
 test('ordinary source validation runs on committed files before any runtime overlay', () => {
   const orderedSteps = [
     'Decide whether weather needs updating before private runtime download',
