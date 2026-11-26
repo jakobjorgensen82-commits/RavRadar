@@ -1004,7 +1004,7 @@ let actualCurrentAfter599SourceVerified=false;
 let actualCurrentAfter601SourceVerified=false;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
-  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
+  baseTip:null,projectedBase:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
 const fallbackOnlyCommits=new Set();let observedRoutes=[],unexpectedRoutes=[],fixtureFailures=[],fallbackDiscoveries=[];
 const scenarios=[];
 const moduleAt=async file=>import(pathToFileURL(path.join(root,file)).href);
@@ -1064,6 +1064,11 @@ function reviewObject(plan){
     cumulativeInventorySha256:plan.inventorySha256,planSha256:currentReceiptHelpers.currentChangePlanSha256(
       {current,fullBaseline:reference,changeBase,currentPlan,cumulativePlan:plan}),reviewSha256:sha(reviewText)};
 }
+function currentEventMerge(){
+  const baseParent=state.baseTip??base;
+  return {sha:sha(`synthetic pull request merge ${baseParent} ${head}`).slice(0,40),
+    parents:[{sha:baseParent},{sha:head}]};
+}
 function currentPull(){
   let body;
   if(state.missingReview)body='Synthetic missing review';
@@ -1076,9 +1081,11 @@ function currentPull(){
     if(state.movedReview&&rows.length)review.reviewSha256='e'.repeat(64);
     body=('Synthetic fixture only\n<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 '+JSON.stringify(review)+' -->\n').repeat(state.duplicateReview?2:1);
   }
-  return {number:selectedPr,state:state.merged?'closed':'open',...(state.merged?{merged_at:stamp(24),merge_commit_sha:main}:{}),
+  return {number:selectedPr,state:state.merged?'closed':'open',merge_commit_sha:state.merged?main:currentEventMerge().sha,
+    ...(state.merged?{merged_at:stamp(24)}:{}),
     user:{login:native.ORIGIN.repository.split('/')[0]},head:{sha:head,ref:'codex/synthetic-domain-current',repo:{full_name:native.ORIGIN.repository}},
-    base:{sha:state.merged&&state.closedBaseTip?state.closedBaseTip:state.baseTip??base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
+    base:{sha:state.merged&&state.closedBaseTip?state.closedBaseTip:state.projectedBase??state.baseTip??base,
+      ref:'main',repo:{full_name:native.ORIGIN.repository}},
     body};
 }
 function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
@@ -1104,6 +1111,9 @@ function meta(id,name,body,runId,producer,n){return{id,name,digest:'sha256:'+sha
   workflow_run:{id:runId,head_sha:producer},created_at:stamp(n)};}
 function rebuildMaps(){
   const repo='/repos/'+native.ORIGIN.repository,actions=repo+'/actions';
+  const eventMerge=currentEventMerge();
+  process.env.GITHUB_SHA=eventMerge.sha;
+  process.env.GITHUB_REF=`refs/pull/${selectedPr}/merge`;
   // Actual uploaded baseline artifacts are immutable across producer/consumer.
   // Recreating a ZIP later would change its timestamp and bound digest.
   const fullZip=immutableFullZip??=zip(Buffer.from(JSON.stringify(fullBody)+'\n'),'source-tree-content-proof.json'),
@@ -1122,6 +1132,7 @@ function rebuildMaps(){
   if(state.expiredFull){fullMeta.expired=true;phaseMeta.expired=true;}
   zips=new Map([[String(fullFinalId),fullZip],[String(fullNativeId),phaseZip],...priorZips]);
   for(const [route,value]of priorMaps)maps.set(route,value);
+  maps.set(repo+'/git/commits/'+eventMerge.sha,eventMerge);
   for(const current of [base,main].filter(Boolean))for(const producer of Object.values(namespace.SOURCE_GATE_PRODUCERS))
     maps.set(actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+current+'&branch=main&per_page=100&page=1',
       {total_count:0,workflow_runs:[]});
@@ -1176,7 +1187,7 @@ function configure(candidate){
   head=candidate;checkout(head);rows=[];observedRoutes=[];unexpectedRoutes=[];fixtureFailures=[];fallbackDiscoveries=[];
   state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;state.closedBaseTip=null;
   state.modernWorkflow=false;state.ownedCacheNativeWorkflow=false;state.fullModernWorkflow=false;state.sdkStepFault=null;
-  state.baseTip=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
+  state.baseTip=null;state.projectedBase=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
   Object.assign(process.env,{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,SOURCE_GATE_HEAD_SHA:head,
     PULL_REQUEST_NUMBER:String(selectedPr),GITHUB_RUN_ID:String(selectedRun),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'validate',
     GITHUB_TOKEN:'synthetic-never-live'});
@@ -1944,7 +1955,8 @@ try{
     ['app.js',Buffer.from('// Synthetic previously delivered public UI delta\n')],
     ['admin.html',Buffer.from('<!-- Synthetic previously delivered admin delta -->\n')]]);
   const positiveHead=commit(candidateTree,[base],'synthetic reviewed current-control child');
-  configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  configure(positiveHead);state.projectedBase='f'.repeat(40);
+  baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
   assert.equal(baselinePlan.selection,'CURRENT_CONTRACTS',JSON.stringify(baselinePlan.reasonCodes));
   assert.equal(baselinePlan.controlQualificationRequired,true);
   for(const family of ['postgres','C','I','T'])assert.equal(baselinePlan.inputDigests[family+'Before'],baselinePlan.inputDigests[family+'After']);
@@ -2291,6 +2303,12 @@ try{
   const onlyPages=plan({baselineCommit:firstDelivery.main,candidateCommit:head,expectedHead:head});
   assert.equal(onlyPages.selection,'CURRENT_CONTRACTS');assert.equal(onlyPages.controlQualificationRequired,false);
   assert.deepEqual(onlyPages.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.pages]);
+  // GitHub can keep projecting the original PR base after main advances.
+  state.projectedBase=base;
+  rebuildMaps();
+  const eventRoute=repo+'/git/commits/'+currentEventMerge().sha;
+  maps.set(eventRoute,{...currentEventMerge(),parents:[{sha:firstDelivery.main},{sha:base}]});
+  assert.equal((await coordinate()).selection,'FULL');assert.equal(rows.length,0);
   rebuildMaps();const next=await coordinate();
   assert.equal(next.selection,'TARGETED');assert.deepEqual(next.receipt.reportedCommandResults.map(row=>row.command),onlyPages.commands);
   assert.equal(next.receipt.changeBase.commit,firstDelivery.main);
