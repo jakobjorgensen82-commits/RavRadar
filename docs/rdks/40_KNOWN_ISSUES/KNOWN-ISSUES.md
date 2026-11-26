@@ -1,3 +1,9 @@
+## 26. november — lokal D1-kvittering for privat statistik
+
+D1 kan tælle den indsatte rapport og dens triggeroprettede budgetposter samlet i meta.changes. Den lokale rettelse bruger i stedet den samme atomiske skrivnings præcise RETURNING-row og genlæser rapport, bidragyderliste, budgetposter og uændret præference-/slettebasis. En allerede gemt måned genbruges uden ny støj eller budgetbetaling. Ukendt skriveudfald stopper fortsat uden automatisk gentagelse.
+
+Status er lokal kildekandidat, ikke installeret eller aktiveret statistik. Den senest verificerede Worker er OFF. Privat månedskørsel, faktisk hosted kapacitet, anonymitets-/frigivelsespolitik og offentlig statistik har fortsat særskilte åbne beviser. Numerisk model, migrations-SQL, originale ture, sampler, kvoter og adgang ændres ikke.
+
 ## 26. november — rækkefølge for Copernicus' kritiske forespørgsler
 
 Den almindelige plan blandede reelle datamangler med forsøg på at opdatere ældre dækning. Én ledig forespørgsel kunne gå til den allerede dækkede time. Den lokale rettelse lader hullerne få første tur i den fælles rotation. Et opslag til et hul kan også give verificerede data for allerede dækkede timer inden for samme tidsinterval. Kildekvalifikation og en efterfølgende ordinær kørsel udestår.
