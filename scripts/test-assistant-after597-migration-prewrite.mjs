@@ -78,6 +78,33 @@ if(AFTER601_PLAN_MODE){
     assert.equal((await ready.expectedCheckpointCasContract({sourcePhase:profile.sourcePhase})).sha256,
       profile.output.checkpointContractSha256);
   });
+  test('operational checkpoint SQL can only follow installed 603 through its backend installation',async()=>{
+    const scalarWalk=ready.CHECKPOINT_SCALAR_WALK_MIGRATION;
+    const currentRows=[...rows,scalarWalk];
+    const dryRunText=pending.replace(rows.at(-1).filename,scalarWalk.filename);
+    const migrationListText=ledger(currentRows,rows);
+    const plan={migrationListText,dryRunText};
+    await assert.rejects(ready.assertSupabaseMigrationPlan(plan));
+    const before=await ready.assertSupabaseMigrationPlan({...plan,allowCheckpointScalarWalkPlan:true});
+    assert.deepEqual(before.pendingVersions,[scalarWalk.version]);
+    assert.deepEqual(before.alreadyAppliedVersions,rows.map(row=>row.version).sort());
+    await assert.rejects(ready.assertSupabaseMigrationPlan({
+      ...plan,migrationListText:ledger(currentRows,installed),allowCheckpointScalarWalkPlan:true,
+    }),/installed 603/);
+    await assert.rejects(ready.assertSupabaseMigrationPlan({
+      ...plan,dryRunText:pending,allowCheckpointScalarWalkPlan:true,
+    }),/did not propose exactly/);
+    const installedList=ledger(currentRows,currentRows);
+    const after=await ready.assertSupabaseMigrationPlan({migrationListText:installedList,dryRunText:upToDate});
+    assert.deepEqual(after.pendingVersions,[]);
+    assert(after.alreadyAppliedVersions.includes(scalarWalk.version));
+    assert.throws(()=>ready.assertSupabaseMigrationsApplied(migrationListText));
+    assert(ready.assertSupabaseMigrationsApplied(installedList).appliedVersions.includes(scalarWalk.version));
+    const originalCheckpoint=await ready.expectedCheckpointCasContract({sourcePhase:profile.sourcePhase});
+    const optimized=await ready.expectedCheckpointScalarWalkContract();
+    assert.equal(optimized.id,originalCheckpoint.id);
+    assert.notEqual(optimized.sha256,originalCheckpoint.sha256);
+  });
   test('after601 normal prewrite rejects missing SQL80, unknown or duplicate rows and a mismatched dry run',async()=>{
     const owner=assistantAfter601PrewritePredecessor();
     assert.throws(()=>assistantAfter601PrewritePredecessor({family:'599'}));

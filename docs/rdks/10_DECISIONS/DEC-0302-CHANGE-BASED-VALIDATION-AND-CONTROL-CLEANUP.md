@@ -8,6 +8,8 @@ Den lokale efterfølger kan afgive en særskilt REUSED-V2-kvittering for en tidl
 
 Producentens egen første ændringskvalifikation udfører fortsat SQL. Lokale syntetiske transport-, input- og decoderprøver er ikke faktisk PostgreSQL, GitHub-genbrug eller produktionsbevis. Relevante kildeprøver og den øvrige FULL-vej bevares.
 
+Når inputtet omfatter de 82 SQL-filer med migration `20261126152500`, kræver genbrug en faktisk udført V2-kvittering med migrationens præcise SHA-256 og den særskilte kontrol af katalog, databevarelse og CAS. Den første udførelse med den samlede producent leverer dette bevis til senere kompatible kørsler.
+
 ## 24. november – Candidate G-prøver ud af den almindelige kildekontrol
 
 Candidate G er pensioneret som offentligt rollbackvalg efter DEC-0213. Den isolerede rollback-prøve brugte 8 min. 46 sek. i GitHub-kørslen til #1054 og 12 min. 35 sek. til #1053. Den lokale efterfølger fjerner de to direkte Candidate G-kald fra den almindelige fulde PR-kontrol. Prøverne kan fortsat køres med `npm run test:candidate-g-operational-rollback`. Tidligere kvitteringer læses efter den arbejdsgang, der faktisk kørte, og den aktuelle kildekontrol og den almindelige produktionskontrol skal fortsat bestås. Gevinsten måles igen på den nye arbejdsgang.

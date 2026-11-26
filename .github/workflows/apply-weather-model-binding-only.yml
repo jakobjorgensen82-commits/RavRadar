@@ -287,7 +287,7 @@ jobs:
           elif test "${RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN:-false}" = true; then
             node scripts/assistant-later-h0-binding-prewrite.mjs plan
           else
-            node scripts/verify-code-only-migration-plan.mjs \
+            node scripts/verify-code-only-migration-plan.mjs --checkpoint-scalar-walk-plan \
               --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
               --dry-run "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt" \
               --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"

@@ -2531,9 +2531,11 @@ test('current OFF app migration stages real source and preserves default refusal
     const temporary=await fs.mkdtemp(path.join(os.tmpdir(),'rr-current-erasure-dependency-'));
     try{
       const prepared=await current.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(temporary,'normal')});
-      assert.deepEqual((await fs.readdir(prepared.migrationsDirectory)).sort(),required.map(row=>row.filename).sort());
+      const staged=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after601-successor'?
+        [...required,current.CHECKPOINT_SCALAR_WALK_MIGRATION]:required;
+      assert.deepEqual((await fs.readdir(prepared.migrationsDirectory)).sort(),staged.map(row=>row.filename).sort());
       assert.deepEqual(await fs.readFile(path.join(prepared.migrationsDirectory,off.filename)),await fs.readFile(path.join(ROOT,'supabase/migrations',off.filename)));
-      const rows=required.map(row=>row.version+' | '+row.version+' | synthetic');
+      const rows=staged.map(row=>row.version+' | '+row.version+' | synthetic');
       const list='Local | Remote | Time (UTC)\n'+rows.join('\n');
       const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
       const request={migrationListText:list,dryRunText:noop,migrationsDirectory:prepared.migrationsDirectory};

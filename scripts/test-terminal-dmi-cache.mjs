@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import { authenticateRawRotationHandoff, authenticateSavedRawRotationHandoff, isAuthenticatedRawRotationHandoff,
   projectPublicRawRotationProof, projectRawRotationDecision, rawRotationPairDigest, requireRawRotationDecision } from './lib/raw-rotation-handoff.mjs';
 import { preparePreDmiRawSuccessorProof } from './prove-pre-dmi-restored-raw-successor.mjs';
+import {PR_SOURCE_VALIDATION} from './read-weather-cadence-github.mjs';
 import {
   DMI_CACHE_SAVE_STEP,
   DMI_PRODUCER_JOB,
@@ -372,6 +374,7 @@ const readActivity = async (rows, respond) => readRawCacheReaderActivity({
       const matches = rows.filter(row => row.status === status);
       return respond?.(route) ?? {total_count: matches.length, workflow_runs: matches};
     }
+    if (route.includes('/contents/')) return respond?.(route);
     assert.equal(route, '/repos/' + repository + '/actions/runs/34613079069/attempts/1/jobs?per_page=1');
     return respond?.(route) ?? {total_count: 0, jobs: []};
   },
@@ -380,6 +383,42 @@ assert.deepEqual(await readActivity([ordinaryOwner, inertLegacy]), {status: 'CLE
 assert.deepEqual(await readActivity([ordinaryOwner, queuedAudit, inertLegacy]), {
   status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
 });
+const reviewRepository = {id: 2750, full_name: repository};
+const isolatedReview = {
+  ...ordinaryOwner, id: 113, status: 'queued', event: 'pull_request',
+  head_branch: 'fix/cache', head_sha: 'b'.repeat(40), path: PR_SOURCE_VALIDATION,
+  repository: reviewRepository, head_repository: reviewRepository, referenced_workflows: [],
+  pull_requests: [{
+    head: {ref: 'fix/cache', sha: 'b'.repeat(40), repo: reviewRepository},
+    base: {ref: 'main', sha: headSha, repo: reviewRepository},
+  }],
+};
+const reviewedWorkflow = await readFile(new URL('../' + PR_SOURCE_VALIDATION, import.meta.url));
+const reviewedWorkflowFile = {
+  type: 'file', path: PR_SOURCE_VALIDATION,
+  sha: createHash('sha1').update('blob ' + reviewedWorkflow.length + '\0').update(reviewedWorkflow).digest('hex'),
+};
+const workflowReads = [];
+const reviewedFile = route => {
+  if (!route.includes('/contents/')) return;
+  workflowReads.push(route);
+  return reviewedWorkflowFile;
+};
+assert.deepEqual(await readActivity([ordinaryOwner, isolatedReview], reviewedFile),
+  {status: 'CLEAR', checkedRuns: 2, inertLegacy: 0});
+assert.deepEqual(workflowReads, [headSha, isolatedReview.head_sha].map(ref =>
+  '/repos/' + repository + '/contents/' + PR_SOURCE_VALIDATION + '?ref=' + ref));
+assert.deepEqual(await readActivity([ordinaryOwner, isolatedReview, queuedAudit], reviewedFile),
+  {status: 'HOLD', reason: 'possible-raw-reader-active-or-queued'});
+for (const review of [
+  {...isolatedReview, event: 'workflow_dispatch'},
+  {...isolatedReview, head_repository: {...reviewRepository, id: 2751}},
+  {...isolatedReview, referenced_workflows: [{path: '.github/workflows/reusable.yml'}]},
+]) assert.deepEqual(await readActivity([ordinaryOwner, review], reviewedFile),
+  {status: 'HOLD', reason: 'possible-raw-reader-active-or-queued'});
+assert.deepEqual(await readActivity([ordinaryOwner, isolatedReview], route =>
+  route.endsWith(isolatedReview.head_sha) ? {...reviewedWorkflowFile, sha: '0'.repeat(40)} : reviewedFile(route)),
+  {status: 'HOLD', reason: 'possible-raw-reader-active-or-queued'});
 assert.deepEqual(await readActivity([ordinaryOwner, {...inertLegacy, run_attempt: 2}]), {
   status: 'HOLD', reason: 'possible-raw-reader-active-or-queued',
 });

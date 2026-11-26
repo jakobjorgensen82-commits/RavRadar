@@ -1,3 +1,15 @@
+## 26. november — kildekontrol kan blokere vejr før DMI
+
+#404 genlæste den beskyttede vejrtilstand og dens råfiler. GitHub-kontrollen for rotation fandt en mulig samtidig læser. Den beholdt alle kopier og standsede før DMI. Det automatiske genforsøg startede den almindelige #405, efter at køen var fri.
+
+Den lokale rettelse beder GitHub om at slå al cacheadgang fra for den normale PR-kildekontrol. Både cacheoprydningen og det automatiske genforsøg genkender kun den godkendte arbejdsgang, når GitHub viser samme repository og samme uændrede workflow på begge sider af den konkrete PR. Ukendte arbejdsforløb kan stadig blokere, og krav til hvilke kopier der sikkert kan slettes består. Verifikationen på GitHub udestår.
+
+## 26. november — Supabase afbrød gemningen af den nye vejrtilstand
+
+Vejrkørsel #403 hentede og beregnede vejret. Supabase afbrød begge forsøg på at gemme det tilhørende checkpoint med PostgreSQL-kode 57014. Genoptagelse #217 kunne genlæse den bevarede prognose og blev standset ved samme checkpoint. Sidst verificerede offentlige prognose blev bevaret. Årsagen til den langsommere udførelse i drift er fortsat uafklaret. [Vejrkørsel #403](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45818877054) · [Genoptagelse #217](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45844344426)
+
+Den lokale SQL-tilføjelse gennemgår kun værdier, der kan indeholde JSON-nøgler. Reglerne for afvisning, rettigheder, checkpointformat og scoreberegning er de samme. På lokal PostgreSQL 17 tog den fulde skriveprøve med syntetiske data for 673 kystdele ca. 12 sekunder mod 19–20 med den installerede funktionsdefinition. Kvittering og gemt tilstand var identiske. Det eksisterende backendforløb kan installere den ene migration efter kildekvalifikation og kontrollere både migrationshistorik og den faktiske funktionsdefinition. Installation, genoptagelse af den gemte prognose og måling i drift udestår.
+
 ## 26. november — den første filoversigt overså nye DKSS-timer i #402
 
 Den almindelige DMI-læsning valgte kataloget, før de nye originaler til prognosens sidste fire timer ankom. Senere drift genbrugte listen. En afprøvet kandidat kan optage verificerede nye vandstandsværdier, hvis der er plads inden for den eksisterende tid og downloadgrænse. Landsdækkende effekt og resttid skal måles i en almindelig kørsel med rettelsen. [Kørsel #402](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45782337031)

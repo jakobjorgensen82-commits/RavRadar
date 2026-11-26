@@ -3360,10 +3360,25 @@ test('after601 receipt accepts the measured whole-history and quota results and 
   const realHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
   const exactCurrent={...current,head:realHead};
   const input=await native.captureAssistantAfter601PgInput({ref:realHead,physical:false});
-  const v2={...receipt,current:exactCurrent,schemaVersion:2,kind:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
-    nativeInput:input};
+  const {CHECKPOINT_SCALAR_WALK_MIGRATION:append}=await import('./integrated-cutover-readiness.mjs');
   const readGit=(args,options)=>execFileSync('git',args,{...options,maxBuffer:32*1024*1024});
+  const scalarWalk=readGit(['ls-tree',realHead,'--','supabase/migrations/'+append.filename]).length!==0;
+  assert.equal(input.sqlFiles,scalarWalk?82:81);
+  const checkpointScalarWalk={migrationVersion:append.version,migrationSha256:append.sha256,
+    installedLedgerBeforeRows:70,installedLedgerAfterRows:71,
+    sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,
+    priorDataPreserved:true,forbiddenKeysUnchanged:true,normalCasUnchanged:true};
+  const issued={...receipt,current:exactCurrent};
+  const v2={...issued,schemaVersion:2,kind:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
+    nativeInput:input,report:{...report,...(scalarWalk?{checkpointScalarWalk}:{})}};
   assert.equal(await native.verifyAssistantAfter601ExecutedV2Receipt(v2,exactCurrent,readGit),v2);
+  if(scalarWalk){
+    assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(issued,exactCurrent,readGit),/requires exact native V2 execution/);
+    const missing=copy(v2);delete missing.report.checkpointScalarWalk;
+    await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(missing,exactCurrent,readGit),/execution proof/);
+    const unexecuted=copy(v2);unexecuted.report.checkpointScalarWalk.sqlExecuted=false;
+    await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(unexecuted,exactCurrent,readGit),/execution proof/);
+  }else assert.equal(native.verifyAssistantAfter601PhaseReceipt(issued,exactCurrent,readGit),issued);
   assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(v2,exactCurrent));
   for(const mutate of [
     value=>value.status='REUSED',
@@ -3441,10 +3456,16 @@ test('after601 receipt accepts the measured whole-history and quota results and 
           return args[0]==='cat-file'||args[0]==='ls-tree'?raw:raw.toString('utf8');
         },get,getInput:async()=>{inputReads++;return {...input,...(fault==='fresh-input'&&inputReads>1?{inputSha256:'f'.repeat(64)}:{})};},
         getRuntime:async()=>({...v2Runtime(),...(fault==='runtime'?{imageVersion:'20261126.999'}:{})}),
-        decode:()=>Buffer.from(JSON.stringify({schemaVersion:fault==='v1'?1:2,
-          kind:fault==='v1'?native.ASSISTANT_AFTER601_PHASE_KIND:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
-          repository:native.ORIGIN.repository,headSha:realHead,sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,
-          nativePostgres:fault==='v1'?{...copy(receipt),current:originCurrent}:{...copy(original),current:{...originCurrent,run:decoding.id}}})),
+        decode:()=>{
+          const nativePostgres=fault==='v1'?{...copy(receipt),current:originCurrent}
+            :{...copy(original),current:{...originCurrent,run:decoding.id}};
+          if(fault==='origin-81')nativePostgres.nativeInput.sqlFiles=81;
+          if(fault==='missing-append-proof')delete nativePostgres.report.checkpointScalarWalk;
+          if(fault==='false-append-proof')nativePostgres.report.checkpointScalarWalk.sqlExecuted=false;
+          return Buffer.from(JSON.stringify({schemaVersion:nativePostgres.schemaVersion,kind:nativePostgres.kind,
+            repository:native.ORIGIN.repository,headSha:realHead,sourceTreeSha256:'sha256:'+'e'.repeat(64),
+            privatePayloadIncluded:false,nativePostgres}));
+        },
       }};
     };
     const fixture=build(),refusals=[];fixture.options.onRefusal=reason=>refusals.push(reason);
@@ -3456,6 +3477,11 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     assert.equal(await native.verifyAssistantAfter601ReuseV2Receipt(reused,callerCurrent,readGit),reused);
     for(const fault of ['v1','runtime','expired','later-failure','fresh-input','unavailable','transition-upload-failed','transition-upload-missing'])
       assert.equal(await native.decideAssistantAfter601Reuse(build(fault).options),null,fault);
+    if(scalarWalk){
+      assert.deepEqual(reused.report.checkpointScalarWalk,checkpointScalarWalk);
+      for(const fault of ['origin-81','missing-append-proof','false-append-proof'])
+        assert.equal(await native.decideAssistantAfter601Reuse(build(fault).options),null,fault);
+    }
     for(const state of ['transition-native-ok','transition-skip']){
       const f=build(state),accepted=await native.decideAssistantAfter601Reuse(f.options);
       assert(accepted,state);assert.equal(accepted.origin.run,originRunId,'A later native or skip never replaces the original SQL origin');
@@ -3677,7 +3703,10 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
   const capture=ref=>captureAssistantAfter601PgInput({ref,readGit,physical:false});
   const current=await captureAssistantAfter601PgInput({ref:head,physical:false});
   assert.equal(current.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
-  assert.equal(current.sqlFiles,81);
+  const {CHECKPOINT_SCALAR_WALK_MIGRATION:append}=await import('./integrated-cutover-readiness.mjs');
+  const scalarWalkFile='supabase/migrations/'+append.filename;
+  const scalarWalk=treeFor(head).paths.has(scalarWalkFile);
+  assert.equal(current.sqlFiles,scalarWalk?82:81);
   assert.equal(current.complete,true);
   assert.ok(current.frozenGitTrees.some(({head,tree})=>head===SOURCE601_ORIGINAL_DATA_PROFILE.head
     &&tree===SOURCE601_ORIGINAL_DATA_PROFILE.tree));
@@ -3689,7 +3718,13 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
   const migration='supabase/migrations/'+ACTIVE_ASSISTANT_SUCCESSOR.migration().filename;
   const changedSql=await capture(variant(migration,appendTo(migration,'\n-- Synthetic SQL input change\n')));
   assert.notEqual(changedSql.inputSha256,current.inputSha256);
-  await assert.rejects(capture(variant(migration,null)),/complete current81/);
+  await assert.rejects(capture(variant(migration,null)),scalarWalk?/complete current82/:/complete current81/);
+  if(scalarWalk){
+    const changedScalar=Buffer.from(readGit(['cat-file','blob',head+':'+scalarWalkFile]));
+    changedScalar[0]^=1;
+    await assert.rejects(capture(variant(scalarWalkFile,changedScalar)),/scalar-walk SQL input changed/);
+    assert.equal((await capture(variant(scalarWalkFile,null))).sqlFiles,81);
+  }
 
   const scope='js/core/package.json';
   const changedScope=await capture(variant(scope,Buffer.from('{"type":"commonjs"}\n')));

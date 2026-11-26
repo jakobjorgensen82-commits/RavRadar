@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,7 +7,8 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { assessWeatherCadenceWatchdog, inspectRawReaderRetry } from './check-weather-cadence-watchdog.mjs';
-import { CADENCE_ACTIVE_STATES, readWeatherCadenceGithub } from './read-weather-cadence-github.mjs';
+import { CADENCE_ACTIVE_STATES, PR_SOURCE_VALIDATION, readWeatherCadenceGithub }
+  from './read-weather-cadence-github.mjs';
 import { notifyWeatherFailure, weatherFailureIssue, WEATHER_FAILURE_REPOSITORY,
   WEATHER_FAILURE_OWNER } from './notify-weather-failure.mjs';
 
@@ -292,6 +294,35 @@ test('RAW wait sees complete reader activity again and stops at the original slo
   observations = 0;
   assert.equal((await inspectRawReaderRetry(options)).reason, 'owner-weather-order-window-closed');
   assert.deepEqual(sleeps, [60_000, 1000]);
+});
+
+test('The automatic RAW retry does not wait for an exact cache-disabled source validation', async () => {
+  const repository = rawRequest.repository;
+  const review = {
+    ...rawRequest, id: rawRequest.id + 1, head_branch: 'fix', head_sha: 'e'.repeat(40),
+    path: PR_SOURCE_VALIDATION, event: 'pull_request', repository, head_repository: repository,
+    referenced_workflows: [],
+    pull_requests: [{
+      head: {ref: 'fix', sha: 'e'.repeat(40), repo: repository},
+      base: {ref: 'main', sha: rawRequest.head_sha, repo: repository},
+    }],
+  };
+  const bytes = await fs.readFile(new URL('../' + PR_SOURCE_VALIDATION, import.meta.url));
+  const sha = createHash('sha1').update('blob ' + bytes.length + '\0').update(bytes).digest('hex');
+  const options = { ...rawOrder, waitForReaders: false, clock: () => ownerFallbackNow };
+  for (const exact of [true, false]) {
+    const result = await inspectRawReaderRetry({...options, read: async ({kind, activeRunStatus, workflowRef}) => {
+      if (kind === 'manual') return ownerHistory(ownerRetryFailure);
+      if (kind === 'owner-orders') return rawOrder.history;
+      if (kind === 'recovery-jobs') return rawOrder.rawReaderJobs;
+      if (kind === 'source-validation-workflow-file') return {
+        type: 'file', path: PR_SOURCE_VALIDATION, sha: exact || workflowRef !== review.head_sha ? sha : '0'.repeat(40),
+      };
+      if (activeRunStatus === 'in_progress') return ownerHistory(rawRequest, review);
+      return ownerHistory();
+    }});
+    assert.equal(result.dispatch, exact);
+  }
 });
 
 test('An owner can fall back only after a conclusively skipped automatic dispatch', () => {
