@@ -133,6 +133,7 @@ const currentGridRoute = process.argv.includes('--current-grid-prewrite-plan');
 const inactivityOffRoute=process.argv.includes('--account-erasure-plan');
 const receiptRoute=process.argv.includes('--account-native-receipt-plan');
 const scalarWalkRoute=process.argv.includes('--checkpoint-scalar-walk-plan');
+const permittedMigration = scalarWalkRoute ? CHECKPOINT_SCALAR_WALK_MIGRATION : latest;
 if(scalarWalkRoute){
   assert.equal(process.argv.length,9);
   assert.deepEqual([process.argv[2],process.argv[3],process.argv[5],process.argv[7]],
@@ -221,7 +222,7 @@ assert.ok(
     || (receiptRoute?plan.pendingVersions.length===1&&plan.pendingVersions[0]==='20261122200000'
       :inactivityOffRoute?plan.pendingVersions.length<=selectedOffMigrations.length
       &&plan.pendingVersions.every(version=>selectedOffMigrations.some(row=>row.version===version))
-      :plan.pendingVersions.length===1&&plan.pendingVersions[0]===latest.version),
+      :plan.pendingVersions.length===1&&plan.pendingVersions[0]===permittedMigration.version),
   'Code-only deployment may apply only the exact latest required integrated migration',
 );
 if (currentGridRoute || plan.pendingVersions.includes(CURRENT_GRID_MIGRATION.version)) {
@@ -242,6 +243,6 @@ if(receiptRoute)console.log(JSON.stringify({kind:'ACCOUNT_NATIVE_RECEIPT_FINITE_
 else console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'
-    : `Code-only migration dry-run contains exactly ${inactivityOffRoute?selectedOffMigrations.filter(row=>plan.pendingVersions.includes(row.version)).map(row=>row.filename).join(', '):latest.filename}.`,
+    : `Code-only migration dry-run contains exactly ${inactivityOffRoute?selectedOffMigrations.filter(row=>plan.pendingVersions.includes(row.version)).map(row=>row.filename).join(', '):permittedMigration.filename}.`,
 );
 }
