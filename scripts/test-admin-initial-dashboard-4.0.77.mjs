@@ -60,7 +60,7 @@ function normalCaller({coastlineRead=null,initialPublicReject=true}={}){
  const context={document,content,renderCoastlineEditor:(_content,config)=>{editorMounts++;editorConfig=config;content.innerHTML='synthetic-editor';},guard:()=>true,console:{error(){},warn(){}},Promise,Error,Date,JSON,Boolean,Object,Array,
   VERSION:'4.0.593',DIRECTION_REVIEW_KEY:'test-directions',COASTLINE_DRAFT_KEY:'test-coastline',WATER_ROUTING_KEY:'test-water',
   verifiedPublicRuntimePromise:null,
-  authIdentityEpoch:()=>epoch,currentSession:()=>({access_token:'synthetic-only',user:{id:owner}}),authEnabled:()=>true,
+  authIdentityEpoch:()=>epoch,currentSession:()=>({access_token:'synthetic-only',user:{id:owner}}),authEnabled:()=>true,centralAdminStorageEnabled:()=>true,
   requireFreshSession:async()=>{},myAccess:async()=>({profile:{id:owner,is_active:true,role:'owner'},permissions:new Set()}),
   hasPermission:access=>access?.profile?.is_active===true&&access.profile.role==='owner',
   testConnection:()=>connectionRead.promise,adminStorageHealth:()=>storageRead.promise,
@@ -70,7 +70,7 @@ function normalCaller({coastlineRead=null,initialPublicReject=true}={}){
   loadZones:async()=>zones,
   loadZoneRegistry:async()=>({all:[{},{}],active:[{},{}],legacy:[],collection:{features:[{},{}]},counts:{registered:2,active:2,legacy:0}}),
   loadAdminDocument:async(key,fallback,options)=>{const payload=key==='coastline-overrides'&&coastlineRead?await coastlineRead():key==='weather-health'?{status:'good'}:fallback;return options?.includeSource?{payload,source:'fallback'}:payload;},
-  readAdminDocumentNow:async key=>{assert.equal(key,'coastline-overrides');return {payload:coastlineRead?await coastlineRead():{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}}};},
+  readAdminDocumentNow:async key=>{if(key==='coastal-point-staging-status')return null;assert.equal(key,'coastline-overrides');return {payload:coastlineRead?await coastlineRead():{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}}};},
   getJson:async()=>({schemaVersion:1,zones:{}}),decodeRuntimeDiagnosticsEnvelope:async()=>null,
   directionReviews:()=>({}),setLocalJsonSafely:()=>true,
   localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)},
@@ -456,6 +456,7 @@ const serviceWorker=fs.readFileSync('service-worker.js','utf8');
 const cacheSource=html.match(/src="(js\/ui\/admin-dashboard\.js\?[^"]+)"/)?.[1];
 assert.ok(cacheSource?.endsWith('&probe=owner-notice-20261109&visits=scope-20261108'));
 assert.equal(new URL(cacheSource,'https://synthetic.invalid/').searchParams.get('ui'),'admin-read-surfaces-20261112');
+assert.equal(new URL(cacheSource,'https://synthetic.invalid/').searchParams.get('points'),'visible-status-20261126');
 assert.ok(serviceWorker.includes('./'+cacheSource.replace('v='+pkg.version,'v=${APP_VERSION}')
   .replace('map=plain-map-v3-20261104','map=${COMPACT_MAP}')));
 assert.match(serviceWorker,/const CACHE = [^\n]*-owner-notice-20261109/);
@@ -722,8 +723,9 @@ async function directionLateBootstrap({leave=false,changeIdentity=false}={}){
  const features=[{properties:{id:'one',name:'Synthetic one',zoneStatus:'active'}}],parts={zones:{one:[{partId:'one-1'}]}},staging={available:true,entries:[{zoneId:'one',revision:'synthetic'}]};
  x.context.loadZoneRegistry=async()=>({all:features,active:features,collection:{features},counts:{registered:1,active:1,legacy:0}});
  x.context.loadZones=async()=>({coastalParts:parts});
- const load=x.context.loadAdminDocument;
+ const load=x.context.loadAdminDocument,readNow=x.context.readAdminDocumentNow;
  x.context.loadAdminDocument=async(key,...args)=>key==='direction-reviews'?reviewRead.promise:key==='coastal-point-staging-status'?staging:load(key,...args);
+ x.context.readAdminDocumentNow=async(key,...args)=>key==='coastal-point-staging-status'?{payload:staging}:readNow(key,...args);
  for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderObservations','renderHistory','renderVisitors','renderLearning','renderUsers','renderOwnerUsers','renderHandbook','renderDocumentation','renderSystem'])
   x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
  let draft=null;
@@ -752,3 +754,62 @@ async function directionLateBootstrap({leave=false,changeIdentity=false}={}){
 }
 await directionLateBootstrap();await directionLateBootstrap({leave:true});await directionLateBootstrap({changeIdentity:true});
 console.log('OK: The existing admin-ready boundary mounts the deferred direction editor once with completed inputs and keeps later drafts, events, guide, view and identity unchanged.');
+
+// A successful protected empty-row response is not a failed read or a verified
+// empty candidate document. Use the actual store, bootstrap and editor caller.
+async function pointStagingReadStates(){
+ const editor=fs.readFileSync('js/ui/admin-direction-editor.js','utf8');
+ const approve=editor.split('\n').find(line=>line.includes("host.querySelector('#directionApprove').onclick=async()=>"));
+ assert(approve,'the normal activation handler must exist');
+ for(const mode of ['no-visible-row','stale-cache','read-denied','transport-error','invalid-response','invalid-payload','explicitly-unavailable','disabled','empty-document','ready-document']){
+  const x=normalCaller({initialPublicReject:false}),memory=new Map();let statusReads=0;
+  const ready={schemaVersion:1,available:true,entries:[{zoneId:'one',revision:'synthetic',status:'ready-for-activation'}]};
+  const payload=mode==='empty-document'?{schemaVersion:1,available:true,entries:[]}:ready;
+  const storage={get length(){return memory.size;},key:i=>[...memory.keys()][i],getItem:key=>memory.get(key)??null,setItem:(key,value)=>memory.set(key,value),removeItem:key=>memory.delete(key)};
+  const service={PUBLIC_CONFIG:{supabaseUrl:mode==='disabled'?'':'https://synthetic.invalid',supabasePublishableKey:'synthetic-only'},
+   currentSession:x.context.currentSession,requireFreshSession:async()=>{},localStorage:storage,console,
+   authorizedFetch:async url=>{
+    const key=new URL(url).searchParams.get('document_key').slice(3);
+    if(key!=='coastal-point-staging-status')return{response:{ok:true},body:[]};
+    statusReads++;
+    if(mode==='transport-error')throw Error('synthetic transport rejection');
+    if(mode==='read-denied')return{response:{ok:false,status:403},body:[]};
+    const document=mode==='invalid-payload'?{entries:null}:mode==='explicitly-unavailable'?{...ready,available:false}:payload;
+    const body=mode==='invalid-response'?{}:(mode==='no-visible-row'||mode==='stale-cache')?[]:[{payload:document}];
+    return{response:{ok:true},body};
+   },
+  };
+  runInNewContext(store.replace(/^import .*;\r?\n/gm,'').replace(/^export /gm,'')+'\nglobalThis.readNow=readAdminDocumentNow;globalThis.load=loadAdminDocument;globalThis.enabledNow=centralAdminStorageEnabled;',service);
+  // Even an old READY cache entry must not become central activation authority.
+  if(mode==='stale-cache')memory.set('ravradar-admin-document:coastal-point-staging-status',JSON.stringify(ready));
+  x.context.loadAdminDocument=service.load;x.context.readAdminDocumentNow=service.readNow;x.context.centralAdminStorageEnabled=service.enabledNow;
+  x.releaseConnections();x.releasePublic();await x.context.ops.boot();
+  const status=x.context.state.pointStagingStatus;
+  assert.equal(statusReads,mode==='disabled'?0:1,mode+': keep one normal status request');
+  let notice='',received=null;
+  const host={insertAdjacentHTML(_position,value){notice+=value;}};
+  Object.assign(x.context,{destroyPartDirectionEditor:null,createDirectionEditor(_host,options){received=options.pointStagingStatus;return()=>{};},saveDirectionReviewsNow(){assert.fail('read must not save');},saveDirectionReviews(){assert.fail('read must not save');}});
+  const mountStart=admin.indexOf('function mountAdminDirectionEditor('),mountEnd=admin.indexOf('\nfunction renderObservations(',mountStart);
+  assert(mountStart>=0&&mountEnd>mountStart);
+  runInNewContext(admin.slice(mountStart,mountEnd)+'\nglobalThis.mountStatus=mountAdminDirectionEditor;',x.context);x.context.mountStatus(host);
+  assert.equal(received,status);
+  if(mode==='empty-document'||mode==='ready-document'){
+   assert.equal(status,payload,mode+': preserve the actual central payload');assert.equal(notice,'');
+  }else{
+   assert.equal(status.available,false);assert.equal(status.entries.length,0);
+   assert.equal(status.readState,(mode==='no-visible-row'||mode==='stale-cache')?'no-visible-row':mode==='invalid-payload'?'invalid-payload':'read-unavailable');
+   assert(notice.includes('Aktivering af en punktændring kræver en bekræftet kandidatstatus'));
+   if(mode==='no-visible-row'||mode==='stale-cache'){assert(notice.includes('Ingen synlig kandidatstatus'));assert(notice.includes('Databasen svarede uden at vise en kandidatstatus'));assert(!notice.includes('kunne ikke hentes'));}
+   else if(mode==='invalid-payload')assert(notice.includes('Formatet på kandidatstatus kunne ikke bekræftes'));
+   else assert(notice.includes('Den beskyttede valideringsstatus kunne ikke hentes'));
+  }
+  // Execute the unchanged normal action, rather than copying its READY rule.
+  const controls={'#directionApprove':{disabled:false},'#directionNote':{value:''},'#directionStatus':{textContent:''}};
+  const action={host:{querySelector:key=>controls[key]},pointStagingStatus:status,reviews:{one:{stagedChange:{revision:'synthetic',status:'awaiting-validation'}}},selectedZoneId:'one',nextRevision:()=>assert.fail('existing revision must survive'),snapshot:()=>({}),saveNow:async()=>{},drawList(){},alert(){},updateApproval(){assert.fail('normal synthetic save must succeed');},Date};
+  runInNewContext(approve,action);await controls['#directionApprove'].onclick();
+  assert.equal(action.reviews.one.stagedChange.status,mode==='ready-document'?'activation-requested':'awaiting-validation',mode+': only actual matching READY may request activation');
+  assert.equal(action.reviews.one.stagedChange.activationRequestedAt===null,mode!=='ready-document');
+ }
+}
+await pointStagingReadStates();
+console.log('OK: The normal protected staging read distinguishes no visible row, failed/invalid reads and a real empty document; only a fresh matching READY permits activation.');

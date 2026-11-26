@@ -104,6 +104,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   adminUI:[
     'node scripts/test-admin-initial-dashboard-4.0.77.mjs',
+    'node scripts/test-admin-direction-audit.mjs',
     'node scripts/test-admin-active-ravscore-runtime.mjs',
     'node scripts/test-admin-config-production-contract-4.0.94.mjs',
     'node scripts/test-private-visitor-statistics-4.0.215.mjs',
@@ -147,6 +148,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   mailOwnerProbe:[
     'node --test scripts/test-owner-notice-probe-ci.mjs',
   ],
+  dmiWaveHistory:['node scripts/test-dmi-wave-history-source.mjs'],
   dmiBudget:[
     'node scripts/test-dmi-budget-rotation-4.0.189.mjs',
   ],
@@ -292,7 +294,10 @@ const PATH_AREAS=freeze({
   ],
   accountSchemaFixture:[ACCOUNT_SCHEMA_FIXTURE],
   accountTripUI:[
+    'js/services/trip-evidence-controller.js',
+    'js/services/trip-evidence-runtime.js',
     'js/ui/account-panel.js',
+    'js/ui/trip-evidence-dialog.js',
     'scripts/test-user-account-trip-log-4.0.264.mjs',
     'scripts/test-trip-evidence-upload-receipt.mjs',
   ],
@@ -322,6 +327,7 @@ const PATH_AREAS=freeze({
     'admin.html','js/ui/admin-dashboard.js',
     'js/services/admin-document-store.js','js/services/visitor-report-service.js',
     'scripts/test-admin-initial-dashboard-4.0.77.mjs',
+    'scripts/test-admin-direction-audit.mjs',
     'scripts/test-admin-active-ravscore-runtime.mjs',
     'scripts/test-admin-config-production-contract-4.0.94.mjs',
     'scripts/test-private-visitor-statistics-4.0.215.mjs',
@@ -436,6 +442,7 @@ const PATH_AREAS=freeze({
     'scripts/fixtures/owner-notice-probe/reservation.mjs',
     'scripts/fixtures/owner-notice-probe/hosted-owner-adapter-v1/hosted-owner-notice-probe.mjs',
   ],
+  dmiWaveHistory:['scripts/lib/dmi_wave_history_bootstrap.py','scripts/test_dmi_wave_history_bootstrap.py','scripts/test-dmi-wave-history-source.mjs'],
   dmiBudget:[
     'scripts/plan-dmi-recovery.py','scripts/lib/dmi_adaptive_recovery.py',
     'scripts/run-dmi-bulk-supervised.py','scripts/update-dmi-bulk.py',
@@ -443,9 +450,11 @@ const PATH_AREAS=freeze({
   ],
   weatherScalarPlanning:[
     'scripts/lib/weather-component-runtime.mjs',
+    'scripts/lib/copernicus_weather_component_bank.py',
     'scripts/test-weather-component-normal-wireup.mjs',
     'scripts/test-weather-component-runtime.mjs',
     'scripts/test-copernicus-component-index.mjs',
+    'scripts/test-copernicus-component-cursor.py',
   ],
   sharing:[
     SHARE_ZONE_BUNDLE_MODULE,'js/services/data-service.js','js/services/forecast-share-trust-index.js',

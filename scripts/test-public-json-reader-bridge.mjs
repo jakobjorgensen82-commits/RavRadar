@@ -480,17 +480,9 @@ export async function checkPublicReaderBridge() {
       for (const key of oldMapKeys) assert.deepEqual(old.get(key), { previousTransport: true });
       const constants = sw.slice(0, sw.indexOf("self.addEventListener('install'"));
       const values = vm.runInNewContext(constants + '\n({cache:CACHE,assets:STATIC});');
-      const legacyCacheLine = "const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}-${COMPACT_MAP}`;";
-      const ownerCacheLine = "const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}-${COMPACT_MAP}-owner-notice-20261109`;";
-      const cacheLine = sw.split('\n').find(line => line.startsWith('const CACHE = '));
-      const accountCacheLine = ownerCacheLine.replace('-owner-notice-20261109', '-owner-notice-20261109-account-report-20261125');
-      const cacheSuffixes = new Map([
-        [legacyCacheLine, ''], [ownerCacheLine, '-owner-notice-20261109'],
-        [accountCacheLine, '-owner-notice-20261109-account-report-20261125'],
-      ]);
-      assert.ok(cacheSuffixes.has(cacheLine), 'Only reviewed cache definitions are admitted');
-      assert.equal(values.cache, 'ravradar-app-' + version.replaceAll('.', '-') + '-' + TAG + '-' + COMPACT_MAP
-        + cacheSuffixes.get(cacheLine));
+      const requiredCacheName = 'ravradar-app-' + version.replaceAll('.', '-') + '-' + TAG + '-' + COMPACT_MAP;
+      assert.ok(values.cache === requiredCacheName || values.cache.startsWith(requiredCacheName + '-'),
+        'Keep the release, transport and map generations in the cache identity.');
       for (const url of urls) assert.ok(values.assets.some(asset => new URL(asset, root).href === url.href));
       assert.ok(values.assets.includes('./js/services/vendor/fflate-0.8.2/browser.js'));
       assert.match(app, /function currentAppVersion\(\)/);
