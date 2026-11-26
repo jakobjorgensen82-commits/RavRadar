@@ -96,6 +96,50 @@ def catalog_item(collection, offset):
 
 
 class FirstTurnMarineCatalogueTests(unittest.TestCase):
+    def test_scoped_grib_deadline_preserves_previous_outputs(self):
+        for validator_enters_cutoff in (False, True):
+            with self.subTest(validator_enters_cutoff=validator_enters_cutoff):
+                result = {"zones": {ZONE["id"]: {"hourly": {VALID: {"time": VALID}}}}}
+                private = copy.deepcopy(result)
+                diagnostics = {"previous": True}
+                shadow = {}
+                outcomes = {"previous": True}
+                before = copy.deepcopy((result, private, diagnostics, shadow, outcomes))
+                reader = types.SimpleNamespace(check=Mock(), remember_commit=Mock(), commits=[], failure_flushes=[])
+                failure_flush = Mock()
+                tick = [399.0 if validator_enters_cutoff else 400.0]
+
+                def parse(_path, _collection, _run, _time, _zones, staged, observed,
+                          staged_shadow, staged_private, staged_outcomes, *, work_deadline, _owned_read,
+                          **_kwargs):
+                    self.assertEqual(work_deadline, 400.0)
+                    self.assertIs(_owned_read, reader)
+                    staged["candidate"] = True
+                    observed["candidate"] = True
+                    staged_shadow["candidate"] = True
+                    staged_private["candidate"] = True
+                    staged_outcomes["candidate"] = True
+                    return {"synthetic-field"}, {ZONE["id"]}, False, 1, 1
+
+                def validate(*_args):
+                    tick[0] = 400.0
+                    return True
+
+                with (
+                    patch.object(producer, "_grib_read_scope", return_value=nullcontext(reader)),
+                    patch.object(producer, "process_grib", side_effect=parse),
+                    patch.object(producer.time, "monotonic", side_effect=lambda: tick[0]),
+                ):
+                    outcome = producer.process_grib_transactionally(
+                        Path("synthetic.grib"), "dkss_nsbs", RUN, VALID, [ZONE],
+                        result, diagnostics, shadow, private, outcomes, work_deadline=400.0,
+                        stage_validator=validate, failure_flush=failure_flush,
+                    )
+
+                self.assertEqual(outcome, (set(), set(), True, 0, 0))
+                self.assertEqual((result, private, diagnostics, shadow, outcomes), before)
+                self.assertEqual(reader.failure_flushes, [failure_flush])
+
     def test_actual_first_turn_catalogue_preserves_existing_work_and_proofs(self):
         # Actual 249 acquisition timing; all data and item identities here are
         # synthetic. Replay the unmodified main turn/ledger call, no HTTP or GRIB.

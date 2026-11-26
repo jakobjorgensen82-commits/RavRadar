@@ -811,33 +811,6 @@ class TransactionalAssetTests(unittest.TestCase):
         self.assertEqual((result, private, diagnostics, shadow, outcomes), before)
         failure_flush.assert_called_once_with()
 
-    def test_scoped_deadline_rolls_back_a_completed_parser_before_commit(self) -> None:
-        result, private, diagnostics, shadow, outcomes = durable_documents()
-        before = copy.deepcopy((result, private, diagnostics, shadow, outcomes))
-        reader = types.SimpleNamespace(check=Mock(), remember_commit=Mock(), commits=[], failure_flushes=[])
-        failure_flush = Mock()
-
-        def finish_at_cutoff(*args, work_deadline, _owned_read, **kwargs):
-            self.assertEqual(work_deadline, 400.0)
-            self.assertIs(_owned_read, reader)
-            return mutate_stages(*args, **kwargs)
-
-        with (
-            patch.object(producer, "_grib_read_scope") as scope,
-            patch.object(producer, "process_grib", side_effect=finish_at_cutoff),
-            patch.object(producer.time, "monotonic", return_value=400.0),
-        ):
-            scope.return_value.__enter__.return_value = reader
-            outcome = producer.process_grib_transactionally(
-                Path("synthetic.grib"), COLLECTION, MODEL_RUN, FIRST_TIME,
-                zones(), result, diagnostics, shadow, private, outcomes,
-                work_deadline=400.0, failure_flush=failure_flush,
-            )
-
-        self.assertEqual(outcome, (set(), set(), True, 0, 0))
-        self.assertEqual((result, private, diagnostics, shadow, outcomes), before)
-        self.assertEqual(reader.failure_flushes, [failure_flush])
-
     def test_interrupted_asset_rolls_back_every_staged_surface(self) -> None:
         self.run_failed_asset("interrupted")
 
