@@ -88,6 +88,7 @@ export const ASSISTANT_AFTER599_COMMANDS=Object.freeze(['node scripts/test-prote
 export const ASSISTANT_AFTER599_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER599_COMMANDS.join('\n')+'\n';
 export const ASSISTANT_AFTER601_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER601_POSTGRES_PHASE_V1';
 export const ASSISTANT_AFTER601_EXECUTED_V2_KIND='RAVRADAR_ASSISTANT_AFTER601_POSTGRES_EXECUTED_V2';
+export const ASSISTANT_AFTER601_REUSE_V2_KIND='RAVRADAR_ASSISTANT_AFTER601_POSTGRES_REUSE_V2';
 export const ASSISTANT_AFTER601_PHASE=INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.sourcePhase;
 const AFTER601_RESULT='ASSISTANT_AFTER601_SUCCESSOR';
 export const ASSISTANT_AFTER601_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after601-successor']);
@@ -2423,13 +2424,34 @@ export async function executeAssistantAfter598Native(){
 // upload survives a later national-only failure; a newer relevant negative does not.
 export async function decideAssistantAfter599Reuse(options){
   requireAssistantAfter599Output(); // FIRST: an unissued family never reads options.
+  if(arguments.length>1)return null;
+  return decideAssistantNativeReuse(options,false);
+}
+export async function decideAssistantAfter601Reuse(options){
+  assert.equal(ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
+  ACTIVE.requireOutput(); // FIRST: no origin access for an unissued family.
+  assert(arguments.length<=1);
+  return decideAssistantNativeReuse(options,true);
+}
+// Two existing issued families share the same bounded live-origin/history walk.
+// The fixed adapter never accepts caller-supplied phase, command or validator.
+async function decideAssistantNativeReuse(options,after601){
   let refusalStage='CURRENT_INPUT', onRefusal;
   try{
-    assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+    options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert(Object.keys(options).every(key=>['env','get','readGit','getRuntime','getInput','decode','onRefusal'].includes(key)));
     assert(options.onRefusal===undefined||typeof options.onRefusal==='function');
     onRefusal=options.onRefusal;
-    let {env=process.env,get,getRuntime=assistantPublic591Runtime,getInput=captureAssistantAfter599PgInput,decode=decodeCurrent586Artifact}=options;
+    let {env=process.env,get,getRuntime=assistantPublic591Runtime,
+      getInput=after601?captureAssistantAfter601PgInput:captureAssistantAfter599PgInput,decode=decodeCurrent586Artifact}=options;
+    const verifyInput=after601?verifyAssistantAfter601PgInput:verifyAssistantAfter599PgInput;
+    const originalKind=after601?ASSISTANT_AFTER601_EXECUTED_V2_KIND:ASSISTANT_AFTER599_PHASE_KIND;
+    const reuseKind=after601?ASSISTANT_AFTER601_REUSE_V2_KIND:ASSISTANT_AFTER599_REUSE_KIND;
+    const receiptGit=(args,options)=>{
+      const input=options?.input;
+      const raw=input&&readGit[after599GitBatch]?readGit[after599GitBatch](args,input,options.timeout):readGit(args,input);
+      return Buffer.isBuffer(raw)?raw:Buffer.from(raw);
+    };
     const deadline=performance.now()+60000,readGit=after599BoundedGit(options.readGit??git,deadline);
     get??=installed593Original591Reader({env});
     const transport=get;get=async(...args)=>{assert(performance.now()<deadline,'AFTER599_PG_REUSE_TIME_BOUND');const value=await transport(...args);assert(performance.now()<deadline,'AFTER599_PG_REUSE_TIME_BOUND');return value;};
@@ -2446,7 +2468,7 @@ export async function decideAssistantAfter599Reuse(options){
     assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
     assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
     assert(typeof current.branch==='string'&&current.branch.length>0);
-    const nativeInput=verifyAssistantAfter599PgInput(await getInput({readGit}));
+    const nativeInput=verifyInput(await getInput({readGit}));
     refusalStage='CURRENT_RUNTIME';
     const runtime=verifyAssistantPublic591Runtime(await getRuntime());
     refusalStage='CURRENT_RUN';
@@ -2577,7 +2599,11 @@ export async function decideAssistantAfter599Reuse(options){
       assert.equal(proof.kind,receipt.kind);assert.equal(proof.schemaVersion,receipt.schemaVersion);
       assert.equal(receipt.current.head,run.head_sha);assert.equal(receipt.current.run,run.id);assert.equal(receipt.current.attempt,1);
       assert.equal(receipt.current.branch,run.head_branch);await originPr(run,receipt.current.pullRequest);
-      await verifyAssistantAfter599PhaseReceipt(receipt,receipt.current,{readGit});
+      if(after601){
+        if(receipt.kind===reuseKind)await verifyAssistantAfter601ReuseV2Receipt(receipt,receipt.current,receiptGit);
+        else await verifyAssistantAfter601ExecutedV2Receipt(receipt,receipt.current,receiptGit);
+        sameAfter601Producer(readGit,run.head_sha,head);
+      }else await verifyAssistantAfter599PhaseReceipt(receipt,receipt.current,{readGit});
       return {run,phase,metadata,proof};
     };
     let original=null;
@@ -2592,7 +2618,7 @@ export async function decideAssistantAfter599Reuse(options){
       if (await provedCurrentSkip(row,jobFor(row,jobs))) continue;
       refusalStage='ORIGIN_RECEIPT';
       let candidate=await load(row,jobs);
-      const locator=candidate.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND
+      const locator=candidate.proof.nativePostgres.kind===reuseKind
         ?candidate.proof.nativePostgres.origin:null;
       if (locator) {
         candidate=await load({id:locator.run,head_sha:locator.head});
@@ -2600,10 +2626,10 @@ export async function decideAssistantAfter599Reuse(options){
         assert.equal(candidate.metadata.digest,locator.artifactDigest);assert.equal(candidate.proof.sourceTreeSha256,locator.sourceTreeSha256);
       }
       const prior=candidate.proof.nativePostgres;
-      assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
+      assert.equal(prior.kind,originalKind);assert.equal(prior.schemaVersion,after601?2:1);
       assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
       assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
-      verifyAssistantAfter599PgInput(nativeInput,await inputFor(candidate.run));
+      verifyInput(nativeInput,await inputFor(candidate.run));
       if (!isDeepStrictEqual(runtime,prior.runtime)) {
         // A verified actual success on another runner does not provide this run's evidence.
         // Search the same bounded history for an exactly matching original.
@@ -2640,7 +2666,7 @@ export async function decideAssistantAfter599Reuse(options){
         const workflowBlob=ref=>String(readGit(['rev-parse',ref+':'+WORKFLOW])).trim();
         assert.equal(workflowBlob(row.head_sha),workflowBlob(head),'Same actual workflow required for an active tail');
         const overlap=await load(row,jobs,true);
-        assert.equal(overlap.proof.nativePostgres.kind,ASSISTANT_AFTER599_PHASE_KIND);
+        assert.equal(overlap.proof.nativePostgres.kind,originalKind);
         assert.deepEqual(overlap.proof.nativePostgres.runtime,runtime);
         const fresh=await get(base+'/runs/'+row.id);
         for(const key of ['id','head_sha','head_branch','run_attempt','status','conclusion'])assert.equal(fresh[key],overlap.run[key]);
@@ -2655,7 +2681,7 @@ export async function decideAssistantAfter599Reuse(options){
     }
     // Fresh identity and independent origin metadata after the history walk.
     refusalStage='FINAL_REOBSERVATION';
-    verifyAssistantAfter599PgInput(nativeInput,await getInput({readGit}));
+    verifyInput(nativeInput,await getInput({readGit}));
     verifyAssistantPublic591Runtime(runtime,await getRuntime());checkout();
     const finalRun=await get(base+'/runs/'+original.run.id);assert.deepEqual(finalRun,original.run);
     const finalJobs=await get(base+'/runs/'+original.run.id+'/attempts/1/jobs?per_page=100');
@@ -2663,6 +2689,12 @@ export async function decideAssistantAfter599Reuse(options){
     assert.deepEqual(await get(base+'/artifacts/'+original.metadata.id),original.metadata);
     await originPr(finalRun,prior.current.pullRequest);
     verifyCurrentPullRequest(await get(repo+'/pulls/'+current.pullRequest),running,current.pullRequest);
+    const origin={run:original.run.id,attempt:1,head:original.run.head_sha,job:original.phase.job,artifactId:original.metadata.id,
+      artifactDigest:original.metadata.digest,sourceTreeSha256:original.proof.sourceTreeSha256};
+    if(after601){
+      sameAfter601Producer(readGit,origin.head,head);
+      return after601ReuseV2Receipt(current,runtime,prior.report,nativeInput,origin);
+    }
     const identity=await assistantAfter599PhaseIdentity(),{shape,migrationInventory,ledgerFixture,...issued}=identity;
     return {schemaVersion:2,kind:ASSISTANT_AFTER599_REUSE_KIND,phase:AFTER599_RESULT,sourcePhase:ASSISTANT_AFTER599_PHASE,
       ...issued,current,commands:ASSISTANT_AFTER599_COMMANDS,status:'REUSED',executedInThisRun:false,
@@ -2798,7 +2830,55 @@ export async function verifyAssistantAfter601ExecutedV2Receipt(native,current,re
   return native;
 }
 
+// Input identity is complete, not a boolean permission or a source-head key.
+export function verifyAssistantAfter601PgInput(value,prior=value){
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.requireOutput();
+  assert.deepEqual(value,prior,'Actual SQL/native/model/frozen inputs changed');
+  assert.deepEqual(Object.keys(value).sort(),['schemaVersion','kind','files','sqlFiles','complete','inputSha256','packageScopes','frozenGitTrees'].sort());
+  assert.equal(value.schemaVersion,1);assert.equal(value.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
+  assert.equal(value.complete,true);assert.equal(value.sqlFiles,81);
+  assert(Number.isSafeInteger(value.files)&&value.files>0&&value.files<=512);assert.match(value.inputSha256,hashPattern);
+  assert(Array.isArray(value.packageScopes)&&value.packageScopes.length>0&&value.packageScopes.length<=128);
+  assert(Array.isArray(value.frozenGitTrees)&&value.frozenGitTrees.length>0&&value.frozenGitTrees.length<=64);
+  return value;
+}
+function sameAfter601Producer(readGit,originHead,currentHead){
+  const file='scripts/native-postgres-evidence.mjs';
+  const read=ref=>{
+    const row=String(readGit(['ls-tree','-z',ref,'--',file]));
+    assert.match(row,/^100(?:644|755) blob [a-f0-9]{40}\tscripts\/native-postgres-evidence\.mjs\0$/);
+    return row;
+  };
+  assert.equal(read(currentHead),read(originHead),'AFTER601_PG_PRODUCER_CHANGED');
+}
+function after601ReuseV2Receipt(current,runtime,report,nativeInput,origin){
+  return {...after601ExecutedV2Receipt(current,runtime,report,nativeInput),kind:ASSISTANT_AFTER601_REUSE_V2_KIND,
+    status:'REUSED',executedInThisRun:false,origin};
+}
+export async function verifyAssistantAfter601ReuseV2Receipt(native,current,readGit=git){
+  INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.requireOutput();
+  assert.equal(current.attempt,1);assert.equal(native?.kind,ASSISTANT_AFTER601_REUSE_V2_KIND);
+  const origin=native.origin;
+  assert.deepEqual(Object.keys(origin??{}).sort(),['run','attempt','head','job','artifactId','artifactDigest','sourceTreeSha256'].sort());
+  assert(Number.isSafeInteger(origin?.run)&&origin.run>ORIGIN.run&&origin.run<current.run);
+  assert.equal(origin.attempt,1);assert(Number.isSafeInteger(origin.job)&&origin.job>0);assert.match(origin.head,/^[a-f0-9]{40}$/);
+  assert(Number.isSafeInteger(origin.artifactId)&&origin.artifactId>0);assert.match(origin.artifactDigest,/^sha256:[a-f0-9]{64}$/);
+  assert.match(origin.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  let read=git;
+  if(readGit!==git){read=args=>readGit(args);read[after599GitBatch]=(args,input,timeout)=>readGit(args,{input,timeout});}
+  sameAfter601Producer(read,origin.head,current.head);
+  const expectedInput=await captureAssistantNativePgInput({ref:current.head,readGit:read,physical:false},true);
+  const originalInput=await captureAssistantNativePgInput({ref:origin.head,readGit:read,physical:false},true);
+  verifyAssistantAfter601PgInput(expectedInput,originalInput);
+  assert.deepEqual(native,after601ReuseV2Receipt(current,native.runtime,native.report,expectedInput,origin));
+  return native;
+}
+
 async function executeAssistantAfter601Native(){
+  const reused=await decideAssistantAfter601Reuse({
+    onRefusal:reason=>console.log('AFTER601_PG_REUSE_NOT_ESTABLISHED '+reason),
+  });
+  if(reused){await record(reused);return;}
   assert.equal(ACTIVE,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
   ACTIVE.requireOutput();
   const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;
@@ -2852,7 +2932,8 @@ async function record(receipt) {
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER601_PHASE){
-    if(receipt.kind===ASSISTANT_AFTER601_EXECUTED_V2_KIND)await verifyAssistantAfter601ExecutedV2Receipt(receipt,current);
+    if(receipt.kind===ASSISTANT_AFTER601_REUSE_V2_KIND)await verifyAssistantAfter601ReuseV2Receipt(receipt,current);
+    else if(receipt.kind===ASSISTANT_AFTER601_EXECUTED_V2_KIND)await verifyAssistantAfter601ExecutedV2Receipt(receipt,current);
     else verifyAssistantAfter601PhaseReceipt(receipt,current);
   }
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE){
