@@ -1,3 +1,11 @@
+## 26. november — nye DKSS-filer efter den første tur
+
+I #402 var vandstanden dækket i samtlige 114 fælles prognosetimer. Fire nytilkomne timer manglede vandstand. De 12 relevante DMI-filer kom, efter at samlingerne var slået op, og inden DMI-processen sluttede. De efterfølgende ture brugte fortsat den første filoversigt.
+
+Den sene vandstandsrunde kan genlæse et komplet nyere DKSS-katalog for dokumenterede værdihuller yderst i den offentlige prognose. Den læser vandstand og det tilhørende kildebevis med den almindelige GRIB-læser. Den lader den valgte strømoversigt og tidligere rækker stå. De nye originaler bruger den ledige plads under det eksisterende filloft, de fælles bytegrænser og den almindelige tidsfrist. De to pladser til valgfri opdatering er separate. Ved ukendt katalogstørrelse gælder den eksisterende kontrol af den faktiske længde og RAW-plads før læsning.
+
+En fokuseret lokal prøve udfylder fire timer for både en kystdel og en vandstandskilde. Prøven omfatter forkert originalbevis, defekt fil med afsluttet oprydning, uafklaret fysisk læsning og budgetafslag. Den næste almindelige kørsel skal vise, hvilke filer der kan nås i den resterende tid. DMI’s katalog og vores tal viser tilgængeligheden i #402, mens den faktiske ydelse for den nye læser endnu er ukendt. [Kørsel #402](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45782337031)
+
 ## 22. november — H0 og H1 kan få støtte uden et kvalificeret H2-par
 
 En lokal prøve gennem den normale DMI-planlægger viste, at manglende støtte til H2 kunne holde H3 tilbage, selv om både H0 og H3 havde kvalificeret vandstandsarbejde i samme direkte DKSS-serie. Med rettelsen rykker H3 fra plads 71 til 4 i prøven. H1/H4 kan også vurderes selvstændigt. De øvrige aktivers indbyrdes rækkefølge og forrangen for stærkere selvstændige behov bevares. De eksisterende tidsgrænser og krav til kilde, modelkørsel og grid gælder fortsat.
