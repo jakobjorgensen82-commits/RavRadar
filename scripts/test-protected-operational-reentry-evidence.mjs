@@ -1101,7 +1101,7 @@ test('closed ordinary phase retires only its authenticated unchanged-model defau
 
 
 // Real normal clients and SigV4 slot transport; only the HTTP boundary is synthetic.
-function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRow=null}={}) {
+function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRow=null,isolatedRestoreTarget=null}={}) {
   const primary=primaryMap,slots=new Map(),events=[],unexpected=[],statuses=[],pending=[];
   let row=initialRow,primaryFailure=null,primaryBucketRead=null,r2Failure=false,nextPut=null,lateCas=null,nextCas=null,pointerHang=false,bucketHang=false,foreignBytes=0;
   const bucket=policy.bucketId,base='https://synthetic.supabase.co';
@@ -1186,7 +1186,7 @@ function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRo
     return new Response('',{status:apply()});
   };
   const clients=createProtectedOperationalEvidenceClients({supabaseUrl:base,serviceRoleKey:'synthetic-service-secret-only',fetchImpl,
-    operationMs,onReplicaStatus:status=>statuses.push(status),slotsFactory:(fetchBound,delayImpl)=>createOperationalEvidenceR2Slots({
+    operationMs,isolatedRestoreTarget,onReplicaStatus:status=>statuses.push(status),slotsFactory:(fetchBound,delayImpl)=>createOperationalEvidenceR2Slots({
       accountId:'a'.repeat(32),accessKeyId:'synthetic-id',secretAccessKey:'synthetic-secret',bucketId:bucket,fetchImpl:fetchBound,delayImpl})});
   return {clients,primary,slots,events,statuses,decode,rawFetch:fetchImpl,setForeignBytes:value=>{foreignBytes=value;},hangBucket:value=>{bucketHang=value;},hangReplicaPointer:value=>{pointerHang=value;},row:()=>clone(row),setRow:value=>{row=clone(value);},
     failPrimary:value=>{primaryFailure=value;},setPrimaryBucketRead:value=>{primaryBucketRead=value;},
@@ -1202,6 +1202,33 @@ async function slotPublication(work,t,id,{retain=null}={}) {
     request:t.clients.documentRequest,storage:t.clients.storage,...(retain?{retainDeploymentId:'pages-'+retain+'-1',requireRetained:true}:{})});
   return {directory,built,result};
 }
+test('ordinary R2 readback verifies isolated files without additional remote work',async()=>{
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-r2-isolated-restore-'));
+  try{
+    const runnerTemp=path.join(work,'runner');
+    await fs.mkdir(runnerTemp,{mode:0o700});
+    const id=8100, deploymentId='pages-8100-1', sourceHead='b'.repeat(40);
+    const normal=slotTransportFixture();
+    const baseline=await slotPublication(work,normal,id);
+    for(const [directory,status] of [
+      [runnerTemp,'OPERATIONAL_REPLICA_ISOLATED_RESTORE_VERIFIED'],
+      [path.join(work,'missing'),'OPERATIONAL_REPLICA_ISOLATED_RESTORE_NOT_VERIFIED'],
+    ]){
+      const t=slotTransportFixture({isolatedRestoreTarget:{directory,deploymentId,sourceHead}});
+      const candidate=await slotPublication(work,t,id);
+      const {isolatedRestore,...replica}=candidate.result.replica;
+      assert.equal(candidate.result.published,true);
+      assert.deepEqual(replica,baseline.result.replica);
+      assert.deepEqual(t.events,normal.events);
+      assert.deepEqual(isolatedRestore,directory===runnerTemp?{
+        status,deploymentId,sourceHead,publicManifestSha256:candidate.built.descriptor.publicManifestSha256,
+        fileCount:(await fs.readdir(candidate.directory)).length,
+      }:{status});
+      assert.deepEqual(await fs.readdir(runnerTemp),[]);
+      t.check();
+    }
+  }finally{await fs.rm(work,{recursive:true,force:true});}
+});
 test('operational slots restore exact gzip on authenticated Storage 404 or the observed legacy missing bucket',async()=>{
   const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-read-'));
   try{

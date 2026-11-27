@@ -1,3 +1,9 @@
+## 27. november — isoleret prøve fra den ordinære R2-genlæsning
+
+Efter den normale vejrkørsels nye centrale registrering og dens eksisterende R2-genlæsning kan de allerede validerede arkivfiler gendannes i en ny privat midlertidig mappe. Filantal, navne, størrelser og SHA-256 kontrolleres, og mappen fjernes før kvitteringen. Prøven bruger den resterende tid i den eksisterende 10-sekundersramme. En lokal fejl ændrer hverken udgivelsen eller kvitteringen for selve R2-kopien. Ingen ekstra tjenestekald medfølger.
+
+Den særskilte kvittering identificerer den konkrete generation uden at udskrive filindhold. En positiv kvittering beviser isoleret gendannelse fra R2. Det automatiske skift ved faktisk fravær i Supabase kræver sin egen observation gennem den normale genoptagelse. Kildekvalifikation og en sådan faktisk gendannelseskvittering udestår.
+
 ## Afgrænset forklaring af arkivets rettighedsafslag
 
 Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejllæser projicere en fast rettigheds- eller ejerkategori. Det kræver præcis én verbose-fejlramme og den afsluttende PostgreSQL-rutine aclcheck_error i aclchk.c samt en dokumenteret fast beskedform. Kun kendte ressourceklasser accepteres; ukendt, flertydig, flerlinjet eller ændret diagnostic giver UNAVAILABLE. Egen RAISE og andre rutiner bliver ikke gættet til en ACL-årsag.
