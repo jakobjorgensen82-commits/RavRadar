@@ -37,6 +37,13 @@ installationsforløb kontrollerer desuden den aktive Workers spærring,
 før det ændrer databasen eller udgiver Workeren og genåbner turloggen.
 Begge ændringer er afprøvet lokalt.
 
+Afstemningen kræver desuden en førmåling af de turrækker, registreringer
+og slettemarkeringer, der skal bevares. Den genlæser alle ti databaser
+efter genanvendelse af sletningerne og kræver de samme data. En lokal
+prøve stopper ved en manglende tur og ved ændrede bytes i en anden ejers
+tur. Selve gendannelsesjobbet skal stadig opbevare og verificere en
+krypteret førkopi og kunne genindsætte manglende rækker sikkert.
+
 Den eksisterende D1-installation og dennes fejlgenoptagelse læser nu den
 aktive Workers bindingsmetadata før de berørte skriveruter. Samme kontrol
 beskytter de to særskilte schemaopgraderinger. Et gendannelsesflag i den

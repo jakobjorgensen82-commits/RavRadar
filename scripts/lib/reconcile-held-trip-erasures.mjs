@@ -10,6 +10,7 @@ import { TRIP_STORAGE_REQUIRED_SHARD_NAMES } from './trip-storage-legacy-classif
 
 const pageSize = 100;
 const subjectPattern = /^usr_v1_[A-Za-z0-9_-]{43}$/;
+const digestPattern = /^[a-f0-9]{64}$/;
 const databaseIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const exactUtcPattern = /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/;
 const bookmarkValid = s => typeof s === 'string' && s.length > 0 && s.length <= 1024
@@ -30,6 +31,7 @@ export function identifyCloudflareTripRestore({ accountId, projectRef, bindings,
   const failure = () => new Error('TRIP_RESTORE_RECEIPT_UNVERIFIED');
   if (!plan || typeof plan.intentId !== 'string' || !databaseIdPattern.test(plan.intentId)
     || typeof plan.sourceSha !== 'string' || !/^[a-f0-9]{40}$/.test(plan.sourceSha)
+    || typeof plan.retainedTripRowsSha256 !== 'string' || !digestPattern.test(plan.retainedTripRowsSha256)
     || typeof plan.runId !== 'string' || !/^[1-9]\d{0,19}$/.test(plan.runId) || plan.attempt !== 1
     || !Array.isArray(plan.targets) || plan.targets.length < 1 || plan.targets.length > 10
     || !Array.isArray(replies) || replies.length !== plan.targets.length) throw failure();
@@ -80,20 +82,60 @@ export function identifyCloudflareTripRestore({ accountId, projectRef, bindings,
   return {
     restoreFrom: plan.journalCoveredFrom, captureAt: plan.captureAt,
     epoch: createHash('sha256').update(canonicalJson({
-      scope: 'ravradar-trip-d1-restore-v2', accountId, projectRef, versionId, deploymentId, bindings,
+      scope: 'ravradar-trip-d1-restore-v3', accountId, projectRef, versionId, deploymentId, bindings,
       intentId: plan.intentId, sourceSha: plan.sourceSha, runId: plan.runId, attempt: plan.attempt,
+      retainedTripRowsSha256: plan.retainedTripRowsSha256,
       heldAt: plan.heldAt, captureAt: plan.captureAt, journalCoveredFrom: plan.journalCoveredFrom, restored,
     })).digest('hex'),
   };
 }
 
+// Hash exact retained bytes in their physical shards. The trusted recovery
+// caller must capture the same view on primary databases before Time Travel.
+export async function hashRetainedTripRows(shards, erasedSubjects) {
+  const erased = new Set(erasedSubjects);
+  const hash = createHash('sha256').update('ravradar-retained-trip-rows-v1\n');
+  const tables = [
+    ['trip_observations', 'client_observation_id'],
+    ['trip_observation_registry', 'client_observation_id'],
+    ['trip_owner_erasure_tombstones', 'owner_subject'],
+  ];
+  for (const [index, shard] of shards.entries()) {
+    for (const [table, key] of tables) {
+      hash.update(canonicalJson([index, table]) + '\n');
+      let cursor = '';
+      for (;;) {
+        const bound = cursor === '' ? '>=' : '>';
+        const sql = `select * from ${table} where ${key} collate binary ${bound} ? order by ${key} collate binary limit ${pageSize}`;
+        const page = await shard.prepare(sql).bind(cursor).all();
+        const rows = page?.results;
+        if (page?.success !== true || !Array.isArray(rows) || rows.length > pageSize) {
+          throw new Error('TRIP_RESTORE_RETAINED_ROWS_UNVERIFIED');
+        }
+        for (const row of rows) {
+          const id = row?.[key];
+          if (typeof id !== 'string' || id <= cursor || /[^\x21-\x7e]/.test(id)
+            || typeof row.owner_subject !== 'string' || row.owner_subject.length < 20 || row.owner_subject.length > 96) {
+            throw new Error('TRIP_RESTORE_RETAINED_ROWS_UNVERIFIED');
+          }
+          if (!erased.has(row.owner_subject)) hash.update(canonicalJson(row) + '\n');
+          cursor = id;
+        }
+        if (rows.length < pageSize) break;
+      }
+    }
+  }
+  return hash.digest('hex');
+}
+
 // The management caller owns the production lock. It binds the epoch to the
 // live hold, restored shards and journal cutoff, and uses bound D1 queries.
 // This function never changes either runtime's hold configuration.
-export async function reconcileHeldTripErasures({ shards, epoch, readHoldEpoch, readJournalPage }) {
+export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRowsSha256, readHoldEpoch, readJournalPage }) {
   if (!Array.isArray(shards) || shards.length !== 10 || new Set(shards).size !== 10
     || shards.some(shard => typeof shard?.prepare !== 'function')
-    || typeof epoch !== 'string' || !/^[a-f0-9]{64}$/.test(epoch)
+    || typeof epoch !== 'string' || !digestPattern.test(epoch)
+    || typeof retainedTripRowsSha256 !== 'string' || !digestPattern.test(retainedTripRowsSha256)
     || typeof readHoldEpoch !== 'function' || typeof readJournalPage !== 'function') {
     throw new Error('TRIP_RESTORE_RECONCILIATION_INPUT_INVALID');
   }
@@ -129,7 +171,11 @@ export async function reconcileHeldTripErasures({ shards, epoch, readHoldEpoch, 
     }
   }
   await requireHold();
-  return { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch, owners: subjects.length, removedRows };
+  if (await hashRetainedTripRows(shards, subjects) !== retainedTripRowsSha256) {
+    throw new Error('TRIP_RESTORE_RETAINED_ROWS_MISMATCH');
+  }
+  await requireHold();
+  return { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch, owners: subjects.length, removedRows, retainedTripRowsSha256 };
 }
 
 // Bind these arguments to the verified restore receipt and live hold in the
@@ -223,7 +269,7 @@ export async function reconcileCloudflareHeldTripErasures({
   if (!serviceKey.startsWith('sb_secret_')) journalHeaders.Authorization = `Bearer ${serviceKey}`;
 
   return reconcileHeldTripErasures({
-    shards, epoch, readHoldEpoch: verifyRecoveryHoldEpoch,
+    shards, epoch, retainedTripRowsSha256: restorePlan.retainedTripRowsSha256, readHoldEpoch: verifyRecoveryHoldEpoch,
     readJournalPage: cursor => request(journalUrl, journalHeaders, {
       p_hold_id: restorePlan.intentId, p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: cursor,
     }, 'TRIP_RESTORE_JOURNAL_UNVERIFIED'),
