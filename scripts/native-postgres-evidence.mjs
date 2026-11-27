@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
+import {TRIP_ERASURE_RECOVERY_MIGRATION} from './lib/trip-erasure-recovery-native-fixture.mjs';
 import {fileURLToPath} from 'node:url';
 import {isDeepStrictEqual} from 'node:util';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
@@ -2235,12 +2236,15 @@ export async function captureAssistantAfter601PgInput(options){
 }
 
 const checkpointScalarWalkPath='supabase/migrations/'+CHECKPOINT_SCALAR_WALK_MIGRATION.filename;
-function hasCheckpointScalarWalk(readGit,head){
+const tripErasureMigrationPath='supabase/migrations/'+TRIP_ERASURE_RECOVERY_MIGRATION;
+const tripErasureFixturePath='scripts/lib/trip-erasure-recovery-native-fixture.mjs';
+function hasNativeMigration(readGit,head,file){
   assert.match(head,/^[a-f0-9]{40}$/);
-  const output=readGit(['ls-tree',head,'--',checkpointScalarWalkPath]);
+  const output=readGit(['ls-tree',head,'--',file]);
   assert(typeof output==='string'||Buffer.isBuffer(output));
   return output.toString('utf8').trim()!=='';
 }
+const hasCheckpointScalarWalk=(readGit,head)=>hasNativeMigration(readGit,head,checkpointScalarWalkPath);
 
 async function captureAssistantNativePgInput(options,after601){
   options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
@@ -2287,10 +2291,13 @@ async function captureAssistantNativePgInput(options,after601){
   const receiptSource='scripts/lib/account-native-activity-receipt-source.mjs';
   const receiptPresent=index.has(receiptSql);
   assert.equal(index.has(receiptSource),receiptPresent,'Incomplete current80 source dependency');
+  const tripErasureRecovery=after601&&index.has(tripErasureMigrationPath);
+  const tripErasureFixture=after601&&index.has(tripErasureFixturePath);
   if(after601){
     const scalarWalk=sql.includes(checkpointScalarWalkPath);
-    assert(receiptPresent&&sql.length===(scalarWalk?82:81),scalarWalk
-      ?'After601 requires the complete current82 source':'After601 requires the complete current81 source');
+    assert(!tripErasureRecovery||(scalarWalk&&tripErasureFixture),'Trip erasure recovery requires its fixture and current82 predecessor');
+    const expectedSqlFiles=(scalarWalk?82:81)+Number(tripErasureRecovery);
+    assert(receiptPresent&&sql.length===expectedSqlFiles,'After601 requires the complete current'+expectedSqlFiles+' source');
     assert(sql.includes('supabase/migrations/'+INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.migration().filename),
       'After601 migration is missing');
     if(scalarWalk){
@@ -2302,9 +2309,10 @@ async function captureAssistantNativePgInput(options,after601){
     }
   }else if(receiptPresent)assert.equal(sql.length,80,'Receipt input requires the complete current80 source');
   const modules=new Set([...profile.postgresModules,'scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs',
-    ...(receiptPresent?[receiptSource]:[])]);
+    ...(receiptPresent?[receiptSource]:[]),...(tripErasureFixture?[tripErasureFixturePath]:[])]);
   const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
   const selected=new Set([...modules,...profile.postgresData,...setup,...profile.continuation.files,profile.continuation.file,...sql]);
+  if(tripErasureRecovery)selected.add('supabase/schema.sql');
   load(Object.values(profile.models).map(definition=>definition.file));
   for(const definition of Object.values(profile.models)){
     await read(definition.file);selected.add(definition.file);
@@ -2358,7 +2366,8 @@ async function captureAssistantNativePgInput(options,after601){
   const files=[...rows.values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
   return {schemaVersion:1,kind:after601?'AFTER601_ACTUAL_PG_INPUT_V1':'AFTER599_ACTUAL_PG_INPUT_V1',
     files:files.length,sqlFiles:sql.length,
-    complete:files.every(row=>row.present!==false),inputSha256:sha(JSON.stringify(files)),packageScopes:scopes,frozenGitTrees};
+    complete:files.every(row=>row.present!==false),inputSha256:sha(JSON.stringify(files)),packageScopes:scopes,frozenGitTrees,
+    ...(tripErasureRecovery?{tripErasureRecoveryMigrationSha256:rows.get(tripErasureMigrationPath).sha256}:{})};
 }
 export function verifyAssistantAfter599PgInput(value,prior=value){
   requireAssistantAfter599Output();
@@ -2822,17 +2831,16 @@ function after601PhaseReceipt(current,runtime,report){
   };
 }
 export function verifyAssistantAfter601PhaseReceipt(native,current,readGit){
-  if(readGit)assert(!hasCheckpointScalarWalk(readGit,current.head),'Checkpoint scalar-walk requires exact native V2 execution');
+  if(readGit)assert(!hasCheckpointScalarWalk(readGit,current.head)&&!hasNativeMigration(readGit,current.head,tripErasureMigrationPath),
+    'Checkpoint scalar-walk or trip erasure recovery requires exact native V2 execution');
   assert.deepEqual(native,after601PhaseReceipt(current,native.runtime,native.report));
   return native;
 }
 
 function after601ExecutedV2Receipt(current,runtime,report,nativeInput){
-  assert.equal(nativeInput?.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
-  assert.equal(nativeInput.complete,true);
-  assert([81,82].includes(nativeInput.sqlFiles));
+  verifyAssistantAfter601PgInput(nativeInput);
   const receipt=after601PhaseReceipt(current,runtime,report);
-  if(nativeInput.sqlFiles===82){
+  if(nativeInput.sqlFiles>=82){
     const append=CHECKPOINT_SCALAR_WALK_MIGRATION;
     const scalarWalk={migrationVersion:append.version,migrationSha256:append.sha256,
       installedLedgerBeforeRows:70,installedLedgerAfterRows:71,
@@ -2841,6 +2849,15 @@ function after601ExecutedV2Receipt(current,runtime,report,nativeInput){
     assert.deepEqual(report.checkpointScalarWalk,scalarWalk,'Missing exact checkpoint scalar-walk execution proof');
     receipt.report.checkpointScalarWalk=scalarWalk;
   }else assert.equal(report.checkpointScalarWalk,undefined);
+  if(nativeInput.sqlFiles===83){
+    const tripErasureRecovery={migration:TRIP_ERASURE_RECOVERY_MIGRATION,
+      migrationSha256:nativeInput.tripErasureRecoveryMigrationSha256,
+      actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,
+      accountClaimCommitRefusesHold:true,priorTripIntentInHeldJournal:true,
+      heldTripAndAccountWritesRefused:true,sameHoldIdRequired:true,productionReleaseVerified:false};
+    assert.deepEqual(report.tripErasureRecovery,tripErasureRecovery,'Missing exact trip erasure recovery execution proof');
+    receipt.report.tripErasureRecovery=tripErasureRecovery;
+  }else assert.equal(report.tripErasureRecovery,undefined);
   return {...receipt,schemaVersion:2,kind:ASSISTANT_AFTER601_EXECUTED_V2_KIND,nativeInput};
 }
 
@@ -2867,9 +2884,14 @@ export async function verifyAssistantAfter601ExecutedV2Receipt(native,current,re
 export function verifyAssistantAfter601PgInput(value,prior=value){
   INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.requireOutput();
   assert.deepEqual(value,prior,'Actual SQL/native/model/frozen inputs changed');
-  assert.deepEqual(Object.keys(value).sort(),['schemaVersion','kind','files','sqlFiles','complete','inputSha256','packageScopes','frozenGitTrees'].sort());
+  const keys=['schemaVersion','kind','files','sqlFiles','complete','inputSha256','packageScopes','frozenGitTrees'];
+  if(value.sqlFiles===83){
+    keys.push('tripErasureRecoveryMigrationSha256');
+    assert.match(value.tripErasureRecoveryMigrationSha256,hashPattern);
+  }
+  assert.deepEqual(Object.keys(value).sort(),keys.sort());
   assert.equal(value.schemaVersion,1);assert.equal(value.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
-  assert.equal(value.complete,true);assert([81,82].includes(value.sqlFiles));
+  assert.equal(value.complete,true);assert([81,82,83].includes(value.sqlFiles));
   assert(Number.isSafeInteger(value.files)&&value.files>0&&value.files<=512);assert.match(value.inputSha256,hashPattern);
   assert(Array.isArray(value.packageScopes)&&value.packageScopes.length>0&&value.packageScopes.length<=128);
   assert(Array.isArray(value.frozenGitTrees)&&value.frozenGitTrees.length>0&&value.frozenGitTrees.length<=64);
@@ -2928,13 +2950,14 @@ async function executeAssistantAfter601Native(){
     pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
   const runtime=await assistantPublic591Runtime();
   const scalarWalk=hasCheckpointScalarWalk(git,head);
+  const tripErasureRecovery=hasNativeMigration(git,head,tripErasureMigrationPath);
   let nativeInput;
   try{
     nativeInput=await captureAssistantAfter601PgInput({ref:head});
     assert.equal(nativeInput.complete,true);
-    assert.equal(nativeInput.sqlFiles,scalarWalk?82:81);
+    assert.equal(nativeInput.sqlFiles,(scalarWalk?82:81)+Number(tripErasureRecovery));
   }catch(error){
-    if(scalarWalk)throw error;
+    if(scalarWalk||tripErasureRecovery)throw error;
     // Unknown historical source projection still requires the original SQL test.
     nativeInput=null;
     console.log('AFTER601_PG_INPUT_ATTESTATION_UNAVAILABLE');

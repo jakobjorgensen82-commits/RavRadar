@@ -1242,6 +1242,14 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       nativePhase='ASSISTANT_AFTER601_SUCCESSOR';
       const {compareAssistantAfter601Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter601Successor=await compareAssistantAfter601Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      const { TRIP_ERASURE_RECOVERY_MIGRATION } = await import('./trip-erasure-recovery-native-fixture.mjs');
+      const files = await fs.readdir(path.join(repositoryRoot, 'supabase', 'migrations'));
+      if (files.includes(TRIP_ERASURE_RECOVERY_MIGRATION)) {
+        nativePhase = 'TRIP_ERASURE_RECOVERY_FIXTURE';
+        const { exerciseAccountErasureOutbox } = await import('./account-erasure-outbox-native-fixture.mjs');
+        const tripErasureRecovery = await exerciseAccountErasureOutbox({ psql, runSql, repositoryRoot, tripRecoveryOnly: true });
+        assistantAfter601Successor = { ...assistantAfter601Successor, tripErasureRecovery };
+      }
     }
     let assistantAfter598Successor,accountErasure,accountInactivity,accountNativeReceipt;
     if(includeAssistantAfter598Successor){

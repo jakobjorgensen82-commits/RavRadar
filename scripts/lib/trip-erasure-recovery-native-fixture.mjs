@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const migration = '20261127095500_trip_owner_erasure_intents.sql';
+export const TRIP_ERASURE_RECOVERY_MIGRATION = '20261127095500_trip_owner_erasure_intents.sql';
 const hold = '70000000-0000-4000-8000-000000000001';
 const otherHold = '70000000-0000-4000-8000-000000000002';
 const operation = '30000000-0000-4000-8000-000000000061';
@@ -21,7 +22,8 @@ export async function exerciseTripErasureRecoveryHold({
   assert.equal(await pg(`select current_database()='rr_account_erasure_native_fixture'
     and current_user='rr_native_test' and inet_server_addr() is null
     and current_setting('listen_addresses')='';`), 't', 'Owned synthetic socket-only PostgreSQL required');
-  await pg(await fs.readFile(path.join(repositoryRoot, 'supabase', 'migrations', migration), 'utf8'));
+  const migrationSql = await fs.readFile(path.join(repositoryRoot, 'supabase', 'migrations', TRIP_ERASURE_RECOVERY_MIGRATION));
+  await pg(new TextDecoder('utf8', { fatal: true }).decode(migrationSql));
   await seed(61);
   await seed(62);
   assert.equal((await prepare(61)).state, 'PREPARED');
@@ -111,6 +113,8 @@ export async function exerciseTripErasureRecoveryHold({
   assert.equal(await pg(`select not exists (select from public.trip_owner_erasure_intents where owner_subject='${lateSubject}')
     and not exists (select from public.account_erasure_operations where operation_id='${otherOperation}');`), 't');
   return {
+    migration: TRIP_ERASURE_RECOVERY_MIGRATION,
+    migrationSha256: createHash('sha256').update(migrationSql).digest('hex'),
     actualPostgres: true, syntheticSqlHost: true, realGoTrue: false,
     accountClaimCommitRefusesHold: true, priorTripIntentInHeldJournal: true,
     heldTripAndAccountWritesRefused: true, sameHoldIdRequired: true,

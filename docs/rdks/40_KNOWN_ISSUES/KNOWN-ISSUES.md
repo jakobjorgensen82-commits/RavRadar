@@ -70,9 +70,10 @@ og afvisning af et andet spærrings-id. Det lokale prøvekald genbruger den
 eksisterende isolerede PostgreSQL-vært, dens Unix-sokkel og kontrollen af
 fysisk processtop. Det starter kun prøven af slettejournalerne. Prøven
 afventer udførelse på den eksisterende Linux-runner. Den nye D1-migration
-er fil 83. Det eksisterende native
-kildebevis omfatter højst 82 migrationsfiler, så D1-prøven skal have
-sit eget afgrænsede bevis før levering. Genåbningen skal bindes til den
+er fil 83. På den lokale kandidat vælger den eksisterende kildekontrol
+prøven, når den præcise migration findes. Dens kvittering binder de læste
+SQL-bytes og måler begge slettejournaler. De tidligere kvitteringer dækker
+deres oprindelige SQL. Genåbningen skal bindes til den
 verificerede afstemning, og slettehistorikken skal dække frem til de
 ældste anvendelige gendannelsespunkter.
 
