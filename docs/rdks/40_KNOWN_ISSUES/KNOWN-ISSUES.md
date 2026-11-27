@@ -66,8 +66,11 @@ dens id matcher spærringen. De nye rettigheder og adfærd er afprøvet lokalt
 i én databasesession. En målrettet prøve er klargjort til den eksisterende
 lokale PostgreSQL-prøvevært med to samtidige forbindelser. Den observerer
 de faktiske transaktionslåse og kontrollerer begge normale slettejournaler
-og afvisning af et andet spærrings-id. Den er endnu ikke kørt på native
-PostgreSQL. Den nye D1-migration er fil 83. Det eksisterende native
+og afvisning af et andet spærrings-id. Det lokale prøvekald genbruger den
+eksisterende isolerede PostgreSQL-vært, dens Unix-sokkel og kontrollen af
+fysisk processtop. Det starter kun prøven af slettejournalerne. Prøven
+afventer udførelse på den eksisterende Linux-runner. Den nye D1-migration
+er fil 83. Det eksisterende native
 kildebevis omfatter højst 82 migrationsfiler, så D1-prøven skal have
 sit eget afgrænsede bevis før levering. Genåbningen skal bindes til den
 verificerede afstemning, og slettehistorikken skal dække frem til de
