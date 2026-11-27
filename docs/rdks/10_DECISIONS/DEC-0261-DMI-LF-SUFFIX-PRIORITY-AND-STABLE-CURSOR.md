@@ -1,3 +1,9 @@
+## 27. november — temperatur fra samme sene vandstandsoriginal
+
+Efter ordinær sen vandstand kan kun kvalificerede temperaturhuller forsøges fra allerede læste IDW- og NSBS-originaler. Temperatur kræver den almindelige overflade-, gitter- og kildekontrol. Den valgfrie læser får eksisterende gitteropslag for de berørte kystdele og kan hverken hente nye filer eller starte kataloggenlæsning. Den normale temperaturvej for dkss_lf ændres ikke.
+
+Vandstanden gemmes først. Timeout i temperaturaflæsningen stopper kun den valgfrie læseproces, som skal være afsluttet, før hovedprocessen bruger dens værdier. Originalen bliver ikke sat i karantæne af temperaturarbejdet. Den almindelige vejrbehandling fortsætter med det, den allerede har.
+
 ## 26. november — nye DKSS-filer efter den første tur
 
 I #402 var vandstanden dækket i samtlige 114 fælles prognosetimer. Fire nytilkomne timer manglede vandstand. De 12 relevante DMI-filer kom, efter at samlingerne var slået op, og inden DMI-processen sluttede. De efterfølgende ture brugte fortsat den første filoversigt.
