@@ -21,7 +21,7 @@ function sleep(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
-function validHealth(response, body, preUpgrade = false) {
+function validHealth(response, body, preUpgrade, expectedRestoreHold) {
   return response?.ok === true
     && body?.ok === true
     && body?.contract_version === '4.0.311'
@@ -29,16 +29,19 @@ function validHealth(response, body, preUpgrade = false) {
     && body?.storage_schema_version === 1
     && body?.idempotency_registry_schema_version === 2
     && body?.owner_erasure_tombstone_schema_version === 1
+    && (expectedRestoreHold ? body.restore_hold === true : !Object.hasOwn(body, 'restore_hold'))
     && (body?.trip_export_version === 1 || (preUpgrade === true && !Object.hasOwn(body, 'trip_export_version')));
 }
 
 export async function waitForWorkerHealth({
   gatewayUrl,
   preUpgrade = false,
+  expectedRestoreHold = false,
   fetchImpl = fetch,
   retryDelaysMs = WORKER_HEALTH_RETRY_DELAYS_MS,
   fetchTimeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
 }) {
+  if (typeof expectedRestoreHold !== 'boolean') throw new Error('TRIP_STORAGE_WORKER_HOLD_EXPECTATION_INVALID');
   let lastResponse = null;
   let lastBody = {};
   for (const delay of retryDelaysMs) {
@@ -48,7 +51,9 @@ export async function waitForWorkerHealth({
         headers: { accept: 'application/json' },
       }, { fetchImpl, timeoutMs: fetchTimeoutMs });
       lastBody = await lastResponse.json().catch(() => ({}));
-      if (validHealth(lastResponse, lastBody, preUpgrade)) return { verified: true, response: lastResponse, body: lastBody };
+      if (validHealth(lastResponse, lastBody, preUpgrade, expectedRestoreHold)) {
+        return { verified: true, response: lastResponse, body: lastBody };
+      }
     } catch {
       lastResponse = null;
       lastBody = {};
@@ -149,12 +154,16 @@ export async function runWorkerCountReadProbe({
   gatewayUrl,
   sharedSecret = '',
   probeKind,
+  expectedRestoreHold = false,
   fetchImpl = globalThis.fetch,
   fetchTimeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
   sleepImpl = sleep,
   nowFactory = () => Date.now(),
 }) {
   assertWorkerCountProbeKind(probeKind);
+  if (typeof expectedRestoreHold !== 'boolean' || (expectedRestoreHold && probeKind !== WORKER_COUNT_SIGNED_PROBE_KIND)) {
+    throw workerCountFailure('TRIP_STORAGE_WORKER_COUNT_PROBE_KIND_INVALID', { probeKind });
+  }
   let normalizedGatewayUrl;
   try {
     normalizedGatewayUrl = normalizeCloudflareGatewayUrl(gatewayUrl);
@@ -205,6 +214,14 @@ export async function runWorkerCountReadProbe({
       throw workerCountFailure('TRIP_STORAGE_WORKER_COUNT_TRANSPORT_FAILURE', { attempts: attempt, probeKind });
     }
 
+    if (expectedRestoreHold && response.status === 503) {
+      const body = await response.json().catch(() => null);
+      if (body?.ok !== false || body?.error !== 'TRIP_RESTORE_HOLD' || Object.keys(body).length !== 2) {
+        throw workerCountFailure('TRIP_STORAGE_WORKER_COUNT_CONTRACT_MISMATCH', { attempts: attempt, status: 503, probeKind });
+      }
+      return { ok: true, attempts: attempt, status: 503, restoreHeld: true };
+    }
+
     if (WORKER_COUNT_TRANSIENT_HTTP_STATUSES.includes(response.status)) {
       const status = response.status;
       await discardWorkerCountResponse(response);
@@ -229,7 +246,7 @@ export async function runWorkerCountReadProbe({
       return { ok: true, attempts: attempt, status };
     }
 
-    if (response.status !== 200) {
+    if (expectedRestoreHold || response.status !== 200) {
       const status = response.status;
       await discardWorkerCountResponse(response);
       throw workerCountFailure('TRIP_STORAGE_WORKER_COUNT_CONTRACT_MISMATCH', {

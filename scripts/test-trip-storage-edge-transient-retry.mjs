@@ -1248,9 +1248,128 @@ repairTest('repair uses unchanged normal expiring-maintenance behavior, never cl
   const body=source.slice(start,end).replace('export function','function').replace(': TripStorageMode','');
   const now=1800000000000,deadline=now+20*60000;
   const result=await evaluate(body+'\nreturn [tripStorageMode(now),tripStorageMode(deadline)];',{
-    now,deadline,Deno:{env:{get:()=>`maintenance:${new Date(deadline).toISOString()}`}},
+    now,deadline,Deno:{env:{get:key=>key==='TRIP_STORAGE_MODE'?`maintenance:${new Date(deadline).toISOString()}`:undefined}},
     TRIP_STORAGE_MAINTENANCE_MAX_LEASE_MS:30*60000,GatewayError:class extends Error{},
   });assert.deepEqual(result,['maintenance','d1']);
+});
+repairTest('restore hold is attested by both Edge preflights and survives the repair deadline and normal mode changes',async()=>{
+  const { tripStorageMode, storeObservation, listOwnTripObservations, exportOwnTripPage } =
+    await import('../supabase/functions/_shared/trip-store.ts');
+  const { tripStorageReadinessHeaders } = await import('../supabase/functions/_shared/trip-storage-readiness.ts');
+  const { waitForTripStorageEdgeReadiness } = await import('./lib/trip-storage-edge-readiness.mjs');
+  const currentDeno = Object.getOwnPropertyDescriptor(globalThis, 'Deno');
+  const now = 1800000000000;
+  const deadline = now + 20 * 60_000;
+  const env = {
+    TRIP_STORAGE_MODE: `maintenance:${new Date(deadline).toISOString()}`,
+    TRIP_RESTORE_HOLD: 'true',
+  };
+  globalThis.Deno = { env: { get: key => env[key] } };
+  try {
+    assert.equal(tripStorageMode(now), 'restore-hold');
+    assert.equal(tripStorageMode(deadline), 'restore-hold');
+    const userId = '11111111-1111-4111-8111-111111111111';
+    for (const mode of ['d1', 'supabase']) {
+      env.TRIP_STORAGE_MODE = mode;
+      assert.equal(tripStorageMode(deadline), 'restore-hold');
+      const held503 = { code: 'TRIP_RESTORE_HOLD', status: 503 };
+      await assert.rejects(storeObservation({}, null), held503);
+      await assert.rejects(listOwnTripObservations(userId), held503);
+      await assert.rejects(exportOwnTripPage(userId), held503);
+    }
+    const observed = [];
+    const readinessOptions = {
+      baseUrl: 'https://synthetic-trip-hold.supabase.co',
+      publishableKey,
+      requiredConsecutiveSuccesses: 1,
+      retryDelaysMs: [0],
+      fetchImpl: async (input, init) => {
+        const request = new Request(input, init);
+        assert.equal(request.method, 'OPTIONS');
+        const pathname = new URL(request.url).pathname;
+        observed.push(pathname);
+        return new Response(null, {
+          status: 204,
+          headers: tripStorageReadinessHeaders(request, pathname.endsWith('/trip-log')),
+        });
+      },
+    };
+    assert.equal((await waitForTripStorageEdgeReadiness({
+      ...readinessOptions, expectedStorageMode: 'restore-hold',
+    })).ok, true);
+    assert.deepEqual(observed.sort(), ['/functions/v1/submit-observation', '/functions/v1/trip-log']);
+    assert.equal((await waitForTripStorageEdgeReadiness({
+      ...readinessOptions, expectedStorageMode: 'maintenance',
+    })).ok, false);
+    env.TRIP_RESTORE_HOLD = 'unrecognized';
+    assert.equal(tripStorageMode(deadline), 'restore-hold');
+    env.TRIP_RESTORE_HOLD = 'false';
+    assert.equal(tripStorageMode(deadline), 'supabase');
+    delete env.TRIP_RESTORE_HOLD;
+    env.TRIP_STORAGE_MODE = `maintenance:${new Date(deadline).toISOString()}`;
+    assert.equal(tripStorageMode(now), 'maintenance');
+    assert.equal(tripStorageMode(deadline), 'd1');
+  } finally {
+    if (currentDeno) Object.defineProperty(globalThis, 'Deno', currentDeno);
+    else delete globalThis.Deno;
+  }
+});
+repairTest('restore hold marks Worker health and fences every signed trip route before D1',async()=>{
+  const { handleRequest } = await import('../cloudflare/trip-gateway/worker.js');
+  const { waitForWorkerHealth } = await import('./verify-cloudflare-trip-gateway.mjs');
+  const { AGGREGATE_PATH, AGGREGATE_VERIFY_PATH } =
+    await import('../supabase/functions/_shared/trip-aggregate-contract.js');
+  const env = {
+    TRIP_GATEWAY_SHARED_SECRET: sharedSecret,
+    TRIP_RESTORE_HOLD: 'true',
+    TRIP_AGGREGATE_ENABLED: 'true',
+  };
+  let shardReads = 0;
+  for (let index = 0; index < 10; index += 1) env[`TRIP_DB_${index}`] = {
+    prepare() { shardReads += 1; throw new Error('Synthetic held D1 must remain untouched'); },
+  };
+  const health = await handleRequest(new Request(baseUrl + '/health'), env);
+  assert.equal(health.status, 200);
+  assert.equal((await health.json()).restore_hold, true);
+  const readinessOptions = {
+    gatewayUrl: 'https://trip-gateway-test.example.workers.dev', retryDelaysMs: [0],
+    fetchImpl: (input, init) => handleRequest(new Request(input, init), env),
+  };
+  assert.equal((await waitForWorkerHealth(readinessOptions)).verified, false);
+  assert.equal((await waitForWorkerHealth({ ...readinessOptions, expectedRestoreHold: true })).verified, true);
+  const countOptions = { gatewayUrl: readinessOptions.gatewayUrl, sharedSecret, fetchImpl: readinessOptions.fetchImpl };
+  assert.equal((await runWorkerCountReadProbe({ ...countOptions, probeKind: WORKER_COUNT_UNSIGNED_PROBE_KIND })).status, 401);
+  assert.deepEqual(await runWorkerCountReadProbe({
+    ...countOptions, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true,
+  }), { ok: true, attempts: 1, status: 503, restoreHeld: true });
+  await assert.rejects(runWorkerCountReadProbe({
+    ...countOptions, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true,
+    fetchImpl: async () => Response.json({ ok: false, error: 'COUNT_UNAVAILABLE' }, { status: 503 }),
+  }), { code: 'TRIP_STORAGE_WORKER_COUNT_CONTRACT_MISMATCH' });
+  for (const pathname of [
+    '/v1/trips/store', '/v1/trips/list', '/v1/trips/export-page',
+    '/v1/trips/count', '/v1/trips/delete-owner', AGGREGATE_PATH, AGGREGATE_VERIFY_PATH,
+  ]) {
+    const method = 'POST';
+    const bodyText = '{}';
+    const timestamp = String(Date.now());
+    const signature = await storage.tripGatewaySignature({ secret: sharedSecret, timestamp, method, pathname, bodyText });
+    const headers = { 'content-type': 'application/json', 'x-ravradar-timestamp': timestamp };
+    const send = (requestHeaders) => handleRequest(
+      new Request(baseUrl + pathname, { method, headers: requestHeaders, body: bodyText }), env,
+    );
+    assert.equal((await send(headers)).status, 401);
+    const result = await send({ ...headers, 'x-ravradar-signature': signature });
+    assert.equal(result.status, 503);
+    assert.deepEqual(await result.json(), { ok: false, error: 'TRIP_RESTORE_HOLD' });
+  }
+  env.TRIP_RESTORE_HOLD = 'unrecognized';
+  assert.equal((await (await handleRequest(new Request(baseUrl + '/health'), env)).json()).restore_hold, true);
+  env.TRIP_RESTORE_HOLD = 'false';
+  assert.equal(Object.hasOwn(await (await handleRequest(new Request(baseUrl + '/health'), env)).json(), 'restore_hold'), false);
+  assert.equal((await waitForWorkerHealth(readinessOptions)).verified, true);
+  assert.equal((await waitForWorkerHealth({ ...readinessOptions, expectedRestoreHold: true })).verified, false);
+  assert.equal(shardReads, 0);
 });
 repairTest('deployment workflow requires its own primary receipt after deploy and before/after restore',async()=>{
   const result=await workflowFixture();assert.equal(result.firstError,null);

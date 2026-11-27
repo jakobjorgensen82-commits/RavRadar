@@ -11,9 +11,16 @@ tidspunkterne. Serveren afslutter kvitteringen efter kontrol af begge lagre.
 Genforsøg genbruger samme markering. Den eksisterende kontosletning bruger
 fortsat sin egen kø. Kaldet og SQL-rettighederne er afprøvet lokalt.
 
-Gendannelsesforløbet skal afstemme åbne og relevante afsluttede sletninger,
-mens turloggen er spærret. Tilbagehold den lokale kandidat fra installation,
-indtil afstemning, frister og normal databaselevering er verificeret.
+En lokal spærring stopper turkald i både Edge og Worker og varer ud over den
+normale korte vedligeholdelsesfrist. Kontrollen kræver, at den signerede
+Worker-prøve bekræfter spærringen. Den serverbeskyttede databaseforespørgsel
+samler udestående og relevante afsluttede markeringer fra begge sletteforløb.
+Den bruger den ældste gendannede databases tidspunkt og returnerer kun
+ejerpseudonymer til den eksisterende servicekonto.
+
+Tilbagehold kandidaten fra installation, indtil den normale deployvej
+bevarer spærringen, afstemningen verificerer fysisk fjernelse før genåbning,
+og opbevaringen følger de faktisk anvendelige gendannelsespunkter.
 
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 
