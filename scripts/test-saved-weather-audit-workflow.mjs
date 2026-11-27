@@ -11,7 +11,7 @@ import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.m
 import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
 import * as directWaterAdapter from './lib/ravscore-production-adapters.mjs';
 import { B358_ARTIFACT, createB358ArtifactFetch, projectSourcePairs, qualifyLf7Reconstruction,
-  projectSibirienDirectWater } from './audit-b358-water-level-trend.mjs';
+  projectSibirienDirectWater, b412CopernicusTemperature, b412OpenMeteoTemperature, readB412TemperatureBankMetadata } from './audit-b358-water-level-trend.mjs';
 
 const b272WorkflowReview = Object.freeze({"after":{"bytes":50595,"sha256":"27199a1f676e48c458ba3540d84172b0d381aa7045b9973a73e7bcf4f3786e8b"},"before":{"bytes":45655,"sha256":"96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8"},"input":"      water_level_basis_272_only:\n        description: \"Fixed B272 WL provenance metadata only; one archived artifact, no providers or production\"\n        required: false\n        default: false\n        type: boolean\n\n","job":{"bytes":4582,"sha256":"924dc719b9cbfefc9916e532c3ec58a4ec9eb74906d1c9a29bac450ef773197c"},"ifPairs":[["    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)","    if: inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))"],["    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)"],["    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)"]]});
 function beforeB272WaterLevelWorkflow(value){
@@ -1400,4 +1400,80 @@ test('B374 admits only its fixed read-only workflow job and preserves previous a
   assert.match(block, /path: \$\{\{ runner.temp \}\}\/ravradar-b374-water-result\/source-support\.json/);
   for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272'])
     assert.ok(workflow.split('\n  '+job+':\n')[1]?.split('\n')[0].includes("inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT'"));
+});
+
+test('B412 archived SST projects categories and preserves unknown when an original was not kept', async () => {
+  const om = await import('./lib/open-meteo-part-bank.mjs');
+  const utc = await import('./lib/open-meteo-hourly-components.mjs');
+  const normalOm = { ...om, openMeteoUtcTime: utc.openMeteoUtcTime };
+  const reference = '2026-11-27T16:00:00.000Z';
+  const validTime = '2026-11-27T21:00:00.000Z';
+  const spatialPolicies = om.OPEN_METEO_NATIVE_NEAREST_POLICIES;
+  const part = { partId: 'TEST', zoneId: 'TEST-ZONE', waterPoint: om.openMeteoMfNearestGridPoint([10, 56]) };
+  const options = { parts: [part], spatialPolicies, retentionStartAt: reference, retentionEndAt: validTime,
+    requiredPairs: [reference, validTime].map(time => ({ partId: part.partId, component: 'waterTemperature', validTime: time })) };
+  const request = om.buildOpenMeteoPartRequest(part, { component: 'waterTemperature', cellSelection: 'nearest',
+    spatialPolicy: spatialPolicies.waterTemperature, productionReferenceAt: reference });
+  const evidence = values => ({
+    request, acquiredAt: reference, responseText: JSON.stringify({ longitude: part.waterPoint[0], latitude: part.waterPoint[1],
+      utc_offset_seconds: 0, hourly: { time: [reference, validTime], sea_surface_temperature: values },
+      hourly_units: { sea_surface_temperature: '°C' } }),
+  });
+  const createBank = values => om.mergeOpenMeteoPartBank(null, [
+    om.readOpenMeteoPartResponse(evidence(values), { part, spatialPolicies }),
+  ], options);
+  const project = (bank, time) => b412OpenMeteoTemperature(normalOm, bank,
+    om.validateOpenMeteoPartBank(bank, options), part, time);
+  const withSibling = createBank([15, null]);
+  assert.equal(project(withSibling, reference), 'RETAINED_ADMISSIBLE');
+  assert.equal(project(withSibling, validTime), 'MATCHING_ORIGINAL_HOUR_UNUSABLE');
+  assert.equal(project(createBank([null, null]), validTime), 'NO_MATCHING_ORIGINAL_EVIDENCE');
+
+  const cpRequest = { component: 'waterTemperature', target: { partId: 'TEST', parentZoneId: 'TEST-ZONE', waterPoint: part.waterPoint },
+    productionReferenceAt: reference, expectedTimes: [reference, validTime], requestSha256: 'a', contractKey: 'nws-temperature' };
+  const bank = { bankSha256: 'sha256:' + 'a'.repeat(64), requests: [cpRequest], records: [] };
+  const progress = { bankSha256: bank.bankSha256, planSha256: 'sha256:' + 'b'.repeat(64),
+    attempts: [{ partId: 'TEST', contractKey: 'nws-temperature', requestSha256: 'a', status: 'PARSED' }] };
+  assert.equal(b412CopernicusTemperature(bank, progress, part, validTime), 'CURRENT_SAVED_REQUEST_NO_MATCHING_NUMERIC_RECORD');
+  assert.equal(b412CopernicusTemperature(bank, progress, part, '2026-11-27T22:00:00.000Z'), 'NO_EXACT_HOUR_EVIDENCE');
+  assert.equal(b412CopernicusTemperature({ ...bank, requests: [] }, progress, part, validTime), 'NO_EXACT_HOUR_EVIDENCE');
+  assert.equal(b412CopernicusTemperature(bank, { ...progress, bankSha256: 'other' }, part, validTime), 'NO_EXACT_HOUR_EVIDENCE');
+  const cpRecord = { requestSha256: 'a', native: { partId: 'TEST', validTime, values: { waterTemperatureC: 12 } } };
+  assert.equal(b412CopernicusTemperature({ ...bank, records: [cpRecord] }, progress, part, validTime), 'MATCHING_SAVED_NUMERIC_RECORD');
+});
+
+test('B412 verifies selected bank bytes and only the existing read-only archive job may run', async () => {
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const marker = { openMeteoBankSha256: 'a', copernicusBankSha256: null, selectedComponentsSha256: 'b' };
+  const names = { openMeteoBank: 'bank.json', selectedComponents: 'ledger.json' };
+  const rows = [['unselected.nc', Buffer.from('ignored')], [names.openMeteoBank, Buffer.from('{"bankSha256":"a"}')],
+    [names.selectedComponents, Buffer.from('{"selectionSha256":"b"}')]];
+  const files = rows.map(([relativePath, bytes]) => ({ relativePath, bytes: bytes.length,
+    sha256: crypto.createHash('sha256').update(bytes).digest('hex') }));
+  const manifest = Buffer.from(JSON.stringify({ kind: 'PRIVATE_WEATHER_COMPONENT_PACK', schemaVersion: 1, marker, files }));
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(manifest.length);
+  const folder = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'rr-b412-bank-test-'));
+  const file = path.join(folder, 'pack.bin');
+  try {
+    const bytes = Buffer.concat([Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n'), length, manifest, ...rows.map(([, bytes]) => bytes)]);
+    await fs.promises.writeFile(file, bytes);
+    assert.deepEqual(await readB412TemperatureBankMetadata(file, marker, names), {
+      openMeteoBank: { bankSha256: 'a' }, selectedComponents: { selectionSha256: 'b' },
+    });
+    bytes[bytes.length - 1] ^= 1;
+    await fs.promises.writeFile(file, bytes);
+    await assert.rejects(readB412TemperatureBankMetadata(file, marker, names), /B412_PACK_CHECKSUM/);
+  } finally { await fs.promises.unlink(file); await fs.promises.rmdir(folder); }
+  const workflow = await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8');
+  const confirmation = 'READ-B412-SST-SOURCE-CATEGORIES';
+  for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272']) {
+    assert.ok(workflow.split('\n  ' + job + ':\n')[1]?.split('\n')[0].includes(`inputs.confirmation != '${confirmation}'`));
+  }
+  const block = workflow.split('\n  water-source-support-374:')[1];
+  const call = block.indexOf('node scripts/audit-b358-water-level-trend.mjs --b412-sst');
+  const proof = block.indexOf('test "$SOURCE_REQUIRED" = false');
+  assert.ok(proof >= 0 && proof < call && call < block.indexOf('WEATHER_PROGRESS_MASTER_SECRET:'));
+  assert.ok(block.includes(`['${confirmation}', '46032811869']`));
 });

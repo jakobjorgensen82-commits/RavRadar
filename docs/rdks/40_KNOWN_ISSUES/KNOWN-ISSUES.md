@@ -38,6 +38,8 @@ Ved ét tidspunkt i den offentliggjorte prognose fra #409 manglede vandtemperatu
 
 Den lokale ændring gemmer den almindelige vandstand først. Derefter kan en kortlivet proces genlæse de samme kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller, når de nødvendige gitteropslag allerede er beregnet. Ved timeout standses kun denne proces, og hovedprocessen fortsætter. Tidligere kandidater, der kunne stoppe eller genstarte hovedprocessen, er forkastet. GitHub-kvalifikation og offentlig måling udestår.
 
+Efter #412 er der stadig afgrænsede temperaturhuller ved Hennedal, Sølyst og Kollund Strand. Den eksisterende skrivefri arkivlæsning er lokalt udvidet til at sammenholde fire faste kystdelstimer fra #412 med de gemte kildebeviser. Bøsbæk Hage er positiv kontrol. Uden en kildeknyttet gemt time vises årsagen som ukendt. Læsningen kræver det forseglede arkiv fra #412 før dets udløb og starter ingen ny vejrhentning. Kildekontrol og faktisk arkivlæsning udestår.
+
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 
 Et almindeligt spørgsmål om, hvorfor rav lyser under UV, om lygten kan bruges i dagslys, og om alt lysende er rav, nåede den eksterne model. Assistenten bad om at få spørgsmålet delt op, selv om alle tre led var dækket af gennemgået viden.
