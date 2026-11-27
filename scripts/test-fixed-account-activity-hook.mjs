@@ -773,20 +773,25 @@ test('normal catalogue read qualifies the installed signup bootstrap without rea
   const read = overrides => runFixedAccountActivityCatalogRead({ env, accessToken: 'test', fetchImpl, ...overrides });
   assert.deepEqual(await read({ env: { ...env, RAVRADAR_FIXED_ACTIVITY_HOOK_OPERATION: 'enable' } }), { status: 'OWNER_REQUIRED' });
   assert.equal(calls, 0);
-  const installedBody = async file => {
+  const installedBody = async (file, lineEnding = '\n') => {
     const source = await fs.readFile(new URL('../supabase/' + file, import.meta.url), 'utf8');
     const body = /^create or replace function public\.handle_new_ravradar_user\(\)[\s\S]*?\bas\s+\$\$([\s\S]*?)\$\$;/mi
       .exec(source)?.[1];
     assert(body);
-    return createHash('sha256').update(body.replaceAll('\r\n', '\n').trim()).digest('hex');
+    const trimmed = body.replaceAll('\r\n', '\n').replace(/^[ \n\r\t]+|[ \n\r\t]+$/g, '');
+    return createHash('sha256').update(trimmed.replaceAll('\n', lineEnding)).digest('hex');
   };
   const valid = { triggerMatches: true, functionMatches: true, ownerMatches: true,
     bodySha256: await installedBody('INSTALL-RAVRADAR-4.0.43.sql'), executeAcl: 'HISTORICAL_PUBLIC_EXECUTE' };
+  const crlf = { ...valid, bodySha256: await installedBody('INSTALL-RAVRADAR-4.0.43.sql', '\r\n') };
+  assert.notEqual(crlf.bodySha256, valid.bodySha256);
   const legacy = { ...valid, bodySha256: await installedBody('RavRadar-4.0.41-permissions.sql'),
     executeAcl: 'OWNER_ONLY' };
   const cases = [
     ['UNARMED', 'NATIVE_RECEIPT_UNARMED', [valid],
       { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion: '4.0.43', executeAcl: valid.executeAcl }],
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [crlf],
+      { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion: '4.0.43', executeAcl: crlf.executeAcl }],
     ['ARMED', 'NATIVE_RECEIPT_ARMED', [legacy],
       { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion: '4.0.41', executeAcl: legacy.executeAcl }],
     ['ARMED', 'NATIVE_RECEIPT_ARMED', null, { status: 'SIGNUP_BOOTSTRAP_MISSING' }],

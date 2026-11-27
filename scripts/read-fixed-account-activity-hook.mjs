@@ -13,6 +13,8 @@ const VERIFIED_NATIVE_RECEIPT_STATES = new Set(['NATIVE_RECEIPT_UNARMED', 'NATIV
 const SIGNUP_BOOTSTRAP_BODIES = new Map([
   // Immutable shipped installer bodies, trimmed like the existing catalog hashes.
   ['c505d852be7a5000f4068e6b3f69dc130a34403d1e491664f1be1b6cc019f247', '4.0.43'],
+  // The same 4.0.43 body with CRLF at its 12 existing line breaks, outside literals.
+  ['efba65291e0a6a96806fcb7bcbf325c9fe15d562d612b954e05a3c117bb7ef2b', '4.0.43'],
   ['d4df42879d3f192c86ef8a33fd094e21bbdd30835006531793c5f5ba08a4dbd3', '4.0.41'],
 ]);
 
