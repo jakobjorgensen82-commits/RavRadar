@@ -189,6 +189,11 @@ export async function verifyInstalledAccountErasureSchema(options) {
  need(keys(options,['accessToken','expectedCheckReference'])||keys(options,['accessToken','expectedCheckReference','fetchImpl']));
  const {accessToken,expectedCheckReference,fetchImpl=globalThis.fetch}=options;
  verifyAccountErasureCheckReference(expectedCheckReference);
+ const rows=await readFixedAppCatalogRows(accountErasureCatalogQuery,{accessToken,fetchImpl});
+ return verifyAccountErasureCatalogMetadata(rows,{expectedCheckReference});
+}
+
+async function readFixedAppCatalogRows(query,{accessToken,fetchImpl}) {
  need(typeof accessToken==='string'&&accessToken.length>0&&!/[\r\n]/.test(accessToken)&&typeof fetchImpl==='function');
  const controller=new AbortController();let rejectDeadline;
  const deadline=new Promise((_,reject)=>{rejectDeadline=reject;});
@@ -198,16 +203,53 @@ export async function verifyInstalledAccountErasureSchema(options) {
   const response=await bounded(fetchImpl('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query',{
    method:'POST',redirect:'error',cache:'no-store',credentials:'omit',signal:controller.signal,
    headers:{authorization:'Bearer '+accessToken,'content-type':'application/json'},
-   body:JSON.stringify({query:accountErasureCatalogQuery,read_only:true})}));
+   body:JSON.stringify({query,read_only:true})}));
   need(response.status===201&&!response.redirected&&response.body);
   const length=response.headers.get('content-length');need(length===null||(/^\d+$/.test(length)&&Number(length)<=32768));
   const reader=response.body.getReader(),chunks=[];let count=0;
   try{while(true){const item=await bounded(reader.read());if(item.done)break;need(item.value instanceof Uint8Array);
    count+=item.value.byteLength;need(count<=32768);chunks.push(item.value);}}finally{reader.releaseLock();}
   const parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks,count)));
-  const rows=Array.isArray(parsed)?parsed:keys(parsed,['result'])?parsed.result:keys(parsed,['data'])?parsed.data:null;
-  return verifyAccountErasureCatalogMetadata(rows,{expectedCheckReference});
+  return Array.isArray(parsed)?parsed:keys(parsed,['result'])?parsed.result:keys(parsed,['data'])?parsed.data:null;
  }finally{clearTimeout(timer);controller.abort();}
+}
+
+export const tripRecoveryCatalogQuery = `
+with function_scope(signature, volatility, service_execute) as (values
+ ('public.guard_trip_erasure_recovery_write()', 'v', false),
+ ('public.acquire_trip_erasure_recovery_hold(uuid)', 'v', true),
+ ('public.read_trip_erasure_recovery_hold()', 's', true),
+ ('public.record_trip_owner_erasure_intent(text,boolean)', 'v', true),
+ ('public.read_trip_erasure_restore_subjects(uuid,timestamptz,timestamptz,text)', 's', true)
+), table_scope(name) as (values ('public.trip_erasure_recovery_gate'), ('public.trip_owner_erasure_intents')),
+trigger_scope(relation, trigger_name) as (values
+ ('public.trip_owner_erasure_intents', 'trip_owner_erasure_recovery_guard'),
+ ('public.account_erasure_operations', 'account_erasure_recovery_guard')
+)
+select
+ (select count(*) = 5 and bool_and(p.prosecdef and p.provolatile::text = s.volatility
+   and coalesce(p.proconfig @> array['search_path=""'], false)
+   and not pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')
+   and not pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')
+   and pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE') = s.service_execute
+   and not pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE WITH GRANT OPTION')
+   and not exists (select 1 from pg_catalog.aclexplode(coalesce(p.proacl, pg_catalog.acldefault('f', p.proowner))) a
+     where a.grantee <> p.proowner and (not s.service_execute
+       or a.grantee <> 'service_role'::regrole or a.is_grantable)))
+  from function_scope s join pg_catalog.pg_proc p on p.oid = pg_catalog.to_regprocedure(s.signature)) as functions_ok,
+ (select count(*) = 2 and bool_and(c.relrowsecurity and c.relforcerowsecurity
+   and not exists (select 1 from pg_catalog.aclexplode(coalesce(c.relacl, pg_catalog.acldefault('r', c.relowner))) a
+     where a.grantee <> c.relowner)
+   and not pg_catalog.has_table_privilege('service_role', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER'))
+  from table_scope s join pg_catalog.pg_class c on c.oid = pg_catalog.to_regclass(s.name)) as tables_ok,
+ (select count(*) = 2 and bool_and(not t.tgisinternal and t.tgenabled = 'O' and t.tgtype = 62
+   and t.tgfoid = pg_catalog.to_regprocedure('public.guard_trip_erasure_recovery_write()'))
+  from trigger_scope s join pg_catalog.pg_trigger t on t.tgrelid = pg_catalog.to_regclass(s.relation)
+   and t.tgname = s.trigger_name) as triggers_ok;`;
+
+export async function verifyTripErasureRecoveryCatalog({accessToken, fetchImpl = globalThis.fetch}) {
+  const rows = await readFixedAppCatalogRows(tripRecoveryCatalogQuery,{accessToken,fetchImpl});
+  assert.deepEqual(rows,[{functions_ok:true,tables_ok:true,triggers_ok:true}]);
 }
 
 // Prepared, finite app append on installed601. These are not model migrations,

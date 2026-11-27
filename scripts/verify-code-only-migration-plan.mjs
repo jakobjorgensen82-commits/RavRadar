@@ -82,7 +82,8 @@ async function qualifyCurrentAccountErasureChecks(receiptMode=false){
   return {manual:facit.checkReference,inactivity:inactivity?.checkReference??null,receipt};
 }
 const appProofMode=process.argv[2];
-if (appProofMode === '--qualify-trip-erasure-recovery-source') {
+const tripRecoveryQualification = appProofMode === '--qualify-trip-erasure-recovery-source';
+if (tripRecoveryQualification || appProofMode === '--read-trip-erasure-recovery-installed') {
   try {
     assert.equal(process.argv.length, 3);
     assert.equal(process.env.GITHUB_EVENT_NAME, 'workflow_dispatch');
@@ -93,19 +94,29 @@ if (appProofMode === '--qualify-trip-erasure-recovery-source') {
     assert.equal(process.env.GITHUB_WORKFLOW_REF,
       'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main');
     assert.equal(process.env.RAVRADAR_TRIP_RECOVERY_SCHEMA_CONFIRMATION, 'APPLY-TRIP-RECOVERY-SCHEMA');
-    const qualified = await qualifyExactMergedFullSource(process.env.RAVRADAR_TRIP_RECOVERY_SOURCE_REFERENCE);
-    const {qualifiedTripErasureRecovery} = await import('./source-impact-full-baseline.mjs');
-    const trip = qualifiedTripErasureRecovery(qualified);
-    assert(trip && trip.candidateCommit === process.env.GITHUB_SHA && trip.sqlFiles === 83);
-    assert.equal(trip.receipt.migration, TRIP_ERASURE_RECOVERY_SQL.filename);
-    assert.equal(trip.receipt.migrationSha256, TRIP_ERASURE_RECOVERY_SQL.sha256);
-    assert.equal(trip.receipt.actualPostgres, true);
-    assert.equal(trip.receipt.productionReleaseVerified, false);
-    console.log(JSON.stringify({kind:'QUALIFIED_TRIP_ERASURE_RECOVERY_SOURCE', sqlFiles:trip.sqlFiles,
-      migrationSha256:trip.receipt.migrationSha256, nativeInputSha256:trip.nativeInputSha256,
-      status:trip.status, executedInThisRun:trip.executedInThisRun, activationAuthority:false}));
+    if (tripRecoveryQualification) {
+      const qualified = await qualifyExactMergedFullSource(process.env.RAVRADAR_TRIP_RECOVERY_SOURCE_REFERENCE);
+      const {qualifiedTripErasureRecovery} = await import('./source-impact-full-baseline.mjs');
+      const trip = qualifiedTripErasureRecovery(qualified);
+      assert(trip && trip.candidateCommit === process.env.GITHUB_SHA && trip.sqlFiles === 83);
+      assert.equal(trip.receipt.migration, TRIP_ERASURE_RECOVERY_SQL.filename);
+      assert.equal(trip.receipt.migrationSha256, TRIP_ERASURE_RECOVERY_SQL.sha256);
+      assert.equal(trip.receipt.actualPostgres, true);
+      assert.equal(trip.receipt.productionReleaseVerified, false);
+      console.log(JSON.stringify({kind:'QUALIFIED_TRIP_ERASURE_RECOVERY_SOURCE', sqlFiles:trip.sqlFiles,
+        migrationSha256:trip.receipt.migrationSha256, nativeInputSha256:trip.nativeInputSha256,
+        status:trip.status, executedInThisRun:trip.executedInThisRun, activationAuthority:false}));
+    } else {
+      assert.match(process.env.GITHUB_SHA ?? '', /^[a-f0-9]{40}$/);
+      const head = execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8', timeout:10000}).trim();
+      assert.equal(head, process.env.GITHUB_SHA);
+      const {verifyInstalledTripErasureRecoverySchema} = await import('./lib/reconcile-held-trip-erasures.mjs');
+      console.log(JSON.stringify(await verifyInstalledTripErasureRecoverySchema({
+        accessToken:process.env.SUPABASE_ACCESS_TOKEN, serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
+      })));
+    }
   } catch {
-    console.error('TRIP_RECOVERY_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED');
+    console.error(tripRecoveryQualification ? 'TRIP_RECOVERY_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED' : 'TRIP_RECOVERY_OPEN_SCHEMA_READBACK_REQUIRED');
     process.exitCode = 1;
   }
   process.exit(process.exitCode ?? 0);

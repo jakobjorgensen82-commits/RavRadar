@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import assert from 'node:assert/strict';
 import { assertOwnerTripErasureReadback, deleteOwnerTrips } from '../../cloudflare/trip-gateway/worker.js';
 import { canonicalJson, normalizeCloudflareGatewayUrl } from '../../supabase/functions/_shared/trip-storage.js';
 import {
@@ -8,6 +9,7 @@ import {
 import { boundedFetch } from './bounded-fetch.mjs';
 import { waitForTripStorageEdgeReadiness } from './trip-storage-edge-readiness.mjs';
 import { TRIP_STORAGE_REQUIRED_SHARD_NAMES } from './trip-storage-legacy-classification.mjs';
+import { verifyTripErasureRecoveryCatalog } from '../verify-account-erasure-schema.mjs';
 
 const pageSize = 100;
 const subjectPattern = /^usr_v1_[A-Za-z0-9_-]{43}$/;
@@ -296,6 +298,15 @@ export async function readTripErasureRecoveryHold({ projectRef, serviceKey, fetc
   } catch {
     throw failure();
   }
+}
+
+export async function verifyInstalledTripErasureRecoverySchema({accessToken, serviceKey, fetchImpl = globalThis.fetch}) {
+  assert(typeof serviceKey === 'string' && serviceKey.length && !/[\r\n]/.test(serviceKey));
+  await verifyTripErasureRecoveryCatalog({accessToken,fetchImpl});
+  const projectRef = 'afqhhdrkjfjtpadntdzo';
+  assert.equal(await readTripErasureRecoveryHold({projectRef,serviceKey,fetchImpl}),null,
+    'Trip recovery installation must leave the existing journals open');
+  return {kind:'TRIP_RECOVERY_SCHEMA_INSTALLED',catalogVerified:true,holdOpen:true,activationAuthority:false};
 }
 
 // Only the current authenticated hold and unchanged deployment are needed to

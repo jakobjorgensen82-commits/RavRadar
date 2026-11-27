@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { tripRecoveryCatalogQuery } from '../verify-account-erasure-schema.mjs';
 
 export const TRIP_ERASURE_RECOVERY_MIGRATION = '20261127095500_trip_owner_erasure_intents.sql';
 const hold = '70000000-0000-4000-8000-000000000001';
@@ -24,6 +25,9 @@ export async function exerciseTripErasureRecoveryHold({
     and current_setting('listen_addresses')='';`), 't', 'Owned synthetic socket-only PostgreSQL required');
   const migrationSql = await fs.readFile(path.join(repositoryRoot, 'supabase', 'migrations', TRIP_ERASURE_RECOVERY_MIGRATION));
   await pg(new TextDecoder('utf8', { fatal: true }).decode(migrationSql));
+  const catalog = tripRecoveryCatalogQuery.trim().replace(/;$/, '');
+  assert.deepEqual(JSON.parse(await pg(`select row_to_json(c) from (${catalog}) c;`)),
+    {functions_ok:true,tables_ok:true,triggers_ok:true});
   const readHold = 'public.read_trip_erasure_recovery_hold()';
   const observedHold = async () => JSON.parse(await pg(serviceRole
     + `set time zone 'Pacific/Auckland'; select json_agg(state) from ${readHold} as state;`));

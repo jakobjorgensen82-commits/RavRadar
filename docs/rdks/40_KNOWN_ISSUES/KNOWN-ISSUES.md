@@ -23,6 +23,12 @@ turlogsmigration eller ændret SQL. Installation og kontrol i drift afventes.
 Den afgrænsede installationsplan kan klargøre turlogsmigrationen alene og
 kontrollere, at Supabases prøveplan kun indeholder den. Planen tillader også
 en tom prøveplan, når migrationen allerede er registreret som installeret.
+Installationsjobbet bruger de eksisterende låse for vejr og turlog. Det
+kræver et PostgreSQL-bevis for den eksakte migrerede kilde, tillader én
+skrivning og genlæser migrationshistorik, adgangsrettigheder og den åbne
+gendannelseslås. Et uafklaret svar ved installation giver en genlæsning.
+Der er ingen automatisk gentagelse af skrivningen. Kontrollerne er prøvet
+lokalt med simulerede svar og afventer PostgreSQL og installation i drift.
 
 En lokal prøve med den normale Worker og ti syntetiske databaser viste, at en
 tur blev synlig igen efter gendannelse af den kontrolbase, der havde modtaget

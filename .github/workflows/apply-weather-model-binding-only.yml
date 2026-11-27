@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: "Skriv APPLY-WEATHER-MODEL-BINDING, APPLY-ACCOUNT-ERASURE eller APPLY-ACCOUNT-NATIVE-RECEIPT"
+        description: "Bekræft den ønskede binding, kontoændring eller APPLY-TRIP-RECOVERY-SCHEMA"
         required: true
         type: string
       install_account_erasure:
@@ -19,6 +19,11 @@ on:
         type: boolean
       account_erasure_source_reference:
         description: "Kun konto-appmode: normal FULL-referenceJSON fra den eksakt mergede PG-kvalificerede kilde"
+        required: false
+        default: ""
+        type: string
+      trip_erasure_recovery_source_reference:
+        description: "Kun APPLY-TRIP-RECOVERY-SCHEMA: FULL-reference fra den eksakt mergede og PostgreSQL-kvalificerede kilde"
         required: false
         default: ""
         type: string
@@ -54,6 +59,7 @@ concurrency:
 
 jobs:
   apply-binding:
+    if: inputs.confirmation != 'APPLY-TRIP-RECOVERY-SCHEMA'
     name: Apply exact database and assistant bindings without touching saved weather
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -81,10 +87,12 @@ jobs:
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
           CONFIRMATION: ${{ inputs.confirmation }}
+          TRIP_RECOVERY_REFERENCE: ${{ inputs.trip_erasure_recovery_source_reference }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
+          test -z "$TRIP_RECOVERY_REFERENCE"
           if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
             test "$GITHUB_RUN_ATTEMPT" = 1
             test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" != true
@@ -436,3 +444,75 @@ jobs:
           node scripts/integrated-cutover-readiness.mjs publish
           --public-implementation-closure-sha256
           "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
+
+  apply-trip-recovery-schema:
+    if: inputs.confirmation == 'APPLY-TRIP-RECOVERY-SCHEMA'
+    name: Install only the open trip recovery schema
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    env:
+      RAVRADAR_TRIP_RECOVERY_SCHEMA_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require the exclusive current main and native trip schema proof
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_TRIP_RECOVERY_SOURCE_REFERENCE: ${{ inputs.trip_erasure_recovery_source_reference }}
+          MIXED_MODE: ${{ inputs.install_account_erasure || inputs.install_account_native_receipt || inputs.upgrade_current_grid_original || inputs.diagnose_current_grid_original || inputs.upgrade_assistant_later_h0_original || inputs.account_erasure_source_reference != '' }}
+        run: |
+          set -euo pipefail
+          test "$MIXED_MODE" = false
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          node scripts/verify-code-only-migration-plan.mjs --qualify-trip-erasure-recovery-source
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+      - name: Apply exactly one admitted trip migration and verify the open schema
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+        run: |
+          set -euo pipefail
+          umask 077
+          view="$(mktemp -d "$RUNNER_TEMP/trip-recovery-view.XXXXXX")"
+          list="$RUNNER_TEMP/trip-recovery-migration-list.txt"
+          dry="$RUNNER_TEMP/trip-recovery-migration-dry-run.txt"
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir --output "$view" --trip-erasure-recovery-source
+          (cd "$view" && supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD")
+          (cd "$view" && supabase migration list --linked) > "$list"
+          node scripts/integrated-cutover-readiness.mjs hydrate-history --workdir "$view" --migration-list "$list"
+          read_plan() {
+            (cd "$view" && supabase migration list --linked) > "$list" || return 1
+            (cd "$view" && supabase db push --linked --dry-run --skip-vault) > "$dry" 2>&1 || return 1
+            node scripts/integrated-cutover-readiness.mjs trip-erasure-recovery-plan \
+              --migration-list "$list" --dry-run "$dry" --migrations-directory "$view/supabase/migrations"
+          }
+          plan="$(read_plan)"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          pending="$(jq -er '.pendingVersions | length' <<< "$plan")"
+          if test "$pending" = 1; then
+            if ! (cd "$view" && supabase db push --linked --skip-vault) > "$RUNNER_TEMP/trip-recovery-push.txt" 2>&1; then
+              echo 'Trip recovery migration acknowledgment uncertain; checking installed state.'
+            fi
+            plan="$(read_plan)"
+          else
+            test "$pending" = 0
+          fi
+          jq -e '.pendingVersions == []' <<< "$plan" > /dev/null
+          node scripts/integrated-cutover-readiness.mjs applied --migration-list "$list"
+          node scripts/verify-code-only-migration-plan.mjs --read-trip-erasure-recovery-installed
