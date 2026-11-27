@@ -1,3 +1,22 @@
+## 27. november — et spørgsmål om både vind og strøm fik kun et svar om strøm
+
+På den offentlige side fik spørgsmålet »Hvad ændrer sig, hvis vinden vender, mens
+strømmen stadig går mod land?« alene den generelle strømforklaring. Den lokale
+rettelse svarer om både uro i vandoverfladen og kystrettet transport. Den kræver
+hele det generelle spørgsmål, så en tilføjelse om en bestemt zone eller dag
+fortsat behandles som del af hele spørgsmålet. Målprøver for dansk, tysk og
+engelsk består. GitHub-kontrol og offentlig levering udestår.
+
+## 27. november — laboratoriemetoden faldt ud af svaret om rav og plast
+
+Den offentlige danske assistent svarede med visuelle kendetegn og UV, da
+spørgsmålet handlede om at skelne rav fra moderne plast med Raman-spektroskopi.
+Forhåndsprøven med den eksterne svarvej ramte timeout på dansk og tysk. Den
+lokale rettelse genbruger den eksisterende gennemgåede laboratorieforklaring
+for netop det hele spørgsmål på dansk, tysk og engelsk. Andre sammensatte
+spørgsmål og private afvisninger følger fortsat deres almindelige behandling.
+Kildekontrol og offentlig afprøvning af den nye rute udestår.
+
 ## 27. november — en fastfrosset fejlupload kan overleve den fælles frist
 
 Den eksisterende GitHub-prøve stoppede uploadens overvågningsproces, mens SDK'et afventede svar på den afsluttende upload. Handlingen meldte fejl, og skrivelåsen blev bevaret. Uploadens processer ophørte først, da prøven genoptog overvågningen.
