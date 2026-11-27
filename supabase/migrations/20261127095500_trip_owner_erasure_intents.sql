@@ -75,6 +75,22 @@ $$;
 revoke all on function public.acquire_trip_erasure_recovery_hold(uuid) from public, anon, authenticated, service_role;
 grant execute on function public.acquire_trip_erasure_recovery_hold(uuid) to service_role;
 
+-- A restarted recovery can observe the singleton without acquiring a new hold.
+create function public.read_trip_erasure_recovery_hold()
+returns table (hold_id uuid, held_at text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select gate.hold_id,
+         pg_catalog.to_char(gate.held_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+  from public.trip_erasure_recovery_gate as gate
+  where gate.singleton;
+$$;
+revoke all on function public.read_trip_erasure_recovery_hold() from public, anon, authenticated, service_role;
+grant execute on function public.read_trip_erasure_recovery_hold() to service_role;
+
 create function public.record_trip_owner_erasure_intent(p_owner_subject text, p_completed boolean)
 returns boolean
 language plpgsql

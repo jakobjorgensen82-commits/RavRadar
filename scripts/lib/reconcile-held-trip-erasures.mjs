@@ -264,6 +264,40 @@ function protectedHoldTime(heldAt) {
   return timestampKey(typeof heldAt === 'string' ? heldAt.replace(/\+00:00$/, 'Z') : heldAt);
 }
 
+function recoveryServiceHeaders(serviceKey) {
+  const headers = { apikey: serviceKey };
+  if (!serviceKey.startsWith('sb_secret_')) headers.Authorization = `Bearer ${serviceKey}`;
+  return headers;
+}
+
+// The durable SQL hold is outside the D1 databases and survives a lost runner.
+export async function readTripErasureRecoveryHold({ projectRef, serviceKey, fetchImpl = fetch }) {
+  const failure = () => new Error('TRIP_RESTORE_HOLD_UNVERIFIED');
+  if (typeof projectRef !== 'string' || !/^[a-z0-9]{20}$/.test(projectRef)
+    || typeof serviceKey !== 'string' || !serviceKey) throw failure();
+  try {
+    const response = await boundedFetch(`https://${projectRef}.supabase.co/rest/v1/rpc/read_trip_erasure_recovery_hold`, {
+      method: 'GET', redirect: 'error', cache: 'no-store',
+      headers: { ...recoveryServiceHeaders(serviceKey), Accept: 'application/json' },
+    }, { fetchImpl });
+    if (!response.ok || response.redirected) throw failure();
+    const rows = await response.json();
+    if (!Array.isArray(rows) || rows.length !== 1) throw failure();
+    const row = rows[0];
+    if (!row || Object.keys(row).length !== 2 || !Object.hasOwn(row, 'hold_id') || !Object.hasOwn(row, 'held_at')) {
+      throw failure();
+    }
+    if (row.hold_id === null && row.held_at === null) return null;
+    if (typeof row.hold_id !== 'string' || !databaseIdPattern.test(row.hold_id)
+      || row.hold_id === '00000000-0000-0000-0000-000000000000'
+      || typeof row.held_at !== 'string' || !/\.\d{6}Z$/.test(row.held_at)) throw failure();
+    timestampKey(row.held_at);
+    return { intentId: row.hold_id, heldAt: row.held_at };
+  } catch {
+    throw failure();
+  }
+}
+
 // Only the current authenticated hold and unchanged deployment are needed to
 // open the envelope. Its authenticated plaintext carries the original plan.
 function retainedArchiveContext(scope, hold) {
@@ -437,15 +471,14 @@ export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRow
 // management workflow. This uses the providers' existing service accounts,
 // and never sends recovery traffic through the held public Worker.
 export async function reconcileCloudflareHeldTripErasures({
-  restorePlan, restoreReplies, retainedArchive, archiveSecret, readHoldEpoch, bindings, accountId, cloudflareToken, projectRef, serviceKey,
+  restorePlan, restoreReplies, retainedArchive, archiveSecret, bindings, accountId, cloudflareToken, projectRef, serviceKey,
   gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId, fetchImpl = fetch,
 }) {
   if (!isTripRestoreScope({ bindings, accountId, projectRef, versionId, deploymentId })
     || typeof cloudflareToken !== 'string' || !cloudflareToken
     || typeof serviceKey !== 'string' || !serviceKey
     || typeof sharedSecret !== 'string' || sharedSecret.length < 32
-    || typeof publishableKey !== 'string' || !publishableKey
-    || typeof readHoldEpoch !== 'function') {
+    || typeof publishableKey !== 'string' || !publishableKey) {
     throw new Error('TRIP_RESTORE_PROVIDER_INPUT_INVALID');
   }
   const boundDatabases = bindings.map(({ binding, database_name, database_id }) => ({
@@ -458,10 +491,12 @@ export async function reconcileCloudflareHeldTripErasures({
   const retainedTripRows = openRetainedTripSnapshot({ scope, plan: restorePlan, archive: retainedArchive, archiveSecret });
   const gateway = normalizeCloudflareGatewayUrl(gatewayUrl);
   const baseUrl = `https://${projectRef}.supabase.co`;
+  const heldAt = timestampKey(restorePlan.heldAt);
+  const matchesRestoreHold = hold => hold?.intentId === restorePlan.intentId && timestampKey(hold.heldAt) === heldAt;
 
   async function verifyRecoveryHoldEpoch() {
-    if (await readHoldEpoch() !== epoch) return null;
     try {
+      if (!matchesRestoreHold(await readTripErasureRecoveryHold({ projectRef, serviceKey, fetchImpl }))) return null;
       const deployment = await verifyExistingWorkerBindings({
         accountId, apiToken: cloudflareToken, workerName: 'ravradar-trip-gateway',
         expectedVersion: versionId, expectedBindings: boundDatabases, fetchImpl,
@@ -477,7 +512,8 @@ export async function reconcileCloudflareHeldTripErasures({
           gatewayUrl: gateway, sharedSecret, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true, fetchImpl,
         }),
       ]);
-      return edge.ok && worker.verified && signed.restoreHeld === true ? epoch : null;
+      if (!edge.ok || !worker.verified || signed.restoreHeld !== true) return null;
+      return matchesRestoreHold(await readTripErasureRecoveryHold({ projectRef, serviceKey, fetchImpl })) ? epoch : null;
     } catch {
       return null;
     }
@@ -515,8 +551,7 @@ export async function reconcileCloudflareHeldTripErasures({
     } };
   });
   const journalUrl = `${baseUrl}/rest/v1/rpc/read_trip_erasure_restore_subjects`;
-  const journalHeaders = { apikey: serviceKey };
-  if (!serviceKey.startsWith('sb_secret_')) journalHeaders.Authorization = `Bearer ${serviceKey}`;
+  const journalHeaders = recoveryServiceHeaders(serviceKey);
 
   return reconcileHeldTripErasures({
     shards, epoch, retainedTripRowsSha256: restorePlan.retainedTripRowsSha256, retainedTripRows, readHoldEpoch: verifyRecoveryHoldEpoch,

@@ -17,6 +17,14 @@ Worker-prøve bekræfter spærringen. Den serverbeskyttede databaseforespørgsel
 samler udestående og relevante afsluttede markeringer fra begge sletteforløb.
 Den returnerer kun ejerpseudonymer til den eksisterende servicekonto.
 
+Gendannelsen læser nu i den lokale kandidat den eksisterende spærrings
+identitet og præcise starttid direkte fra Supabase med den samme servicekonto.
+Den sammenholder begge felter med den oprindelige gendannelsesplan før og
+efter kontrollen af Edge og Worker. Åben, ændret eller ukendt spærring stopper
+afstemningen, før den skriver til D1. Den lokale afprøvning bruger kunstige
+leverandørsvar. PostgreSQL-rettigheder og faktisk genoptagelse mangler endnu
+at blive verificeret på Linux og gennem det kontrollerede forløb.
+
 Den lokale afstemning følger de sorterede sider og genbruger den almindelige
 D1-sletning. Efter sletningen kontrollerer den, at turen og registerposten er
 væk, og at slettemarkeringen findes i alle ti databaser. Identiteten på

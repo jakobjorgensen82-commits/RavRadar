@@ -191,12 +191,13 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   let edgeMode = 'restore-hold';
   let providerRequests = 0;
   let d1Requests = 0;
+  const activeHold = [{ hold_id: restorePlan.intentId, held_at: restorePlan.heldAt }];
+  let holdReadbacks = [];
   const reinsertedTables = [];
   const provider = {
     bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan: resumedPlan, restoreReplies,
     retainedArchive: readFileSync(filename), archiveSecret,
     gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId,
-    async readHoldEpoch() { return restoreIdentity.epoch; },
     async fetchImpl(input, init) {
       providerRequests += 1;
       const url = new URL(input);
@@ -210,6 +211,14 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
             'access-control-allow-origin': 'https://ravradar.dk', 'x-ravradar-trip-contract-version': '4.0.311',
             'x-ravradar-trip-storage-mode': edgeMode, 'x-ravradar-trip-export-version': '1',
           } });
+        }
+        if (url.pathname === '/rest/v1/rpc/read_trip_erasure_recovery_hold') {
+          assert.equal(request.method, 'GET');
+          assert.equal(request.redirect, 'error');
+          assert.equal(request.headers.get('apikey'), serviceKey);
+          assert.equal(request.headers.get('authorization'), null);
+          assert.equal(request.body, null);
+          return Response.json(holdReadbacks.shift() ?? activeHold);
         }
         assert.equal(request.method, 'POST');
         assert.equal(request.redirect, 'error');
@@ -294,6 +303,18 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
     await assert.rejects(reconcileCloudflareHeldTripErasures({ ...provider, ...overrides }), /TRIP_RESTORE_RETAINED_ARCHIVE_UNVERIFIED/);
   }
   assert.equal(providerRequests, 0);
+  for (const readbacks of [
+    [[]],
+    [[{ hold_id: null, held_at: null }]],
+    [[{ hold_id: restorePlan.intentId, held_at: '2026-08-26T11:55:00.123457Z' }]],
+    [activeHold, [{ hold_id: null, held_at: null }]],
+    [activeHold, [{ hold_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', held_at: restorePlan.heldAt }]],
+  ]) {
+    holdReadbacks = [...readbacks];
+    await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
+    assert.equal(d1Requests, 0);
+    assert.equal(holdReadbacks.length, 0);
+  }
   edgeMode = 'd1';
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(d1Requests, 0);

@@ -24,6 +24,20 @@ export async function exerciseTripErasureRecoveryHold({
     and current_setting('listen_addresses')='';`), 't', 'Owned synthetic socket-only PostgreSQL required');
   const migrationSql = await fs.readFile(path.join(repositoryRoot, 'supabase', 'migrations', TRIP_ERASURE_RECOVERY_MIGRATION));
   await pg(new TextDecoder('utf8', { fatal: true }).decode(migrationSql));
+  const readHold = 'public.read_trip_erasure_recovery_hold()';
+  const observedHold = async () => JSON.parse(await pg(serviceRole
+    + `set time zone 'Pacific/Auckland'; select json_agg(state) from ${readHold} as state;`));
+  assert.deepEqual(await observedHold(), [{ hold_id: null, held_at: null }]);
+  for (const role of ['anon', 'authenticated']) {
+    const refused = await raw(`set role ${role}; select * from ${readHold};`);
+    assert.equal(refused.code, 3);
+    assert.equal(refused.sqlState, '42501');
+  }
+  assert.equal(await pg(`select p.provolatile = 's' and p.prosecdef
+    and not has_table_privilege('service_role', 'public.trip_erasure_recovery_gate', 'SELECT')
+    and not exists (select 1 from pg_catalog.aclexplode(p.proacl) as acl
+      where acl.grantee = 0 and acl.privilege_type = 'EXECUTE')
+    from pg_catalog.pg_proc as p where p.oid = '${readHold}'::regprocedure;`), 't');
   await seed(61);
   await seed(62);
   assert.equal((await prepare(61)).state, 'PREPARED');
@@ -97,6 +111,13 @@ export async function exerciseTripErasureRecoveryHold({
   const [heldAt] = await runRace('rr_trip_recovery_held_trip', serviceRole + `select ${acquire};`,
     'rr_trip_recovery_late_trip', serviceRole + expectRejected(record(lateSubject), 'TRIP_ERASURE_RECOVERY_HOLD'));
   assert(heldAt, 'Fresh hold must commit its timestamp');
+  const observed = await observedHold();
+  assert.equal(observed.length, 1);
+  assert.equal(observed[0].hold_id, hold);
+  const preciseHeldAt = observed[0].held_at;
+  assert.match(preciseHeldAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/);
+  assert.equal(await pg(`select held_at = '${preciseHeldAt}'::timestamptz
+    from public.trip_erasure_recovery_gate where singleton;`), 't');
   assert.equal(await pg(serviceRole + expectedJournal), 't');
   // Reentering that committed hold still serializes the account journal.
   await armSignal();
