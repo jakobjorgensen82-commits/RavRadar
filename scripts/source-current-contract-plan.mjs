@@ -139,6 +139,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node --test scripts/test-admin-document-history-workflow.mjs',
     'node --test scripts/test-admin-document-history-maintenance.mjs',
   ],
+  backupConfirmation:['node --test scripts/test-monitor-database-backup-confirmation.mjs'],
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
     'node --test scripts/test-archive-supabase-database-backup.mjs',
@@ -416,6 +417,11 @@ const PATH_AREAS=freeze({
     'scripts/test-admin-document-history-workflow.mjs',
     'scripts/admin-document-history-maintenance.mjs',
     'scripts/test-admin-document-history-maintenance.mjs',
+  ],
+  backupConfirmation:[
+    '.github/workflows/monitor-trip-storage.yml',
+    'scripts/monitor-database-backup-confirmation.mjs',
+    'scripts/test-monitor-database-backup-confirmation.mjs',
   ],
   backupRestore:[
     '.github/workflows/maintain-admin-document-history.yml',
