@@ -246,6 +246,10 @@ const assistantPath = `${previousAssistantPath}&locale=topic-tab-raman-20261127`
 assert.ok(app.includes(`from "${assistantPath}"`));
 const helpSource = await fs.readFile(new URL('../js/services/rav-assistant-public-help.js', import.meta.url), 'utf8');
 assert.ok(helpSource.includes(`from '${assistantPath.replace('./js/services/', './')}'`));
+const assistantSource = await fs.readFile(new URL('../js/services/rav-assistant.js', import.meta.url), 'utf8');
+const cataloguePath = `../../knowledge/rav-assistant-local-v2.js?v=${releaseVersion}&method=raman-compare-20261127`;
+assert.ok(helpSource.includes(`from '${cataloguePath}'`));
+assert.ok(assistantSource.includes(`from "${cataloguePath}"`));
 assert.ok(app.includes(`from "${helpPath}"`));
 cached.set(oldHelpUrl, new Response('old-help-module'));
 const previousHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261121`;
