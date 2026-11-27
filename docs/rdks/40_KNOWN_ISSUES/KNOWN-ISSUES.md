@@ -1,3 +1,12 @@
+## 27. november — et spørgsmål om opskyl fik svar om bølgemodellen
+
+Den offentlige tyske assistent svarede med RavScores bølgemodel på et
+spørgsmål om, hvad man kan se efter i tang og træstumper opskyllet efter en
+storm. Ordet for storm valgte bølgesvaret, selv om spørgsmålet bad om tegn på
+stranden. Den lokale rettelse genbruger det gennemgåede svar om opskyl på
+dansk, tysk og engelsk. Et ekstra spørgsmål bevares i den almindelige
+behandling af hele henvendelsen. Offentlig levering udestår.
+
 ## 27. november — vandtemperatur mangler i den sene DMI-runde
 
 Ved ét tidspunkt i den offentliggjorte prognose fra #409 manglede vandtemperaturen ved 401 af 673 kystdele. RavRadars almindelige gitteropslag fandt brugbare overfladeværdier fra de officielle DMI-felter ved 356 af dem. Den sene runde brugte de relevante samlinger til vandstand og læste kun vandstandsfeltet. [Vejrkørsel #409](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45939421960)

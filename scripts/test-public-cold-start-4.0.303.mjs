@@ -102,7 +102,7 @@ const tripTestTag = '&trip-test=20261125';
 const previousCareSuffix = previousTopicTabSuffix.replace('assistant-help=20261125-uv-identification-daylight', 'assistant-help=20261126-cracked-amber-care');
 const previousTripTestSuffix = `${previousTopicTabSuffix}${tripTestTag}`;
 const previousCareTripTestSuffix = `${previousCareSuffix}${tripTestTag}`;
-const suffix = previousCareTripTestSuffix.replace('assistant-help=20261126-cracked-amber-care', 'assistant-help=20261126-winter-wave-sorting');
+const suffix = previousCareTripTestSuffix.replace('assistant-help=20261126-cracked-amber-care', 'assistant-help=20261127-beach-signs');
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const oldAccountPanelSuffix = `?v=${releaseVersion}&ui=account-20261006`;
@@ -238,7 +238,7 @@ const previousWaterChangeHelpPath = previousLandingHelpPath.replace('ui=public-h
 const previousUvHelpPath = previousWaterChangeHelpPath.replace('ui=public-help-20261124-water-change', 'ui=public-help-20261125-uv-identification-daylight');
 const previousTopicTabHelpPath = `${previousUvHelpPath}&locale=topic-tab-20261125`;
 const previousCareHelpPath = previousTopicTabHelpPath.replace('ui=public-help-20261125-uv-identification-daylight', 'ui=public-help-20261126-cracked-amber-care');
-const helpPath = previousCareHelpPath.replace('ui=public-help-20261126-cracked-amber-care', 'ui=public-help-20261126-winter-wave-sorting');
+const helpPath = previousCareHelpPath.replace('ui=public-help-20261126-cracked-amber-care', 'ui=public-help-20261127-beach-signs');
 const previousAssistantPath = `./js/services/rav-assistant.js?v=${releaseVersion}`;
 const assistantPath = `${previousAssistantPath}&locale=topic-tab-20261125`;
 assert.ok(app.includes(`from "${assistantPath}"`));
