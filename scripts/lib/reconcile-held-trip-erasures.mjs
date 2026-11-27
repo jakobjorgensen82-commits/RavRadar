@@ -1,5 +1,10 @@
 import { deleteOwnerTrips } from '../../cloudflare/trip-gateway/worker.js';
+import { normalizeCloudflareGatewayUrl } from '../../supabase/functions/_shared/trip-storage.js';
+import {
+  runWorkerCountReadProbe, verifyExistingWorkerBindings, waitForWorkerHealth, WORKER_COUNT_SIGNED_PROBE_KIND,
+} from '../verify-cloudflare-trip-gateway.mjs';
 import { boundedFetch } from './bounded-fetch.mjs';
+import { waitForTripStorageEdgeReadiness } from './trip-storage-edge-readiness.mjs';
 import { TRIP_STORAGE_REQUIRED_SHARD_NAMES } from './trip-storage-legacy-classification.mjs';
 
 const pageSize = 100;
@@ -57,7 +62,7 @@ export async function reconcileHeldTripErasures({ shards, epoch, readHoldEpoch, 
 // and never sends recovery traffic through the held public Worker.
 export async function reconcileCloudflareHeldTripErasures({
   epoch, readHoldEpoch, bindings, accountId, cloudflareToken, projectRef, serviceKey,
-  restoreFrom, captureAt, fetchImpl = fetch,
+  restoreFrom, captureAt, gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId, fetchImpl = fetch,
 }) {
   if (!Array.isArray(bindings) || bindings.length !== 10
     || bindings.some((binding, index) => binding?.binding !== `TRIP_DB_${index}`
@@ -68,8 +73,41 @@ export async function reconcileCloudflareHeldTripErasures({
     || typeof projectRef !== 'string' || !/^[a-z0-9]{20}$/.test(projectRef)
     || typeof cloudflareToken !== 'string' || !cloudflareToken
     || typeof serviceKey !== 'string' || !serviceKey
+    || typeof sharedSecret !== 'string' || sharedSecret.length < 32
+    || typeof publishableKey !== 'string' || !publishableKey
+    || ![versionId, deploymentId].every(id => typeof id === 'string' && databaseIdPattern.test(id))
+    || typeof readHoldEpoch !== 'function'
     || ![restoreFrom, captureAt].every(time => typeof time === 'string' && exactUtcPattern.test(time))) {
     throw new Error('TRIP_RESTORE_PROVIDER_INPUT_INVALID');
+  }
+  const boundDatabases = bindings.map(({ binding, database_name, database_id }) => ({
+    binding, database_name, database_id,
+  }));
+  const gateway = normalizeCloudflareGatewayUrl(gatewayUrl);
+  const baseUrl = `https://${projectRef}.supabase.co`;
+
+  async function verifyRecoveryHoldEpoch() {
+    if (await readHoldEpoch() !== epoch) return null;
+    try {
+      const deployment = await verifyExistingWorkerBindings({
+        accountId, apiToken: cloudflareToken, workerName: 'ravradar-trip-gateway',
+        expectedVersion: versionId, expectedBindings: boundDatabases, fetchImpl,
+      });
+      if (deployment.deploymentId !== deploymentId) return null;
+      const [edge, worker, signed] = await Promise.all([
+        waitForTripStorageEdgeReadiness({
+          baseUrl, publishableKey, expectedStorageMode: 'restore-hold', fetchImpl,
+          retryDelaysMs: [0], requiredConsecutiveSuccesses: 1,
+        }),
+        waitForWorkerHealth({ gatewayUrl: gateway, expectedRestoreHold: true, fetchImpl, retryDelaysMs: [0] }),
+        runWorkerCountReadProbe({
+          gatewayUrl: gateway, sharedSecret, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true, fetchImpl,
+        }),
+      ]);
+      return edge.ok && worker.verified && signed.restoreHeld === true ? epoch : null;
+    } catch {
+      return null;
+    }
   }
 
   async function request(url, headers, body, failureCode) {
@@ -86,7 +124,7 @@ export async function reconcileCloudflareHeldTripErasures({
     }
   }
 
-  const shards = bindings.map(({ database_id: databaseId }) => {
+  const shards = boundDatabases.map(({ database_id: databaseId }) => {
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
     return { prepare(sql) {
       return { bind(...params) {
@@ -103,12 +141,12 @@ export async function reconcileCloudflareHeldTripErasures({
       } };
     } };
   });
-  const journalUrl = `https://${projectRef}.supabase.co/rest/v1/rpc/read_trip_erasure_restore_subjects`;
+  const journalUrl = `${baseUrl}/rest/v1/rpc/read_trip_erasure_restore_subjects`;
   const journalHeaders = { apikey: serviceKey };
   if (!serviceKey.startsWith('sb_secret_')) journalHeaders.Authorization = `Bearer ${serviceKey}`;
 
   return reconcileHeldTripErasures({
-    shards, epoch, readHoldEpoch,
+    shards, epoch, readHoldEpoch: verifyRecoveryHoldEpoch,
     readJournalPage: cursor => request(journalUrl, journalHeaders, {
       p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: cursor,
     }, 'TRIP_RESTORE_JOURNAL_UNVERIFIED'),

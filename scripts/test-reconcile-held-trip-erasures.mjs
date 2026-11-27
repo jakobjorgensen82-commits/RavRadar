@@ -7,7 +7,6 @@ import {
   deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, storeCloudflareTrip,
 } from '../supabase/functions/_shared/trip-storage.js';
 import { reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures } from './lib/reconcile-held-trip-erasures.mjs';
-import { runWorkerCountReadProbe, WORKER_COUNT_SIGNED_PROBE_KIND } from './verify-cloudflare-trip-gateway.mjs';
 
 const migrations = ['001_trip_observations', '002_owner_export_keyset', '003_owner_erasure_insert_guard']
   .map(name => readFileSync(new URL(`../cloudflare/trip-gateway/migrations/${name}.sql`, import.meta.url), 'utf8'));
@@ -83,6 +82,9 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   const accountId = 'c'.repeat(32);
   const serviceKey = 'sb_secret_SYNTHETIC_DELETE_TEST';
   const cloudflareToken = 'SYNTHETIC_LOCAL_D1_TEST_ONLY';
+  const publishableKey = 'synthetic-public-readiness-key';
+  const versionId = '66666666-6666-4666-8666-666666666666';
+  const deploymentId = '77777777-7777-4777-8777-777777777777';
   const restoreFrom = '2026-08-26T09:00:00.000Z';
   const captureAt = '2026-08-26T12:00:00.123456Z';
   const bindings = live.shards.map((_, index) => ({
@@ -90,32 +92,55 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     database_id: `55555555-5555-4555-8555-${String(index).padStart(12, '0')}`,
   }));
   let primaryRead = true;
+  let edgeMode = 'restore-hold';
+  let d1Requests = 0;
   const provider = {
     bindings, projectRef, accountId, serviceKey, cloudflareToken, epoch, restoreFrom, captureAt,
-    async readHoldEpoch() {
-      const proof = await runWorkerCountReadProbe({
-        ...live.config, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true,
-      });
-      return proof.restoreHeld ? epoch : null;
-    },
+    gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId,
+    async readHoldEpoch() { return epoch; },
     async fetchImpl(input, init) {
       const url = new URL(input);
       const request = new Request(input, init);
-      const body = await request.json();
-      assert.equal(request.method, 'POST');
-      assert.equal(request.redirect, 'error');
+      if (url.origin === gatewayUrl) return live.config.fetchImpl(input, init);
       if (url.hostname === `${projectRef}.supabase.co`) {
+        if (request.method === 'OPTIONS') {
+          assert.match(url.pathname, /^\/functions\/v1\/(trip-log|submit-observation)$/);
+          assert.equal(request.headers.get('apikey'), publishableKey);
+          return new Response(null, { status: 204, headers: {
+            'access-control-allow-origin': 'https://ravradar.dk', 'x-ravradar-trip-contract-version': '4.0.311',
+            'x-ravradar-trip-storage-mode': edgeMode, 'x-ravradar-trip-export-version': '1',
+          } });
+        }
+        assert.equal(request.method, 'POST');
+        assert.equal(request.redirect, 'error');
         assert.equal(url.pathname, '/rest/v1/rpc/read_trip_erasure_restore_subjects');
         assert.equal(request.headers.get('apikey'), serviceKey);
         assert.equal(request.headers.get('authorization'), null);
-        assert.deepEqual(body, { p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: null });
+        assert.deepEqual(await request.json(), { p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: null });
         return Response.json([{ owner_subject: erased.subject }]);
       }
       assert.equal(url.hostname, 'api.cloudflare.com');
       assert.equal(request.headers.get('authorization'), `Bearer ${cloudflareToken}`);
+      const workerPath = `/client/v4/accounts/${accountId}/workers/scripts/ravradar-trip-gateway`;
+      if (url.pathname === workerPath + '/deployments') {
+        assert.equal(request.method, 'GET');
+        return Response.json({ success: true, result: { deployments: [{
+          id: deploymentId, strategy: 'percentage', versions: [{ version_id: versionId, percentage: 100 }],
+        }] } });
+      }
+      if (url.pathname === workerPath + '/versions/' + versionId) {
+        assert.equal(request.method, 'GET');
+        return Response.json({ success: true, result: { id: versionId, resources: { bindings: bindings.map(binding => ({
+          type: 'd1', name: binding.binding, id: binding.database_id,
+        })) } } });
+      }
+      assert.equal(request.method, 'POST');
+      assert.equal(request.redirect, 'error');
       const index = bindings.findIndex(binding => url.pathname ===
         `/client/v4/accounts/${accountId}/d1/database/${binding.database_id}/query`);
       assert.notEqual(index, -1);
+      d1Requests += 1;
+      const body = await request.json();
       assert.deepEqual(body.params, [erased.subject]);
       assert.equal(body.sql.includes(erased.subject), false);
       const read = body.sql.startsWith('select');
@@ -126,6 +151,10 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
       }] });
     },
   };
+  edgeMode = 'd1';
+  await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
+  assert.equal(d1Requests, 0);
+  edgeMode = 'restore-hold';
   const result = await reconcileCloudflareHeldTripErasures(provider);
   assert.deepEqual(result, { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch, owners: 1, removedRows: 1 });
   assert.equal(count('trip_observations', erased), 0);
