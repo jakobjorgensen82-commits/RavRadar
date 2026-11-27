@@ -196,7 +196,12 @@ export async function assertNormalStagePublication(t) {
         const bytes = await remote.storage.download(key);
         return new Response(bytes, { headers: { 'content-length': String(bytes.length) } });
       }
-      if (request.method === 'DELETE') { await remote.storage.removeExact(key); return new Response(null, { status: 204 }); }
+      if (request.method === 'DELETE') {
+        const faultResponse = await fault.objectDelete?.(key);
+        if (faultResponse) return faultResponse;
+        await remote.storage.removeExact(key);
+        return new Response(null, { status: 204 });
+      }
       throw new Error('unexpected normal publisher storage method');
     } });
   const r2ListPositions = [];
@@ -225,6 +230,15 @@ export async function assertNormalStagePublication(t) {
   const pendingObjects = bytes => decodePrivateWeatherArchiveReservation(bytes).objects
     .filter(part => part.status === 'pending').map(({ path, bytes }) => ({ path, bytes }));
   const pending = remote => pendingObjects(reservations.get(remote).bytes);
+  const absentObject = (code = 'NoSuchKey') => new Response('<Error><Code>' + code + '</Code></Error>',
+    { status: 404, headers: { 'content-type': 'application/xml' } });
+  const clonePublication = original => {
+    const remote = normalBAndSTransports();
+    for (const [key, value] of original.documents) remote.documents.set(key, structuredClone(value));
+    for (const [key, value] of original.objects) remote.objects.set(key, Buffer.from(value));
+    if (reservations.has(original)) reservations.set(remote, reservations.get(original));
+    return remote;
+  };
 
   const interruptedAcknowledgment = priorGeneration();
   let loseAcknowledgment = false;
@@ -380,7 +394,7 @@ export async function assertNormalStagePublication(t) {
       if (phase === 'compare-and-swap') movedPointerWrites++;
       const rows = await movedBeforeB.documentRequest(query, options, phase);
       if (!simulatedMoved && phase === 'read' && options.cache === 'no-store'
-          && journal(movedBeforeB)?.objects.some(part => part.status === 'pending')) {
+          && journal(movedBeforeB)?.objects.some(part => part.status === 'present')) {
         simulatedMoved = true;
         return rows.map(row => ({ ...row, version: Number(row.version) + 1 }));
       }
@@ -448,6 +462,86 @@ export async function assertNormalStagePublication(t) {
   assert.deepEqual(journal(alternateWinner).objects, [knownArchive]);
   assert.equal(alternateWinner.objects.has(knownArchive.path), true,
     'The loser remains owned without triggering a new deletion');
+
+  const replayWinner = (remote, fault = {}, request = remote.documentRequest) => publishPrivateWeatherRuntime({
+    ...different, request,
+  }, r2OptionsFor(remote, [], undefined, fault));
+  const cleared = clonePublication(alternateWinner);
+  let orphanDeletes = 0;
+  await replayWinner(cleared, {
+    objectDelete(key) {
+      if (key === knownArchive.path) orphanDeletes++;
+      assert.equal(journal(cleared).objects[0].status, 'orphan-deleting', 'A durable fence precedes the wire DELETE');
+    },
+    objectGet: key => key === knownArchive.path && !cleared.objects.has(key) ? absentObject() : undefined,
+  });
+  assert.equal(orphanDeletes, 1);
+  assert.equal(cleared.objects.has(knownArchive.path), false);
+  assert.deepEqual(journal(cleared), { objects: [], intents: [] });
+  assert.deepEqual(cleared.documents.get(pointerKey), alternateWinner.documents.get(pointerKey));
+  for (const part of [cleared.documents.get(pointerKey).payload.current, cleared.documents.get(pointerKey).payload.previous]
+    .flatMap(descriptor => descriptor.objects)) assert.equal(cleared.objects.has(part.objectPath), true);
+
+  const delayedOrphan = clonePublication(alternateWinner);
+  let physicalDeletes = 0;
+  const lostOrphan = {
+    objectDelete(key) {
+      if (key === knownArchive.path) {
+        physicalDeletes++;
+        return new Response(null, { status: 503 });
+      }
+    },
+  };
+  await replayWinner(delayedOrphan, lostOrphan);
+  await replayWinner(delayedOrphan, lostOrphan);
+  assert.equal(physicalDeletes, 1, 'Neither adapter retry nor restart sends a second DELETE');
+  assert.equal(journal(delayedOrphan).objects[0].status, 'orphan-deleting');
+  assert.equal(delayedOrphan.objects.has(knownArchive.path), true);
+  await delayedOrphan.storage.removeExact(knownArchive.path);
+  await replayWinner(delayedOrphan, { objectGet: key => key === knownArchive.path ? absentObject('NoSuchBucket') : undefined });
+  assert.equal(journal(delayedOrphan).objects[0].status, 'orphan-deleting', 'Bucket-level 404 cannot settle the exact object');
+  await replayWinner(delayedOrphan, { objectGet: key => key === knownArchive.path ? absentObject() : undefined });
+  assert.deepEqual(journal(delayedOrphan), { objects: [], intents: [] });
+
+  const staleOwner = clonePublication(alternateWinner);
+  let sawStaleOwner = false;
+  let staleDeletes = 0;
+  await replayWinner(staleOwner, { objectDelete(key) { if (key === knownArchive.path) staleDeletes++; } },
+    async (query, options, phase) => {
+      const rows = await staleOwner.documentRequest(query, options, phase);
+      if (phase === 'read' && options.cache === 'no-store' && !sawStaleOwner
+          && journal(staleOwner)?.objects[0]?.status === 'orphan-deleting') {
+        sawStaleOwner = true;
+        return rows.map(row => ({ ...row, version: Number(row.version) - 1 }));
+      }
+      return rows;
+    });
+  assert.equal(sawStaleOwner, true);
+  assert.equal(staleDeletes, 0);
+  assert.equal(staleOwner.objects.has(knownArchive.path), true);
+
+  const movedJournal = clonePublication(alternateWinner);
+  let sawMovedJournal = false;
+  let racedDeletes = 0;
+  await replayWinner(movedJournal, {
+    reservationPut({ bytes, commit }) {
+      if (decodePrivateWeatherArchiveReservation(bytes).objects[0]?.status === 'orphan-deleting') {
+        const prior = JSON.parse(reservations.get(movedJournal).bytes.toString('utf8'));
+        const replacement = Buffer.from(JSON.stringify({ ...prior, revision: crypto.randomUUID() }));
+        reservations.set(movedJournal, { bytes: replacement,
+          etag: '"' + crypto.createHash('sha256').update(replacement).digest('hex') + '"' });
+        assert.equal(commit(), 412);
+        sawMovedJournal = true;
+      } else {
+        commit();
+      }
+    },
+    objectDelete(key) { if (key === knownArchive.path) racedDeletes++; },
+  });
+  assert.equal(sawMovedJournal, true);
+  assert.equal(racedDeletes, 0);
+  assert.equal(movedJournal.objects.has(knownArchive.path), true);
+
   await finishDelayedCas();
   const lateRow = late.documents.get(pointerKey);
   assert.equal(lateRow.version, 2);
@@ -584,6 +678,22 @@ export async function assertNormalStagePublication(t) {
   })), error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
   assert.deepEqual(transport.documents.get(pointerKey), beforeThird);
   assert.equal(beforeCasCalls.includes('DELETE'), false);
+  const [neverSent] = journal(transport).objects;
+  assert.equal(neverSent.status, 'present');
+  assert.equal(neverSent.created, true);
+  assert.deepEqual(journal(transport).intents, [], 'The exact pending B mutation was never armed');
+  const abortedBeforeB = clonePublication(transport);
+  let preBDeletes = 0;
+  const unaffectedCurrent = await publishPrivateWeatherRuntime({ ...normalPublication,
+    request: abortedBeforeB.documentRequest }, r2OptionsFor(abortedBeforeB, [], undefined, {
+    objectDelete(key) { if (key === neverSent.path) preBDeletes++; },
+    objectGet: key => key === neverSent.path && !abortedBeforeB.objects.has(key) ? absentObject() : undefined,
+  }));
+  assert.equal(unaffectedCurrent.published, false);
+  assert.equal(preBDeletes, 1);
+  assert.equal(abortedBeforeB.objects.has(neverSent.path), false);
+  assert.deepEqual(abortedBeforeB.documents.get(pointerKey), beforeThird);
+  assert.deepEqual(journal(abortedBeforeB), { objects: [], intents: [] });
   const afterPrepared = new Set(transport.objects.keys());
   await assert.rejects(checkCodeOnlyPrivateWeatherRebind(transport.documentRequest, r2OptionsFor(transport, [])),
     { code: 'PRIVATE_WEATHER_PUBLICATION_PENDING_POINTER_ADVANCE' });

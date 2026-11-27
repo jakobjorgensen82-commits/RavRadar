@@ -9,7 +9,8 @@ import { canonicalPrivateRuntimeJson } from './private-production-runtime-bundle
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
 import { createPrivateWeatherUploadReservationR2, PRIVATE_WEATHER_PUBLICATION_POLICY,
   PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES, ARCHIVE_UPLOAD_JOURNAL_KIND, RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES,
-  RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES, privateWeatherArchivePartSha, sumPrivateWeatherArchiveReservationBytes,
+  RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES, privateWeatherArchivePartSha, privateWeatherArchivePartGroup,
+  sumPrivateWeatherArchiveReservationBytes,
   decodePrivateWeatherArchiveReservation, readPrivateWeatherArchiveUploadReservationBytes }
   from './lib/operational-evidence-r2-slots.mjs';
 export { PRIVATE_WEATHER_PUBLICATION_POLICY };
@@ -36,6 +37,68 @@ export function assertPrivateWeatherPublicationBackend(value = process.env.RAVRA
   if (value !== 'r2') fail('PRIVATE_WEATHER_PUBLICATION_BACKEND_MISMATCH');
 }
 
+
+async function hasR2MissingObjectCode(response) {
+  if (!/^application\/xml(?:[ \t]*;[ \t]*charset=utf-8)?$/i.test(response.headers.get('content-type') ?? '')
+      || !response.body?.getReader) return false;
+  const maximum = 4096;
+  const declared = response.headers.get('content-length');
+  if (declared !== null && (!/^[1-9][0-9]*$/.test(declared) || Number(declared) > maximum)) return false;
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) break;
+      size += next.value.byteLength;
+      if (size > maximum) return false;
+      chunks.push(Buffer.from(next.value));
+    }
+    if (declared !== null && size !== Number(declared)) return false;
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, size));
+    return /^(?:<\?xml version="1\.0"(?: encoding="UTF-8")?\?>\s*)?<Error>\s*<Code>NoSuchKey<\/Code>(?:\s*<(Message|Resource|RequestId|HostId|Key|BucketName)>[^<>]*<\/\1>)*\s*<\/Error>\s*$/.test(text);
+  } catch {
+    return false;
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
+function orphanArchiveTransport(options, objectPath) {
+  const fetchImpl = options?.fetchImpl ?? globalThis.fetch;
+  const bucketId = PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId;
+  let deleteSent = false;
+  let missing = false;
+  const storage = createR2PrivateRuntimeStorage({
+    ...options, bucketId, maximumObjectBytes: PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,
+    fetchImpl: async (url, request) => {
+      const method = request?.method;
+      if (!privateWeatherArchivePartSha(objectPath) || new URL(url).pathname !== '/' + bucketId + '/' + objectPath
+          || !request.headers?.authorization || request.redirect !== 'manual'
+          || (method !== 'GET' && method !== 'DELETE')) fail('PRIVATE_WEATHER_ORPHAN_TRANSPORT_IDENTITY');
+      if (method === 'DELETE') {
+        if (deleteSent) fail('PRIVATE_WEATHER_ORPHAN_DELETE_ALREADY_SENT');
+        deleteSent = true;
+      }
+      const response = await fetchImpl(url, { ...request, cache: 'no-store', signal: AbortSignal.timeout(8_000) });
+      if (method === 'GET') missing = response.status === 404 && await hasR2MissingObjectCode(response);
+      return response;
+    },
+  });
+  return {
+    async read() {
+      missing = false;
+      try { return await storage.download(objectPath); }
+      catch (error) {
+        if (missing) return null;
+        throw error;
+      }
+    },
+    remove: () => storage.removeExact(objectPath),
+  };
+}
 
 function archiveUploadReservation(options) {
   const fetchImpl = options?.fetchImpl ?? globalThis.fetch;
@@ -203,6 +266,53 @@ function archiveUploadReservation(options) {
     }
     await flush();
   }
+  async function settleOneOrphan(storage, incoming, before, freshPointer) {
+    if (!before) return;
+    await recover(storage);
+    const beforeSha = fingerprint(before);
+    const activeGroup = privateWeatherArchivePartGroup(incoming);
+    if (!activeGroup) fail('PRIVATE_WEATHER_ORPHAN_TRANSPORT_IDENTITY');
+    const live = [before.payload.current, before.payload.previous].filter(Boolean)
+      .flatMap(archive => archive.objects ?? [archive]);
+    const protectedPaths = new Set(live.map(part => part.objectPath));
+    const eligible = part => part.created && !protectedPaths.has(part.path)
+      && privateWeatherArchivePartGroup(part.path) !== activeGroup
+      && state.intents.filter(intent => intent.paths.includes(part.path)).every(intent => {
+        const successorVersion = intent.beforeVersion + 1;
+        return intent.successorSha256 !== null && (before.version > successorVersion
+          || (before.version === successorVersion && beforeSha === intent.successorSha256));
+      });
+    const candidate = state.objects.find(part => part.status === 'present' && eligible(part))
+      ?? state.objects.find(part => part.status === 'orphan-deleting' && eligible(part));
+    if (!candidate) return;
+    const { path: objectPath, bytes: expectedBytes } = candidate;
+    const remote = orphanArchiveTransport(options, objectPath);
+    async function requireUnchangedOwners() {
+      if (fingerprint(await freshPointer()) !== beforeSha) fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_CHANGED');
+      const current = await record.read();
+      if (!current || current.etag !== base?.etag || !current.bytes.equals(base.bytes)) {
+        fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
+      }
+    }
+    await requireUnchangedOwners();
+    const bytes = await remote.read();
+    if (candidate.status === 'present') {
+      // The first probe must positively bind the exact physical object.
+      if (!bytes || bytes.length !== expectedBytes
+          || crypto.createHash('sha256').update(bytes).digest('hex') !== privateWeatherArchivePartSha(objectPath)) return;
+      // Fences older journal intents before any DELETE can leave here. A
+      // later job may verify absence but cannot send another physical DELETE.
+      await store({ ...state, objects: state.objects.map(part => part === candidate
+        ? { ...part, status: 'orphan-deleting' } : part) });
+      await requireUnchangedOwners();
+      try { await remote.remove(); } catch { /* Only authenticated readback settles absence. */ }
+      if (await remote.read() !== null) return;
+    } else if (bytes !== null) {
+      return;
+    }
+    await requireUnchangedOwners();
+    await store(withoutPaths(new Set([objectPath])));
+  }
   async function removeCreated(objectPath, remove) {
     const part = object(objectPath);
     if (!part) return remove();
@@ -216,9 +326,9 @@ function archiveUploadReservation(options) {
     await store(withoutPaths(new Set([objectPath])));
     return removed;
   }
-  return { recover, upload, observeBytes, pendingBytes, preparePointer, finish, removeCreated,
+  return { recover, upload, observeBytes, pendingBytes, flush, preparePointer, finish, removeCreated, settleOneOrphan,
     wasRecovered: objectPath => object(objectPath)?.status === 'present',
-    deletionUnresolved: objectPath => object(objectPath)?.status === 'deleting' };
+    deletionUnresolved: objectPath => ['deleting', 'orphan-deleting'].includes(object(objectPath)?.status) };
 }
 
 export function createPrivateWeatherPublicationStorage(options = {}, reserveRetirementMarker = false, observeInitialStock, reservation) {
@@ -242,6 +352,7 @@ export function createPrivateWeatherPublicationStorage(options = {}, reserveReti
     if (method === 'HEAD' && privateWeatherArchivePartSha(objectPath)) {
       const response = await fetchImpl(url, request);
       await reservation.recover(storage);
+      if ([200, 404].includes(response.status)) await reservation.beforeArchive(storage, objectPath);
       if (reservation.deletionUnresolved(objectPath)) {
         await response.body?.cancel?.().catch(() => {});
         fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
@@ -293,7 +404,7 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
   }
   const policy = PRIVATE_WEATHER_PUBLICATION_POLICY;
   const retirement = createPrivateWeatherRetirement(storageOptions, policy.bucketCeilingBytes);
-  let before, lastRead, readQuery, priorSettled;
+  let before, lastRead, readQuery, priorSettled, orphanSettled;
   let priorRetirementSettled = false;
   const freshPointer = async () => {
     return decodePrivateWeatherPointerRow(await options.request(readQuery, { cache: 'no-store',
@@ -308,7 +419,11 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
   let bucketUsageBeforeArchiveUpload;
   const storage = createPrivateWeatherPublicationStorage(storageOptions, true, usage => {
     if (priorRetirementSettled) bucketUsageBeforeArchiveUpload = usage;
-  }, reservation);
+  }, { ...reservation, beforeArchive(activeStorage, objectPath) {
+    // Run after the incoming HEAD and before any new archive PUT or stock measurement.
+    orphanSettled ??= reservation.settleOneOrphan(activeStorage, objectPath, before, freshPointer).catch(() => {});
+    return orphanSettled;
+  } });
   let bucketUsageBeforeRetirementMarker;
   const validateMarkerCapacity = async bytes => {
     await reservation.recover(storage);
@@ -342,6 +457,8 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
           version: (before?.version ?? 0) + 1,
           payload: JSON.parse(request.body).payload,
         }]);
+        // Keep positive ownership even if the later B-intent write never starts.
+        await reservation.flush();
         if (phase === 'compare-and-swap') await retirement.prepare(before, next.payload, validateMarkerCapacity);
         pointerIntentStarted = true;
         await reservation.preparePointer(before, next, freshPointer);

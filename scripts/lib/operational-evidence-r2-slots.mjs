@@ -88,8 +88,9 @@ export const privateWeatherArchivePartSha = objectPath => {
   const match = ARCHIVE_PART_PATH.exec(objectPath);
   return match?.[2] ?? match?.[1];
 };
+export const privateWeatherArchivePartGroup = objectPath => ARCHIVE_PART_PATH.exec(objectPath)?.[1];
 export const sumPrivateWeatherArchiveReservationBytes = objects => objects
-  .reduce((total, object) => total + (object.status === 'present' ? 0 : object.bytes), 0);
+  .reduce((total, object) => total + (['present', 'orphan-deleting'].includes(object.status) ? 0 : object.bytes), 0);
 
 const hash = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
 
@@ -114,8 +115,8 @@ export function decodePrivateWeatherArchiveReservation(bytes) {
           || typeof part.path !== 'string' || !privateWeatherArchivePartSha(part.path) || paths.has(part.path)
           || !Number.isSafeInteger(part.bytes) || part.bytes < 1
           || part.bytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes) throw new Error();
-      if (!legacy && (!['pending', 'present', 'deleting'].includes(part.status)
-          || typeof part.created !== 'boolean' || (part.status === 'deleting' && !part.created)
+      if (!legacy && (!['pending', 'present', 'deleting', 'orphan-deleting'].includes(part.status)
+          || typeof part.created !== 'boolean' || (['deleting', 'orphan-deleting'].includes(part.status) && !part.created)
           || (part.status === 'pending' && part.created))) throw new Error();
       paths.set(part.path, legacy ? { ...part, status: 'pending', created: false } : part);
     }
@@ -129,7 +130,10 @@ export function decodePrivateWeatherArchiveReservation(bytes) {
           || !Array.isArray(intent.paths) || intent.paths.length < 1
           || intent.paths.length > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveObjectCount
           || new Set(intent.paths).size !== intent.paths.length
-          || intent.paths.some(objectPath => paths.get(objectPath)?.status !== 'present')
+          || intent.paths.some(objectPath => {
+            const status = paths.get(objectPath)?.status;
+            return status !== 'present' && (status !== 'orphan-deleting' || intent.successorSha256 === null);
+          })
           || (intent.successorSha256 !== null && (!hash(intent.successorSha256)
             || intent.successorSha256 === intent.afterSha256))) throw new Error();
       afterHashes.add(intent.afterSha256);
