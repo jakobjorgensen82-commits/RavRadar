@@ -801,8 +801,11 @@ test('normal catalogue read qualifies the installed signup bootstrap without rea
     ['ARMED', 'NATIVE_RECEIPT_ARMED', [valid, legacy], { status: 'SIGNUP_BOOTSTRAP_REFUSED' }],
     ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, bodySha256: 'e'.repeat(64) }],
       { status: 'SIGNUP_BOOTSTRAP_UNRECOGNIZED_BODY' }],
-    ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, executeAcl: 'UNREVIEWED' }],
-      { status: 'SIGNUP_BOOTSTRAP_UNREVIEWED_ACL', installerVersion: '4.0.43' }],
+    ...['DOCUMENTED_API_ROLE_GRANTS_ONLY', 'NON_OWNER_GRANT_OPTION', 'UNREVIEWED'].map(executeAcl =>
+      ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, executeAcl }],
+        { status: 'SIGNUP_BOOTSTRAP_UNREVIEWED_ACL', installerVersion: '4.0.43', executeAcl }]),
+    ['ARMED', 'NATIVE_RECEIPT_ARMED', [{ ...valid, executeAcl: 'unknown-cluster-role' }],
+      { status: 'SIGNUP_BOOTSTRAP_UNREVIEWED_ACL', installerVersion: '4.0.43', executeAcl: 'UNREVIEWED' }],
     ['CAPTURED', 'NATIVE_CAPTURE_OBSERVED', [valid],
       { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion: '4.0.43', executeAcl: valid.executeAcl }],
   ];
