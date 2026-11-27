@@ -2,8 +2,6 @@
 // The conditional transports have fixed keys and expose no delete or mutation retry.
 import crypto from 'node:crypto';
 import { createR2PrivateRuntimeStorage } from './r2-private-runtime-storage.mjs';
-import { PRIVATE_WEATHER_PUBLICATION_POLICY, readPrivateWeatherArchiveUploadReservationBytes }
-  from '../publish-private-weather-runtime.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from '../protected-private-production-runtime.mjs';
 import { RETIREMENT_MARKER_BYTES } from './private-weather-runtime-retirement.mjs';
 
@@ -71,7 +69,53 @@ function fixedR2ConditionalObject({
   return { read, compareAndSwap };
 }
 
+// DEC-0255: internal, weather-only transport budget. No environment/CLI override.
+export const PRIVATE_WEATHER_PUBLICATION_POLICY = Object.freeze({
+  bucketCeilingBytes: 2_500_000_000,
+  reserveBytes: 100_000_000,
+});
 export const PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES = 16_384;
+
+const ARCHIVE_PART_PATH = /^bundles\/sha256\/([0-9a-f]{64})(?:\.json\.gz|\/part-[0-9]{3}-([0-9a-f]{64})\.json\.gz\.part)$/;
+export const RESERVED_ARCHIVE_UPLOAD_KIND = 'RAVRADAR_PRIVATE_WEATHER_ARCHIVE_UPLOAD_V1';
+export const RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES = 16;
+// The other writers already keep one whole weather generation in reserve.
+// Keep this byte bound within that reserve, including the record itself.
+export const RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES = PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
+  - PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES;
+export const privateWeatherArchivePartSha = objectPath => {
+  const match = ARCHIVE_PART_PATH.exec(objectPath);
+  return match?.[2] ?? match?.[1];
+};
+export const sumPrivateWeatherArchiveReservationBytes = pending => pending.reduce((total, part) => total + part.bytes, 0);
+
+export function decodePrivateWeatherArchiveReservation(bytes) {
+  try {
+    const text = bytes.toString('utf8');
+    const record = JSON.parse(text);
+    if (JSON.stringify(record) !== text || Object.keys(record).join(',') !== 'kind,revision,pending'
+        || record.kind !== RESERVED_ARCHIVE_UPLOAD_KIND || !/^[0-9a-f-]{36}$/.test(record.revision)
+        || !Array.isArray(record.pending) || record.pending.length > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES) throw new Error();
+    const paths = new Set();
+    for (const part of record.pending) {
+      if (!part || Object.keys(part).join(',') !== 'path,bytes' || typeof part.path !== 'string'
+          || !privateWeatherArchivePartSha(part.path) || paths.has(part.path) || !Number.isSafeInteger(part.bytes)
+          || part.bytes < 1 || part.bytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes) throw new Error();
+      paths.add(part.path);
+    }
+    if (sumPrivateWeatherArchiveReservationBytes(record.pending) > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES) throw new Error();
+    return record.pending;
+  } catch {
+    const code = 'PRIVATE_WEATHER_UPLOAD_RESERVATION_INVALID';
+    throw Object.assign(new Error(code), { code });
+  }
+}
+
+export async function readPrivateWeatherArchiveUploadReservationBytes(record) {
+  const found = await record.read();
+  return found ? sumPrivateWeatherArchiveReservationBytes(decodePrivateWeatherArchiveReservation(found.bytes)) : 0;
+}
+
 
 export function createPrivateWeatherUploadReservationR2({
   accountId = process.env.RAVRADAR_R2_ACCOUNT_ID,

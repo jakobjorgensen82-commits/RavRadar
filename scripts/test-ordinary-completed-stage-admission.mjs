@@ -168,7 +168,11 @@ export async function assertNormalStagePublication(t) {
         return new Response(`<ListBucketResult><Contents><Key>preserved</Key><Size>${virtualUsed}</Size></Contents><KeyCount>1</KeyCount><IsTruncated>false</IsTruncated></ListBucketResult>`);
       }
       if (request.method === 'HEAD' && address.pathname === '/ravradar-private-production-runtime') return new Response(null);
-      if (request.method === 'HEAD') return new Response(null, { status: remote.objects.has(key) ? 200 : 404 });
+      if (request.method === 'HEAD') {
+        const present = remote.objects.has(key);
+        await fault.afterObjectHead?.(key, present);
+        return new Response(null, { status: present ? 200 : 404 });
+      }
       if (request.method === 'PUT') {
         if (fault.objectPut) await fault.objectPut(key, request.body);
         const result = await remote.storage.uploadImmutable(key, request.body);
@@ -267,9 +271,22 @@ export async function assertNormalStagePublication(t) {
   assert.deepEqual(pending(allowDifferent), [unresolved],
     'An unrelated ordinary generation may proceed while it continues to count the unresolved bytes');
 
-  await finishDelayedArchive();
   const recoveredCalls = [];
-  const recovered = await publishOn(lateArchive, recoveredCalls);
+  const remoteHeadObservations = [];
+  const recovered = await publishOn(lateArchive, recoveredCalls, {
+    async afterObjectHead(key, present) {
+      if (key !== unresolved.path) return;
+      remoteHeadObservations.push(present);
+      if (remoteHeadObservations.length === 1) {
+        assert.equal(present, false);
+        await finishDelayedArchive();
+      }
+    },
+    objectPut(key) {
+      assert.notEqual(key, unresolved.path, 'A stale negative HEAD cannot send a second archive PUT');
+    },
+  });
+  assert.deepEqual(remoteHeadObservations, [false, true], 'The second HEAD really observes the delayed original');
   assert.equal(recovered.published, true, 'The same candidate can finish after the exact immutable bytes appear');
   assert.deepEqual(pending(lateArchive), []);
   assert.equal(lateArchive.objects.has(unresolved.path), true);
