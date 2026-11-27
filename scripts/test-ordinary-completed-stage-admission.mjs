@@ -155,12 +155,17 @@ export async function assertNormalStagePublication(t) {
         assert.equal(request.method, 'PUT');
         assert(request.headers.authorization);
         const bytes = Buffer.from(request.body);
-        if (previous ? request.headers['if-match'] !== previous.etag
-          : request.headers['if-none-match'] !== '*') return new Response(null, { status: 412 });
-        const commit = () => reservations.set(remote, { bytes, etag: '"' + crypto.createHash('sha256').update(bytes).digest('hex') + '"' });
+        let status;
+        const commit = () => {
+          const current = reservations.get(remote);
+          if (current ? request.headers['if-match'] !== current.etag
+            : request.headers['if-none-match'] !== '*') return status = 412;
+          reservations.set(remote, { bytes, etag: '"' + crypto.createHash('sha256').update(bytes).digest('hex') + '"' });
+          return status = 200;
+        };
         if (fault.reservationPut) await fault.reservationPut({ bytes, commit });
         else commit();
-        return new Response(null);
+        return new Response(null, { status });
       }
       calls.push(request.method);
       if (request.method === 'GET' && address.searchParams.has('list-type')) {
@@ -179,6 +184,8 @@ export async function assertNormalStagePublication(t) {
         return new Response(null, { status: result.created ? 200 : 412 });
       }
       if (request.method === 'GET') {
+        const faultResponse = await fault.objectGet?.(key);
+        if (faultResponse) return faultResponse;
         if (!remote.objects.has(key)) return new Response(null, { status: 404 });
         const bytes = await remote.storage.download(key);
         return new Response(bytes, { headers: { 'content-length': String(bytes.length) } });
@@ -209,20 +216,59 @@ export async function assertNormalStagePublication(t) {
   }, r2OptionsFor(remote, calls, undefined, fault));
   const pending = remote => JSON.parse(reservations.get(remote).bytes.toString('utf8')).pending;
 
-  const lateReservation = priorGeneration();
-  let finishDelayedReservation;
-  const lateReservationCalls = [];
-  await assert.rejects(publishOn(lateReservation, lateReservationCalls, {
-    reservationPut({ commit }) {
-      assert.equal(finishDelayedReservation, undefined, 'No second physical attempt for an unresolved reservation');
-      finishDelayedReservation = commit;
-      throw new Error('synthetic lost response before the conditional write is visible');
-    },
-  }));
-  assert.equal(lateReservationCalls.includes('PUT'), false, 'Unknown reservation cannot authorize any archive write');
-  assert.deepEqual(lateReservation.documents.get(pointerKey), heldParent);
-  finishDelayedReservation();
-  assert.equal(pending(lateReservation).length, 1);
+  for (const reserveCommitsFirst of [false, true]) {
+    const lateReservation = priorGeneration();
+    let finishDelayedReservation;
+    let fences = 0;
+    const lateReservationCalls = [];
+    await assert.rejects(publishOn(lateReservation, lateReservationCalls, {
+      reservationPut({ bytes, commit }) {
+        if (JSON.parse(bytes).pending.length) {
+          assert.equal(finishDelayedReservation, undefined, 'The same reserve is never blindly retried');
+          finishDelayedReservation = commit;
+          throw new Error('synthetic lost response before the reservation is visible');
+        }
+        if (++fences === 1 && reserveCommitsFirst) {
+          assert.equal(finishDelayedReservation(), 200);
+          assert.equal(commit(), 412, 'The first fence loses to the delayed reservation');
+        } else assert.equal(commit(), 200);
+      },
+    }), error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
+    assert.equal(fences, reserveCommitsFirst ? 2 : 1);
+    assert.equal(lateReservationCalls.includes('PUT'), false, 'Unknown reservation cannot authorize any archive write');
+    assert.deepEqual(lateReservation.documents.get(pointerKey), heldParent);
+    if (!reserveCommitsFirst) assert.equal(finishDelayedReservation(), 412, 'The confirmed fence excludes the late reservation');
+    assert.deepEqual(pending(lateReservation), []);
+    assert.equal((await publishOn(lateReservation, [])).published, true, 'Normal retry can use the unsent archive key');
+  }
+
+  for (const clearUnknown of [false, true]) {
+    const failedReadback = priorGeneration();
+    const rollbackCalls = [];
+    let acknowledged;
+    await assert.rejects(publishOn(failedReadback, rollbackCalls, {
+      reservationPut({ bytes, commit }) {
+        if (clearUnknown && JSON.parse(bytes).pending.length === 0) throw new Error('synthetic clearing response lost');
+        assert.equal(commit(), 200);
+      },
+      objectPut(key, bytes) { acknowledged = { path: key, bytes: bytes.length }; },
+      objectGet(key) {
+        if (key === acknowledged?.path) return new Response(null, { status: 500 });
+      },
+    }), /download failed closed/);
+    assert(acknowledged, 'The immutable archive PUT received a terminal successful response');
+    assert.deepEqual(failedReadback.documents.get(pointerKey), heldParent, 'The failure preceded pointer mutation');
+    assert.equal(rollbackCalls.includes('DELETE'), !clearUnknown);
+    assert.equal(failedReadback.objects.has(acknowledged.path), clearUnknown);
+    assert.deepEqual(pending(failedReadback), clearUnknown ? [acknowledged] : []);
+    const retried = await publishOn(failedReadback, [], {
+      objectPut(key) {
+        if (clearUnknown) assert.notEqual(key, acknowledged.path, 'Reuse the preserved acknowledged bytes');
+      },
+    });
+    assert.equal(retried.published, true);
+    assert.deepEqual(pending(failedReadback), []);
+  }
 
   const lateArchive = priorGeneration();
   let finishDelayedArchive;
