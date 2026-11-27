@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import { handleRequest } from '../cloudflare/trip-gateway/worker.js';
@@ -7,7 +10,9 @@ import {
   deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, storeCloudflareTrip,
 } from '../supabase/functions/_shared/trip-storage.js';
 import {
-  identifyCloudflareTripRestore, prepareRetainedTripSnapshot, reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures,
+  identifyCloudflareTripRestore, openRetainedTripSnapshot, prepareRetainedTripSnapshot,
+  reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures,
+  sealRetainedTripSnapshot,
 } from './lib/reconcile-held-trip-erasures.mjs';
 
 const migrations = ['001_trip_observations', '002_owner_export_keyset', '003_owner_erasure_insert_guard']
@@ -85,10 +90,6 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   live.hold('true');
   const saved = await prepareRetainedTripSnapshot(live.shards, [erased.subject]);
   const retainedTripRowsSha256 = saved.sha256;
-  live.active[0] = snapshot.active[0];
-  assert.equal(count('trip_owner_erasure_tombstones', erased), 0);
-  assert.equal(count('trip_observations', erased), 1);
-  await assert.rejects(list(erased));
 
   const projectRef = 'tttttttttttttttttttt';
   const accountId = 'c'.repeat(32);
@@ -121,6 +122,28 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
         body: { success: true, result: { bookmark: providerBookmark } } },
     }],
   };
+  const archiveSecret = 'synthetic-local-trip-before-image-encryption-secret';
+  const sealed = sealRetainedTripSnapshot({ scope, plan: restorePlan, snapshot: saved, archiveSecret });
+  restorePlan.retainedArchiveSha256 = sealed.sha256;
+  assert.equal(sealed.archive.includes(otherRow.client_observation_id), false);
+  assert.notEqual(sealRetainedTripSnapshot({ scope, plan: restorePlan, snapshot: saved, archiveSecret }).sha256, sealed.sha256);
+  const directory = mkdtempSync(join(tmpdir(), 'ravradar-test-d1-restore-'));
+  const filename = join(directory, 'retained-trips.enc');
+  t.after(() => {
+    unlinkSync(filename);
+    rmdirSync(directory);
+  });
+  writeFileSync(filename, sealed.archive, { flag: 'wx', mode: 0o600 });
+  const reopened = openRetainedTripSnapshot({
+    scope, plan: restorePlan, archive: readFileSync(filename), archiveSecret,
+  });
+  assert.deepEqual(reopened, JSON.parse(JSON.stringify(saved.rows)));
+
+  live.active[0] = snapshot.active[0];
+  assert.equal(count('trip_owner_erasure_tombstones', erased), 0);
+  assert.equal(count('trip_observations', erased), 1);
+  await assert.rejects(list(erased));
+
   const restoreReplies = [{
     databaseId, method: 'POST', url: baseRestoreUrl + 'restore?bookmark=' + providerBookmark, status: 200,
     startedAt: '2026-08-26T11:56:00.000Z', completedAt: '2026-08-26T11:58:00.000Z',
@@ -132,13 +155,16 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   assert.notEqual(restoreIdentity.epoch, epoch);
   let primaryRead = true;
   let edgeMode = 'restore-hold';
+  let providerRequests = 0;
   let d1Requests = 0;
   const reinsertedTables = [];
   const provider = {
-    bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan, restoreReplies, retainedTripRows: saved.rows,
+    bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan, restoreReplies,
+    retainedArchive: readFileSync(filename), archiveSecret,
     gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId,
     async readHoldEpoch() { return restoreIdentity.epoch; },
     async fetchImpl(input, init) {
+      providerRequests += 1;
       const url = new URL(input);
       const request = new Request(input, init);
       if (url.origin === gatewayUrl) return live.config.fetchImpl(input, init);
@@ -215,14 +241,25 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     }] },
   }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
   assert.equal(d1Requests, 0);
+  const changedArchive = Buffer.from(sealed.archive);
+  changedArchive[changedArchive.length - 1] ^= 1;
+  const changedArchiveDigest = createHash('sha256').update(changedArchive).digest('hex');
+  for (const overrides of [
+    { retainedArchive: undefined, retainedTripRows: saved.rows },
+    { retainedArchive: changedArchive },
+    { retainedArchive: changedArchive, restorePlan: { ...restorePlan, retainedArchiveSha256: changedArchiveDigest } },
+    { archiveSecret: archiveSecret + '-incorrect' },
+    { restorePlan: { ...restorePlan, runId: '5678' } },
+    { restorePlan: { ...restorePlan, snapshotAt: '2026-08-26T11:55:31.000Z' } },
+    { restorePlan: { ...restorePlan, retainedTripRowsSha256: 'a'.repeat(64) } },
+  ]) {
+    await assert.rejects(reconcileCloudflareHeldTripErasures({ ...provider, ...overrides }), /TRIP_RESTORE_RETAINED_ARCHIVE_UNVERIFIED/);
+  }
+  assert.equal(providerRequests, 0);
   edgeMode = 'd1';
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(d1Requests, 0);
   edgeMode = 'restore-hold';
-  await assert.rejects(reconcileCloudflareHeldTripErasures({
-    ...provider, retainedTripRows: [],
-  }), /TRIP_RESTORE_RETAINED_ROWS_UNVERIFIED/);
-  assert.equal(d1Requests, 0);
   const result = await reconcileCloudflareHeldTripErasures(provider);
   assert.deepEqual(result, {
     kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch: restoreIdentity.epoch, owners: 1, removedRows: 1, recoveredRows: 1, retainedTripRowsSha256,

@@ -43,8 +43,12 @@ efter genanvendelse af sletningerne og kræver de samme data. En lokal
 prøve genskaber en manglende tur med den oprindelige stemplede
 registrering. En ufuldført reservation bevares som reservation. En
 konflikt i de eksisterende data standser forløbet. Førkopien skal være
-fra før den første gendannelsesanmodning. Selve gendannelsesjobbet skal
-stadig kunne gemme, genlæse og verificere en krypteret førkopi.
+fra før den første gendannelsesanmodning. Den lokale kandidat krypterer
+kopien og knytter den til den konkrete kørsel, spærring og de valgte
+gendannelsespunkter. En prøve gemmer og genlæser den krypterede testkopi
+før og efter en simuleret gendannelse. En ændret kopi, forkert nøgle
+eller forkert kørsel afvises inden leverandørkald. Et vedvarende privat
+lager med godkendt opbevaring og det samlede gendannelsesjob udestår.
 
 Den eksisterende D1-installation og dennes fejlgenoptagelse læser nu den
 aktive Workers bindingsmetadata før de berørte skriveruter. Samme kontrol

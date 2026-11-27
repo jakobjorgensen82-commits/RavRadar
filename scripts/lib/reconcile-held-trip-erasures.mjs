@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { deleteOwnerTrips } from '../../cloudflare/trip-gateway/worker.js';
 import { canonicalJson, normalizeCloudflareGatewayUrl } from '../../supabase/functions/_shared/trip-storage.js';
 import {
@@ -24,6 +25,15 @@ const retainedTables = [
   { name: 'trip_owner_erasure_tombstones', key: 'owner_subject', columns: ['owner_subject', 'erased_at'] },
 ];
 const retainedRowsError = () => new Error('TRIP_RESTORE_RETAINED_ROWS_UNVERIFIED');
+const archiveError = () => new Error('TRIP_RESTORE_RETAINED_ARCHIVE_UNVERIFIED');
+const archiveDomain = 'RavRadar/trip-d1-retained-rows/v1';
+const archiveMagic = Buffer.from('RR-TRIP-D1-RETAINED-1\n');
+const archiveSaltBytes = 16;
+const archiveNonceBytes = 12;
+const archiveTagBytes = 16;
+const archivePrefixBytes = archiveMagic.length + archiveSaltBytes + archiveNonceBytes;
+const maximumSnapshotBytes = 32 * 1024 * 1024;
+const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 
 function timestampKey(time) {
   if (typeof time !== 'string' || !exactUtcPattern.test(time) || !Number.isFinite(Date.parse(time))
@@ -41,6 +51,7 @@ export function identifyCloudflareTripRestore({ accountId, projectRef, bindings,
   if (!plan || typeof plan.intentId !== 'string' || !databaseIdPattern.test(plan.intentId)
     || typeof plan.sourceSha !== 'string' || !/^[a-f0-9]{40}$/.test(plan.sourceSha)
     || typeof plan.retainedTripRowsSha256 !== 'string' || !digestPattern.test(plan.retainedTripRowsSha256)
+    || typeof plan.retainedArchiveSha256 !== 'string' || !digestPattern.test(plan.retainedArchiveSha256)
     || typeof plan.runId !== 'string' || !/^[1-9]\d{0,19}$/.test(plan.runId) || plan.attempt !== 1
     || !Array.isArray(plan.targets) || plan.targets.length < 1 || plan.targets.length > 10
     || !Array.isArray(replies) || replies.length !== plan.targets.length) throw failure();
@@ -91,12 +102,12 @@ export function identifyCloudflareTripRestore({ accountId, projectRef, bindings,
   });
   return {
     restoreFrom: plan.journalCoveredFrom, captureAt: plan.captureAt,
-    epoch: createHash('sha256').update(canonicalJson({
-      scope: 'ravradar-trip-d1-restore-v4', accountId, projectRef, versionId, deploymentId, bindings,
+    epoch: sha256(canonicalJson({
+      scope: 'ravradar-trip-d1-restore-v5', accountId, projectRef, versionId, deploymentId, bindings,
       intentId: plan.intentId, sourceSha: plan.sourceSha, runId: plan.runId, attempt: plan.attempt,
-      retainedTripRowsSha256: plan.retainedTripRowsSha256,
+      retainedTripRowsSha256: plan.retainedTripRowsSha256, retainedArchiveSha256: plan.retainedArchiveSha256,
       heldAt: plan.heldAt, snapshotAt: plan.snapshotAt, captureAt: plan.captureAt, journalCoveredFrom: plan.journalCoveredFrom, restored,
-    })).digest('hex'),
+    })),
   };
 }
 
@@ -195,6 +206,65 @@ export async function prepareRetainedTripSnapshot(shards, erasedSubjects) {
   return { rows, sha256 };
 }
 
+// Bind the copy to the deployment and the intended restore before any POST.
+// The journal cutoff and provider receipt only exist after the restore.
+function retainedArchiveContext(scope, plan) {
+  const { accountId, projectRef, bindings, versionId, deploymentId } = scope;
+  const { intentId, sourceSha, runId, attempt, heldAt, snapshotAt, journalCoveredFrom, retainedTripRowsSha256, targets } = plan;
+  return Buffer.from(canonicalJson({
+    purpose: archiveDomain, accountId, projectRef, versionId, deploymentId,
+    databases: bindings.map(({ database_id }) => database_id),
+    intentId, sourceSha, runId, attempt, heldAt, snapshotAt, journalCoveredFrom, retainedTripRowsSha256,
+    targets: targets.map(({ databaseId, at, bookmark }) => ({ databaseId, at, bookmark })),
+  }));
+}
+
+function retainedArchiveKey(archiveSecret, salt) {
+  if (typeof archiveSecret !== 'string' || archiveSecret.length < 32) throw archiveError();
+  return Buffer.from(hkdfSync('sha256', Buffer.from(archiveSecret), salt, archiveDomain, 32));
+}
+
+export function sealRetainedTripSnapshot({ scope, plan, snapshot, archiveSecret }) {
+  if (snapshot?.sha256 !== plan.retainedTripRowsSha256
+    || retainedDigest(snapshot.rows, new Set()) !== snapshot.sha256) throw retainedRowsError();
+  verifyRetainedIdentities(snapshot.rows);
+  const plain = Buffer.from(canonicalJson(snapshot.rows));
+  if (plain.length > maximumSnapshotBytes) throw archiveError();
+  const salt = randomBytes(archiveSaltBytes);
+  const nonce = randomBytes(archiveNonceBytes);
+  const prefix = Buffer.concat([archiveMagic, salt, nonce]);
+  const cipher = createCipheriv('aes-256-gcm', retainedArchiveKey(archiveSecret, salt), nonce, { authTagLength: archiveTagBytes });
+  cipher.setAAD(Buffer.concat([prefix, retainedArchiveContext(scope, plan)]));
+  const archive = Buffer.concat([prefix, cipher.update(gzipSync(plain)), cipher.final(), cipher.getAuthTag()]);
+  return { archive, sha256: sha256(archive) };
+}
+
+// The management caller reopens the independently stored bytes before
+// starting Time Travel. Reconciliation must reopen them again after it.
+export function openRetainedTripSnapshot({ scope, plan, archive, archiveSecret }) {
+  if (!Buffer.isBuffer(archive) || archive.length <= archivePrefixBytes + archiveTagBytes
+    || archive.length > maximumSnapshotBytes + (64 * 1024)
+    || !archive.subarray(0, archiveMagic.length).equals(archiveMagic)
+    || sha256(archive) !== plan.retainedArchiveSha256) throw archiveError();
+  const prefix = archive.subarray(0, archivePrefixBytes);
+  const salt = prefix.subarray(archiveMagic.length, archiveMagic.length + archiveSaltBytes);
+  const nonce = prefix.subarray(archiveMagic.length + archiveSaltBytes);
+  const end = archive.length - archiveTagBytes;
+  let rows;
+  try {
+    const decipher = createDecipheriv('aes-256-gcm', retainedArchiveKey(archiveSecret, salt), nonce, { authTagLength: archiveTagBytes });
+    decipher.setAAD(Buffer.concat([prefix, retainedArchiveContext(scope, plan)]));
+    decipher.setAuthTag(archive.subarray(end));
+    const compressed = Buffer.concat([decipher.update(archive.subarray(archivePrefixBytes, end)), decipher.final()]);
+    rows = JSON.parse(gunzipSync(compressed, { maxOutputLength: maximumSnapshotBytes }).toString('utf8'));
+  } catch {
+    throw archiveError();
+  }
+  if (retainedDigest(rows, new Set()) !== plan.retainedTripRowsSha256) throw retainedRowsError();
+  verifyRetainedIdentities(rows);
+  return rows;
+}
+
 async function restoreRetainedRows(shards, snapshot, subjects, requireHold) {
   const current = await captureRetainedTripRows(shards, subjects);
   const work = [];
@@ -287,7 +357,7 @@ export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRow
 // management workflow. This uses the providers' existing service accounts,
 // and never sends recovery traffic through the held public Worker.
 export async function reconcileCloudflareHeldTripErasures({
-  restorePlan, restoreReplies, retainedTripRows, readHoldEpoch, bindings, accountId, cloudflareToken, projectRef, serviceKey,
+  restorePlan, restoreReplies, retainedArchive, archiveSecret, readHoldEpoch, bindings, accountId, cloudflareToken, projectRef, serviceKey,
   gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId, fetchImpl = fetch,
 }) {
   if (!Array.isArray(bindings) || bindings.length !== 10
@@ -308,9 +378,11 @@ export async function reconcileCloudflareHeldTripErasures({
   const boundDatabases = bindings.map(({ binding, database_name, database_id }) => ({
     binding, database_name, database_id,
   }));
+  const scope = { accountId, projectRef, bindings: boundDatabases, versionId, deploymentId };
   const { epoch, restoreFrom, captureAt } = identifyCloudflareTripRestore({
-    accountId, projectRef, bindings: boundDatabases, versionId, deploymentId, plan: restorePlan, replies: restoreReplies,
+    ...scope, plan: restorePlan, replies: restoreReplies,
   });
+  const retainedTripRows = openRetainedTripSnapshot({ scope, plan: restorePlan, archive: retainedArchive, archiveSecret });
   const gateway = normalizeCloudflareGatewayUrl(gatewayUrl);
   const baseUrl = `https://${projectRef}.supabase.co`;
 
