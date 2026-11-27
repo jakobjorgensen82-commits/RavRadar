@@ -440,6 +440,8 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     {phase:'ACCOUNT213',sqlState:'42501',category:'SQL_PERMISSION'});
   assert.deepEqual(diagnose('BASELINE_ADMISSION', 'ERROR: 57014\n'),
     {phase:'BASELINE_ADMISSION',sqlState:'57014',category:'SQL_CANCELED'});
+  assert.deepEqual(diagnose('TRIP_ERASURE_RECOVERY_FIXTURE', 'psql:<stdin>: ERROR:  55000\n'),
+    {phase:'TRIP_ERASURE_RECOVERY_FIXTURE',sqlState:'55000',category:'SQL_OBJECT_NOT_IN_PREREQUISITE_STATE'});
   assert.deepEqual(diagnose('CURRENT220', 'ERROR: P0001\n'),
     {phase:'CURRENT220',sqlState:'P0001',category:'SQL_RAISED_EXCEPTION'});
   for (const raw of [undefined, null, {}, '', 'ERROR: 12345\n',
