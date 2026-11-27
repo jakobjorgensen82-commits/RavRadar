@@ -60,12 +60,19 @@ function isTripRestoreScope(scope) {
     && [versionId, deploymentId].every(id => typeof id === 'string' && databaseIdPattern.test(id));
 }
 
+function requireTripDataShard(databaseId, bindings) {
+  if (databaseId === bindings[0].database_id) {
+    throw new Error('TRIP_RESTORE_CONTROL_STATE_UNVERIFIED');
+  }
+}
+
 // Receipt inputs belong to the locked, authenticated management caller that
 // captured the POSTs. The digest binds their meaning, not their authenticity.
 // No restore requests are issued here.
 export function identifyCloudflareTripRestore({ accountId, projectRef, bindings, versionId, deploymentId, plan, replies }) {
   const failure = () => new Error('TRIP_RESTORE_RECEIPT_UNVERIFIED');
-  if (!plan || typeof plan.intentId !== 'string' || !databaseIdPattern.test(plan.intentId)
+  if (!isTripRestoreScope({ accountId, projectRef, bindings, versionId, deploymentId })
+    || !plan || typeof plan.intentId !== 'string' || !databaseIdPattern.test(plan.intentId)
     || typeof plan.sourceSha !== 'string' || !/^[a-f0-9]{40}$/.test(plan.sourceSha)
     || typeof plan.retainedTripRowsSha256 !== 'string' || !digestPattern.test(plan.retainedTripRowsSha256)
     || typeof plan.retainedArchiveSha256 !== 'string' || !digestPattern.test(plan.retainedArchiveSha256)
@@ -91,6 +98,7 @@ export function identifyCloudflareTripRestore({ accountId, projectRef, bindings,
   const ids = new Set();
   const restored = plan.targets.map(target => {
     const point = timestampKey(target?.at);
+    requireTripDataShard(target.databaseId, bindings);
     if (!bindings.some(binding => binding.database_id === target.databaseId) || ids.has(target.databaseId)
       || point <= covered || point > held || !bookmarkValid(target.bookmark)) throw failure();
     const baselineBookmark = verifyBookmarkLookup(target.databaseId, plan.journalCoveredFrom, target.baselineLookup);
@@ -243,6 +251,7 @@ function retainedPlan(scope, plan) {
   const databases = new Set(scope.bindings.map(binding => binding.database_id));
   const points = targets.map(target => {
     const { databaseId, at, bookmark } = target ?? {};
+    requireTripDataShard(databaseId, scope.bindings);
     const point = timestampKey(at);
     if (!databases.delete(databaseId) || point <= covered || point > held || !bookmarkValid(bookmark)) throw archiveError();
     return { databaseId, at, bookmark };

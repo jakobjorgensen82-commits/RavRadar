@@ -51,7 +51,10 @@ Indsamlingen stopper ved den faste grænse på 32 MiB for de bevarede rækker.
 Den eksisterende prøve fortsætter en simuleret gendannelse fra den
 genlæste fil og kræver fortsat leverandørens kvitteringer særskilt.
 Et vedvarende privat lager med godkendt opbevaring og det samlede
-gendannelsesjob udestår.
+gendannelsesjob udestår. Den lokale adgangskontrol afviser gendannelse af
+kontroldatabasen, indtil aktiveringsmarkøren, privatlivsregnskabet og
+statistikjobbenes tilstand kan bevares. Det eksisterende turlager og
+slettejournalerne er afprøvet med tilbagerulning af en almindelig datashard.
 
 Den eksisterende D1-installation og dennes fejlgenoptagelse læser nu den
 aktive Workers bindingsmetadata før de berørte skriveruter. Samme kontrol

@@ -60,7 +60,7 @@ function fixture(t) {
   };
 }
 
-test('recovery replays a pending erasure on a rolled-back control shard while ordinary access stays held', async t => {
+test('recovery replays a pending erasure on a rolled-back data shard while ordinary access stays held', async t => {
   const live = fixture(t);
   const snapshot = fixture(t);
   const erased = await externalOwnerSubject({ userId: '11111111-1111-4111-8111-111111111111', secret: sharedSecret });
@@ -104,7 +104,10 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     binding: `TRIP_DB_${index}`, database_name: `ravradar-trips-${index}`,
     database_id: `55555555-5555-4555-8555-${String(index).padStart(12, '0')}`,
   }));
-  const databaseId = bindings[0].database_id;
+  const targetIndex = snapshot.active.findIndex(database => database.prepare(
+    'select 1 from trip_observations where client_observation_id = ?',).get(erasedRow.client_observation_id));
+  assert.ok(targetIndex > 0, 'This fixture models a data shard and keeps control state intact');
+  const databaseId = bindings[targetIndex].database_id;
   const baseRestoreUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/time_travel/`;
   const providerBookmark = 'synthetic-selected-bookmark';
   const journalCoveredFrom = '2026-08-26T06:00:00.000Z';
@@ -123,6 +126,11 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     }],
   };
   const archiveSecret = 'synthetic-local-trip-before-image-encryption-secret';
+  const unverifiedControlPlan = { ...restorePlan,
+    targets: [{ ...restorePlan.targets[0], databaseId: bindings[0].database_id }],
+  };
+  assert.throws(() => sealRetainedTripSnapshot({ scope, plan: unverifiedControlPlan, snapshot: saved, archiveSecret }),
+    /TRIP_RESTORE_CONTROL_STATE_UNVERIFIED/);
   const sealed = sealRetainedTripSnapshot({ scope, plan: restorePlan, snapshot: saved, archiveSecret });
   restorePlan.retainedArchiveSha256 = sealed.sha256;
   assert.equal(sealed.archive.includes(otherRow.client_observation_id), false);
@@ -165,8 +173,8 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   const resumedPlan = { ...resumed.plan, captureAt, retainedArchiveSha256: resumed.sha256,
     targets: [{ ...resumed.plan.targets[0], baselineLookup, lookup: restorePlan.targets[0].lookup }] };
 
-  live.active[0] = snapshot.active[0];
-  assert.equal(count('trip_owner_erasure_tombstones', erased), 0);
+  live.active[targetIndex] = snapshot.active[targetIndex];
+  assert.equal(count('trip_owner_erasure_tombstones', erased), 1);
   assert.equal(count('trip_observations', erased), 1);
   await assert.rejects(list(erased));
 
@@ -252,6 +260,10 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     },
   };
   await assert.rejects(reconcileCloudflareHeldTripErasures({
+    ...provider, restorePlan: { ...unverifiedControlPlan, retainedArchiveSha256: sealed.sha256 },
+  }), /TRIP_RESTORE_CONTROL_STATE_UNVERIFIED/);
+  assert.equal(providerRequests, 0);
+  await assert.rejects(reconcileCloudflareHeldTripErasures({
     ...provider, restoreReplies: [{ ...restoreReplies[0], method: 'GET' }],
   }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
   await assert.rejects(reconcileCloudflareHeldTripErasures({
@@ -288,9 +300,9 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   edgeMode = 'restore-hold';
   const result = await reconcileCloudflareHeldTripErasures(provider);
   assert.deepEqual(result, {
-    kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch: restoreIdentity.epoch, owners: 1, removedRows: 1, recoveredRows: 1, retainedTripRowsSha256,
+    kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch: restoreIdentity.epoch, owners: 1, removedRows: 1, recoveredRows: 0, retainedTripRowsSha256,
   });
-  assert.deepEqual(reinsertedTables.splice(0), ['trip_observation_registry']);
+  assert.deepEqual(reinsertedTables.splice(0), []);
   assert.equal(live.active[0].prepare('select created_at from trip_observation_registry where client_observation_id = ?').get(pendingId).created_at, time);
   assert.ok(live.active.every(db => !db.prepare('select 1 from trip_observations where client_observation_id = ?').get(pendingId)));
   assert.equal(count('trip_observations', erased), 0);
