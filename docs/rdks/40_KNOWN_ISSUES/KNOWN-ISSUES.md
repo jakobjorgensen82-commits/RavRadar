@@ -40,9 +40,11 @@ Begge ændringer er afprøvet lokalt.
 Afstemningen kræver desuden en førmåling af de turrækker, registreringer
 og slettemarkeringer, der skal bevares. Den genlæser alle ti databaser
 efter genanvendelse af sletningerne og kræver de samme data. En lokal
-prøve stopper ved en manglende tur og ved ændrede bytes i en anden ejers
-tur. Selve gendannelsesjobbet skal stadig opbevare og verificere en
-krypteret førkopi og kunne genindsætte manglende rækker sikkert.
+prøve genskaber en manglende tur med den oprindelige stemplede
+registrering. En ufuldført reservation bevares som reservation. En
+konflikt i de eksisterende data standser forløbet. Førkopien skal være
+fra før den første gendannelsesanmodning. Selve gendannelsesjobbet skal
+stadig kunne gemme, genlæse og verificere en krypteret førkopi.
 
 Den eksisterende D1-installation og dennes fejlgenoptagelse læser nu den
 aktive Workers bindingsmetadata før de berørte skriveruter. Samme kontrol

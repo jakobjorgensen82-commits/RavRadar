@@ -7,7 +7,7 @@ import {
   deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, storeCloudflareTrip,
 } from '../supabase/functions/_shared/trip-storage.js';
 import {
-  hashRetainedTripRows, identifyCloudflareTripRestore, reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures,
+  identifyCloudflareTripRestore, prepareRetainedTripSnapshot, reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures,
 } from './lib/reconcile-held-trip-erasures.mjs';
 
 const migrations = ['001_trip_observations', '002_owner_export_keyset', '003_owner_erasure_insert_guard']
@@ -62,6 +62,7 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   const other = await externalOwnerSubject({ userId: '22222222-2222-4222-8222-222222222222', secret: sharedSecret });
   const erasedRow = observation('33333333-3333-4333-8333-333333333333');
   const otherRow = observation('44444444-4444-4444-8444-444444444444');
+  const pendingId = '99999999-9999-4999-8999-999999999999';
   for (const { config, active } of [live, snapshot]) {
     await storeCloudflareTrip({ ...config, owner: erased, payload: erasedRow });
     await storeCloudflareTrip({ ...config, owner: other, payload: otherRow });
@@ -70,6 +71,9 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
       db.prepare('update trip_observation_registry set created_at = ?').run(time);
     }
   }
+  live.active[0].prepare(`insert into trip_observation_registry
+    (client_observation_id,trip_id,owner_subject,payload_sha256,target_database_index,created_at)
+    values (?,null,?,?,1,?)`).run(pendingId, other.subject, 'a'.repeat(64), time);
   const list = owner => listCloudflareTrips({ ...live.config, ownerSubject: owner.subject });
   const count = (table, owner) => live.active.reduce((total, db) => total
     + db.prepare(`select count(*) as n from ${table} where owner_subject = ?`).get(owner.subject).n, 0);
@@ -79,7 +83,8 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   assert.deepEqual(await list(erased), []);
   live.interrupt(false);
   live.hold('true');
-  const retainedTripRowsSha256 = await hashRetainedTripRows(live.shards, [erased.subject]);
+  const saved = await prepareRetainedTripSnapshot(live.shards, [erased.subject]);
+  const retainedTripRowsSha256 = saved.sha256;
   live.active[0] = snapshot.active[0];
   assert.equal(count('trip_owner_erasure_tombstones', erased), 0);
   assert.equal(count('trip_observations', erased), 1);
@@ -109,7 +114,7 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   const scope = { accountId, projectRef, bindings, versionId, deploymentId };
   const restorePlan = {
     intentId: '88888888-8888-4888-8888-888888888888', sourceSha: 'e'.repeat(40), runId: '1234', attempt: 1,
-    heldAt: '2026-08-26T11:55:00.000Z', captureAt, journalCoveredFrom, retainedTripRowsSha256,
+    heldAt: '2026-08-26T11:55:00.000Z', snapshotAt: '2026-08-26T11:55:30.000Z', captureAt, journalCoveredFrom, retainedTripRowsSha256,
     targets: [{
       databaseId, at: restoreFrom, bookmark: providerBookmark, baselineLookup,
       lookup: { method: 'GET', url: baseRestoreUrl + 'bookmark?timestamp=' + encodeURIComponent(restoreFrom), status: 200,
@@ -128,8 +133,9 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   let primaryRead = true;
   let edgeMode = 'restore-hold';
   let d1Requests = 0;
+  const reinsertedTables = [];
   const provider = {
-    bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan, restoreReplies,
+    bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan, restoreReplies, retainedTripRows: saved.rows,
     gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId,
     async readHoldEpoch() { return restoreIdentity.epoch; },
     async fetchImpl(input, init) {
@@ -177,7 +183,13 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
       assert.notEqual(index, -1);
       d1Requests += 1;
       const body = await request.json();
-      assert.deepEqual(body.params, body.sql.startsWith('select *') ? [''] : [erased.subject]);
+      if (body.sql.startsWith('select *')) {
+        if (body.sql.includes(' collate binary ')) assert.deepEqual(body.params, ['']);
+        else assert.ok(body.params.length === 1 && [otherRow.client_observation_id, pendingId].includes(body.params[0]));
+      } else if (/^insert into trip_(observations|observation_registry) /.test(body.sql)) {
+        assert.ok(body.params.includes(other.subject));
+        reinsertedTables.push(body.sql.split(' ')[2]);
+      } else assert.deepEqual(body.params, [erased.subject]);
       assert.equal(body.sql.includes(erased.subject), false);
       const read = body.sql.startsWith('select');
       const statement = live.shards[index].prepare(body.sql).bind(...body.params);
@@ -189,6 +201,9 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   };
   await assert.rejects(reconcileCloudflareHeldTripErasures({
     ...provider, restoreReplies: [{ ...restoreReplies[0], method: 'GET' }],
+  }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
+  await assert.rejects(reconcileCloudflareHeldTripErasures({
+    ...provider, restorePlan: { ...restorePlan, snapshotAt: restoreReplies[0].startedAt },
   }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
   await assert.rejects(reconcileCloudflareHeldTripErasures({
     ...provider, restorePlan: { ...restorePlan, journalCoveredFrom: '2026-08-26T09:00:00.000001Z' },
@@ -204,20 +219,31 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(d1Requests, 0);
   edgeMode = 'restore-hold';
+  await assert.rejects(reconcileCloudflareHeldTripErasures({
+    ...provider, retainedTripRows: [],
+  }), /TRIP_RESTORE_RETAINED_ROWS_UNVERIFIED/);
+  assert.equal(d1Requests, 0);
   const result = await reconcileCloudflareHeldTripErasures(provider);
   assert.deepEqual(result, {
-    kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch: restoreIdentity.epoch, owners: 1, removedRows: 1, retainedTripRowsSha256,
+    kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch: restoreIdentity.epoch, owners: 1, removedRows: 1, recoveredRows: 1, retainedTripRowsSha256,
   });
+  assert.deepEqual(reinsertedTables.splice(0), ['trip_observation_registry']);
+  assert.equal(live.active[0].prepare('select created_at from trip_observation_registry where client_observation_id = ?').get(pendingId).created_at, time);
+  assert.ok(live.active.every(db => !db.prepare('select 1 from trip_observations where client_observation_id = ?').get(pendingId)));
   assert.equal(count('trip_observations', erased), 0);
   assert.equal(count('trip_observation_registry', erased), 0);
   assert.equal(count('trip_owner_erasure_tombstones', erased), 10);
   await assert.rejects(list(erased));
   const otherDb = live.active.find(db => db.prepare('select 1 from trip_observations where owner_subject = ?').get(other.subject));
   const original = otherDb.prepare('select * from trip_observations where owner_subject = ?').get(other.subject);
+  const originalReservation = live.active[0].prepare('select * from trip_observation_registry where client_observation_id = ?').get(otherRow.client_observation_id);
   otherDb.prepare('delete from trip_observations where owner_subject = ?').run(other.subject);
-  await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_RETAINED_ROWS_MISMATCH/);
-  otherDb.prepare(`insert into trip_observations (${Object.keys(original).join(', ')})
-    values (${Object.keys(original).map(() => '?').join(', ')})`).run(...Object.values(original));
+  live.active[0].prepare('delete from trip_observation_registry where client_observation_id = ?').run(otherRow.client_observation_id);
+  assert.equal((await reconcileCloudflareHeldTripErasures(provider)).recoveredRows, 2);
+  assert.deepEqual(reinsertedTables, ['trip_observation_registry', 'trip_observations']);
+  assert.deepEqual(otherDb.prepare('select * from trip_observations where owner_subject = ?').get(other.subject), original);
+  assert.deepEqual(live.active[0].prepare('select * from trip_observation_registry where client_observation_id = ?').get(otherRow.client_observation_id), originalReservation);
+  assert.equal((await reconcileCloudflareHeldTripErasures(provider)).recoveredRows, 0);
   otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run('{}', other.subject);
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_RETAINED_ROWS_MISMATCH/);
   otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run(original.payload_json, other.subject);
@@ -231,7 +257,7 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   assert.equal((await list(other)).length, 1);
 });
 
-test('a changed hold or incomplete journal cannot authorize restoration writes', async () => {
+test('a changed hold or incomplete journal cannot authorize restoration writes', async t => {
   let requests = 0;
   const shards = Array.from({ length: 10 }, () => ({ prepare() { requests += 1; } }));
   const rows = Array.from({ length: 100 }, (_, i) => ({ owner_subject: 'usr_v1_' + String(i).padStart(43, '0') }));
@@ -239,9 +265,11 @@ test('a changed hold or incomplete journal cannot authorize restoration writes',
     shards, epoch, retainedTripRowsSha256: epoch, readHoldEpoch: async () => epoch,
     readJournalPage: async cursor => cursor === null ? rows : [rows.at(-1)],
   }), /TRIP_RESTORE_JOURNAL_UNVERIFIED/);
+  const snapshot = await prepareRetainedTripSnapshot(fixture(t).shards, []);
   let checks = 0;
   await assert.rejects(reconcileHeldTripErasures({
-    shards, epoch, retainedTripRowsSha256: epoch, readHoldEpoch: async () => checks++ === 0 ? epoch : null,
+    shards, epoch, retainedTripRowsSha256: snapshot.sha256, retainedTripRows: snapshot.rows,
+    readHoldEpoch: async () => checks++ === 0 ? epoch : null,
     readJournalPage: async () => [rows[0]],
   }), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(requests, 0);
