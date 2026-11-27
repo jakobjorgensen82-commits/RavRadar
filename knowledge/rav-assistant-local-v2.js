@@ -1,6 +1,6 @@
 // Public, deterministic and read-only knowledge derived from RavRadars groundbook.
 // Put narrow topics before broad assistant intents so common follow-up questions stay local.
-import { RAV_ASSISTANT_RESEARCH_EXAMPLES, RAV_ASSISTANT_RESEARCH_KNOWLEDGE } from './rav-assistant-research-v1.js';
+import { RAV_ASSISTANT_RESEARCH_EXAMPLES, RAV_ASSISTANT_RESEARCH_KNOWLEDGE } from './rav-assistant-research-v1.js?v=4.0.603&method=raman-compare-20261127';
 
 const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
   entry('amber-resin', /rav.*(?:harpiks|materiale)|hvad består rav|bernstein.*(?:harz|material)|woraus besteht bernstein|amber.*(?:resin|material)|what is amber made/iu,

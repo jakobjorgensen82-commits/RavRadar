@@ -2692,6 +2692,7 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
         for (const [name, question, expected] of [
           ['field', row.field, field],
           ['raman-local', row.lab, laboratory[locale]],
+          ['raman-material-comparison', row.comparison, laboratory[locale]],
           ['certainty-followup', row.certainty, t('assistant.local.limitations', {}, locale)],
           ['gear-safety', row.gear + ' ' + row.safety,
             t('assistant.local.equipment', {}, locale) + '\n\n' + t('assistant.local.safety', {}, locale)],
@@ -2708,12 +2709,13 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
           visited.push(locale + '/' + name); localCalls++;
         }
         reset();
-        assert.equal(await askRavRadar(row.comparison, context, { language:locale, localOnly:true }),
+        assert.equal(await askRavRadar(row.comparison + ' ' + row.gear, context, { language:locale, localOnly:true }),
           t('assistant.unknown', {}, locale));
-        assert.equal(exchanges.length, 0, 'local-only must not substitute unrelated field advice');
+        assert.equal(exchanges.length, 0, 'local-only must not silently drop a second request');
         for (const [name, question, disposition, evidenceIds, expected] of [
           ['raman-edge', row.remote, 'answer', ['identification.spectroscopy-limits'], canonical[locale]],
-          ['raman-material-comparison', row.comparison, 'answer', ['identification.spectroscopy-limits'], canonical[locale]],
+          ['raman-material-comparison-with-extra-request', row.comparison + ' ' + row.gear,
+            'uncertain', [], contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]],
           ['unknown-edge', row.unknown, 'uncertain', [], contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]],
         ]) {
           reset();
@@ -2735,9 +2737,9 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
           visited.push(locale + '/' + name); remoteCalls++;
         }
       }
-      assert.equal(localCalls, 24);
+      assert.equal(localCalls, 27);
       assert.equal(remoteCalls, 9);
-      assert.equal(new Set(visited).size, 33);
+      assert.equal(new Set(visited).size, 36);
       assert.equal(controlledProviderCalls - beforeProvider, 9);
       assert.equal(controlledQuotaCalls - beforeQuota, 27);
       assert.equal(blockedNetworkCalls, 0);

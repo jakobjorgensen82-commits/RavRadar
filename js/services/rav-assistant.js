@@ -1,5 +1,5 @@
 import { PUBLIC_CONFIG } from "../../config.js?v=4.0.603";
-import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.603";
+import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.603&method=raman-compare-20261127";
 import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.603";
 import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.603";
 import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.603";
@@ -499,7 +499,8 @@ export function routeRavQuestion(question) {
   if (mixedKnowledgeForecastQuestion(text,getLanguage())
     || knownAmberNetDefinitionUseQuestion(text,getLanguage())) return 'local-deterministic';
   if (unknownAmberEquipmentQuestion(text, getLanguage())) return 'remote-candidate';
-  if (requestsRamanMaterialComparison(text) || requiresWholeRavAnswer(text, getLanguage())) {
+  if (requestsRamanMaterialComparison(text) && matchLocalRavKnowledge(text)?.id !== 'amber-chemistry-lab') return 'remote-candidate';
+  if (requiresWholeRavAnswer(text, getLanguage())) {
     return 'remote-candidate';
   }
   if (requestsExactAmberLandingPrediction(text)) return 'remote-candidate';
@@ -989,7 +990,7 @@ export async function askRavRadar(question, context = {}, options = {}) {
     + localAnswer(mixed.forecastQuestion,context,language,options?.now ?? Date.now());
   const field = fieldCompoundAnswer(raw, language);
   if (field) return field.answer;
-  if (requestsRamanMaterialComparison(raw) || requiresWholeRavAnswer(raw, language)) {
+  if ((requestsRamanMaterialComparison(raw) && route === 'remote-candidate') || requiresWholeRavAnswer(raw, language)) {
     if (raw.length > 600 || options?.localOnly) return t('assistant.unknown', {}, language);
     return await remoteAnswer(safe, context, language) || t('assistant.unknown', {}, language);
   }

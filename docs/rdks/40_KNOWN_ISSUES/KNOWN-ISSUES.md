@@ -2,8 +2,10 @@
 
 Den offentlige danske assistent svarede med visuelle kendetegn og UV, da
 spørgsmålet handlede om at skelne rav fra moderne plast med Raman-spektroskopi.
-Den lokale rettelse sender hele spørgsmålet til den eksisterende faglige
-svarvej. Allerede dækkede lokale fagspørgsmål og private afvisninger bevares.
+Forhåndsprøven med den eksterne svarvej ramte timeout på dansk og tysk. Den
+lokale rettelse genbruger den eksisterende gennemgåede laboratorieforklaring
+for netop det hele spørgsmål på dansk, tysk og engelsk. Andre sammensatte
+spørgsmål og private afvisninger følger fortsat deres almindelige behandling.
 Kildekontrol og offentlig afprøvning af den nye rute udestår.
 
 ## 27. november — en fastfrosset fejlupload kan overleve den fælles frist
