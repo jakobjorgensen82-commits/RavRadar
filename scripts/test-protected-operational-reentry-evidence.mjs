@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { createOperationalEvidenceR2Slots } from './lib/operational-evidence-r2-slots.mjs';
+import { createOperationalEvidenceR2Slots, PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES } from './lib/operational-evidence-r2-slots.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { PRIVATE_WEATHER_PUBLICATION_POLICY } from './publish-private-weather-runtime.mjs';
 import { RETIREMENT_MARKER_BYTES } from './lib/private-weather-runtime-retirement.mjs';
@@ -1103,7 +1103,7 @@ test('closed ordinary phase retires only its authenticated unchanged-model defau
 // Real normal clients and SigV4 slot transport; only the HTTP boundary is synthetic.
 function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRow=null,isolatedRestoreTarget=null}={}) {
   const primary=primaryMap,slots=new Map(),events=[],unexpected=[],statuses=[],pending=[];
-  let row=initialRow,primaryFailure=null,primaryBucketRead=null,r2Failure=false,nextPut=null,lateCas=null,nextCas=null,pointerHang=false,bucketHang=false,foreignBytes=0;
+  let row=initialRow,primaryFailure=null,primaryBucketRead=null,r2Failure=false,nextPut=null,lateCas=null,nextCas=null,pointerHang=false,bucketHang=false,foreignBytes=0,archiveReservation=null;
   const bucket=policy.bucketId,base='https://synthetic.supabase.co';
   const readPath='/storage/v1/object/authenticated/'+bucket+'/',writePath='/storage/v1/object/'+bucket+'/';
   const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -1158,10 +1158,15 @@ function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRo
     events.push('r2-'+method);const headers=new Headers(options.headers);
     assert(headers.get('authorization').startsWith('AWS4-HMAC-SHA256 '));assert.equal(options.redirect,'manual');
     if(r2Failure)return new Response('',{status:403});
+    const reservationKey='operational-evidence/weather-archive-upload/v1.json';
+    if(u.pathname==='/'+bucket+'/'+reservationKey&&method==='GET'){
+      return archiveReservation ? new Response(archiveReservation,{headers:{etag:etag(archiveReservation)}})
+        : new Response(null,{status:404});
+    }
     if(u.pathname==='/'+bucket&&method==='HEAD')return new Response(null,{status:200});
     if(u.pathname==='/'+bucket&&method==='GET'&&u.searchParams.get('list-type')==='2'){
       if(bucketHang)return new Promise((_resolve,reject)=>options.signal.addEventListener('abort',()=>reject(Error('SYNTHETIC_BUCKET_ABORTED')),{once:true}));
-      return new Response('<ListBucketResult>'+(foreignBytes?'<Contents><Key>other-preserved-data.bin</Key><Size>'+foreignBytes+'</Size></Contents>':'')+[...slots].map(([n,b])=>'<Contents><Key>operational-evidence/slots/v3/slot-'+n+'.bin</Key><Size>'+b.length+'</Size></Contents>').join('')+'<IsTruncated>false</IsTruncated></ListBucketResult>');
+      return new Response('<ListBucketResult>'+(foreignBytes?'<Contents><Key>other-preserved-data.bin</Key><Size>'+foreignBytes+'</Size></Contents>':'')+[...slots].map(([n,b])=>'<Contents><Key>operational-evidence/slots/v3/slot-'+n+'.bin</Key><Size>'+b.length+'</Size></Contents>').join('')+ (archiveReservation?'<Contents><Key>'+reservationKey+'</Key><Size>'+archiveReservation.length+'</Size></Contents>':'')+'<IsTruncated>false</IsTruncated></ListBucketResult>');
     }
     const match=u.pathname.match(new RegExp('^/'+bucket+'/operational-evidence/slots/v3/slot-([1-6])\\.bin$'));
     if(!match)return fail('R2:'+method+u.pathname);
@@ -1188,7 +1193,7 @@ function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRo
   const clients=createProtectedOperationalEvidenceClients({supabaseUrl:base,serviceRoleKey:'synthetic-service-secret-only',fetchImpl,
     operationMs,isolatedRestoreTarget,onReplicaStatus:status=>statuses.push(status),slotsFactory:(fetchBound,delayImpl)=>createOperationalEvidenceR2Slots({
       accountId:'a'.repeat(32),accessKeyId:'synthetic-id',secretAccessKey:'synthetic-secret',bucketId:bucket,fetchImpl:fetchBound,delayImpl})});
-  return {clients,primary,slots,events,statuses,decode,rawFetch:fetchImpl,setForeignBytes:value=>{foreignBytes=value;},hangBucket:value=>{bucketHang=value;},hangReplicaPointer:value=>{pointerHang=value;},row:()=>clone(row),setRow:value=>{row=clone(value);},
+  return {clients,primary,slots,events,statuses,decode,rawFetch:fetchImpl,setForeignBytes:value=>{foreignBytes=value;},setArchiveReservation:value=>{archiveReservation=value;},hangBucket:value=>{bucketHang=value;},hangReplicaPointer:value=>{pointerHang=value;},row:()=>clone(row),setRow:value=>{row=clone(value);},
     failPrimary:value=>{primaryFailure=value;},setPrimaryBucketRead:value=>{primaryBucketRead=value;},
     failR2:value=>{r2Failure=value;},nextPut:value=>{nextPut=value;},
     nextCas:value=>{nextCas=value;},releaseCas:()=>{const apply=lateCas;lateCas=null;return apply();},
@@ -1471,8 +1476,8 @@ test('operational replica reserves the exact ordinary next-archive admission thr
   const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-slots-next-archive-budget-'));
   try{
     const threshold=PRIVATE_WEATHER_PUBLICATION_POLICY.bucketCeilingBytes-PRIVATE_WEATHER_PUBLICATION_POLICY.reserveBytes
-      -PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes-RETIREMENT_MARKER_BYTES;
-    assert.equal(threshold,2_049_983_616,'the existing normal350MB+marker+100MB admission stays unchanged');
+      -PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes-RETIREMENT_MARKER_BYTES-PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES;
+    assert.equal(threshold,2_049_967_232,'leave the normal archive, marker, reserve and fixed journal within the bucket ceiling');
     const reserve=6*(policy.maximumArchiveBytes+16_384),probe=slotTransportFixture();
     await slotPublication(work,probe,9001);const exactWireBytes=probe.slots.get(1).length;
     const at=slotTransportFixture();at.setForeignBytes(threshold-reserve-exactWireBytes);
@@ -1489,6 +1494,24 @@ test('operational replica reserves the exact ordinary next-archive admission thr
     const primary=await slotPublication(work,deniedBeforePut,9001);
     assert.equal(primary.result.published,true);assert.equal(primary.result.replica.status,'OPERATIONAL_SLOT_BUCKET_HOLD');
     assert.equal(deniedBeforePut.events.filter(event=>event==='r2-PUT').length,0);
-    for(const t of [probe,at,over,deniedBeforePut]){assert.equal(t.events.includes('r2-DELETE'),false);t.check();}
+    const withDebt=slotTransportFixture();
+    const carried=1024;
+    const journal=Buffer.from(JSON.stringify({kind:'RAVRADAR_PRIVATE_WEATHER_ARCHIVE_UPLOAD_V1',
+      revision:'00000000-0000-4000-8000-000000000000',
+      pending:[{path:'bundles/sha256/'+'a'.repeat(64)+'.json.gz',bytes:carried}]}));
+    withDebt.setArchiveReservation(journal);
+    withDebt.setForeignBytes(threshold-reserve-journal.length-carried+1);
+    const heldForWeather=await slotPublication(work,withDebt,9001);
+    assert.equal(heldForWeather.result.published,true);
+    assert.equal(heldForWeather.result.replica.status,'OPERATIONAL_SLOT_BUCKET_HOLD');
+    assert.equal(withDebt.events.filter(event=>event==='r2-PUT').length,0,
+      'The optional copy gives the unresolved archive bytes priority without blocking primary publication.');
+    const unclear=slotTransportFixture();
+    unclear.setArchiveReservation(Buffer.from('[]'));
+    const heldForUnknown=await slotPublication(work,unclear,9001);
+    assert.equal(heldForUnknown.result.published,true);
+    assert.equal(heldForUnknown.result.replica.status,'OPERATIONAL_REPLICA_HOLD');
+    assert.equal(unclear.events.filter(event=>event==='r2-PUT').length,0);
+    for(const t of [probe,at,over,deniedBeforePut,withDebt,unclear]){assert.equal(t.events.includes('r2-DELETE'),false);t.check();}
   }finally{await fs.rm(work,{recursive:true,force:true});}
 });

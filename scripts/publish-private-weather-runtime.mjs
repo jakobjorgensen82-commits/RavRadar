@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 // Normal weather delivery only. The frozen archive/model readers and publisher
 // remain the authority for payload, exact readback and parent CAS.
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
+import { createPrivateWeatherUploadReservationR2, PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES }
+  from './lib/operational-evidence-r2-slots.mjs';
 import { createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,
   PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { assertRetirementReference, createPrivateWeatherRetirement, decodePrivateWeatherPointerRow,
@@ -33,7 +36,117 @@ export function assertPrivateWeatherPublicationBackend(value = process.env.RAVRA
   if (value !== 'r2') fail('PRIVATE_WEATHER_PUBLICATION_BACKEND_MISMATCH');
 }
 
-export function createPrivateWeatherPublicationStorage(options = {}, reserveRetirementMarker = false, observeInitialStock) {
+
+const ARCHIVE_PART_PATH = /^bundles\/sha256\/([0-9a-f]{64})(?:\.json\.gz|\/part-[0-9]{3}-([0-9a-f]{64})\.json\.gz\.part)$/;
+const RESERVATION_KIND = 'RAVRADAR_PRIVATE_WEATHER_ARCHIVE_UPLOAD_V1';
+const RESERVATION_ENTRY_LIMIT = 16;
+// The other writers already keep one whole weather generation in reserve.
+// Keep this byte bound within that reserve, including the record itself.
+const maximumReservedArchiveBytes = () => PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
+  - PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES;
+const partSha = objectPath => {
+  const match = ARCHIVE_PART_PATH.exec(objectPath);
+  return match?.[2] ?? match?.[1];
+};
+const reservedBytes = pending => pending.reduce((total, part) => total + part.bytes, 0);
+
+function validateReservation(bytes) {
+  try {
+    const text = bytes.toString('utf8');
+    const record = JSON.parse(text);
+    if (JSON.stringify(record) !== text || Object.keys(record).join(',') !== 'kind,revision,pending'
+        || record.kind !== RESERVATION_KIND || !/^[0-9a-f-]{36}$/.test(record.revision)
+        || !Array.isArray(record.pending) || record.pending.length > RESERVATION_ENTRY_LIMIT) throw new Error();
+    const paths = new Set();
+    for (const part of record.pending) {
+      if (!part || Object.keys(part).join(',') !== 'path,bytes' || typeof part.path !== 'string'
+          || !partSha(part.path) || paths.has(part.path) || !Number.isSafeInteger(part.bytes)
+          || part.bytes < 1 || part.bytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes) throw new Error();
+      paths.add(part.path);
+    }
+    if (reservedBytes(record.pending) > maximumReservedArchiveBytes()) throw new Error();
+    return record.pending;
+  } catch {
+    fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_INVALID');
+  }
+}
+
+export async function readPrivateWeatherArchiveUploadReservationBytes(record) {
+  const found = await record.read();
+  return found ? reservedBytes(validateReservation(found.bytes)) : 0;
+}
+
+function archiveUploadReservation(options) {
+  const fetchImpl = options?.fetchImpl ?? globalThis.fetch;
+  const record = createPrivateWeatherUploadReservationR2({ ...options,
+    fetchImpl: (url, request) => fetchImpl(url, { ...request, signal: AbortSignal.timeout(8_000) }),
+  });
+  let load;
+  let base;
+  let pending;
+  const attempted = new Set();
+  async function recover(storage) {
+    load ??= (async () => {
+      base = await record.read();
+      pending = [];
+      for (const part of base ? validateReservation(base.bytes) : []) {
+        let remote;
+        try { remote = await storage.download(part.path); }
+        catch {
+          // A failed or absent read cannot establish that a PUT has stopped.
+          pending.push(part);
+          continue;
+        }
+        if (remote.length !== part.bytes || crypto.createHash('sha256').update(remote).digest('hex') !== partSha(part.path)) {
+          fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
+        }
+      }
+    })();
+    await load;
+    return reservedBytes(pending);
+  }
+  async function store(next) {
+    const bytes = Buffer.from(JSON.stringify({ kind: RESERVATION_KIND, revision: crypto.randomUUID(), pending: next }));
+    try { await record.compareAndSwap(bytes, base?.etag ?? null); }
+    catch {
+      // The only acceptable response to an unknown conditional write is an
+      // exact readback of this intended revision.
+    }
+    const current = await record.read();
+    if (!current?.bytes.equals(bytes)) fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
+    base = current;
+    pending = next;
+  }
+  async function upload(objectPath, request, send) {
+    const digest = partSha(objectPath);
+    if (!digest || !Buffer.isBuffer(request.body) || digest !== request.headers['x-amz-content-sha256']) {
+      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
+    }
+    if (attempted.has(objectPath) || pending.some(part => part.path === objectPath)) {
+      fail('PRIVATE_WEATHER_UPLOAD_ALREADY_UNRESOLVED');
+    }
+    // The immutable adapter can retry failed requests. Only one physical
+    // PUT may be sent for this reservation, so a positive readback can retire
+    // it without a delayed duplicate recreating the object after rotation.
+    attempted.add(objectPath);
+    const next = [...pending, { path: objectPath, bytes: request.body.length }];
+    if (next.length > RESERVATION_ENTRY_LIMIT || reservedBytes(next) > maximumReservedArchiveBytes()) {
+      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_CAPACITY');
+    }
+    await store(next);
+    const response = await send();
+    if ([200, 201, 204, 412].includes(response.status)) {
+      pending = pending.filter(part => part.path !== objectPath);
+    }
+    return response;
+  }
+  async function finish() {
+    if (base && JSON.stringify(validateReservation(base.bytes)) !== JSON.stringify(pending)) await store(pending);
+  }
+  return { recover, upload, finish, pendingBytes: () => reservedBytes(pending ?? []) };
+}
+
+export function createPrivateWeatherPublicationStorage(options = {}, reserveRetirementMarker = false, observeInitialStock, reservation) {
   const policy = assertPrivateWeatherPublicationPolicy();
   const allowed = new Set(['storageBackend', 'accountId', 'accessKeyId', 'secretAccessKey', 'fetchImpl', 'now', 'delayImpl']);
   if (!options || Object.getPrototypeOf(options) !== Object.prototype
@@ -49,8 +162,9 @@ export function createPrivateWeatherPublicationStorage(options = {}, reserveReti
       // HEAD reuse never reaches it. A rejected admission is latched too, so
       // the existing adapter retry cannot cause another scan or any PUT.
       beforeFirstPut ??= (async () => {
+        const carried = reservation ? await reservation.recover(storage) + PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES : 0;
         const usage = await storage.bucketUsage();
-        if (usage.usedBytes > policy.bucketCeilingBytes - policy.reserveBytes
+        if (usage.usedBytes + carried > policy.bucketCeilingBytes - policy.reserveBytes
           - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
           - (reserveRetirementMarker ? RETIREMENT_MARKER_BYTES : 0)) {
           fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
@@ -58,6 +172,12 @@ export function createPrivateWeatherPublicationStorage(options = {}, reserveReti
         observeInitialStock?.(usage);
       })();
       await beforeFirstPut;
+      if (reservation) {
+        const pathname = new URL(url).pathname;
+        const prefix = `/${PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId}/`;
+        if (!pathname.startsWith(prefix)) fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
+        return reservation.upload(pathname.slice(prefix.length), request, () => fetchImpl(url, request));
+      }
     }
     // Preserve the URL and the whole request object, including auth, body,
     // redirect policy and any abort signal. No new retry or response handling.
@@ -89,14 +209,16 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
     await priorSettled;
     priorRetirementSettled = true;
   };
+  const reservation = archiveUploadReservation(storageOptions);
   let bucketUsageBeforeArchiveUpload;
   const storage = createPrivateWeatherPublicationStorage(storageOptions, true, usage => {
     if (priorRetirementSettled) bucketUsageBeforeArchiveUpload = usage;
-  });
+  }, reservation);
   let bucketUsageBeforeRetirementMarker;
   const validateMarkerCapacity = async bytes => {
+    await reservation.recover(storage);
     const usage = await storage.bucketUsage();
-    if (usage.usedBytes + bytes + policy.reserveBytes > policy.bucketCeilingBytes) {
+    if (usage.usedBytes + bytes + policy.reserveBytes + reservation.pendingBytes() > policy.bucketCeilingBytes) {
       fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
     }
     bucketUsageBeforeRetirementMarker = usage;
@@ -152,6 +274,9 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
       },
     },
   });
+  // Acknowledged writes are already safe to publish. A failed journal
+  // cleanup carries the previous positive reservation into the next run.
+  try { await reservation.finish(); } catch {}
   const observed = { ...result, bucketUsageBeforeArchiveUpload, bucketUsageBeforeRetirementMarker };
   try {
     await retirement.settle(lastRead, freshPointer);
@@ -205,9 +330,12 @@ export async function checkCodeOnlyPrivateWeatherRebind(request, storageOptions,
   const policy = PRIVATE_WEATHER_PUBLICATION_POLICY;
   const retirement = createPrivateWeatherRetirement(storageOptions, policy.bucketCeilingBytes);
   await retirement.assertCodeOnlyAdmissionClear(before);
+  const reservation = createPrivateWeatherUploadReservationR2(storageOptions);
+  const carried = await readPrivateWeatherArchiveUploadReservationBytes(reservation);
   const { usedBytes } = await createPrivateWeatherPublicationStorage(storageOptions).bucketUsage();
-  if (usedBytes > policy.bucketCeilingBytes - policy.reserveBytes
-      - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes - RETIREMENT_MARKER_BYTES) {
+  if (usedBytes + carried > policy.bucketCeilingBytes - policy.reserveBytes
+      - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes - RETIREMENT_MARKER_BYTES
+      - PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES) {
     fail('PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
   }
 }

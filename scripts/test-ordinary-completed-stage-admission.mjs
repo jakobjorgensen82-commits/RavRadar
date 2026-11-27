@@ -141,18 +141,36 @@ export async function assertNormalStagePublication(t) {
   const parentReceipt = { parentPin: pin.pin, parentDescriptor: pin.descriptor };
   let virtualUsed = 2_050_000_001;
   const r2Calls = [];
-  const r2OptionsFor = (remote, calls, listPositions) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
+  const reservations = new WeakMap();
+  const reservationPath = 'operational-evidence/weather-archive-upload/v1.json';
+  const r2OptionsFor = (remote, calls, listPositions, fault = {}) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
     secretAccessKey: 'synthetic-secret', delayImpl: async () => {}, fetchImpl: async (url, request) => {
       const address = new URL(url);
+      const key = decodeURIComponent(address.pathname.slice('/ravradar-private-production-runtime/'.length));
+      if (key === reservationPath) {
+        const previous = reservations.get(remote);
+        if (request.method === 'GET') return previous
+          ? new Response(previous.bytes, { headers: { ETag: previous.etag, 'Content-Length': String(previous.bytes.length) } })
+          : new Response(null, { status: 404 });
+        assert.equal(request.method, 'PUT');
+        assert(request.headers.authorization);
+        const bytes = Buffer.from(request.body);
+        if (previous ? request.headers['if-match'] !== previous.etag
+          : request.headers['if-none-match'] !== '*') return new Response(null, { status: 412 });
+        const commit = () => reservations.set(remote, { bytes, etag: '"' + crypto.createHash('sha256').update(bytes).digest('hex') + '"' });
+        if (fault.reservationPut) await fault.reservationPut({ bytes, commit });
+        else commit();
+        return new Response(null);
+      }
       calls.push(request.method);
       if (request.method === 'GET' && address.searchParams.has('list-type')) {
         listPositions?.push(calls.length - 1);
         return new Response(`<ListBucketResult><Contents><Key>preserved</Key><Size>${virtualUsed}</Size></Contents><KeyCount>1</KeyCount><IsTruncated>false</IsTruncated></ListBucketResult>`);
       }
       if (request.method === 'HEAD' && address.pathname === '/ravradar-private-production-runtime') return new Response(null);
-      const key = decodeURIComponent(address.pathname.slice('/ravradar-private-production-runtime/'.length));
       if (request.method === 'HEAD') return new Response(null, { status: remote.objects.has(key) ? 200 : 404 });
       if (request.method === 'PUT') {
+        if (fault.objectPut) await fault.objectPut(key, request.body);
         const result = await remote.storage.uploadImmutable(key, request.body);
         return new Response(null, { status: result.created ? 200 : 412 });
       }
@@ -175,8 +193,88 @@ export async function assertNormalStagePublication(t) {
     'Capacity refusal never reaches parent CAS.');
   assert.equal(r2Calls.includes('PUT'), false, 'Capacity refusal reaches no actual PUT.');
   virtualUsed = 1_734_856_529;
-  const late = normalBAndSTransports();
   const pointerKey = 'ravscore-private-production-runtime-pointer';
+  function priorGeneration() {
+    const remote = normalBAndSTransports();
+    remote.documents.set(pointerKey, structuredClone(heldParent));
+    for (const [key, value] of transport.objects) remote.objects.set(key, Buffer.from(value));
+    return remote;
+  }
+  const publishOn = (remote, calls, fault = {}, options = normalPublication) => publishPrivateWeatherRuntime({
+    ...options, request: bindOrdinaryStagePublicationRequest(remote.documentRequest, parentReceipt),
+  }, r2OptionsFor(remote, calls, undefined, fault));
+  const pending = remote => JSON.parse(reservations.get(remote).bytes.toString('utf8')).pending;
+
+  const lateReservation = priorGeneration();
+  let finishDelayedReservation;
+  const lateReservationCalls = [];
+  await assert.rejects(publishOn(lateReservation, lateReservationCalls, {
+    reservationPut({ commit }) {
+      assert.equal(finishDelayedReservation, undefined, 'No second physical attempt for an unresolved reservation');
+      finishDelayedReservation = commit;
+      throw new Error('synthetic lost response before the conditional write is visible');
+    },
+  }));
+  assert.equal(lateReservationCalls.includes('PUT'), false, 'Unknown reservation cannot authorize any archive write');
+  assert.deepEqual(lateReservation.documents.get(pointerKey), heldParent);
+  finishDelayedReservation();
+  assert.equal(pending(lateReservation).length, 1);
+
+  const lateArchive = priorGeneration();
+  let finishDelayedArchive;
+  let lostReservationResponse = false;
+  let physicalArchivePuts = 0;
+  const lateArchiveCalls = [];
+  await assert.rejects(publishOn(lateArchive, lateArchiveCalls, {
+    reservationPut({ commit }) {
+      commit();
+      if (!lostReservationResponse) {
+        lostReservationResponse = true;
+        throw new Error('synthetic lost response after the conditional reservation committed');
+      }
+    },
+    objectPut(key, bytes) {
+      physicalArchivePuts += 1;
+      assert.deepEqual(pending(lateArchive), [{ path: key, bytes: bytes.length }]);
+      finishDelayedArchive = () => lateArchive.storage.uploadImmutable(key, bytes);
+      throw new Error('synthetic lost first physical archive PUT, still pending remotely');
+    },
+  }));
+  assert.equal(lostReservationResponse, true);
+  assert.equal(physicalArchivePuts, 1);
+  assert.deepEqual(lateArchive.documents.get(pointerKey), heldParent);
+  const [unresolved] = pending(lateArchive);
+  assert.equal(lateArchive.objects.has(unresolved.path), false);
+  const retryAbsent = [];
+  await assert.rejects(publishOn(lateArchive, retryAbsent),
+    error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_ALREADY_UNRESOLVED');
+  assert.equal(retryAbsent.includes('PUT'), false, 'An absent object is not terminal and is not retried');
+  assert.deepEqual(pending(lateArchive), [unresolved]);
+
+  const other = await create(target, 'unrelated-archive');
+  const different = { ...normalPublication, bundlePath: other };
+  const stock = virtualUsed;
+  virtualUsed = 2_500_000_000 - 100_000_000 - 350_000_000 - 16_384 - 16_384;
+  const tooFull = [];
+  await assert.rejects(publishOn(lateArchive, tooFull, {}, different),
+    error => error.cause?.code === 'PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
+  assert.equal(tooFull.includes('PUT'), false, 'Invisible reserved bytes count against the generation budget');
+  virtualUsed = stock;
+  const allowDifferent = priorGeneration();
+  reservations.set(allowDifferent, reservations.get(lateArchive));
+  const differentOutcome = await publishOn(allowDifferent, [], {}, different);
+  assert.equal(differentOutcome.published, true);
+  assert.deepEqual(pending(allowDifferent), [unresolved],
+    'An unrelated ordinary generation may proceed while it continues to count the unresolved bytes');
+
+  await finishDelayedArchive();
+  const recoveredCalls = [];
+  const recovered = await publishOn(lateArchive, recoveredCalls);
+  assert.equal(recovered.published, true, 'The same candidate can finish after the exact immutable bytes appear');
+  assert.deepEqual(pending(lateArchive), []);
+  assert.equal(lateArchive.objects.has(unresolved.path), true);
+
+  const late = normalBAndSTransports();
   late.documents.set(pointerKey, structuredClone(heldParent));
   for (const [key, value] of transport.objects) late.objects.set(key, Buffer.from(value));
   let finishDelayedCas;

@@ -141,6 +141,10 @@ GitHubs kørselsannotation viser de samme to lageroptællinger som joboversigten
 
 Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lageropslagene før den første nye arkivfil og før upload af rotationsmarkøren. Den normale backupplan rapporterer målt lagerplads, når den kan læse den. Det samme lageropslag bruges fortsat til hver adgangskontrol. Offentlig prognose, bevaringsregler, sletning og adgang er uændrede. Måling i almindelig drift og Free-budget over hele fakturaperioden afventer.
 
+**27. november, lokal rettelse.** Den normale vejrarkivering registrerer nøglen og bytestørrelsen i én fast privat R2-journal, før den sender en ny arkivfil. Den kræver præcis genlæsning af journalen. Ved tabt svar forbliver de uafklarede bytes reserveret på tværs af kørsler. En senere normal kørsel kan bruge en allerede gemt del efter kontrol af længde og SHA-256. Et fraværende objekt beholder reservationen. Den almindelige 350 MB arkivgrænse, 100 MB reserve og eksisterende rotationsmarkør består.
+
+Den valgfrie R2-kopi af driftsbevis afstår ved manglende plads eller uafklaret journal, mens den primære udgivelse til Supabase kan fortsætte. Den primære private vejrarkivering stopper før en ny skrivning, hvis pladsen eller reservationsloftet er opbrugt. De lokale prøver dækker tabte svar og præcis genlæsning. GitHub-kildekontrol og normal publicering på den leverede kode udestår. Se DEC-0255.
+
 ## 22. november — tysk AI-svar afvist efter assistentudgivelsen
 
 Den offentligt leverede assistent gav validerede eksterne AI-svar i den danske og engelske prøve. Den tyske prøve fik HTTP 502 omkring kl. 00.44 dansk tid. Den allerede installerede logmarkør kan angive svarets form eller afkortning ved udtræksfejl.
