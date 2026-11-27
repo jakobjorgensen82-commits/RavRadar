@@ -1,3 +1,18 @@
+## 27. november — en fastfrosset fejlupload kan overleve den fælles frist
+
+Den eksisterende GitHub-prøve stoppede uploadens overvågningsproces, mens SDK'et afventede svar på den afsluttende upload. Handlingen meldte fejl, og skrivelåsen blev bevaret. Uploadens processer ophørte først, da prøven genoptog overvågningen.
+
+Den lokale kandidat lader den eksisterende Linux-processtyring afslutte hele uploaden efter samme frist som den forudgående gemning. Den indre upload behandler skrivelåsen som hidtil. Muligheden for genoptagelse afgøres senere ved autentificeret genlæsning. Den oprindelige kandidats Linux-kontrol #1786 bestod den almindelige prøve og bekræftede fysisk ophør uden indgreb fra prøven. Efter sammenlægningen med assistentrettelsen er den normale kildekontrol af den samlede ændring og virkningen i drift fortsat åbne.
+
+## 27. november — et spørgsmål om opskyl fik svar om bølgemodellen
+
+Den offentlige tyske assistent svarede med RavScores bølgemodel på et
+spørgsmål om, hvad man kan se efter i tang og træstumper opskyllet efter en
+storm. Ordet for storm valgte bølgesvaret, selv om spørgsmålet bad om tegn på
+stranden. Den lokale rettelse genbruger det gennemgåede svar om opskyl på
+dansk, tysk og engelsk. Et ekstra spørgsmål bevares i den almindelige
+behandling af hele henvendelsen. Offentlig levering udestår.
+
 ## 27. november — bevar påbegyndt sletning ved gendannelse af turloggen
 
 En lokal prøve med den normale Worker og ti syntetiske databaser viste, at en
