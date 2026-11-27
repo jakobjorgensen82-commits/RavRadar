@@ -28,10 +28,16 @@ parameterbundne forespørgsler gennem Cloudflares eksisterende D1-adgang.
 En negativ eller ukendt kvittering fra hoveddatabasen stopper arbejdet.
 Denne forbindelse er afprøvet med lokale svar og faktiske SQLite-tabeller.
 
-Tilbagehold kandidaten fra installation, indtil den normale deployvej
-bevarer spærringen, gendannelsesjobbet binder afstemningen til den faktiske
-Cloudflare-gendannelse før genåbning, og opbevaringen følger de faktisk
-anvendelige gendannelsespunkter.
+Den lokale afstemning kræver nu både det valgte gendannelsespunkt og
+Cloudflares kvittering for selve gendannelsen af hver berørt database.
+Et punkt før starten på den dækkede slettehistorik afvises. Det private
+installationsforløb kontrollerer desuden den aktive Workers spærring,
+før det ændrer databasen eller udgiver Workeren og genåbner turloggen.
+Begge ændringer er afprøvet lokalt.
+
+Kandidaten afventer et kontrolleret gendannelsesjob, der selv indsamler
+kvitteringerne, samt kontrol af de øvrige skriveveje og opbevaring frem til
+de ældste anvendelige gendannelsespunkter.
 
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 

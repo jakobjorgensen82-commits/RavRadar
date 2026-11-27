@@ -6,7 +6,9 @@ import { handleRequest } from '../cloudflare/trip-gateway/worker.js';
 import {
   deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, storeCloudflareTrip,
 } from '../supabase/functions/_shared/trip-storage.js';
-import { reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures } from './lib/reconcile-held-trip-erasures.mjs';
+import {
+  identifyCloudflareTripRestore, reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures,
+} from './lib/reconcile-held-trip-erasures.mjs';
 
 const migrations = ['001_trip_observations', '002_owner_export_keyset', '003_owner_erasure_insert_guard']
   .map(name => readFileSync(new URL(`../cloudflare/trip-gateway/migrations/${name}.sql`, import.meta.url), 'utf8'));
@@ -91,13 +93,35 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     binding: `TRIP_DB_${index}`, database_name: `ravradar-trips-${index}`,
     database_id: `55555555-5555-4555-8555-${String(index).padStart(12, '0')}`,
   }));
+  const databaseId = bindings[0].database_id;
+  const baseRestoreUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/time_travel/`;
+  const providerBookmark = 'synthetic-selected-bookmark';
+  const scope = { accountId, projectRef, bindings, versionId, deploymentId };
+  const restorePlan = {
+    intentId: '88888888-8888-4888-8888-888888888888', sourceSha: 'e'.repeat(40), runId: '1234', attempt: 1,
+    heldAt: '2026-08-26T11:55:00.000Z', captureAt, journalCoveredFrom: '2026-08-26T06:00:00.000Z',
+    targets: [{
+      databaseId, at: restoreFrom, bookmark: providerBookmark,
+      lookup: { method: 'GET', url: baseRestoreUrl + 'bookmark?timestamp=' + encodeURIComponent(restoreFrom), status: 200,
+        body: { success: true, result: { bookmark: providerBookmark } } },
+    }],
+  };
+  const restoreReplies = [{
+    databaseId, method: 'POST', url: baseRestoreUrl + 'restore?bookmark=' + providerBookmark, status: 200,
+    startedAt: '2026-08-26T11:56:00.000Z', completedAt: '2026-08-26T11:58:00.000Z',
+    body: { success: true, result: { bookmark: 'synthetic-after-restore-bookmark', previous_bookmark: 'synthetic-before-restore-bookmark' } },
+  }];
+  const restoreIdentity = identifyCloudflareTripRestore({ ...scope, plan: restorePlan, replies: restoreReplies });
+  assert.equal(restoreIdentity.restoreFrom, restoreFrom);
+  assert.equal(restoreIdentity.captureAt, captureAt);
+  assert.notEqual(restoreIdentity.epoch, epoch);
   let primaryRead = true;
   let edgeMode = 'restore-hold';
   let d1Requests = 0;
   const provider = {
-    bindings, projectRef, accountId, serviceKey, cloudflareToken, epoch, restoreFrom, captureAt,
+    bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan, restoreReplies,
     gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId,
-    async readHoldEpoch() { return epoch; },
+    async readHoldEpoch() { return restoreIdentity.epoch; },
     async fetchImpl(input, init) {
       const url = new URL(input);
       const request = new Request(input, init);
@@ -151,12 +175,21 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
       }] });
     },
   };
+  await assert.rejects(reconcileCloudflareHeldTripErasures({
+    ...provider, restoreReplies: [{ ...restoreReplies[0], method: 'GET' }],
+  }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
+  await assert.rejects(reconcileCloudflareHeldTripErasures({
+    ...provider, restorePlan: { ...restorePlan, journalCoveredFrom: '2026-08-26T09:00:00.000001Z' },
+  }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
+  assert.equal(d1Requests, 0);
   edgeMode = 'd1';
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(d1Requests, 0);
   edgeMode = 'restore-hold';
   const result = await reconcileCloudflareHeldTripErasures(provider);
-  assert.deepEqual(result, { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch, owners: 1, removedRows: 1 });
+  assert.deepEqual(result, {
+    kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch: restoreIdentity.epoch, owners: 1, removedRows: 1,
+  });
   assert.equal(count('trip_observations', erased), 0);
   assert.equal(count('trip_observation_registry', erased), 0);
   assert.equal(count('trip_owner_erasure_tombstones', erased), 10);

@@ -10,7 +10,8 @@ import {DatabaseSync} from 'node:sqlite';
 import {isDeepStrictEqual} from 'node:util';
 import {pathToFileURL} from 'node:url';
 import {schemaTokens} from './prepare-cloudflare-trip-storage.mjs';
-import {verifyExistingWorkerBindings} from './verify-cloudflare-trip-gateway.mjs';
+import {verifyExistingWorkerBindings,waitForWorkerHealth} from './verify-cloudflare-trip-gateway.mjs';
+import {normalizeCloudflareGatewayUrl} from '../supabase/functions/_shared/trip-storage.js';
 import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import {privateTripStudySchemaModel,classifyPrivateTripStudySchema,privateTripStudyMigrationSteps}
   from './deploy-private-trip-study.mjs';
@@ -256,8 +257,20 @@ function controllerFixture({state='EXACT_004_005_006',mode='deliver',allow007='t
   };
   const body=source.slice(0,source.indexOf('\nif(process.argv[1]&&pathToFileURL('))
     .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'');
+  const gatewayUrl='https://trip-study-fixture.example.workers.dev';
+  let healthReads=0;
   const context={fs:filesystem,path,crypto,execFileSync:run,DatabaseSync,pathToFileURL,isDeepStrictEqual,schemaTokens,
-    exactRelativeModuleSpecifiers,verifyExistingWorkerBindings:attest,
+    exactRelativeModuleSpecifiers,verifyExistingWorkerBindings:attest,normalizeCloudflareGatewayUrl,
+    waitForWorkerHealth:options=>waitForWorkerHealth({...options,fetchImpl:async(input,init)=>{
+      assert.equal(input,gatewayUrl+'/health');
+      assert.equal(init.body,undefined);
+      healthReads+=1;
+      events.push('worker:health');
+      const held=failure==='worker-restore-held'||(failure==='worker-held-after-maintenance'&&healthReads>=2);
+      return Response.json({ ok:true, contract_version:'4.0.311', shards:10, storage_schema_version:1,
+        idempotency_registry_schema_version:2, owner_erasure_tombstone_schema_version:1, trip_export_version:1,
+        ...(held?{restore_hold:true}:{}) });
+    }}),
     deployTripWorker:async()=>{events.push('worker:deploy');active=nextVersion;activeFlag=JSON.parse(files.get(configPath)).vars.TRIP_AGGREGATE_ENABLED;workerOff=activeFlag==='false';
       return{terminationConfirmed:failure!=='enable-process-unknown',stdout:'Current Version ID: '+nextVersion+'\n'};},
     waitForTripStorageEdgeReadiness:async()=>({ok:true}),boundedFetch:transport,
@@ -267,7 +280,7 @@ function controllerFixture({state='EXACT_004_005_006',mode='deliver',allow007='t
       TRIP_PRIVATE_STUDY_MODE:mode,TRIP_PRIVATE_STUDY_APPLY_ALLOWED:allow004,TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED:allow005,
       TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED:allow006,TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED:allow007,
       TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION:confirmation,TRIP_PRIVATE_STUDY_PRIVACY_QUALIFIED:callerPrivacyBoolean,
-      CLOUDFLARE_ACCOUNT_ID:account,CLOUDFLARE_API_TOKEN:'SYNTHETIC_NOT_A_CREDENTIAL',...envOverrides}},
+      CLOUDFLARE_ACCOUNT_ID:account,CLOUDFLARE_API_TOKEN:'SYNTHETIC_NOT_A_CREDENTIAL',CLOUDFLARE_TRIP_GATEWAY_URL:gatewayUrl,...envOverrides}},
     Buffer,AbortController,setTimeout,clearTimeout,console};
   const realm=vm.createContext(context),decodeRows=vm.runInContext('value=>JSON.parse(value)',realm);
   // node:sqlite is a host-native injection. Recreate its JSON result arrays in
@@ -349,6 +362,19 @@ test('private-study007: unknown/bad/partial write stops without Worker repair, r
         e=>e.stage==='PARTIAL_OR_CHANGED_STATISTICS_SCHEMA');
       if(['write-after','write-shape'].includes(failure))
         assert.equal(classifyPrivateTripStudySchema(model,fx.dbs.map(metadata)).state,'EXACT_004_005_006_007');
+    }finally{fx.close();}
+  }
+});
+
+test('private-study: confirmed restore hold stops before changing Edge or writing D1',async()=>{
+  for(const [failure,edgeWrites] of [['worker-restore-held',0],['worker-held-after-maintenance',1]]){
+    const fx=controllerFixture({failure});
+    try{
+      await assert.rejects(fx.invoke(),error=>error.stage==='WORKER_RESTORE_HOLD_OR_UNKNOWN');
+      noFixtureGap(fx);
+      assert.equal(fx.writes.length,0);
+      assert.equal(fx.events.filter(event=>event==='worker:deploy').length,0);
+      assert.equal(fx.events.filter(event=>event==='supabase:secrets').length,edgeWrites);
     }finally{fx.close();}
   }
 });
