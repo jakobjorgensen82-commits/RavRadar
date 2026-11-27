@@ -364,6 +364,25 @@ test('active after601 treats all OFF account migrations as installed dependencie
    await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,[option]:true}));
   for(const option of ['includeAccountErasureSource','includeAccountNativeReceiptSource'])
    await assert.rejects(cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'unused'),[option]:true}));
+  const {TRIP_ERASURE_RECOVERY_MIGRATION:tripFile}=await import('./lib/trip-erasure-recovery-native-fixture.mjs');
+  const tripVersion=tripFile.split('_')[0];
+  const remoteTrip=`\n | ${tripVersion} |`;
+  const installedTrip=`\n${tripVersion} | ${tripVersion} |`;
+  const pendingTrip=`\n${tripVersion} | |`;
+  await assert.rejects(cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,
+    migrationListText:list(cutover.CHECKPOINT_SCALAR_WALK_MIGRATION.version)+remoteTrip}), /requires installed scalar-walk/);
+  const hydrated=await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list()+remoteTrip});
+  assert.deepEqual(hydrated.placeholders, []);
+  const stagedTrip=path.join(prepared.migrationsDirectory,tripFile);
+  const originalTrip=await fs.promises.readFile(new URL('../supabase/migrations/'+tripFile,import.meta.url),'utf8');
+  assert.equal(await fs.promises.readFile(stagedTrip,'utf8'),originalTrip.replaceAll('\r\n','\n'));
+  assert.deepEqual((await cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip})).pendingVersions,[]);
+  assert.equal(cutover.assertSupabaseMigrationsApplied(list()+installedTrip).appliedVersions.at(-1),tripVersion);
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+pendingTrip,
+    dryRunText:`DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${tripFile}\nFinished supabase db push.`}), /requires the matching installed append/);
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+remoteTrip}), /requires the matching installed append/);
+  await fs.promises.appendFile(stagedTrip,'\n-- changed\n');
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip}), /Trip recovery migration source changed/);
  }finally{
   assert.equal(path.dirname(await fs.promises.realpath(work)),parent);
   assert(path.basename(work).startsWith('rr-account-off-after601-'));

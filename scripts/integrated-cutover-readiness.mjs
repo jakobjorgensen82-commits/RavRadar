@@ -90,6 +90,11 @@ export const CHECKPOINT_SCALAR_WALK_MIGRATION = Object.freeze({
   filename: '20261126152500_checkpoint_scalar_privacy_walk.sql',
   sha256: '23f863a6ba9d3cebdae3944f010fb0517b632200cc2c4eac89e84efc59e78df2',
 });
+const TRIP_ERASURE_RECOVERY_SQL = Object.freeze({
+  version: '20261127095500',
+  filename: '20261127095500_trip_owner_erasure_intents.sql',
+  sha256: '734ae3e7a353a20afacf0f0cba2bdc180cad64989c2cd643ce8c6dd2c78b7526',
+});
 const MODEL_BINDING_FIELDS = Object.freeze([
   'modelId', 'stateSchemaVersion', 'variantId', 'profileId', 'componentSchemaId',
   'explanationSchemaId', 'rankingPolicyId', 'bestTimePolicyId',
@@ -826,6 +831,12 @@ function fixedAssistantRows(migrationListText,profile){
       assert(local.has(version)&&remote.has(next.version),
         'Checkpoint scalar walk requires exact local source and installed 603');
     }
+    const tripVersion = TRIP_ERASURE_RECOVERY_SQL.version;
+    offVersions.add(tripVersion);
+    if (local.has(tripVersion) || remote.has(tripVersion)) {
+      assert(local.has(tripVersion) && remote.has(tripVersion) && remote.has(version),
+        'Trip recovery SQL requires the matching installed append and scalar-walk predecessor');
+    }
   }
   if(profile===ASSISTANT_AFTER599_ROWS){
     for(const row of ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS)offVersions.add(row.version);
@@ -1205,6 +1216,19 @@ export async function readCheckpointScalarWalkSource(migrationsDirectory = MIGRA
   return sql;
 }
 
+async function readTripErasureRecoverySql(migrationsDirectory) {
+  const migration = TRIP_ERASURE_RECOVERY_SQL;
+  const file = path.join(migrationsDirectory, migration.filename);
+  const stat = await fs.lstat(file);
+  assert(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= 16_384,
+    'Trip recovery migration must be a bounded regular file');
+  const bytes = await fs.readFile(file);
+  assert.equal(bytes.length, stat.size);
+  const sql = new TextDecoder('utf-8', {fatal: true}).decode(bytes).replaceAll('\r\n', '\n');
+  assert.equal(sha256(sql), migration.sha256, 'Trip recovery migration source changed');
+  return sql;
+}
+
 export async function expectedCheckpointScalarWalkContract({
   migrationsDirectory = MIGRATIONS_DIRECTORY,
 } = {}) {
@@ -1494,6 +1518,11 @@ export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS
       const sql=new TextDecoder('utf-8',{fatal:true}).decode(bytes).replaceAll('\r\n','\n');
       assert.equal(sha256(sql),expected,'Installed account migration bytes do not match the exact source');
     }
+    const tripFilename = versionToFilename.get(TRIP_ERASURE_RECOVERY_SQL.version);
+    if (tripFilename !== undefined) {
+      assert.equal(tripFilename, TRIP_ERASURE_RECOVERY_SQL.filename);
+      await readTripErasureRecoverySql(migrationsDirectory);
+    }
   }
   return Object.freeze({
     filenames: Object.freeze(filenames),
@@ -1720,6 +1749,12 @@ export async function hydrateTemporaryRemoteMigrationHistory({
       await fs.copyFile(path.join(MIGRATIONS_DIRECTORY,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename),path.join(migrationsDirectory,ACCOUNT_NATIVE_RECEIPT_APP_MIGRATION.filename));
       continue; // A known applied source, never pending-write or history-placeholder authority.
     }
+    if (sourcePhase === 'assistant-after601-successor' && version === TRIP_ERASURE_RECOVERY_SQL.version) {
+      assert(remote.has(CHECKPOINT_SCALAR_WALK_MIGRATION.version), 'Trip recovery requires installed scalar-walk');
+      const sql = await readTripErasureRecoverySql(MIGRATIONS_DIRECTORY);
+      await fs.writeFile(path.join(migrationsDirectory, TRIP_ERASURE_RECOVERY_SQL.filename), sql, {flag: 'wx'});
+      continue;
+    }
     assert.ok(migrationChronologicalKey(version) < firstUniqueCutoverVersion,
       `remote contains an unknown post-cutover migration ${version}; refusing to normalize history`);
     const filename = `${version}_remote_applied_history_placeholder.sql`;
@@ -1942,6 +1977,9 @@ export function assertSupabaseMigrationsApplied(migrationListText,{requireAccoun
   const requiredVersions = REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version);
   if(ACTIVE===INACTIVE_ASSISTANT_AFTER601_SUCCESSOR&&local.has(CHECKPOINT_SCALAR_WALK_MIGRATION.version)){
     requiredVersions.push(CHECKPOINT_SCALAR_WALK_MIGRATION.version);
+  }
+  if (ACTIVE === INACTIVE_ASSISTANT_AFTER601_SUCCESSOR && local.has(TRIP_ERASURE_RECOVERY_SQL.version)) {
+    requiredVersions.push(TRIP_ERASURE_RECOVERY_SQL.version);
   }
   for (const version of requiredVersions) {
     assert.ok(local.has(version), `required local migration ${version} disappeared after db push`);

@@ -15,6 +15,12 @@ behandling af hele henvendelsen. Offentlig levering udestår.
 
 ## 27. november — bevar påbegyndt sletning ved gendannelse af turloggen
 
+Den lokale migrationslæser kan nu genkende den præcise turlogsmigration som
+allerede installeret. Den midlertidige mappe får den verificerede SQL-fil fra
+lageret, når Supabase viser den som installeret og den foregående migration er
+til stede. Den normale kørsels migrationsplan afviser fortsat en ventende
+turlogsmigration eller ændret SQL. Installation og kontrol i drift afventes.
+
 En lokal prøve med den normale Worker og ti syntetiske databaser viste, at en
 tur blev synlig igen efter gendannelse af den kontrolbase, der havde modtaget
 den eneste slettemarkering. Samme normale sletning kunne derefter fjerne turen
