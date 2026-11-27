@@ -1,3 +1,22 @@
+## 27. november — et spørgsmål om både vind og strøm fik kun et svar om strøm
+
+På den offentlige side fik spørgsmålet »Hvad ændrer sig, hvis vinden vender, mens
+strømmen stadig går mod land?« alene den generelle strømforklaring. Den lokale
+rettelse svarer om både uro i vandoverfladen og kystrettet transport. Den kræver
+hele det generelle spørgsmål, så en tilføjelse om en bestemt zone eller dag
+fortsat behandles som del af hele spørgsmålet. Målprøver for dansk, tysk og
+engelsk består. GitHub-kontrol og offentlig levering udestår.
+
+## 27. november — laboratoriemetoden faldt ud af svaret om rav og plast
+
+Den offentlige danske assistent svarede med visuelle kendetegn og UV, da
+spørgsmålet handlede om at skelne rav fra moderne plast med Raman-spektroskopi.
+Forhåndsprøven med den eksterne svarvej ramte timeout på dansk og tysk. Den
+lokale rettelse genbruger den eksisterende gennemgåede laboratorieforklaring
+for netop det hele spørgsmål på dansk, tysk og engelsk. Andre sammensatte
+spørgsmål og private afvisninger følger fortsat deres almindelige behandling.
+Kildekontrol og offentlig afprøvning af den nye rute udestår.
+
 ## 27. november — en fastfrosset fejlupload kan overleve den fælles frist
 
 Den eksisterende GitHub-prøve stoppede uploadens overvågningsproces, mens SDK'et afventede svar på den afsluttende upload. Handlingen meldte fejl, og skrivelåsen blev bevaret. Uploadens processer ophørte først, da prøven genoptog overvågningen.
@@ -30,6 +49,12 @@ Den lokale rettelse genbruger de gennemgåede svar direkte på dansk, tysk og en
 En almindelig tysk browserforespørgsel på den offentlige prognose fra #407 fik HTTP 502. Den afgrænsede driftslog viste HTTP 200 fra Cloudflare, men ingen afsluttende svartekst. Loggen viser første forsøg og kan derfor ikke afgøre, om anden forespørgsel blev sendt, kom tom tilbage eller blev afvist i valideringen.
 
 Den lokale ændring registrerer genforsøgets udfald og dets faktiske HTTP-status, når Cloudflare har svaret. Fejlloggen kan også vise de to afgrænsede tal for svar- og ræsonneringstokens, når Cloudflare selv rapporterer dem. Det gør det muligt at sammenholde et tomt svar med det anvendte tokenbudget. Samme to mulige providerkald, kvote, frist og svarvalidering gælder. Afprøvning i drift og afklaring af det tomme svar udestår.
+
+## 27. november — backupkontrol kan mangle efter flere korte vejrvinduer
+
+Den almindelige vedligeholdelse giver vejrhentningen forrang. Hvis de næste vejrvinduer er for korte, kan backupdelen springes over med grøn status. Efterkontrol #114 bekræftede en gendannelsesprøvet, endnu aktuel databasebackup. Den viste også den eksisterende positive GitHub-markør, som en daglig overvågning kan genkende. [Efterkontrol #114](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45932339037/job/140289969173)
+
+Den lokale ændring føjer en skrivefri aflæsning af kørselsstatus til den eksisterende daglige lagerkontrol. Den daglige kontrol giver en GitHub-fejl, hvis den ikke finder en positiv backupbekræftelse fra de foregående 48 timer. En ufuldstændig aflæsning vises særskilt. En lokal prøve mod GitHubs faktiske metadata fandt den normale bekræftelse fra #116 i to læsninger. Kildekvalifikation, almindelig daglig kørsel og en eventuel ejerunderretning skal verificeres særskilt. GitHub kan slå planlagte kørsler fra efter 60 dage uden aktivitet i offentlige repositories. [Bekræftelse #116](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45987926529/job/140471465285) · [GitHubs planlægning](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
 
 ## 26. november — kildekontrol kan blokere vejr før DMI
 
