@@ -492,8 +492,8 @@ async function eligibleOperationalReplica(objectPath, bytes) {
     : PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
   const descriptor = validateProtectedOperationalEvidenceDescriptor({ ...envelope?.descriptor,
     objectPath, objectSha256: match[1], objectBytes: bytes.length }, { policy });
-  await decodeArchive(bytes, descriptor, policy);
-  return descriptor;
+  const files = await decodeArchive(bytes, descriptor, policy);
+  return {descriptor, files};
 }
 
 
@@ -507,7 +507,7 @@ function encodeOperationalSlot(slot, descriptor, archive, admittedPointerVersion
   if (header.length > 16_000) throw new Error('OPERATIONAL_SLOT_HEADER_BOUND');
   return Buffer.concat([SLOT_MAGIC, header, Buffer.from('\n'), archive]);
 }
-async function decodeOperationalSlot(record) {
+async function decodeOperationalSlot(record, captureFiles) {
   if (!record) return null;
   const {bytes,slot} = record;
   if (!bytes.subarray(0,SLOT_MAGIC.length).equals(SLOT_MAGIC)) throw new Error('OPERATIONAL_SLOT_HEADER_INVALID');
@@ -520,13 +520,15 @@ async function decodeOperationalSlot(record) {
     ||!SHA256_PATTERN.test(header.generation??'')||!Number.isSafeInteger(header.admittedPointerVersion)
     ||header.admittedPointerVersion<0||JSON.stringify(header)!==bytes.subarray(SLOT_MAGIC.length,end).toString('utf8'))
     throw new Error('OPERATIONAL_SLOT_HEADER_INVALID');
-  const archive=bytes.subarray(end+1),descriptor=await eligibleOperationalReplica(header.descriptor?.objectPath,archive);
+  const archive=bytes.subarray(end+1);
+  const {descriptor,files}=await eligibleOperationalReplica(header.descriptor?.objectPath,archive);
   if(!same(descriptor,header.descriptor))throw new Error('OPERATIONAL_SLOT_DESCRIPTOR_CHANGED');
+  captureFiles?.(files);
   return {...record,header,archive};
 }
 export function createProtectedOperationalEvidenceClients({
   supabaseUrl=process.env.SUPABASE_URL, serviceRoleKey=process.env.SUPABASE_SERVICE_ROLE_KEY,
-  fetchImpl=globalThis.fetch, operationMs=10_000, onReplicaStatus=()=>{},
+  fetchImpl=globalThis.fetch, operationMs=10_000, onReplicaStatus=()=>{}, isolatedRestoreTarget=null,
   slotsFactory=(fetchBound,delayImpl)=>createOperationalEvidenceR2Slots({
     bucketId:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.bucketId,fetchImpl:fetchBound,delayImpl}),
 }={}) {
@@ -567,7 +569,8 @@ export function createProtectedOperationalEvidenceClients({
     });
     const pointerRequest=createSupabaseAdminRequester({endpoint:supabaseUrl.replace(/\/$/,'')+'/rest/v1/admin_documents',
       key:serviceRoleKey,fetchImpl:boundedFetch,delayImpl:delay});
-    try{return await action({remote:slotsFactory(boundedFetch,delay),check,fetchBound:boundedFetch,delay,pointerRequest});}
+    try{return await action({remote:slotsFactory(boundedFetch,delay),check,fetchBound:boundedFetch,delay,
+      pointerRequest,signal:controller.signal});}
     catch(error){if(controller.signal.aborted)throw new Error('OPERATIONAL_REPLICA_DEADLINE',{cause:error});throw error;}
     finally{clearTimeout(timer);controller.abort();}
   }
@@ -582,7 +585,7 @@ export function createProtectedOperationalEvidenceClients({
   }
   async function maintain({request,row,incoming=null,afterCommittedCas=false}) {
     try {
-      const result=await withinBudget(async({remote,check,fetchBound,delay,pointerRequest})=>{
+      const result=await withinBudget(async({remote,check,fetchBound,delay,pointerRequest,signal})=>{
         const fresh=async()=>{check();const observed=await readPointer(pointerRequest,{allowMissing:true,
           policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});check();
           if(!same(observed,row))throw new Error('OPERATIONAL_REPLICA_REFERENCE_CHANGED');return observed;};
@@ -592,6 +595,12 @@ export function createProtectedOperationalEvidenceClients({
         if(incoming)unique.set(incoming.descriptor.objectPath,incoming.descriptor);
         if(unique.size>6)throw new Error('OPERATIONAL_SLOT_REFERENCE_BOUND');
         const pinned=new Set(references.map(d=>d.objectPath));
+        const restoreDescriptor=afterCommittedCas&&isolatedRestoreTarget
+          &&incoming?.descriptor?.kind===PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.descriptorKind
+          &&incoming.descriptor.deploymentId===isolatedRestoreTarget.deploymentId
+          &&incoming.descriptor.sourceHead===isolatedRestoreTarget.sourceHead
+          &&same(row?.payload?.current,incoming.descriptor) ? incoming.descriptor : null;
+        let restoreFiles=null;
         let usage=null,written=0;const fencedSlots=new Set();
         const candidates=[...unique.values()];
         if(afterCommittedCas)candidates.sort((a,b)=>Number(!slots.some(entry=>entry?.header.descriptor.objectPath===a.objectPath))
@@ -613,7 +622,7 @@ export function createProtectedOperationalEvidenceClients({
           if(index<0)throw new Error('OPERATIONAL_SLOT_CAPACITY_HOLD');
           const old=slots[index],bytes=incoming?.descriptor.objectPath===d.objectPath
             ?incoming.archive:matching?.archive??await readPrimary(d.objectPath,fetchBound,delay);
-          check();const actual=await eligibleOperationalReplica(d.objectPath,bytes);
+          check();const {descriptor:actual}=await eligibleOperationalReplica(d.objectPath,bytes);
           if(!same(actual,d))throw new Error('OPERATIONAL_SLOT_DESCRIPTOR_CHANGED');
           const wire=encodeOperationalSlot(index+1,d,bytes,version);
           await fresh();
@@ -628,11 +637,25 @@ export function createProtectedOperationalEvidenceClients({
           try{await remote.compareAndSwap(index+1,wire,old?.etag??null);}catch(error){writeError=error;}
           check();const observed=await remote.read(index+1);check();
           if(!observed?.bytes.equals(wire))throw writeError??new Error('OPERATIONAL_SLOT_WRITE_UNKNOWN');
-          slots[index]=await decodeOperationalSlot(observed);fencedSlots.add(index+1);written++;
+          const captureFiles=restoreDescriptor===d ? files=>{restoreFiles=files;} : undefined;
+          slots[index]=await decodeOperationalSlot(observed,captureFiles);fencedSlots.add(index+1);written++;
           await fresh();
         }
-        return {status:'OPERATIONAL_REPLICA_VERIFIED',slotCount:slots.filter(Boolean).length,
+        const verified={status:'OPERATIONAL_REPLICA_VERIFIED',slotCount:slots.filter(Boolean).length,
           protectedDescriptorCount:unique.size,writtenSlotCount:written};
+        if(restoreFiles){
+          // All replica writes and their final pointer check are complete.
+          // The local check uses only those R2 bytes and the remaining time.
+          try{
+            await verifyIsolatedOperationalRestore(restoreFiles,isolatedRestoreTarget.directory,{check,signal});
+            verified.isolatedRestore={status:'OPERATIONAL_REPLICA_ISOLATED_RESTORE_VERIFIED',
+              deploymentId:restoreDescriptor.deploymentId,sourceHead:restoreDescriptor.sourceHead,
+              publicManifestSha256:restoreDescriptor.publicManifestSha256,fileCount:restoreFiles.length};
+          }catch{
+            verified.isolatedRestore={status:'OPERATIONAL_REPLICA_ISOLATED_RESTORE_NOT_VERIFIED'};
+          }
+        }
+        return verified;
       });
       try{onReplicaStatus(result.status);}catch{}return result;
     }catch(error){
@@ -932,6 +955,55 @@ export async function publishProtectedOperationalEvidence({
   };
 }
 
+async function materializeDecodedOperationalFiles(files, directory, {check=()=>{},signal}={}) {
+  const destination = path.resolve(directory);
+  check();
+  const existing = await fs.lstat(destination).catch(() => null);
+  if (existing) throw new Error('Operational evidence restore destination already exists');
+  const stage = `${destination}.stage-${process.pid}-${crypto.randomBytes(5).toString('hex')}`;
+  try {
+    check();
+    await fs.mkdir(stage, { recursive: true, mode: 0o700 });
+    for (const file of files) {
+      check();
+      await fs.writeFile(
+        path.join(stage, file.path),
+        Buffer.from(file.contentBase64, 'base64'),
+        { mode: 0o600, flag: 'wx', signal },
+      );
+    }
+    check();
+    await fs.rename(stage, destination);
+  } catch (error) {
+    await fs.rm(stage, { recursive: true, force: true }).catch(() => {});
+    throw error;
+  }
+}
+
+async function verifyIsolatedOperationalRestore(files, runnerTemp, {check,signal}) {
+  check();
+  const tmp = await fs.realpath(runnerTemp);
+  check();
+  const scratch = await fs.mkdtemp(path.join(tmp, 'ravradar-operational-restore-'));
+  try {
+    const destination = path.join(scratch, 'restored');
+    await materializeDecodedOperationalFiles(files,destination,{check,signal});
+    check();
+    const names = await fs.readdir(destination);
+    if(!same(names.sort(),files.map(file=>file.path)))
+      throw new Error('Operational isolated restore inventory differs');
+    for(const file of files){
+      check();
+      const bytes=await fs.readFile(path.join(destination,file.path),{signal});
+      if(bytes.length!==file.bytes||sha256(bytes)!==file.sha256)
+        throw new Error('Operational isolated restore bytes differ');
+    }
+  } finally {
+    await fs.rm(scratch,{recursive:true,force:true});
+  }
+  check();
+}
+
 export async function restoreProtectedOperationalEvidence({
   directory,
   deploymentId = null,
@@ -967,24 +1039,7 @@ export async function restoreProtectedOperationalEvidence({
     archive = await storage.download(descriptor.objectPath);
   }
   const files = await decodeArchive(archive, descriptor, policy);
-  const destination = path.resolve(directory);
-  const existing = await fs.lstat(destination).catch(() => null);
-  if (existing) throw new Error('Operational evidence restore destination already exists');
-  const stage = `${destination}.stage-${process.pid}-${crypto.randomBytes(5).toString('hex')}`;
-  try {
-    await fs.mkdir(stage, { recursive: true, mode: 0o700 });
-    for (const file of files) {
-      await fs.writeFile(
-        path.join(stage, file.path),
-        Buffer.from(file.contentBase64, 'base64'),
-        { mode: 0o600, flag: 'wx' },
-      );
-    }
-    await fs.rename(stage, destination);
-  } catch (error) {
-    await fs.rm(stage, { recursive: true, force: true }).catch(() => {});
-    throw error;
-  }
+  await materializeDecodedOperationalFiles(files, directory);
   return {
     restored: true,
     centralVersion: row.version,
@@ -2237,7 +2292,17 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   // Supabase remains primary. Six bounded R2 slots copy the exact sealed bytes;
   // an optional replica refusal cannot grant or block a primary publication.
+  const env=process.env;
+  const ownOrdinaryPublication=options.mode==='publish'&&env.GITHUB_ACTIONS==='true'
+    &&env.GITHUB_REF==='refs/heads/main'&&options.repository===env.GITHUB_REPOSITORY
+    &&env.GITHUB_WORKFLOW_REF===env.GITHUB_REPOSITORY+'/'+DEFAULT_WEATHER_PATH+'@refs/heads/main'
+    &&env.GITHUB_EVENT_NAME==='workflow_dispatch'
+    &&/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID??'')&&env.GITHUB_RUN_ATTEMPT==='1'
+    &&options.deploymentId==='pages-'+env.GITHUB_RUN_ID+'-1'
+    &&HEAD_PATTERN.test(env.GITHUB_SHA??'')&&Boolean(env.RUNNER_TEMP);
   const clients = createProtectedOperationalEvidenceClients({
+    isolatedRestoreTarget:ownOrdinaryPublication
+      ? {deploymentId:options.deploymentId,sourceHead:env.GITHUB_SHA,directory:env.RUNNER_TEMP} : null,
     onReplicaStatus: status => {
       if (status === 'OPERATIONAL_REPLICA_OBJECT_RESTORE_VERIFIED'
         || status === 'OPERATIONAL_REPLICA_BUCKET_RESTORE_VERIFIED') console.log(status);
