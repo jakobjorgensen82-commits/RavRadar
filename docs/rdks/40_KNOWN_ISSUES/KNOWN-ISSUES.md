@@ -63,10 +63,15 @@ rækkefølge. Den lokale PostgreSQL-kandidat fastholder begge slettejournaler
 under samme spærring. En kontosletning med uafklaret Auth-udfald stopper
 starten. Den eksisterende servicekonto kan kun læse den faste liste, når
 dens id matcher spærringen. De nye rettigheder og adfærd er afprøvet lokalt
-i én databasesession. Kald, som allerede var i gang, og parallelle skrivere
-kræver egne beviser. Genåbningen skal være bundet til den verificerede
-afstemning, og slettehistorikken skal dække frem til de ældste anvendelige
-gendannelsespunkter.
+i én databasesession. En målrettet prøve er klargjort til den eksisterende
+lokale PostgreSQL-prøvevært med to samtidige forbindelser. Den observerer
+de faktiske transaktionslåse og kontrollerer begge normale slettejournaler
+og afvisning af et andet spærrings-id. Den er endnu ikke kørt på native
+PostgreSQL. Den nye D1-migration er fil 83. Det eksisterende native
+kildebevis omfatter højst 82 migrationsfiler, så D1-prøven skal have
+sit eget afgrænsede bevis før levering. Genåbningen skal bindes til den
+verificerede afstemning, og slettehistorikken skal dække frem til de
+ældste anvendelige gendannelsespunkter.
 
 ## 27. november — vandtemperatur mangler i den sene DMI-runde
 

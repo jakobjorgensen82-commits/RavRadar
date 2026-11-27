@@ -80,9 +80,11 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
  }
  return fixture+canonical.slice(start,end);
 }
-export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot}) {
+export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot,tripRecoveryOnly=false}) {
+ assert.equal(typeof tripRecoveryOnly,'boolean');
  assert.equal(await psql("select current_setting('listen_addresses');"),'','Existing owned native host only');
  assert.equal(await psql('select current_user;'),'rr_native_test','Existing native fixture owner only');
+ if(tripRecoveryOnly)assert.equal(await psql('select inet_server_addr() is null;'),'t','Existing native Unix socket only');
  const source=readAccountErasureSource(repositoryRoot);let databaseCreated=false,firstError=null,result=null;
  const sql=text=>'\\connect '+DB+'\n'+text;
  const pg=text=>psql(sql(text));
@@ -114,6 +116,13 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
   assert.equal(await pg("select to_regclass('public.account_erasure_operations') is null and not exists(select 1 from pg_catalog.pg_proc where pronamespace='public'::regnamespace and proname like '%account_erasure%');"),'t');checked++;
   await pg(source.sql);
   await pg("insert into auth.users values('"+actor+"'); insert into public.profiles values('"+actor+"','owner-synthetic@example.invalid','owner',true);");
+  if(tripRecoveryOnly){
+   const {exerciseTripErasureRecoveryHold}=await import('./trip-erasure-recovery-native-fixture.mjs');
+   return await exerciseTripErasureRecoveryHold({
+    pg,raw,waitApplication,seed,prepare,stage,repositoryRoot,actor,
+    ownerRole:auth(),serviceRole:auth(actor,'service_role'),
+   });
+  }
   const metadata=JSON.parse(await pg(accountErasureCatalogQuery));
   const ownerChecks=JSON.parse(await pg('select public.account_erasure_check_metadata();'));
   assert.deepEqual(metadata.checks,ownerChecks,'Catalog projection preserves the canonical CHECK definitions');
@@ -349,7 +358,7 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
  } catch(error){firstError=error;}
  finally {
   await Promise.allSettled(pending); // Observe every owned psql child before database cleanup.
-  if(databaseCreated){const cleanup=await runSql('drop database '+DB+';',15000);if(cleanup.code!==0&&!firstError)firstError=new Error('ACCOUNT_ERASURE_NATIVE_OWNED_DATABASE_CLEANUP_FAILED');}
+  if(databaseCreated){const cleanup=await runSql('drop database '+DB+';',15000);if(cleanup.code!==0&&!firstError)throw new Error('ACCOUNT_ERASURE_NATIVE_OWNED_DATABASE_CLEANUP_FAILED');}
  }
  if(firstError)throw firstError;return result;
 }
