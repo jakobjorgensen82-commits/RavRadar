@@ -149,9 +149,13 @@ export async function assertNormalStagePublication(t) {
       const key = decodeURIComponent(address.pathname.slice('/ravradar-private-production-runtime/'.length));
       if (key === reservationPath) {
         const previous = reservations.get(remote);
-        if (request.method === 'GET') return previous
-          ? new Response(previous.bytes, { headers: { ETag: previous.etag, 'Content-Length': String(previous.bytes.length) } })
-          : new Response(null, { status: 404 });
+        if (request.method === 'GET') {
+          const faultResponse = await fault.reservationGet?.();
+          if (faultResponse) return faultResponse;
+          return previous
+            ? new Response(previous.bytes, { headers: { ETag: previous.etag, 'Content-Length': String(previous.bytes.length) } })
+            : new Response(null, { status: 404 });
+        }
         assert.equal(request.method, 'PUT');
         assert(request.headers.authorization);
         const bytes = Buffer.from(request.body);
@@ -215,6 +219,31 @@ export async function assertNormalStagePublication(t) {
     ...options, request: bindOrdinaryStagePublicationRequest(remote.documentRequest, parentReceipt),
   }, r2OptionsFor(remote, calls, undefined, fault));
   const pending = remote => JSON.parse(reservations.get(remote).bytes.toString('utf8')).pending;
+
+  const interruptedAcknowledgment = priorGeneration();
+  let loseAcknowledgment = false;
+  let reservationWrites = 0;
+  let archivedParts = 0;
+  const acknowledgedAfterReadRetry = await publishOn(interruptedAcknowledgment, [], {
+    reservationPut({ bytes, commit }) {
+      assert.equal(commit(), 200);
+      if (JSON.parse(bytes).pending.length) {
+        reservationWrites += 1;
+        loseAcknowledgment = true;
+      }
+    },
+    reservationGet() {
+      if (loseAcknowledgment) {
+        loseAcknowledgment = false;
+        return new Response(null, { status: 503 });
+      }
+    },
+    objectPut(key) { if (pending(interruptedAcknowledgment).some(part => part.path === key)) archivedParts += 1; },
+  });
+  assert.equal(acknowledgedAfterReadRetry.published, true);
+  assert.equal(reservationWrites, 1, 'A transient acknowledgment GET never resends the journal CAS');
+  assert.equal(archivedParts, 1, 'The visible reservation authorizes exactly one archive PUT after reread');
+  assert.deepEqual(pending(interruptedAcknowledgment), []);
 
   for (const reserveCommitsFirst of [false, true]) {
     const lateReservation = priorGeneration();

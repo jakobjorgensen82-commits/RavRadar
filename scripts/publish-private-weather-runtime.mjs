@@ -73,7 +73,8 @@ function archiveUploadReservation(options) {
   async function writeAndRead(bytes, expected) {
     try { await record.compareAndSwap(bytes, expected?.etag ?? null); }
     catch { /* The outcome is established by authenticated readback. */ }
-    return record.read();
+    try { return await record.read(); }
+    catch { return record.read(); }
   }
   async function fenceUnsentReservation(bytes, observed) {
     // This process has not sent the archive PUT. Race the unanswered journal
