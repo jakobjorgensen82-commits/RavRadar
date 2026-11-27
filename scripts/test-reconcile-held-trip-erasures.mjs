@@ -1,0 +1,118 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import test from 'node:test';
+import { handleRequest } from '../cloudflare/trip-gateway/worker.js';
+import {
+  deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, storeCloudflareTrip,
+} from '../supabase/functions/_shared/trip-storage.js';
+import { reconcileHeldTripErasures } from './lib/reconcile-held-trip-erasures.mjs';
+import { runWorkerCountReadProbe, WORKER_COUNT_SIGNED_PROBE_KIND } from './verify-cloudflare-trip-gateway.mjs';
+
+const migrations = ['001_trip_observations', '002_owner_export_keyset', '003_owner_erasure_insert_guard']
+  .map(name => readFileSync(new URL(`../cloudflare/trip-gateway/migrations/${name}.sql`, import.meta.url), 'utf8'));
+const sharedSecret = 'synthetic-restore-hold-probe-secret';
+const gatewayUrl = 'https://trip-restore-test.example.workers.dev';
+const epoch = 'e'.repeat(64);
+const time = '2026-08-26T10:00:00.000Z';
+const observation = id => ({
+  client_observation_id: id, trip_id: null, observed_at: time, submitted_at: time,
+  actual_zone_id: 'DK-B01-01', actual_coastal_part_id: 'DK-B01-01-P01',
+  hunt_mode: 'beach', found: false, result: 'none', gps: null,
+});
+
+function fixture(t) {
+  const databases = Array.from({ length: 10 }, () => new DatabaseSync(':memory:'));
+  t.after(() => databases.forEach(database => database.close()));
+  for (const database of databases) for (const migration of migrations) database.exec(migration);
+  const active = [...databases];
+  const env = { TRIP_GATEWAY_SHARED_SECRET: sharedSecret };
+  let interrupt = false;
+  const shards = active.map((_, index) => ({
+    prepare(sql) {
+      return { bind(...parameters) {
+        return {
+          async all() {
+            return { success: true, results: active[index].prepare(sql).all(...parameters) };
+          },
+          async run() {
+            if (index === 1 && interrupt && sql.startsWith('insert into trip_owner_erasure_tombstones')) {
+              return { success: false };
+            }
+            return { success: true, meta: { changes: Number(active[index].prepare(sql).run(...parameters).changes) } };
+          },
+        };
+      } };
+    },
+  }));
+  for (const [index, shard] of shards.entries()) env[`TRIP_DB_${index}`] = shard;
+  const config = { gatewayUrl, sharedSecret, fetchImpl: (url, init) => handleRequest(new Request(url, init), env) };
+  return {
+    active, config, shards,
+    hold(value) { env.TRIP_RESTORE_HOLD = value; },
+    interrupt(value) { interrupt = value; },
+  };
+}
+
+test('recovery replays a pending erasure on a rolled-back control shard while ordinary access stays held', async t => {
+  const live = fixture(t);
+  const snapshot = fixture(t);
+  const erased = await externalOwnerSubject({ userId: '11111111-1111-4111-8111-111111111111', secret: sharedSecret });
+  const other = await externalOwnerSubject({ userId: '22222222-2222-4222-8222-222222222222', secret: sharedSecret });
+  const erasedRow = observation('33333333-3333-4333-8333-333333333333');
+  const otherRow = observation('44444444-4444-4444-8444-444444444444');
+  for (const { config } of [live, snapshot]) {
+    await storeCloudflareTrip({ ...config, owner: erased, payload: erasedRow });
+    await storeCloudflareTrip({ ...config, owner: other, payload: otherRow });
+  }
+  const list = owner => listCloudflareTrips({ ...live.config, ownerSubject: owner.subject });
+  const count = (table, owner) => live.active.reduce((total, db) => total
+    + db.prepare(`select count(*) as n from ${table} where owner_subject = ?`).get(owner.subject).n, 0);
+  live.interrupt(true);
+  await assert.rejects(deleteCloudflareTrips({ ...live.config, ownerSubject: erased.subject }));
+  assert.equal(count('trip_owner_erasure_tombstones', erased), 1);
+  assert.deepEqual(await list(erased), []);
+  live.interrupt(false);
+  live.hold('true');
+  live.active[0] = snapshot.active[0];
+  assert.equal(count('trip_owner_erasure_tombstones', erased), 0);
+  assert.equal(count('trip_observations', erased), 1);
+  await assert.rejects(list(erased));
+
+  const result = await reconcileHeldTripErasures({
+    shards: live.shards, epoch,
+    async readHoldEpoch() {
+      const proof = await runWorkerCountReadProbe({
+        ...live.config, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true,
+      });
+      return proof.restoreHeld ? epoch : null;
+    },
+    async readJournalPage() { return [{ owner_subject: erased.subject }]; },
+  });
+  assert.deepEqual(result, { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch, owners: 1, removedRows: 1 });
+  assert.equal(count('trip_observations', erased), 0);
+  assert.equal(count('trip_observation_registry', erased), 0);
+  assert.equal(count('trip_owner_erasure_tombstones', erased), 10);
+  await assert.rejects(list(erased));
+
+  live.hold('false');
+  assert.deepEqual(await list(erased), []);
+  await assert.rejects(storeCloudflareTrip({ ...live.config, owner: erased, payload: erasedRow }));
+  assert.equal((await list(other)).length, 1);
+});
+
+test('a changed hold or incomplete journal cannot authorize restoration writes', async () => {
+  let requests = 0;
+  const shards = Array.from({ length: 10 }, () => ({ prepare() { requests += 1; } }));
+  const rows = Array.from({ length: 100 }, (_, i) => ({ owner_subject: 'usr_v1_' + String(i).padStart(43, '0') }));
+  await assert.rejects(reconcileHeldTripErasures({
+    shards, epoch, readHoldEpoch: async () => epoch,
+    readJournalPage: async cursor => cursor === null ? rows : [rows.at(-1)],
+  }), /TRIP_RESTORE_JOURNAL_UNVERIFIED/);
+  let checks = 0;
+  await assert.rejects(reconcileHeldTripErasures({
+    shards, epoch, readHoldEpoch: async () => checks++ === 0 ? epoch : null,
+    readJournalPage: async () => [rows[0]],
+  }), /TRIP_RESTORE_HOLD_UNVERIFIED/);
+  assert.equal(requests, 0);
+});

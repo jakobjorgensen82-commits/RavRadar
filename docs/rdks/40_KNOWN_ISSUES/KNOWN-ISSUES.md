@@ -18,9 +18,16 @@ samler udestående og relevante afsluttede markeringer fra begge sletteforløb.
 Den bruger den ældste gendannede databases tidspunkt og returnerer kun
 ejerpseudonymer til den eksisterende servicekonto.
 
+Den lokale afstemning følger de sorterede sider og genbruger den almindelige
+D1-sletning. Efter sletningen kontrollerer den, at turen og registerposten er
+væk, og at slettemarkeringen findes i alle ti databaser. Identiteten på
+spærringen kontrolleres før og efter afstemning. Prøven med en gendannet
+kontrolbase gentager en afbrudt sletning og bevarer en anden ejers tur.
+
 Tilbagehold kandidaten fra installation, indtil den normale deployvej
-bevarer spærringen, afstemningen verificerer fysisk fjernelse før genåbning,
-og opbevaringen følger de faktisk anvendelige gendannelsespunkter.
+bevarer spærringen, gendannelsesjobbet binder afstemningen til den faktiske
+Cloudflare-gendannelse før genåbning, og opbevaringen følger de faktisk
+anvendelige gendannelsespunkter.
 
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 
