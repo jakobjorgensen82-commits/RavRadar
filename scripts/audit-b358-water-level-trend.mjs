@@ -1541,6 +1541,7 @@ export async function readB412TemperatureBankMetadata(file, marker, names) {
     let position = prefix.length + length;
     const seen = new Set();
     const banks = new Map();
+    let selectedComponentsSha256 = null;
     for (const row of manifest.files) {
       if (typeof row?.relativePath !== 'string' || seen.has(row.relativePath) || !Number.isSafeInteger(row.bytes)
         || row.bytes < 1 || position + row.bytes > size || !/^[a-f0-9]{64}$/.test(row.sha256)) inputFailure('B412_PACK_ENTRY');
@@ -1548,16 +1549,20 @@ export async function readB412TemperatureBankMetadata(file, marker, names) {
       if (selected.has(row.relativePath)) {
         if (row.bytes > 256 * 1024 * 1024) inputFailure('B412_PACK_BOUNDS');
         const bytes = await read(position, row.bytes);
-        if (sha(bytes) !== row.sha256) inputFailure('B412_PACK_CHECKSUM');
+        const digest = sha(bytes);
+        if (digest !== row.sha256) inputFailure('B412_PACK_CHECKSUM');
+        if (row.relativePath === names.selectedComponents) selectedComponentsSha256 = digest;
         banks.set(row.relativePath, JSON.parse(bytes));
       }
       position += row.bytes;
     }
     if (position !== size) inputFailure('B412_PACK_BOUNDS');
     const result = Object.fromEntries(Object.entries(names).map(([key, relative]) => [key, banks.get(relative) ?? null]));
-    if (!marker || (result.openMeteoBank?.bankSha256 ?? null) !== marker.openMeteoBankSha256
-      || (result.copernicusBank?.bankSha256 ?? null) !== marker.copernicusBankSha256
-      || result.selectedComponents?.selectionSha256 !== marker.selectedComponentsSha256)
+    // The normal producer binds the complete ledger file. A retained bank
+    // can still be present when it was not selected in this generation.
+    if (!marker || (marker.openMeteoBankSha256 !== null && result.openMeteoBank?.bankSha256 !== marker.openMeteoBankSha256)
+      || (marker.copernicusBankSha256 !== null && result.copernicusBank?.bankSha256 !== marker.copernicusBankSha256)
+      || selectedComponentsSha256 !== marker.selectedComponentsSha256)
       inputFailure('B412_PACK_SOURCE_BINDING');
     return result;
   } finally { await handle.close(); }

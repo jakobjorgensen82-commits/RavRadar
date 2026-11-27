@@ -1445,12 +1445,18 @@ test('B412 archived SST projects categories and preserves unknown when an origin
 test('B412 verifies selected bank bytes and only the existing read-only archive job may run', async () => {
   const os = await import('node:os');
   const path = await import('node:path');
-  const marker = { openMeteoBankSha256: 'a', copernicusBankSha256: null, selectedComponentsSha256: 'b' };
-  const names = { openMeteoBank: 'bank.json', selectedComponents: 'ledger.json' };
-  const rows = [['unselected.nc', Buffer.from('ignored')], [names.openMeteoBank, Buffer.from('{"bankSha256":"a"}')],
-    [names.selectedComponents, Buffer.from('{"selectionSha256":"b"}')]];
+  const names = { openMeteoBank: 'bank.json', copernicusBank: 'copernicus.json', selectedComponents: 'ledger.json' };
+  const openMeteoHash = 'a'.repeat(64);
+  const retainedCopernicusHash = 'sha256:' + 'c'.repeat(64);
+  const ledger = { selectionSha256: 'b'.repeat(64) };
+  const rows = [['unselected.nc', Buffer.from('ignored')],
+    [names.openMeteoBank, Buffer.from(JSON.stringify({ bankSha256: openMeteoHash }))],
+    [names.copernicusBank, Buffer.from(JSON.stringify({ bankSha256: retainedCopernicusHash }))],
+    [names.selectedComponents, Buffer.from(JSON.stringify(ledger) + '\n')]];
   const files = rows.map(([relativePath, bytes]) => ({ relativePath, bytes: bytes.length,
     sha256: crypto.createHash('sha256').update(bytes).digest('hex') }));
+  const marker = { openMeteoBankSha256: openMeteoHash, copernicusBankSha256: null,
+    selectedComponentsSha256: files.find(row => row.relativePath === names.selectedComponents).sha256 };
   const manifest = Buffer.from(JSON.stringify({ kind: 'PRIVATE_WEATHER_COMPONENT_PACK', schemaVersion: 1, marker, files }));
   const length = Buffer.alloc(4);
   length.writeUInt32BE(manifest.length);
@@ -1460,7 +1466,9 @@ test('B412 verifies selected bank bytes and only the existing read-only archive 
     const bytes = Buffer.concat([Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n'), length, manifest, ...rows.map(([, bytes]) => bytes)]);
     await fs.promises.writeFile(file, bytes);
     assert.deepEqual(await readB412TemperatureBankMetadata(file, marker, names), {
-      openMeteoBank: { bankSha256: 'a' }, selectedComponents: { selectionSha256: 'b' },
+      openMeteoBank: { bankSha256: openMeteoHash },
+      copernicusBank: { bankSha256: retainedCopernicusHash },
+      selectedComponents: ledger,
     });
     bytes[bytes.length - 1] ^= 1;
     await fs.promises.writeFile(file, bytes);
