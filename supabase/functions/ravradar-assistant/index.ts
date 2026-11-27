@@ -4,6 +4,7 @@ import {
   assistantPrompt,
   assistantIdentificationPolicy,
   assistantIdentificationFocusAnswer,
+  assistantReviewedUvAnswer,
   assistantScoreFindAnswer,
   assistantUnknownEquipmentGuaranteeReply,
   assistantSystemInstruction,
@@ -307,6 +308,11 @@ Deno.serve(async (request) => {
     deadline.check();
     await deadline.wait(enforceRateLimits(request, "ravradar-assistant", ASSISTANT_QUOTA)); deadline.check();
     quotaCompleted = deadline.observation();
+    const reviewedUvAnswer = assistantReviewedUvAnswer(rawQuestion, locale);
+    if (reviewedUvAnswer) {
+      deadline.check();
+      return assistantJsonResponse(request, { answer: reviewedUvAnswer });
+    }
     const { accountId, token } = cloudflareCredential();
     const activeDeadline = deadline;
     const messages = [

@@ -1251,7 +1251,14 @@ const UV_QUESTION_CLAUSES=Object.freeze({
     {facet:'uv-not-proof',pattern:/^(?:does everything that (?:glows|fluoresces) have to be amber|is everything that (?:glows|fluoresces) amber)$/iu},
   ]),
 });
-function uvQuestionCoverage(question,locale,evidenceIds){
+const UV_EVIDENCE_BY_FACET = Object.freeze({
+  'fluorescence-mechanism': ['identification.fluorescence-mechanism'],
+  'daylight-contrast': ['identification.uv-daylight-contrast'],
+  'uv-not-proof': ['identification.uv-clue-not-proof', 'identification.fluorescence-varies'],
+});
+const REVIEWED_UV_EVIDENCE_IDS = Object.freeze(Object.values(UV_EVIDENCE_BY_FACET).flat());
+
+function matchUvQuestion(question,locale){
   if(typeof question!=='string'||question.length>600||!RAV_ASSISTANT_LOCALES.includes(locale)
     ||routeAssistantQuestion(question)!=='provider')return null;
   let text=question.trim().normalize('NFKC').replace(/\s+/gu,' ').replace(/[?!.]+$/u,'');
@@ -1271,15 +1278,23 @@ function uvQuestionCoverage(question,locale,evidenceIds){
     }
   }
   if(!facets.size||(!contextual&&!facets.has('fluorescence-mechanism')&&!/\buv\b/iu.test(text)))return null;
-  const selected=new Set(Array.isArray(evidenceIds)?evidenceIds:[]);
-  const required={
-    'fluorescence-mechanism':['identification.fluorescence-mechanism'],
-    'daylight-contrast':['identification.uv-daylight-contrast'],
-    'uv-not-proof':['identification.uv-clue-not-proof','identification.fluorescence-varies'],
-  };
-  const missingFacets=[...facets].filter(facet=>!required[facet].some(id=>selected.has(id)));
-  if(unsupported)missingFacets.push('unsupported-question-remainder');
-  return{complete:missingFacets.length===0,missingFacets};
+  return { facets, unsupported };
+}
+
+function uvQuestionCoverage(question,locale,evidenceIds){
+  const match = matchUvQuestion(question,locale);
+  if (!match) return null;
+  const selected = new Set(Array.isArray(evidenceIds) ? evidenceIds : []);
+  const missingFacets = [...match.facets].filter(facet => !UV_EVIDENCE_BY_FACET[facet].some(id => selected.has(id)));
+  if (match.unsupported) missingFacets.push('unsupported-question-remainder');
+  return { complete:missingFacets.length === 0, missingFacets };
+}
+
+export function assistantReviewedUvAnswer(question, locale) {
+  const match = matchUvQuestion(question, locale);
+  if (!match || match.unsupported || match.facets.size !== Object.keys(UV_EVIDENCE_BY_FACET).length) return null;
+  const result = composeCanonicalAssistantResult(REVIEWED_UV_EVIDENCE_IDS, locale, "answer", {});
+  return result?.disposition === "answer" ? result.answer : null;
 }
 
 export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds) {
