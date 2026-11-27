@@ -5,9 +5,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { canonicalPrivateRuntimeJson } from './private-production-runtime-bundle.mjs';
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
 import { createPrivateWeatherUploadReservationR2, PRIVATE_WEATHER_PUBLICATION_POLICY,
-  PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES, RESERVED_ARCHIVE_UPLOAD_KIND, RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES,
+  PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES, ARCHIVE_UPLOAD_JOURNAL_KIND, RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES,
   RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES, privateWeatherArchivePartSha, sumPrivateWeatherArchiveReservationBytes,
   decodePrivateWeatherArchiveReservation, readPrivateWeatherArchiveUploadReservationBytes }
   from './lib/operational-evidence-r2-slots.mjs';
@@ -41,35 +42,49 @@ function archiveUploadReservation(options) {
   const record = createPrivateWeatherUploadReservationR2({ ...options,
     fetchImpl: (url, request) => fetchImpl(url, { ...request, signal: AbortSignal.timeout(8_000) }),
   });
+  const fingerprint = value => crypto.createHash('sha256').update(canonicalPrivateRuntimeJson(value)).digest('hex');
   let load;
   let base;
-  let pending;
+  let state = { objects: [], intents: [] };
   const attempted = new Map();
-  const recovered = new Set();
+  const acknowledged = new Set();
+  const object = objectPath => state.objects.find(part => part.path === objectPath);
+  const pendingBytes = () => sumPrivateWeatherArchiveReservationBytes(state.objects);
+  function observeBytes(objectPath, bytes) {
+    const part = object(objectPath);
+    if (!part || part.status !== 'pending') return;
+    if (bytes.length !== part.bytes || crypto.createHash('sha256').update(bytes).digest('hex') !== privateWeatherArchivePartSha(objectPath)) {
+      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
+    }
+    state = { ...state, objects: state.objects.map(entry => entry === part
+      ? { ...part, status: 'present', created: part.created || acknowledged.has(objectPath) } : entry) };
+  }
   async function recover(storage) {
     load ??= (async () => {
       base = await record.read();
-      pending = [];
-      for (const part of base ? decodePrivateWeatherArchiveReservation(base.bytes) : []) {
+      if (base) state = decodePrivateWeatherArchiveReservation(base.bytes);
+      for (const part of state.objects) {
+        if (part.status !== 'pending') continue;
         let remote;
         try { remote = await storage.download(part.path); }
-        catch {
-          // A failed or absent read cannot establish that a PUT has stopped.
-          pending.push(part);
-          continue;
-        }
-        if (remote.length !== part.bytes || crypto.createHash('sha256').update(remote).digest('hex') !== privateWeatherArchivePartSha(part.path)) {
-          fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
-        }
-        recovered.add(part.path);
+        catch { continue; } // Absence does not establish that a PUT has stopped.
+        observeBytes(part.path, remote);
       }
     })();
     await load;
-    return sumPrivateWeatherArchiveReservationBytes(pending);
   }
-  const encode = next => Buffer.from(JSON.stringify({
-    kind: RESERVED_ARCHIVE_UPLOAD_KIND, revision: crypto.randomUUID(), pending: next,
-  }));
+  function encode(next) {
+    const bytes = Buffer.from(JSON.stringify({
+      kind: ARCHIVE_UPLOAD_JOURNAL_KIND, revision: crypto.randomUUID(), ...next,
+    }));
+    if (bytes.length > PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES
+        || next.objects.length > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES
+        || sumPrivateWeatherArchiveReservationBytes(next.objects) > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES) {
+      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_CAPACITY');
+    }
+    decodePrivateWeatherArchiveReservation(bytes);
+    return bytes;
+  }
   async function writeAndRead(bytes, expected) {
     try { await record.compareAndSwap(bytes, expected?.etag ?? null); }
     catch { /* The outcome is established by authenticated readback. */ }
@@ -77,15 +92,10 @@ function archiveUploadReservation(options) {
     catch { return record.read(); }
   }
   async function fenceUnsentReservation(bytes, observed) {
-    // This process has not sent the archive PUT. Race the unanswered journal
-    // write on the same ETag, retaining every previously uncertain archive.
-    const fence = encode(pending);
+    // Race the unanswered journal write while retaining older obligations.
+    const fence = encode(state);
     let current = await writeAndRead(fence, observed);
-    if (current?.bytes.equals(bytes)) {
-      // The original reservation won the race. Only this exact intent can
-      // now be retired because we know its archive PUT was never sent.
-      current = await writeAndRead(fence, current);
-    }
+    if (current?.bytes.equals(bytes)) current = await writeAndRead(fence, current);
     if (current?.bytes.equals(fence)) base = current;
   }
   async function store(next, unsentReservation = false) {
@@ -98,7 +108,18 @@ function archiveUploadReservation(options) {
       fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
     }
     base = current;
-    pending = next;
+    state = next;
+  }
+  async function flush() {
+    const previous = base ? decodePrivateWeatherArchiveReservation(base.bytes) : { objects: [], intents: [] };
+    if (JSON.stringify(previous) !== JSON.stringify(state)) await store(state);
+  }
+  function withoutPaths(paths, snapshot = state) {
+    return {
+      objects: snapshot.objects.filter(part => !paths.has(part.path)),
+      intents: snapshot.intents.map(intent => ({ ...intent, paths: intent.paths.filter(item => !paths.has(item)) }))
+        .filter(intent => intent.paths.length > 0),
+    };
   }
   async function upload(objectPath, request, send) {
     const digest = privateWeatherArchivePartSha(objectPath);
@@ -106,42 +127,98 @@ function archiveUploadReservation(options) {
       fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
     }
     if (attempted.get(objectPath)) throw attempted.get(objectPath);
-    if (attempted.has(objectPath) || recovered.has(objectPath) || pending.some(part => part.path === objectPath)) {
-      fail('PRIVATE_WEATHER_UPLOAD_ALREADY_UNRESOLVED');
-    }
-    // The immutable adapter can retry failed requests. Only one physical
-    // PUT may be sent for this reservation, so a positive readback can retire
-    // it without a delayed duplicate recreating the object after rotation.
+    if (attempted.has(objectPath) || object(objectPath)) fail('PRIVATE_WEATHER_UPLOAD_ALREADY_UNRESOLVED');
+    // Only one physical PUT for this durable reservation.
     attempted.set(objectPath, null);
-    const next = [...pending, { path: objectPath, bytes: request.body.length }];
-    if (next.length > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES || sumPrivateWeatherArchiveReservationBytes(next) > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES) {
-      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_CAPACITY');
-    }
+    const part = { path: objectPath, bytes: request.body.length, status: 'pending', created: false };
     try {
-      await store(next, true);
+      await store({ ...state, objects: [...state.objects, part] }, true);
       const response = await send();
-      if ([200, 201, 204, 412].includes(response.status)) {
-        pending = pending.filter(part => part.path !== objectPath);
-      }
+      if ([200, 201, 204].includes(response.status)) acknowledged.add(objectPath);
+      else if (response.status === 412) state = withoutPaths(new Set([objectPath]));
       return response;
     } catch (error) {
       attempted.set(objectPath, error);
       throw error;
     }
   }
-  async function finish() {
-    if (base && JSON.stringify(decodePrivateWeatherArchiveReservation(base.bytes)) !== JSON.stringify(pending)) await store(pending);
+  function observePointer(pointer) {
+    if (!pointer) return;
+    const proof = fingerprint(pointer);
+    const previous = fingerprint(pointer.payload.previous);
+    const transferred = new Set();
+    for (const archive of [pointer.payload.current, pointer.payload.previous].filter(Boolean)) {
+      for (const part of archive.objects ?? [archive]) {
+        const tracked = object(part.objectPath);
+        if (tracked?.status !== 'present') continue;
+        if (tracked.bytes !== part.objectBytes) fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
+        transferred.add(part.objectPath);
+      }
+    }
+    const intents = [];
+    for (const intent of state.intents) {
+      if (pointer.version === intent.beforeVersion && proof !== intent.beforeSha256) {
+        fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_CHANGED');
+      }
+      if (pointer.version !== intent.beforeVersion + 1 || previous !== intent.previousSha256) {
+        intents.push(intent);
+        continue;
+      }
+      if (intent.successorSha256 !== null && intent.successorSha256 !== proof) {
+        fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_SUCCESSOR_CHANGED');
+      }
+      if (proof === intent.afterSha256) {
+        for (const objectPath of intent.paths) transferred.add(objectPath);
+      } else {
+        intents.push({ ...intent, successorSha256: proof });
+      }
+    }
+    state = withoutPaths(transferred, { ...state, intents });
   }
-  async function verifyCleanupAllowed(objectPath) {
-    // The frozen publisher may clean up acknowledged objects on an archive
-    // readback or pre-pointer failure. Keep those bytes until the durable
-    // reservation is gone, so a restart can still verify its prior write.
-    if (!base || !decodePrivateWeatherArchiveReservation(base.bytes).some(part => part.path === objectPath)) return;
-    if (pending.some(part => part.path === objectPath)) fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
-    await finish();
+  async function preparePointer(before, after, freshPointer) {
+    if (!state.objects.length && !state.intents.length) return flush();
+    const beforeSha256 = fingerprint(before);
+    if (fingerprint(await freshPointer()) !== beforeSha256) fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_CHANGED');
+    observePointer(before);
+    const afterSha256 = fingerprint(after);
+    if (state.intents.some(intent => intent.afterSha256 === afterSha256)) {
+      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_UNRESOLVED');
+    }
+    const archive = after.payload.current;
+    const paths = (archive.objects ?? [archive]).filter(part => object(part.objectPath))
+      .map(part => part.objectPath);
+    if (paths.some(objectPath => object(objectPath)?.status !== 'present')) {
+      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_ARCHIVE_IDENTITY');
+    }
+    if (paths.length === 0) return flush();
+    const intent = { beforeVersion: before?.version ?? 0, beforeSha256,
+      previousSha256: fingerprint(before?.payload.current ?? null), afterSha256, paths, successorSha256: null };
+    await store({ ...state, intents: [...state.intents, intent] });
   }
-  return { recover, upload, finish, verifyCleanupAllowed, wasRecovered: objectPath => recovered.has(objectPath),
-    pendingBytes: () => sumPrivateWeatherArchiveReservationBytes(pending ?? []) };
+  async function finish(pointer, freshPointer) {
+    if (!load) return;
+    if (state.objects.some(part => part.status === 'present')) {
+      if (fingerprint(await freshPointer()) !== fingerprint(pointer)) fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_CHANGED');
+      observePointer(pointer);
+    }
+    await flush();
+  }
+  async function removeCreated(objectPath, remove) {
+    const part = object(objectPath);
+    if (!part) return remove();
+    // This is only the frozen publisher's own pre-pointer cleanup edge.
+    if (!acknowledged.has(objectPath) || state.intents.some(intent => intent.paths.includes(objectPath))) {
+      fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
+    }
+    await store({ ...state, objects: state.objects.map(entry => entry === part
+      ? { ...part, status: 'deleting', created: true } : entry) });
+    const removed = await remove();
+    await store(withoutPaths(new Set([objectPath])));
+    return removed;
+  }
+  return { recover, upload, observeBytes, pendingBytes, preparePointer, finish, removeCreated,
+    wasRecovered: objectPath => object(objectPath)?.status === 'present',
+    deletionUnresolved: objectPath => object(objectPath)?.status === 'deleting' };
 }
 
 export function createPrivateWeatherPublicationStorage(options = {}, reserveRetirementMarker = false, observeInitialStock, reservation) {
@@ -164,9 +241,13 @@ export function createPrivateWeatherPublicationStorage(options = {}, reserveReti
     const objectPath = reservation && (method === 'HEAD' || method === 'PUT') ? archivePath(url) : '';
     if (method === 'HEAD' && privateWeatherArchivePartSha(objectPath)) {
       const response = await fetchImpl(url, request);
+      await reservation.recover(storage);
+      if (reservation.deletionUnresolved(objectPath)) {
+        await response.body?.cancel?.().catch(() => {});
+        fail('PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
+      }
       if (response.status !== 404) return response;
       await response.body?.cancel?.().catch(() => {});
-      await reservation.recover(storage);
       // An earlier PUT can finish between this HEAD and recovery. Send an
       // actual fresh HEAD instead of allocating a second PUT from stale absence.
       if (reservation.wasRecovered(objectPath)) return fetchImpl(url, request);
@@ -177,7 +258,8 @@ export function createPrivateWeatherPublicationStorage(options = {}, reserveReti
       // HEAD reuse never reaches it. A rejected admission is latched too, so
       // the existing adapter retry cannot cause another scan or any PUT.
       beforeFirstPut ??= (async () => {
-        const carried = reservation ? await reservation.recover(storage) + PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES : 0;
+        await reservation?.recover(storage);
+        const carried = reservation ? reservation.pendingBytes() + PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES : 0;
         const usage = await storage.bucketUsage();
         if (usage.usedBytes + carried > policy.bucketCeilingBytes - policy.reserveBytes
           - PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
@@ -214,7 +296,8 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
   let before, lastRead, readQuery, priorSettled;
   let priorRetirementSettled = false;
   const freshPointer = async () => {
-    return decodePrivateWeatherPointerRow(await options.request(readQuery, {}, 'read'));
+    return decodePrivateWeatherPointerRow(await options.request(readQuery, { cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' } }, 'read'));
   };
   const settleBeforeMutation = async () => {
     priorSettled ??= retirement.settle(before, freshPointer);
@@ -237,7 +320,7 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
   };
   const createdPaths = new Set();
   const currentPaths = new Set();
-  let pointerWriteStarted = false;
+  let pointerIntentStarted = false;
   const result = await publishProtectedPrivateProductionRuntime({
     ...options,
     request: async (query, request, phase) => {
@@ -252,16 +335,17 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
         }
         return rows;
       }
-      if (phase === 'compare-and-swap') {
+      if (phase === 'compare-and-swap' || phase === 'insert') {
         await settleBeforeMutation();
         const next = decodePrivateWeatherPointerRow([{
           document_key: PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey,
-          version: before.version + 1,
+          version: (before?.version ?? 0) + 1,
           payload: JSON.parse(request.body).payload,
-        }]).payload;
-        await retirement.prepare(before, next, validateMarkerCapacity);
+        }]);
+        if (phase === 'compare-and-swap') await retirement.prepare(before, next.payload, validateMarkerCapacity);
+        pointerIntentStarted = true;
+        await reservation.preparePointer(before, next, freshPointer);
       }
-      if (phase === 'compare-and-swap' || phase === 'insert') pointerWriteStarted = true;
       return options.request(query, request, phase);
     },
     storage: {
@@ -272,24 +356,27 @@ export async function publishPrivateWeatherRuntime(options, storageOptions) {
         if (result.created === true) createdPaths.add(objectPath);
         return result;
       },
+      async download(objectPath) {
+        const bytes = await storage.download(objectPath);
+        reservation.observeBytes(objectPath, bytes);
+        return bytes;
+      },
       async removeExact(objectPath) {
-        // A read of the old pointer after a lost response cannot exclude a
-        // later commit. Keep this candidate's parts once its write may have
-        // reached Supabase.
-        if (pointerWriteStarted && createdPaths.has(objectPath)) {
+        // An uncertain journal intent or B response keeps the candidate.
+        // The old B row alone cannot exclude a late commit.
+        if (pointerIntentStarted && createdPaths.has(objectPath)) {
           fail('PRIVATE_WEATHER_PUBLICATION_CANDIDATE_HELD_AFTER_POINTER_WRITE');
         }
         // On success the frozen publisher requests deletion of the exact old
         // previous parts. Their authenticated marker owns this cleanup now.
-        if (pointerWriteStarted) return true;
-        await reservation.verifyCleanupAllowed(objectPath);
-        return storage.removeExact(objectPath);
+        if (pointerIntentStarted) return true;
+        return reservation.removeCreated(objectPath, () => storage.removeExact(objectPath));
       },
     },
   });
-  // Acknowledged writes are already safe to publish. A failed journal
-  // cleanup carries the previous positive reservation into the next run.
-  try { await reservation.finish(); } catch {}
+  // The frozen publisher has verified B. Keep ownership for a later run if
+  // the authenticated transfer cannot be durably recorded now.
+  try { await reservation.finish(lastRead, freshPointer); } catch {}
   const observed = { ...result, bucketUsageBeforeArchiveUpload, bucketUsageBeforeRetirementMarker };
   try {
     await retirement.settle(lastRead, freshPointer);

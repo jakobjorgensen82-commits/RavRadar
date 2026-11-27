@@ -77,34 +77,66 @@ export const PRIVATE_WEATHER_PUBLICATION_POLICY = Object.freeze({
 export const PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES = 16_384;
 
 const ARCHIVE_PART_PATH = /^bundles\/sha256\/([0-9a-f]{64})(?:\.json\.gz|\/part-[0-9]{3}-([0-9a-f]{64})\.json\.gz\.part)$/;
+// The same private key can contain the original pending-only journal.
 export const RESERVED_ARCHIVE_UPLOAD_KIND = 'RAVRADAR_PRIVATE_WEATHER_ARCHIVE_UPLOAD_V1';
+export const ARCHIVE_UPLOAD_JOURNAL_KIND = 'RAVRADAR_PRIVATE_WEATHER_ARCHIVE_UPLOAD_V2';
 export const RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES = 16;
-// The other writers already keep one whole weather generation in reserve.
-// Keep this byte bound within that reserve, including the record itself.
+// Keep the unknown-byte bound within one weather generation, including the journal.
 export const RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES = PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
   - PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES;
 export const privateWeatherArchivePartSha = objectPath => {
   const match = ARCHIVE_PART_PATH.exec(objectPath);
   return match?.[2] ?? match?.[1];
 };
-export const sumPrivateWeatherArchiveReservationBytes = pending => pending.reduce((total, part) => total + part.bytes, 0);
+export const sumPrivateWeatherArchiveReservationBytes = objects => objects
+  .reduce((total, object) => total + (object.status === 'present' ? 0 : object.bytes), 0);
+
+const hash = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
 
 export function decodePrivateWeatherArchiveReservation(bytes) {
   try {
     const text = bytes.toString('utf8');
     const record = JSON.parse(text);
-    if (JSON.stringify(record) !== text || Object.keys(record).join(',') !== 'kind,revision,pending'
-        || record.kind !== RESERVED_ARCHIVE_UPLOAD_KIND || !/^[0-9a-f-]{36}$/.test(record.revision)
-        || !Array.isArray(record.pending) || record.pending.length > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES) throw new Error();
-    const paths = new Set();
-    for (const part of record.pending) {
-      if (!part || Object.keys(part).join(',') !== 'path,bytes' || typeof part.path !== 'string'
-          || !privateWeatherArchivePartSha(part.path) || paths.has(part.path) || !Number.isSafeInteger(part.bytes)
-          || part.bytes < 1 || part.bytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes) throw new Error();
-      paths.add(part.path);
+    if (JSON.stringify(record) !== text || !/^[0-9a-f-]{36}$/.test(record.revision)) throw new Error();
+    const legacy = record.kind === RESERVED_ARCHIVE_UPLOAD_KIND;
+    if (legacy) {
+      if (Object.keys(record).join(',') !== 'kind,revision,pending'
+          || !Array.isArray(record.pending)) throw new Error();
+    } else if (record.kind !== ARCHIVE_UPLOAD_JOURNAL_KIND
+      || Object.keys(record).join(',') !== 'kind,revision,objects,intents') throw new Error();
+    const objects = legacy ? record.pending : record.objects;
+    const intents = legacy ? [] : record.intents;
+    if (!Array.isArray(objects) || objects.length > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES
+        || !Array.isArray(intents) || intents.length > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_ENTRIES) throw new Error();
+    const paths = new Map();
+    for (const part of objects) {
+      if (!part || Object.keys(part).join(',') !== (legacy ? 'path,bytes' : 'path,bytes,status,created')
+          || typeof part.path !== 'string' || !privateWeatherArchivePartSha(part.path) || paths.has(part.path)
+          || !Number.isSafeInteger(part.bytes) || part.bytes < 1
+          || part.bytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes) throw new Error();
+      if (!legacy && (!['pending', 'present', 'deleting'].includes(part.status)
+          || typeof part.created !== 'boolean' || (part.status === 'deleting' && !part.created)
+          || (part.status === 'pending' && part.created))) throw new Error();
+      paths.set(part.path, legacy ? { ...part, status: 'pending', created: false } : part);
     }
-    if (sumPrivateWeatherArchiveReservationBytes(record.pending) > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES) throw new Error();
-    return record.pending;
+    const afterHashes = new Set();
+    for (const intent of intents) {
+      if (!intent || Object.keys(intent).join(',') !== 'beforeVersion,beforeSha256,previousSha256,afterSha256,paths,successorSha256'
+          || !Number.isSafeInteger(intent.beforeVersion) || intent.beforeVersion < 0
+          || intent.beforeVersion === Number.MAX_SAFE_INTEGER
+          || ![intent.beforeSha256, intent.previousSha256, intent.afterSha256].every(hash)
+          || afterHashes.has(intent.afterSha256)
+          || !Array.isArray(intent.paths) || intent.paths.length < 1
+          || intent.paths.length > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveObjectCount
+          || new Set(intent.paths).size !== intent.paths.length
+          || intent.paths.some(objectPath => paths.get(objectPath)?.status !== 'present')
+          || (intent.successorSha256 !== null && (!hash(intent.successorSha256)
+            || intent.successorSha256 === intent.afterSha256))) throw new Error();
+      afterHashes.add(intent.afterSha256);
+    }
+    const normalized = [...paths.values()];
+    if (sumPrivateWeatherArchiveReservationBytes(normalized) > RESERVED_ARCHIVE_UPLOAD_MAXIMUM_BYTES) throw new Error();
+    return { objects: normalized, intents };
   } catch {
     const code = 'PRIVATE_WEATHER_UPLOAD_RESERVATION_INVALID';
     throw Object.assign(new Error(code), { code });
@@ -113,9 +145,8 @@ export function decodePrivateWeatherArchiveReservation(bytes) {
 
 export async function readPrivateWeatherArchiveUploadReservationBytes(record) {
   const found = await record.read();
-  return found ? sumPrivateWeatherArchiveReservationBytes(decodePrivateWeatherArchiveReservation(found.bytes)) : 0;
+  return found ? sumPrivateWeatherArchiveReservationBytes(decodePrivateWeatherArchiveReservation(found.bytes).objects) : 0;
 }
-
 
 export function createPrivateWeatherUploadReservationR2({
   accountId = process.env.RAVRADAR_R2_ACCOUNT_ID,

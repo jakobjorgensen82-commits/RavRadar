@@ -19,6 +19,8 @@ import { sealStagedPrivateProductionRuntime, openStagedPrivateProductionRuntime 
 import { publishProtectedPrivateProductionRuntime } from './protected-private-production-runtime.mjs';
 import { appendPrivateWeatherPublicationSummary, checkCodeOnlyPrivateWeatherRebind, publishPrivateWeatherRuntime }
   from './publish-private-weather-runtime.mjs';
+import { decodePrivateWeatherArchiveReservation, sumPrivateWeatherArchiveReservationBytes }
+  from './lib/operational-evidence-r2-slots.mjs';
 import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
@@ -218,7 +220,11 @@ export async function assertNormalStagePublication(t) {
   const publishOn = (remote, calls, fault = {}, options = normalPublication) => publishPrivateWeatherRuntime({
     ...options, request: bindOrdinaryStagePublicationRequest(remote.documentRequest, parentReceipt),
   }, r2OptionsFor(remote, calls, undefined, fault));
-  const pending = remote => JSON.parse(reservations.get(remote).bytes.toString('utf8')).pending;
+  const journal = remote => reservations.has(remote)
+    ? decodePrivateWeatherArchiveReservation(reservations.get(remote).bytes) : null;
+  const pendingObjects = bytes => decodePrivateWeatherArchiveReservation(bytes).objects
+    .filter(part => part.status === 'pending').map(({ path, bytes }) => ({ path, bytes }));
+  const pending = remote => pendingObjects(reservations.get(remote).bytes);
 
   const interruptedAcknowledgment = priorGeneration();
   let loseAcknowledgment = false;
@@ -227,7 +233,7 @@ export async function assertNormalStagePublication(t) {
   const acknowledgedAfterReadRetry = await publishOn(interruptedAcknowledgment, [], {
     reservationPut({ bytes, commit }) {
       assert.equal(commit(), 200);
-      if (JSON.parse(bytes).pending.length) {
+      if (pendingObjects(bytes).length) {
         reservationWrites += 1;
         loseAcknowledgment = true;
       }
@@ -252,7 +258,7 @@ export async function assertNormalStagePublication(t) {
     const lateReservationCalls = [];
     await assert.rejects(publishOn(lateReservation, lateReservationCalls, {
       reservationPut({ bytes, commit }) {
-        if (JSON.parse(bytes).pending.length) {
+        if (pendingObjects(bytes).length) {
           assert.equal(finishDelayedReservation, undefined, 'The same reserve is never blindly retried');
           finishDelayedReservation = commit;
           throw new Error('synthetic lost response before the reservation is visible');
@@ -277,7 +283,7 @@ export async function assertNormalStagePublication(t) {
     let acknowledged;
     await assert.rejects(publishOn(failedReadback, rollbackCalls, {
       reservationPut({ bytes, commit }) {
-        if (clearUnknown && JSON.parse(bytes).pending.length === 0) throw new Error('synthetic clearing response lost');
+        if (clearUnknown && pendingObjects(bytes).length === 0) throw new Error('synthetic clearing response lost');
         assert.equal(commit(), 200);
       },
       objectPut(key, bytes) { acknowledged = { path: key, bytes: bytes.length }; },
@@ -366,6 +372,27 @@ export async function assertNormalStagePublication(t) {
   assert.deepEqual(pending(lateArchive), []);
   assert.equal(lateArchive.objects.has(unresolved.path), true);
 
+  const movedBeforeB = priorGeneration();
+  let movedPointerWrites = 0;
+  let simulatedMoved = false;
+  await assert.rejects(publishPrivateWeatherRuntime({ ...normalPublication,
+    request: async (query, options, phase) => {
+      if (phase === 'compare-and-swap') movedPointerWrites++;
+      const rows = await movedBeforeB.documentRequest(query, options, phase);
+      if (!simulatedMoved && phase === 'read' && options.cache === 'no-store'
+          && journal(movedBeforeB)?.objects.some(part => part.status === 'pending')) {
+        simulatedMoved = true;
+        return rows.map(row => ({ ...row, version: Number(row.version) + 1 }));
+      }
+      return rows;
+    },
+  }, r2OptionsFor(movedBeforeB, [])),
+  error => error.cause?.code === 'PRIVATE_WEATHER_PUBLICATION_RETIREMENT_POINTER_CHANGED'
+    || error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_CHANGED');
+  assert.equal(movedPointerWrites, 0);
+  assert.equal(simulatedMoved, true);
+  assert.deepEqual(movedBeforeB.documents.get(pointerKey), heldParent);
+
   const late = normalBAndSTransports();
   late.documents.set(pointerKey, structuredClone(heldParent));
   for (const [key, value] of transport.objects) late.objects.set(key, Buffer.from(value));
@@ -385,6 +412,42 @@ export async function assertNormalStagePublication(t) {
   assert.deepEqual(late.documents.get(pointerKey), heldParent, 'Both recovery reads still saw the exact old pointer.');
   assert.equal(lateCalls.includes('DELETE'), false, 'Ambiguous pointer write protects the candidate on the wire.');
   assert.equal(typeof finishDelayedCas, 'function');
+  const [unconfirmed] = journal(late).intents;
+  assert.equal(unconfirmed.beforeVersion, Number(heldParent.version));
+  assert.equal(unconfirmed.successorSha256, null);
+  const [knownArchive] = journal(late).objects;
+  assert.deepEqual(unconfirmed.paths, [knownArchive.path]);
+  assert.equal(knownArchive.status, 'present');
+  assert.equal(knownArchive.created, true);
+  assert.equal(sumPrivateWeatherArchiveReservationBytes(journal(late).objects), 0,
+    'Verified physical stock is kept in the journal without charging a second reservation');
+  assert.deepEqual(pending(late), []);
+  let retriedPointerWrites = 0;
+  await assert.rejects(publishPrivateWeatherRuntime({ ...normalPublication,
+    request: bindOrdinaryStagePublicationRequest(async (query, options, phase) => {
+      if (phase === 'compare-and-swap') retriedPointerWrites++;
+      return late.documentRequest(query, options, phase);
+    }, parentReceipt) }, r2OptionsFor(late, [])),
+  error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_UNRESOLVED');
+  assert.equal(retriedPointerWrites, 0);
+  assert.deepEqual(journal(late).intents, [unconfirmed]);
+
+  const alternateWinner = priorGeneration();
+  reservations.set(alternateWinner, reservations.get(late));
+  alternateWinner.objects.set(knownArchive.path, Buffer.from(late.objects.get(knownArchive.path)));
+  const priorStock = virtualUsed;
+  virtualUsed = 2_500_000_000 - 100_000_000 - 350_000_000 - 16_384 - 16_384;
+  const alternate = await publishOn(alternateWinner, [], {}, different);
+  virtualUsed = priorStock;
+  assert.equal(alternate.published, true,
+    'The physical bytes are counted in stock and a later normal generation can still win the same B version');
+  const [loser] = journal(alternateWinner).intents;
+  assert.equal(loser.afterSha256, unconfirmed.afterSha256);
+  assert.match(loser.successorSha256, /^[0-9a-f]{64}$/);
+  assert.notEqual(loser.successorSha256, loser.afterSha256);
+  assert.deepEqual(journal(alternateWinner).objects, [knownArchive]);
+  assert.equal(alternateWinner.objects.has(knownArchive.path), true,
+    'The loser remains owned without triggering a new deletion');
   await finishDelayedCas();
   const lateRow = late.documents.get(pointerKey);
   assert.equal(lateRow.version, 2);
@@ -393,6 +456,12 @@ export async function assertNormalStagePublication(t) {
     assert.equal(crypto.createHash('sha256').update(await late.storage.download(part.objectPath)).digest('hex'),
       part.objectSha256, 'The late authoritative CAS still points at every verified candidate byte.');
   }
+  const beforeRemoteArchiveRetry = [];
+  const lateCommitted = await publishPrivateWeatherRuntime({ ...normalPublication, request: late.documentRequest },
+    r2OptionsFor(late, beforeRemoteArchiveRetry));
+  assert.equal(lateCommitted.published, false, 'The frozen publisher recognizes the already committed runtime');
+  assert.equal(beforeRemoteArchiveRetry.includes('PUT'), false);
+  assert.deepEqual(journal(late), { objects: [], intents: [] }, 'Exact newer B takes over journal-owned bytes');
   const beforeSuccessfulPublicationCalls = r2Calls.length;
   const publication = await publishChild();
   assert.equal(publication.published, true);
@@ -501,13 +570,18 @@ export async function assertNormalStagePublication(t) {
   await assert.rejects(publishPrivateWeatherRuntime({
     ...thirdPublication,
     request: async (query, options, phase) => {
-      if (phase === 'compare-and-swap') {
-        assert(transport.objects.size >= prepared.size + 2, 'Both candidate and marker have been read back.');
-        throw new Error('synthetic runner loss before the CAS request is delivered');
-      }
+      if (phase === 'compare-and-swap') assert.fail('A B request needs the durable journal intent first');
       return transport.documentRequest(query, options, phase);
     },
-  }, r2OptionsFor(transport, beforeCasCalls)), /Private runtime pointer compare-and-swap failed closed/);
+  }, r2OptionsFor(transport, beforeCasCalls, undefined, {
+    reservationPut({ bytes, commit }) {
+      if (decodePrivateWeatherArchiveReservation(bytes).intents.length) {
+        assert(transport.objects.size >= prepared.size + 2, 'Both candidate and marker have been read back.');
+        throw new Error('synthetic runner loss before arming B publication');
+      }
+      commit();
+    },
+  })), error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
   assert.deepEqual(transport.documents.get(pointerKey), beforeThird);
   assert.equal(beforeCasCalls.includes('DELETE'), false);
   const afterPrepared = new Set(transport.objects.keys());
@@ -549,7 +623,8 @@ export async function assertNormalStagePublication(t) {
   const changedOwner = await publishPrivateWeatherRuntime({
     ...thirdPublication,
     request: async (query, options, phase) => {
-      if (phase === 'read' && ++reads === 2) return [{ ...thirdRow, version: 4 }];
+      // Initial B and journal handoff are stable. Change the read at retirement.
+      if (phase === 'read' && ++reads === 3) return [{ ...thirdRow, version: 4 }];
       return transport.documentRequest(query, options, phase);
     },
   }, r2OptionsFor(transport, changedOwnerCalls));

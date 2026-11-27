@@ -143,6 +143,8 @@ Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lagero
 
 **27. november, lokal rettelse.** Den normale vejrarkivering registrerer nøglen og bytestørrelsen i én fast privat R2-journal, før den sender en ny arkivfil. Den kræver præcis genlæsning af journalen. Ved tabt svar forbliver de uafklarede bytes reserveret på tværs af kørsler. En senere normal kørsel kan bruge en allerede gemt del efter kontrol af længde og SHA-256. Et fraværende objekt beholder reservationen. Den almindelige 350 MB arkivgrænse, 100 MB reserve og eksisterende rotationsmarkør består.
 
+Den lokale journal bevarer kendte arkivdele efter positiv genlæsning af byteantal og SHA-256. Disse dele indgår i den normale lageroptælling. Før en central B-skrivning gemmer udgiveren den præcise før-version og forventede efterværdi i den samme journal. Ved genoptagelse kan en frisk læsning af den præcise B-peger overtage beskyttelsen. Hvis en anden generation vandt den næste version, bevares både de berørte dele og beviset for efterfølgeren. Gentagelse af en uafklaret B-skrivning afvises. S færdiggøres gennem det eksisterende forløb. Oprydning af dele fra en afbrudt tidligere kørsel kræver en særskilt verificeret vej.
+
 Den valgfrie R2-kopi af driftsbevis afstår ved manglende plads eller uafklaret journal, mens den primære udgivelse til Supabase kan fortsætte. Den primære private vejrarkivering stopper før en ny skrivning, hvis pladsen eller reservationsloftet er opbrugt. De lokale prøver dækker tabte svar og præcis genlæsning. GitHub-kildekontrol og normal publicering på den leverede kode udestår. Se DEC-0255.
 
 ## 22. november — tysk AI-svar afvist efter assistentudgivelsen
