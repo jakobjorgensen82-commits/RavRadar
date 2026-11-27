@@ -1,3 +1,20 @@
+## 27. november — bevar påbegyndt sletning ved gendannelse af turloggen
+
+En lokal prøve med den normale Worker og ti syntetiske databaser viste, at en
+tur blev synlig igen efter gendannelse af den kontrolbase, der havde modtaget
+den eneste slettemarkering. Samme normale sletning kunne derefter fjerne turen
+og bevare en anden ejers tur.
+
+Den lokale kandidat kræver en kvittering i Supabase, før den eksplicit bekræftede
+tursletning starter. Den gemmer kun den eksisterende ejerpseudonymnøgle og
+tidspunkterne. Serveren afslutter kvitteringen efter kontrol af begge lagre.
+Genforsøg genbruger samme markering. Den eksisterende kontosletning bruger
+fortsat sin egen kø. Kaldet og SQL-rettighederne er afprøvet lokalt.
+
+Gendannelsesforløbet skal afstemme åbne og relevante afsluttede sletninger,
+mens turloggen er spærret. Tilbagehold den lokale kandidat fra installation,
+indtil afstemning, frister og normal databaselevering er verificeret.
+
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 
 Et almindeligt spørgsmål om, hvorfor rav lyser under UV, om lygten kan bruges i dagslys, og om alt lysende er rav, nåede den eksterne model. Assistenten bad om at få spørgsmålet delt op, selv om alle tre led var dækket af gennemgået viden.
