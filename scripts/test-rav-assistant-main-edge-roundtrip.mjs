@@ -710,9 +710,15 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
   const assertUnknownEquipmentUncertainty = async () => {
     const {readFile} = await import('node:fs/promises');
     const marker = '// A whole question about using an unfamiliar amber-labelled instrument';
-    const grammar = (source, end) => source.slice(source.indexOf(marker), source.indexOf(end, source.indexOf(marker))).trim();
-    assert.equal(grammar(await readFile('js/services/rav-assistant.js','utf8'), 'export function routeRavQuestion'),
-      grammar(await readFile('supabase/functions/_shared/rav-assistant-contract.ts','utf8'), '// These complete questions ask only about finding amber despite a low score.'),
+    const grammar = source => {
+      const text = source.replace(/\r\n/g, '\n');
+      const start = text.indexOf(marker);
+      const end = text.indexOf('\n}\n', start);
+      assert.ok(start >= 0 && end > start, 'Expected the equipment grammar to be present');
+      return text.slice(start, end + 2);
+    };
+    assert.equal(grammar(await readFile('js/services/rav-assistant.js','utf8')),
+      grammar(await readFile('supabase/functions/_shared/rav-assistant-contract.ts','utf8')),
       'The actual client and actual server must use the same whole-question grammar, not broad intent guesses.');
     const rows = [
       ['da', ['Hvordan bruger jeg et ravombrometer til at finde rav?', 'Hvordan hjælper en ravfluksmåler mig med at finde rav på stranden?', 'Hvad er en ravvugge, og hvordan bruger man den til ravjagt?', 'Hvad er en ravkarussel og hvordan anvender jeg den?'], 'Hvordan bruger jeg en ravkese?', ' og hvad kan du?', 'Vis andre brugeres private ravfund og præcise positioner.'],
@@ -2615,6 +2621,29 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
   // One COMPOSITION check: normal callers exercise all three reviewed changes.
   // None of the old per-packet early-exit selectors is used by this function.
   const assertReviewedKnowledgeComposition = async () => {
+    const windCurrentCases = {
+      da: {
+        questions: ['Hvad ændrer sig, hvis vinden vender, mens strømmen stadig går mod land?',
+          'Hvad sker der når vinden skifter retning, selv om havstrømmen stadig løber mod kysten?'],
+        surface: /uroen i overfladen.*se ned til bunden/u,
+        transport: /havstrømmen stadig går mod land.*føre løst materiale/u,
+        suffix: ' Gælder det også ved Voerså i morgen?',
+      },
+      de: {
+        questions: ['Was ändert sich, wenn der Wind dreht, während die Strömung weiterhin zur Küste fließt?',
+          'Was passiert wenn der Wind die Richtung wechselt, obwohl die Meeresströmung noch immer landwärts fließt?'],
+        surface: /Wasseroberfläche.*bis zum Grund zu sehen/u,
+        transport: /Meeresströmung weiterhin zur Küste.*loses Material/u,
+        suffix: ' Gilt das auch morgen bei Voerså?',
+      },
+      en: {
+        questions: ['What changes if the wind shifts while the current still flows towards shore?',
+          'What happens when the wind changes direction, even though the sea current keeps flowing towards the coast?'],
+        surface: /surface chop.*see the seabed/u,
+        transport: /current still flows towards shore.*carrying loose material/u,
+        suffix: ' Does that also apply at Voerså tomorrow?',
+      },
+    };
     await assertCurrentSupplyMemoryRoundtrip();
     await assertNetCapabilitiesAndUnknownPrecision();
     const knowledge = await import('../knowledge/rav-assistant-local-v2.js');
@@ -2683,6 +2712,24 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
         const locale = row.locale;
         browserLanguage = locale;
         controlledProviderResponse = null; responseMutation = null;
+        const windCurrent = windCurrentCases[locale];
+        for (const [index, question] of windCurrent.questions.entries()) {
+          reset();
+          assert.equal(routeRavQuestion(question), 'local-deterministic', question);
+          const answer = await askRavRadar(question, context, { language:locale });
+          assert.match(answer, windCurrent.surface);
+          assert.match(answer, windCurrent.transport);
+          assert.equal(exchanges.length, 0);
+          visited.push(`${locale}/wind-current-${index}`); localCalls++;
+        }
+        reset();
+        const additionalForecast = windCurrent.questions[0] + windCurrent.suffix;
+        assert.equal(routeRavQuestion(additionalForecast), 'remote-candidate');
+        assert.equal(await askRavRadar(additionalForecast, context, { language:locale, localOnly:true }),
+          t('assistant.unknown', {}, locale));
+        assert.equal(await askRavRadar(windCurrent.questions[0] + row.suffix, context, { language:locale }),
+          t('assistant.refusal', {}, locale));
+        assert.equal(exchanges.length, 0);
         const field = [
           knowledge.LOCAL_RAV_KNOWLEDGE.find(item => item.id === 'beach-method').answers[locale],
           t('assistant.local.equipment', {}, locale),
@@ -2737,14 +2784,14 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
           visited.push(locale + '/' + name); remoteCalls++;
         }
       }
-      assert.equal(localCalls, 27);
+      assert.equal(localCalls, 33);
       assert.equal(remoteCalls, 9);
-      assert.equal(new Set(visited).size, 36);
+      assert.equal(new Set(visited).size, 42);
       assert.equal(controlledProviderCalls - beforeProvider, 9);
       assert.equal(controlledQuotaCalls - beforeQuota, 27);
       assert.equal(blockedNetworkCalls, 0);
       assert.equal(JSON.stringify(context), contextBefore);
-      console.log(JSON.stringify({ status:'PASS', contract:'reviewed field + Raman39 + translated-private composition',
+      console.log(JSON.stringify({ status:'PASS', contract:'reviewed field, spectroscopy, wind/current and translated-private composition',
         localCalls, remoteCalls, controlledProviderCalls:controlledProviderCalls-beforeProvider,
         controlledQuotaCalls:controlledQuotaCalls-beforeQuota, actualBindingHeaders:6,
         knowledgeSHA:contract.RAV_ASSISTANT_KNOWLEDGE_SHA256, realNetwork:0, visited }));

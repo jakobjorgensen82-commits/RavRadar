@@ -1059,6 +1059,25 @@ test('app explains the three-hour water level change without waiting for forecas
   assert.equal(fetchCalls,0);
 });
 
+test('the assistant explains a wind shift and continuing onshore current even without zone data', async () => {
+  const rows = [
+    ['da', 'Hvad ændrer sig, hvis vinden vender, mens strømmen stadig går mod land?', /uroen i overfladen.*stadig går mod land/u],
+    ['de', 'Was ändert sich, wenn der Wind dreht, während die Strömung weiterhin zur Küste fließt?', /Wasseroberfläche.*weiterhin zur Küste/u],
+    ['en', 'What changes if the wind shifts while the current still flows towards shore?', /surface chop.*still flows towards shore/u],
+  ];
+  for (const [locale, question, expected] of rows) {
+    const ui = fixture(locale, { startup:'failed' });
+    ui.state.selectedZone = { id:'zoneA' };
+    ui.context.activeLandingView = {};
+    ui.context.loadConditions = async () => assert.fail('A general question should not load the forecast');
+    await ui.submit(question);
+    assert.match(ui.answers().at(-1), expected);
+    assert.equal(ui.detailCalls(), 0);
+    assert.equal(ui.loading(), false);
+  }
+  assert.equal(fetchCalls, 0);
+});
+
 test('app public help preserves complete raw guard language and unknown-clause boundaries',async()=>{
   const negatives=[
     ['da','Hvem har lavet RavRadar, og hvad er min adgangskode?'],
