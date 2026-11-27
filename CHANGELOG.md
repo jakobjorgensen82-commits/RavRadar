@@ -11,6 +11,10 @@
 
 - Den normale sene vandstandsrunde kan genbruge sine kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller. Temperatur læses i en separat proces med en kort frist. Der bruges allerede beregnede gitteropslag, og resultatet skelnes fra ny hentning. Effekten skal måles i almindelig drift.
 
+## Drift — stop af fejlupload
+
+- En fastfrossen upload af et vejrcheckpoint får sin egen tidsstyrede Linux-procesgruppe. Gruppen bruger fejlbehandlingens fælles frist på fire minutter. Succes kræver, at uploaden er bekræftet, og at alle processer i gruppen er ophørt inden fristen.
+
 ## Drift — tid til vandstand sidst i prognosen
 
 - Den sene vandstandsrunde får en afgrænset del af DMI's arbejdsbudget, når den kvalificerede plan viser reelle huller. De kritiske henteopgaver får deres hidtidige første mulighed, og afbrudt fillæsning bevarer originale råfiler til genbrug. Den faktiske offentlige dækning måles efter almindelig drift.

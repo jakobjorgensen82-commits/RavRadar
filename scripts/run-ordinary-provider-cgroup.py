@@ -21,6 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SELF = Path(__file__).resolve()
 BOOTSTRAP_PYTHON = "/usr/bin/python3"
 TERMINAL_SEAL = "terminal-progress-seal"
+TERMINAL_UPLOAD = "terminal-progress-upload"
+TERMINAL_UPLOAD_ENTRY = ROOT / ".github/actions/save-owned-dmi-grib/index.cjs"
+TERMINAL_UPLOAD_UNIT_KEY = "RAVRADAR_TERMINAL_UPLOAD_UNIT"
 OPEN_METEO = "open-meteo"
 TERMINAL_SECONDS = 240
 PROVIDERS = {
@@ -28,6 +31,7 @@ PROVIDERS = {
     "copernicus": ("run-copernicus-current-pilot-with-retry.py", b"copernicus_producer_closed=true\n"),
     OPEN_METEO: ("fill-open-meteo-current-fallback.py", b"open_meteo_producer_closed=true\n"),
     TERMINAL_SEAL: ("weather-component-progress-cache.mjs", None),
+    TERMINAL_UPLOAD: (None, None),
 }
 FRAME_LIMIT = 128 * 1024
 OUTPUT_LIMIT = 64 * 1024
@@ -36,6 +40,7 @@ CONTROL_SECONDS = 5
 # The DMI stop routine allows two ten-second waits and two seconds for readers.
 # Keep that cooperative window after losing the outer step owner.
 OWNER_GRACE_SECONDS = 24
+UPLOAD_GRACE_SECONDS = 2
 DRY_ENV = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"}
 CHANNELS = {
     "GITHUB_OUTPUT": ("set_output_", OUTPUT_LIMIT),
@@ -66,6 +71,15 @@ COPERNICUS_PROVIDER_ENV = frozenset({
 TERMINAL_SEAL_ENV = frozenset({"PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "TMP", "TEMP",
     "LD_LIBRARY_PATH", "GITHUB_OUTPUT", "RUNNER_TEMP", "RUNNER_TRACKING_ID", "GITHUB_RUN_ID",
     "GITHUB_RUN_ATTEMPT", "GITHUB_REPOSITORY", "WEATHER_PROGRESS_MASTER_SECRET"})
+TERMINAL_UPLOAD_ENV = frozenset({
+    "PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "TMP", "TEMP",
+    "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy",
+    "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS",
+    "RUNNER_OS", "RUNNER_TEMP", "RUNNER_TRACKING_ID", "GITHUB_WORKSPACE", "GITHUB_REF",
+    "GITHUB_SERVER_URL", "GITHUB_EVENT_NAME", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT",
+    "INPUT_OPERATION", "INPUT_KEY", "INPUT_PATH", "RAVRADAR_TERMINAL_CIPHER_HANDOFF",
+    "ACTIONS_CACHE_SERVICE_V2", "ACTIONS_RESULTS_URL", "ACTIONS_RUNTIME_TOKEN",
+})
 PYTHON_EXECUTABLE_KEY = "RAVRADAR_PROVIDER_PYTHON"
 
 
@@ -111,7 +125,7 @@ def poll_fd(fd, milliseconds=0):
     return bool(watched.poll(milliseconds))
 
 
-def watch_owner(provider_fd):
+def watch_owner(provider_fd, upload_stop=None):
     """Only this process retains the read end when the weather caller execs."""
     descriptor = Path(f"/proc/self/fdinfo/{provider_fd}").read_text(encoding="ascii")
     require(f"Pid:\t{os.getppid()}" in descriptor.splitlines()
@@ -119,13 +133,25 @@ def watch_owner(provider_fd):
     watched = select.poll()
     watched.register(provider_fd, select.POLLIN)
     watched.register(0, select.POLLIN | select.POLLHUP)
-    events = dict(watched.poll())
+    if upload_stop is None:
+        events = dict(watched.poll())
+    else:
+        events = {}
+        while not events and terminal_boot_ms() < upload_stop:
+            events = dict(watched.poll(50))
     if provider_fd in events:
         return 0
-    requested = os.read(0, 1)
+    requested = os.read(0, 1) if 0 in events else b""
     try:
         signal.pidfd_send_signal(provider_fd, signal.SIGINT if requested == b"I" else signal.SIGTERM)
-        if not poll_fd(provider_fd, OWNER_GRACE_SECONDS * 1000):
+        if upload_stop is None:
+            closed = poll_fd(provider_fd, OWNER_GRACE_SECONDS * 1000)
+        else:
+            kill_at = min(terminal_boot_ms(), upload_stop) + UPLOAD_GRACE_SECONDS * 1000
+            closed = poll_fd(provider_fd)
+            while not closed and terminal_boot_ms() < kill_at:
+                closed = poll_fd(provider_fd, 50)
+        if not closed:
             signal.pidfd_send_signal(provider_fd, signal.SIGKILL)
     except ProcessLookupError:
         pass
@@ -135,7 +161,12 @@ def watch_owner(provider_fd):
 def provider_environment(provider, environ, executable):
     provider_names = {"dmi": DMI_PROVIDER_ENV, "copernicus": COPERNICUS_PROVIDER_ENV,
                       OPEN_METEO: {"OPEN_METEO_MARINE_BASE_URL", "OPEN_METEO_API_KEY"}}
-    names = TERMINAL_SEAL_ENV if provider == TERMINAL_SEAL else SHARED_PROVIDER_ENV | provider_names[provider]
+    names = {
+        TERMINAL_SEAL: TERMINAL_SEAL_ENV,
+        TERMINAL_UPLOAD: TERMINAL_UPLOAD_ENV,
+    }.get(provider)
+    if names is None:
+        names = SHARED_PROVIDER_ENV | provider_names[provider]
     dmi_prefixes = ("DMI_BULK_", "CURRENT_FIELD_SHADOW_", "ECCODES_")
     environment = {
         name: value for name, value in environ.items()
@@ -153,6 +184,9 @@ def provider_command(provider, args, executable):
     script, _ = PROVIDERS[provider]
     require(provider != "dmi" or not args, "PROVIDER_ARGUMENTS_REFUSED")
     require(Path(executable).is_absolute(), "PROVIDER_PYTHON_REQUIRED")
+    if provider == TERMINAL_UPLOAD:
+        require(not args and Path(executable).name == "node", "TERMINAL_UPLOAD_ARGUMENTS_REFUSED")
+        return [executable, str(TERMINAL_UPLOAD_ENTRY), "--managed-terminal-upload"]
     if provider == TERMINAL_SEAL:
         require(not args and Path(executable).name == "node", "TERMINAL_SEAL_ARGUMENTS_REFUSED")
         return [executable, str(ROOT / "scripts" / script), "--seal-terminal-stage"]
@@ -168,10 +202,22 @@ def service_entry(provider, args):
     environment = read_environment(0)
     executable = environment.pop(PYTHON_EXECUTABLE_KEY)
     command = provider_command(provider, args, executable)
+    watchdog = ["--watch"]
+    if provider == TERMINAL_UPLOAD:
+        stop_before = terminal_upload_stop(terminal_upload_deadline(environment))
+        require(terminal_boot_ms() < stop_before, "TERMINAL_UPLOAD_DEADLINE")
+        unit = environment[TERMINAL_UPLOAD_UNIT_KEY]
+        uid = os.geteuid()
+        membership = Path("/proc/self/cgroup").read_text(encoding="ascii").splitlines()
+        prefix = f"0::/user.slice/user-{uid}.slice/user@{uid}.service/"
+        require(re.fullmatch(r"rr-weather-provider-[a-z0-9_]{8}\.service", unit)
+                and any(line.startswith(prefix) and Path(line).name == unit for line in membership),
+                "TERMINAL_UPLOAD_UNIT_REFUSED")
+        watchdog = ["--watch-terminal-upload", str(stop_before)]
     require(not poll_fd(0), "PROVIDER_OWNER_ALREADY_GONE")
     main_fd = os.pidfd_open(os.getpid())
     try:
-        subprocess.Popen([BOOTSTRAP_PYTHON, "-B", str(SELF), "--watch", str(main_fd)],
+        subprocess.Popen([BOOTSTRAP_PYTHON, "-B", str(SELF), *watchdog, str(main_fd)],
                          stdin=0, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          pass_fds=(main_fd,), env=DRY_ENV)
     finally:
@@ -217,20 +263,65 @@ def staged_channels(scope, runner_temp, environment):
     return channels
 
 
-def relay_provider_log(stream, failures):
+def relay_provider_log(stream, failures, relay=True):
     # Actions accepts legacy commands even in the middle of a line. Drain both
     # streams, but only the staged output files may report step state.
     try:
         with stream:
             for fragment in iter(lambda: stream.readline(16 * 1024), ""):
-                text = fragment.replace("::", ": :").replace("##[", "# #[")
-                print(text, end="" if text.endswith("\n") else "\n", flush=True)
+                if relay:
+                    text = fragment.replace("::", ": :").replace("##[", "# #[")
+                    print(text, end="" if text.endswith("\n") else "\n", flush=True)
+                elif re.fullmatch(r"DMI_RAW_SAVE_DIAGNOSTIC stage=[A-Z_]{1,32} reason=[A-Z_]{1,80}\n", fragment):
+                    print(fragment, end="", flush=True)
     except (OSError, UnicodeError):
         failures.append("PROVIDER_LOG_RELAY_FAILED")
 
 
 def terminal_boot_ms():
     return time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000
+
+
+def terminal_upload_deadline(environment):
+    raw = environment.get("RAVRADAR_TERMINAL_CIPHER_HANDOFF", "")
+    require(0 < len(raw) <= 2048, "TERMINAL_UPLOAD_HANDOFF_REFUSED")
+    handoff = json.loads(raw)
+    run, attempt = environment.get("GITHUB_RUN_ID", ""), environment.get("GITHUB_RUN_ATTEMPT", "")
+    boot = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
+    require(isinstance(handoff, dict) and handoff.get("schemaVersion") == 1
+            and re.fullmatch(r"[1-9][0-9]{0,18}", run)
+            and re.fullmatch(r"[1-9][0-9]{0,9}", attempt)
+            and re.fullmatch(r"[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}", boot)
+            and (handoff.get("runId"), handoff.get("runAttempt"), handoff.get("bootId")) == (run, attempt, boot)
+            and environment.get("GITHUB_WORKSPACE") == str(ROOT)
+            and environment.get("INPUT_OPERATION") == "upload-encrypted-progress"
+            and not environment.get("INPUT_PATH")
+            and environment.get("INPUT_KEY") == f"weather-private-progress-encrypted-v2-Linux-main-{run}-{attempt}"
+            and all(environment.get(name) for name in (
+                "ACTIONS_CACHE_SERVICE_V2", "ACTIONS_RESULTS_URL", "ACTIONS_RUNTIME_TOKEN")),
+            "TERMINAL_UPLOAD_HANDOFF_REFUSED")
+    started, deadline = handoff.get("startedAt"), handoff.get("deadline")
+    require(type(started) is int and type(deadline) is int and 0 <= started <= terminal_boot_ms()
+            and deadline - started == TERMINAL_SECONDS * 1000, "TERMINAL_UPLOAD_HANDOFF_REFUSED")
+    return deadline
+
+
+def terminal_upload_stop(deadline):
+    # Leave time for physical stop, systemd state checks and collection of the exit.
+    return deadline - (UPLOAD_GRACE_SECONDS + 2 * CONTROL_SECONDS) * 1000
+
+
+def terminal_upload_executable(parent):
+    proc = Path(f"/proc/{parent}")
+    executable = os.readlink(proc / "exe")
+    with (proc / "cmdline").open("rb") as handle:
+        command = handle.read(16_385)
+    arguments = command.split(b"\0")
+    require(len(command) <= 16_384 and len(arguments) == 3 and arguments[-1] == b""
+            and arguments[1].replace(b"/./", b"/") == os.fsencode(TERMINAL_UPLOAD_ENTRY)
+            and Path(executable).is_absolute() and Path(executable).name == "node"
+            and proc.stat().st_uid == os.geteuid(), "TERMINAL_UPLOAD_PARENT_REFUSED")
+    return executable
 
 
 def terminal_cipher_handoff(window, outputs):
@@ -387,8 +478,11 @@ def hosted_controller(provider, runtime_seconds, args):
     require(sys.platform == "linux" and os.getenv("RUNNER_ENVIRONMENT") == "github-hosted"
             and os.getenv("ImageOS") == "ubuntu24" and os.geteuid() != 0,
             "PROVIDER_HOSTED_UBUNTU24_REQUIRED")
-    terminal = provider == TERMINAL_SEAL
-    owns_writer = terminal or provider == OPEN_METEO
+    seal = provider == TERMINAL_SEAL
+    upload = provider == TERMINAL_UPLOAD
+    terminal = seal or upload
+    owns_writer = seal or provider == OPEN_METEO
+    grace = UPLOAD_GRACE_SECONDS if upload else OWNER_GRACE_SECONDS
     executable = sys.executable
     if terminal:
         started = terminal_boot_ms()
@@ -397,10 +491,10 @@ def hosted_controller(provider, runtime_seconds, args):
             acquire_weather_acquisition_writer, assert_weather_acquisition_writer,
             release_weather_acquisition_writer, retain_weather_acquisition_writer,
         )
-    if terminal:
+    if seal:
         deadline = started + TERMINAL_SECONDS * 1_000
         setup_deadline = started + 2 * CONTROL_SECONDS * 1_000
-        stop_before = deadline - (OWNER_GRACE_SECONDS + 2 * CONTROL_SECONDS) * 1_000
+        stop_before = deadline - (grace + 2 * CONTROL_SECONDS) * 1_000
         boot = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
         run, attempt = os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"]
         require(re.fullmatch(r"[1-9][0-9]{0,18}", run) and re.fullmatch(r"[1-9][0-9]{0,9}", attempt)
@@ -408,7 +502,13 @@ def hosted_controller(provider, runtime_seconds, args):
                 "TERMINAL_SEAL_ATTEMPT_REFUSED")
         executable = shutil.which("node") or ""
         require(terminal_boot_ms() < setup_deadline, "TERMINAL_SEAL_SETUP_DEADLINE")
-    provider_command(provider, args, executable)
+    elif upload:
+        deadline = terminal_upload_deadline(os.environ)
+        stop_before = terminal_upload_stop(deadline)
+        setup_deadline = min(started + 2 * CONTROL_SECONDS * 1_000, stop_before)
+        require(terminal_boot_ms() < setup_deadline, "TERMINAL_UPLOAD_DEADLINE")
+    if not upload:
+        provider_command(provider, args, executable)
     uid = os.geteuid()
     bus = Path(f"/run/user/{uid}/bus")
     endpoint = bus.stat()
@@ -447,26 +547,39 @@ def hosted_controller(provider, runtime_seconds, args):
             return alive() and (not terminal or terminal_boot_ms() < setup_deadline)
 
         require(setup_alive(), "PROVIDER_STEP_OWNER_LOST")
+        if upload:
+            executable = terminal_upload_executable(parent)
+            provider_command(provider, args, executable)
+            require(setup_alive(), "TERMINAL_UPLOAD_DEADLINE")
         scope = Path(tempfile.mkdtemp(prefix="rr-weather-provider-", dir=runner_temp))
         unit = scope.name + ".service"
         require(unit_state(control_environment, unit).get("LoadState") == "not-found",
                 "PROVIDER_UNIT_ALREADY_EXISTS")
         environment = provider_environment(provider, os.environ, executable)
-        channels = staged_channels(scope, runner_temp, environment)
-        frame = environment_frame(environment)
+        channels = [] if upload else staged_channels(scope, runner_temp, environment)
+        frame = None if upload else environment_frame(environment)
         owner_read, owner_write = os.pipe2(os.O_CLOEXEC)
         os.set_blocking(owner_write, False)
         if owns_writer:
-            require(setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE" if terminal else "PROVIDER_STEP_OWNER_LOST")
+            require(setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE" if seal else "PROVIDER_STEP_OWNER_LOST")
             writer_lease = acquire_weather_acquisition_writer()
             assert_weather_acquisition_writer(writer_lease)
         if terminal:
-            runtime_seconds = (stop_before - terminal_boot_ms()) // 1_000
-            require(runtime_seconds > 0 and setup_alive(), "TERMINAL_SEAL_SETUP_DEADLINE")
+            # RuntimeMaxSec is relative to activation. Reserve admission time
+            # before that clock starts and close even a delayed launch to input.
+            launch_boot_ms = terminal_boot_ms()
+            admission_ms = CONTROL_SECONDS * 1_000 if upload else 0
+            if upload:
+                setup_deadline = min(setup_deadline, launch_boot_ms + admission_ms)
+            runtime_seconds = (stop_before - launch_boot_ms - admission_ms) // 1_000
+            require(runtime_seconds > 0 and setup_alive(),
+                    "TERMINAL_UPLOAD_DEADLINE" if upload else "TERMINAL_SEAL_SETUP_DEADLINE")
         elif owns_writer:
             require(setup_alive(), "PROVIDER_STEP_OWNER_LOST")
-        properties = ["ExitType=main", "KillMode=mixed", f"TimeoutStopSec={OWNER_GRACE_SECONDS}s",
+        properties = ["ExitType=main", "KillMode=mixed", f"TimeoutStopSec={grace}s",
                       "Restart=no", "NoNewPrivileges=yes", f"WorkingDirectory={ROOT}"]
+        if upload:
+            properties.append(f"TimeoutStartSec={CONTROL_SECONDS}s")
         if runtime_seconds is not None:
             properties.append(f"RuntimeMaxSec={runtime_seconds}s")
         writer_launch_attempted = owns_writer
@@ -481,7 +594,9 @@ def hosted_controller(provider, runtime_seconds, args):
             encoding="utf-8", errors="replace",
         )
         log_failures = []
-        log_relay = threading.Thread(target=relay_provider_log, args=(launcher.stdout, log_failures), daemon=True)
+        log_relay = threading.Thread(
+            target=relay_provider_log, args=(launcher.stdout, log_failures, not upload), daemon=True,
+        )
         log_relay.start()
         os.close(owner_read)
         owner_read = None
@@ -503,7 +618,11 @@ def hosted_controller(provider, runtime_seconds, args):
             time.sleep(0.05)
         require(group is not None and setup_alive() and launcher.poll() is None,
                 "PROVIDER_UNIT_START_UNPROVED")
-        print("WEATHER_PROVIDER_CGROUP_READY", flush=True)
+        if upload:
+            environment[TERMINAL_UPLOAD_UNIT_KEY] = unit
+            frame = environment_frame(environment)
+        else:
+            print("WEATHER_PROVIDER_CGROUP_READY", flush=True)
         pipe_frame(owner_write, frame, setup_alive)
         while alive() and launcher.poll() is None:
             time.sleep(0.05)
@@ -515,7 +634,7 @@ def hosted_controller(provider, runtime_seconds, args):
                 pass
         os.close(owner_write)
         owner_write = None
-        control_deadline = time.monotonic() + CONTROL_SECONDS + OWNER_GRACE_SECONDS
+        control_deadline = time.monotonic() + CONTROL_SECONDS + grace
         while (not physically_closed(group, identity) and time.monotonic() < control_deadline
                and (not terminal or terminal_boot_ms() < deadline)):
             time.sleep(0.05)
@@ -525,21 +644,26 @@ def hosted_controller(provider, runtime_seconds, args):
         log_relay.join(timeout=2)
         require(not log_relay.is_alive() and not log_failures, "PROVIDER_LOG_RELAY_UNPROVED")
         writer_closed = owns_writer
-        print("WEATHER_PROVIDER_CGROUP_CLOSED", flush=True)
+        if not upload:
+            print("WEATHER_PROVIDER_CGROUP_CLOSED", flush=True)
         if not normal_wait or not alive():
             scratch_releasable = True
             return 128 + int(pending) if pending is not None else 1
         require_controlled_exit(status, retired_state, unit, invocation)
-        if terminal:
+        if seal:
             require(status == 0, "TERMINAL_SEAL_EXIT_REFUSED")
         if owns_writer:
             assert_weather_acquisition_writer(writer_lease)
             release_owner, writer_lease = writer_lease, None
             release_weather_acquisition_writer(release_owner)
-        if terminal:
+        if seal:
             ferry_closed_channels(provider, channels, (runner_temp, run, attempt, boot, started))
-        else:
+        elif not upload:
             ferry_closed_channels(provider, channels)
+        else:
+            scope.rmdir()
+            scope = None
+            require(terminal_boot_ms() < deadline, "TERMINAL_UPLOAD_DEADLINE")
         scratch_releasable = True
         return status
     finally:
@@ -563,6 +687,8 @@ def hosted_controller(provider, runtime_seconds, args):
 def main(arguments):
     if len(arguments) == 2 and arguments[0] == "--watch":
         return watch_owner(int(arguments[1]))
+    if len(arguments) == 3 and arguments[0] == "--watch-terminal-upload":
+        return watch_owner(int(arguments[2]), int(arguments[1]))
     if len(arguments) >= 2 and arguments[0] == "--unit":
         return service_entry(arguments[1], arguments[2:])
     if arguments and arguments[0] == OPEN_METEO:
@@ -576,6 +702,8 @@ def main(arguments):
     require(kind in PROVIDERS and 60 <= runtime_seconds <= 70 * 60, "PROVIDER_ARGUMENTS_REFUSED")
     if kind == TERMINAL_SEAL:
         require(seconds == str(TERMINAL_SECONDS) and not args, "TERMINAL_SEAL_ARGUMENTS_REFUSED")
+    if kind == TERMINAL_UPLOAD:
+        require(seconds == str(TERMINAL_SECONDS) and not args, "TERMINAL_UPLOAD_ARGUMENTS_REFUSED")
     return hosted_controller(kind, runtime_seconds, args)
 
 
