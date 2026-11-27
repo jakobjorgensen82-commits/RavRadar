@@ -1,3 +1,9 @@
+## 27. november — fysisk stop af upload i fejlbehandlingen
+
+- [x] Knyt gemning og upload til den samme lokale Linux-frist. Lad den indre upload beholde den eksisterende skrivelås og kontrollér gruppens ophør før succes.
+- [x] Kildekontrol #1786 på den oprindelige ændring bekræftede gyldig upload og fysisk ophør, når den indre overvågning var frosset.
+- [ ] Bekræft den samlede ændrings kildekontrol efter sammenlægning med assistentrettelsen. Følg derefter almindelig drift og en eventuel naturlig genoptagelse.
+
 ## 27. november — genbrug sene DMI-filer til vandtemperatur
 
 - [x] Sammenhold den offentlige time fra #409 med originale DMI-felter og RavRadars almindelige opslag. Der var brugbare værdier ved 356 af 401 kystdele med manglende temperatur i den time.
