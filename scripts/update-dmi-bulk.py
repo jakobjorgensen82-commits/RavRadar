@@ -19,6 +19,7 @@ import re
 import signal
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import threading
@@ -8591,6 +8592,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                  ] | None = None,
                  locked_operational_reference: str | None = None,
                  work_deadline: float | None = None,
+                 warm_scalar_grid_only: bool = False,
                  _owned_read: _OwnedGribRead | None = None) -> tuple[set[str], set[str], bool, int, int]:
     if _owned_read is None:
         return process_grib_transactionally(
@@ -8600,6 +8602,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             locked_operational_reference=locked_operational_reference,
             trusted_current_pair_source_keys=trusted_current_pair_source_keys,
             work_deadline=work_deadline,
+            **({"warm_scalar_grid_only": True} if warm_scalar_grid_only else {}),
         )
     _owned_read.check(path, (collection, model_run, valid_time))
     found, touched = set(), set()
@@ -8681,6 +8684,14 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         continue
                 found.add(parameter)
                 wanted = parameter_zones(collection, parameter, zones)
+                if warm_scalar_grid_only:
+                    message = _grid_message_context(gid, collection, grid_cache_signature(gid))
+                    wanted = [
+                        zone for zone in wanted
+                        if _current_grid_cache_key(message, zone) in GRID_INDEX_CACHE
+                    ]
+                    if not wanted:
+                        continue
                 zone_lookups += len(wanted)
                 if parameter in VECTOR_PAIRS:
                     candidates = valid_candidates_batch(gid, collection, wanted)
@@ -9268,6 +9279,7 @@ def process_grib_transactionally(
     validation_error: str = "GRIB asset stage validation failed",
     work_deadline: float | None = None,
     _owned_read: _OwnedGribRead | None = None,
+    warm_scalar_grid_only: bool = False,
 ) -> tuple[set[str], set[str], bool, int, int]:
     """Parse one asset against copy-on-write state and commit only at EOF.
 
@@ -9275,6 +9287,8 @@ def process_grib_transactionally(
     staging and research-shadow state remain isolated until the complete asset
     and any caller-supplied invariant have passed.
     """
+    if warm_scalar_grid_only and allowed_parameters != {"water-temperature"}:
+        raise ValueError("DMI_WARM_SCALAR_FIELD_SCOPE")
     with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as reader:
         output_stage = build_asset_stage_document(
             output,
@@ -9317,6 +9331,7 @@ def process_grib_transactionally(
                 part_outcomes_stage,
                 allowed_parameters=allowed_parameters,
                 _owned_read=reader,
+                **({"warm_scalar_grid_only": True} if warm_scalar_grid_only else {}),
                 **({"work_deadline": work_deadline} if work_deadline is not None else {}),
                 **({
                     "locked_operational_reference": locked_operational_reference,
@@ -15394,7 +15409,7 @@ def late_water_tail_runtime_reserve(
 
 def fill_late_water_tail(
     collection, catalogue, *, observed_at, reference, required_times, plan, zones,
-    result, bytes_per_original, budget, checkpoint_controller, fresh_zone_ids,
+    result, bytes_per_original, budget, checkpoint_controller, fresh_zone_ids, temperature_originals,
 ):
     """Fill proven remaining water-level gaps inside the existing collection cap."""
     gaps = late_water_tail_value_gaps(collection, catalogue, required_times, plan, zones, result["zones"])
@@ -15493,6 +15508,175 @@ def fill_late_water_tail(
         checkpoint_controller.note_committed_asset(seconds=time.monotonic() - started, cost_family=collection)
         count = sum(zone_id.startswith("PART::") for zone_id in touched)
         progress(f"DMI_LATE_WATER_TAIL {collection} {hour} VERIFIED_PARTS={count}")
+        if collection in {"dkss_idw", "dkss_nsbs"}:
+            temperature_originals.append((raw.absolute(), collection, run, hour, capture))
+
+
+LATE_TEMPERATURE_READER = "--read-cached-late-water-temperature"
+LATE_TEMPERATURE_MAX_BYTES = 16 * 1024 * 1024
+LATE_TEMPERATURE_FIELDS = ("water-temperature",)
+LATE_TEMPERATURE_COMPONENT = "waterTemperature"
+
+
+def read_cached_late_water_temperature() -> int:
+    """Read only already authenticated local originals in a bounded child."""
+    request = sys.stdin.buffer.read(LATE_TEMPERATURE_MAX_BYTES + 1)
+    if sys.platform != "linux" or len(request) > LATE_TEMPERATURE_MAX_BYTES:
+        return 2
+    jobs, grids, deadline = json.loads(request)
+    GRID_INDEX_CACHE.update({
+        (collection, tuple(signature), zone_id, count): cells
+        for collection, signature, zone_id, count, cells in grids
+    })
+    field = LATE_TEMPERATURE_FIELDS[0]
+    response = []
+    for asset_index, (path, collection, run, hour, capture, targets) in enumerate(jobs):
+        if time.monotonic() >= deadline:
+            break
+        raw = pathlib.Path(path)
+        if collection not in {"dkss_idw", "dkss_nsbs"} or raw.parent != RAW_DIR.absolute():
+            return 2
+        sampled = {"zones": {zone["id"]: sampling_identity(zone) for zone in targets}}
+        try:
+            with _grib_read_scope(raw, collection, run, hour) as reader:
+                if dict(reader.capture or {}) != capture:
+                    continue
+                _, touched, interrupted, _, _ = process_grib_transactionally(
+                    raw, collection, run, hour, targets, sampled, {},
+                    allowed_parameters={field}, _owned_read=reader,
+                    work_deadline=deadline, warm_scalar_grid_only=True,
+                )
+        except AssetDownloadCleanupUnproven:
+            return 2
+        except (DmiGridLookupError, ValueError):
+            continue
+        if not reader.physically_closed or reader.retained:
+            return 2
+        if interrupted:
+            break
+        values = []
+        for zone_id in sorted(touched):
+            point = sampled["zones"][zone_id]
+            row = point["hourly"][hour]
+            values.append((zone_id, row[field], row["sources"][LATE_TEMPERATURE_COMPONENT], point["gridPoints"][field]))
+        if values:
+            response.append((asset_index, values))
+    encoded = json.dumps(response, allow_nan=False, separators=(",", ":")).encode()
+    if len(encoded) > LATE_TEMPERATURE_MAX_BYTES:
+        return 2
+    sys.stdout.buffer.write(encoded)
+    return 0
+
+
+def run_late_temperature_reader(jobs, grids, seconds):
+    deadline = time.monotonic() + seconds
+    try:
+        payload = json.dumps((jobs, grids, deadline - 1.0), allow_nan=False, separators=(",", ":")).encode()
+    except (TypeError, ValueError):
+        return []
+    remaining = deadline - time.monotonic()
+    if len(payload) > LATE_TEMPERATURE_MAX_BYTES or remaining <= 1.0:
+        return []
+    try:
+        child = subprocess.run(
+            [sys.executable, "-B", __file__, LATE_TEMPERATURE_READER],
+            input=payload, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            check=False, timeout=remaining,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        # subprocess.run kills and waits on timeout. No candidate is installed.
+        return []
+    if child.returncode or len(child.stdout) > LATE_TEMPERATURE_MAX_BYTES:
+        return []
+    try:
+        response = json.loads(child.stdout)
+    except ValueError:
+        return []
+    return response if isinstance(response, list) else []
+
+
+def fill_cached_late_water_temperature(originals, *, plan, zones, result, checkpoint_controller, fresh_zone_ids):
+    field = LATE_TEMPERATURE_FIELDS[0]
+    component = LATE_TEMPERATURE_COMPONENT
+    if not originals:
+        return
+    eligible = {
+        zone["id"].removeprefix("PART::"): zone for zone in zones
+        if zone.get("coastalPart") and zone["id"].startswith("PART::")
+        and zone["id"].removeprefix("PART::") in plan["partIndexes"]
+    }
+    jobs = []
+    scoped_ids = set()
+    for raw, collection, run, hour, capture in originals:
+        if not checkpoint_controller.can_start_asset(cost_family=collection):
+            break
+        targets = [
+            zone for part_id, zone in eligible.items()
+            if qualified_scalar_gap_reasons_at(plan, hour, [(part_id, component)])[1] > 0
+            and not _exact_validated_dmi_component_present(
+                zone["id"], result["zones"].get(zone["id"]), hour, component, LATE_TEMPERATURE_FIELDS,
+            )
+        ]
+        if targets:
+            jobs.append((str(raw), collection, run, hour, capture, targets))
+            scoped_ids.update((collection, zone["id"]) for zone in targets)
+    if not jobs:
+        return
+    grids = [
+        (*key, candidates) for key, candidates in GRID_INDEX_CACHE.items()
+        if len(key) == 4 and (key[0], key[2]) in scoped_ids
+    ]
+    if not grids:
+        return
+    checkpoint_controller.flush_if_due(force=True)
+    seconds = min(20.0, runtime_remaining() - 10.0)
+    if seconds <= 1.0:
+        return
+    for entry in run_late_temperature_reader(jobs, grids, seconds):
+        if not isinstance(entry, list) or len(entry) != 2:
+            continue
+        asset_index, values = entry
+        if type(asset_index) is not int or not 0 <= asset_index < len(jobs) or not isinstance(values, list):
+            continue
+        _, collection, run, hour, capture, targets = jobs[asset_index]
+        expected = canonical_current_source_asset({
+            **capture, "collection": collection, "modelRun": run, "validTime": hour,
+        })
+        by_id = {zone["id"]: zone for zone in targets}
+        stage = build_asset_stage_document(result, targets, hour, private_stage=False)
+        touched = set()
+        for sampled in values:
+            if not isinstance(sampled, list) or len(sampled) != 4:
+                continue
+            zone_id, value, source, grid_point = sampled
+            if not isinstance(zone_id, str) or not isinstance(grid_point, dict):
+                continue
+            zone = by_id.get(zone_id)
+            point = stage["zones"].get(zone_id)
+            native_point = grid_point.get("longitude"), grid_point.get("latitude")
+            # Existing production values were excluded before starting the
+            # reader. Use the normal DMI preference between newly read values.
+            if (zone is None or point is None or expected is None
+                    or canonical_current_source_asset(source) != expected
+                    or not prefer_marine_component_hour_candidate(point, zone, hour, component, source, {field: value})
+                    or grid_point.get("gridDefinitionSha256") != source.get("gridDefinitionSha256")
+                    or grid_point.get("verticalLayer") != "surface:0"
+                    or not all(isinstance(coordinate, (int, float)) and math.isfinite(coordinate)
+                               for coordinate in native_point)
+                    or any(abs(actual - expected_coord) > 0.000006
+                           for actual, expected_coord in zip(native_point, source["gridPoint"], strict=True))):
+                continue
+            row = point["hourly"].setdefault(hour, {"time": hour})
+            row[field] = value
+            row["sources"] = {**(row.get("sources") or {}), component: source}
+            point["collections"][field] = collection
+            point["gridPoints"][field] = grid_point
+            touched.add(zone_id)
+        if touched:
+            commit_asset_stage_document(result, stage)
+            fresh_zone_ids.update(touched)
+            checkpoint_controller.note_committed_asset(cost_family=collection)
+            progress(f"DMI_LATE_TEMPERATURE_TAIL {collection} {hour} VERIFIED_PARTS={len(touched)}")
 
 
 def main() -> int:
@@ -16598,6 +16782,7 @@ def main() -> int:
                     and not should_stop_work()):
                 # The scheduled native and horizon work has had its turn.
                 # Real remaining water holes precede optional native upgrades.
+                temperature_originals = []
                 for late_collection, turn in collection_turns:
                     if (turn != "maintenance" or late_collection not in prefetched_marine_at
                             or should_stop_work()):
@@ -16614,7 +16799,12 @@ def main() -> int:
                         plan=qualified_scalar_gap_plan, zones=zones, result=result,
                         bytes_per_original=known_bytes, budget=budget,
                         checkpoint_controller=checkpoint_controller, fresh_zone_ids=fresh_zone_ids,
+                        temperature_originals=temperature_originals,
                     )
+                fill_cached_late_water_temperature(
+                    temperature_originals, plan=qualified_scalar_gap_plan, zones=zones,
+                    result=result, checkpoint_controller=checkpoint_controller, fresh_zone_ids=fresh_zone_ids,
+                )
         if collection_is_maintenance and (
             primary_refresh_assets_remaining <= 0
             or collection not in prefetched_marine
@@ -19450,6 +19640,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == [LATE_TEMPERATURE_READER]:
+        raise SystemExit(read_cached_late_water_temperature())
     if "--restore-exact-originals" in sys.argv[1:]:
         raise SystemExit(exact_original_restore_main())
     try:

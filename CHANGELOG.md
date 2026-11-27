@@ -7,6 +7,10 @@
 - Spørg RavRadar besvarer også spørgsmålet om forskellen mellem et præcist landingssted for rav og en vurdering af kystområdet.
 - Spørg RavRadar forklarer nu på dansk, tysk og engelsk, hvorfor almindelige bølger om vinteren kan efterlade rav blandt skaller og tang, og hvad man kan holde øje med på stranden.
 
+## Drift — vandtemperatur fra allerede hentede DMI-filer
+
+- Den normale sene vandstandsrunde kan genbruge sine kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller. Temperatur læses i en separat proces med en kort frist. Der bruges allerede beregnede gitteropslag, og resultatet skelnes fra ny hentning. Effekten skal måles i almindelig drift.
+
 ## Drift — tid til vandstand sidst i prognosen
 
 - Den sene vandstandsrunde får en afgrænset del af DMI's arbejdsbudget, når den kvalificerede plan viser reelle huller. De kritiske henteopgaver får deres hidtidige første mulighed, og afbrudt fillæsning bevarer originale råfiler til genbrug. Den faktiske offentlige dækning måles efter almindelig drift.
