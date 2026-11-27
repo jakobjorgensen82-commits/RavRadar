@@ -14,7 +14,7 @@ import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.603&ui=account-20261006&trip-test=20261125";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.603";
 import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.603&locale=topic-tab-20261125";
-import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.603&ui=public-help-20261126-winter-wave-sorting&followup=daylight-20261122&locale=topic-tab-20261125";
+import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.603&ui=public-help-20261127-beach-signs&followup=daylight-20261122&locale=topic-tab-20261125";
 import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.603";
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.603";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.603";
