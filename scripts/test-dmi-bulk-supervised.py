@@ -573,6 +573,7 @@ if _owned_read is None:
         locked_operational_reference=locked_operational_reference,
         trusted_current_pair_source_keys=trusted_current_pair_source_keys,
         work_deadline=work_deadline,
+        **({"warm_scalar_grid_only": True} if warm_scalar_grid_only else {}),
     )
 """).body[0]
         self.assertEqual(ast.dump(decoder.body[0]), ast.dump(expected_adapter),
@@ -591,6 +592,7 @@ process_grib(
     shadow_stage, private_output_stage, part_outcomes_stage,
     allowed_parameters=allowed_parameters,
     _owned_read=reader,
+    **({"warm_scalar_grid_only": True} if warm_scalar_grid_only else {}),
     **({"work_deadline": work_deadline} if work_deadline is not None else {}),
     **({"locked_operational_reference": locked_operational_reference}
        if locked_operational_reference is not None else {}),
@@ -600,8 +602,9 @@ process_grib(
 """, mode="eval").body
         self.assertEqual(ast.dump(decoder_calls[0]), ast.dump(expected_callback),
                          "the decoder must receive the exact transaction reader and forwarded inputs")
-        read_scope = transaction.body[1]  # The first statement after its docstring.
-        self.assertIsInstance(read_scope, ast.With)
+        read_scopes = [node for node in transaction.body if isinstance(node, ast.With)]
+        self.assertEqual(len(read_scopes), 1)
+        read_scope = read_scopes[0]
         expected_scope = ast.parse("""
 with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as reader:
     pass
@@ -688,13 +691,28 @@ identity = supervised_asset_identity(capture["collection"], capture["modelRun"],
         self.assertEqual(ast.dump(legacy_identity_assignments[0]), ast.dump(expected_legacy_identity),
                          "the OLD watchdog identity must describe this exact captured original")
 
+        isolated_reader, = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+                            and node.name == "read_cached_late_water_temperature"]
+        isolated_calls = [node for node in ast.walk(isolated_reader)
+                          if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                          and node.func.id in {"download_asset", "process_grib_transactionally"}]
+        self.assertEqual([call.func.id for call in isolated_calls], ["process_grib_transactionally"])
+        isolated_call = isolated_calls[0]
+        self.assertEqual(ast.unparse(parents[parents[isolated_call]].items[0].context_expr),
+                         "_grib_read_scope(raw, collection, run, hour)")
+        self.assertTrue(next(arg.value.value for arg in isolated_call.keywords if arg.arg == "warm_scalar_grid_only"))
+        dispatch, = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                     and isinstance(node.func, ast.Name) and node.func.id == isolated_reader.name]
+        self.assertEqual(ast.unparse(parents[parents[parents[dispatch]]].test),
+                         "sys.argv[1:] == [LATE_TEMPERATURE_READER]")
+
         guarded_calls = []
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
                 continue
             if node.func.id not in {"download_asset", "process_grib_transactionally"}:
                 continue
-            if node is adapter_call:
+            if node in (adapter_call, isolated_call):
                 continue
             guarded_calls.append(node)
             parent = parents.get(node)
