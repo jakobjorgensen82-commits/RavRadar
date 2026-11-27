@@ -1,6 +1,6 @@
 ## 27. november — kendt 4.0.43-variant i tilmeldingsdiagnosen
 
-Den skrivefri kataloglæsning #69 genkendte trigger, funktionstype og ejer. Den installerede funktionskrop fik status ukendt. Den lokale kandidat tilføjer den eksakte SHA-256 for 4.0.43-installeren med Windows-linjeskift. De 12 linjeskift ligger uden for tekstliteraler, og SQL-tokenrækkefølgen er identisk. Andre ukendte identiteter afvises fortsat. En ny faktisk kataloglæsning skal afgøre, om varianten forklarer #69. Aktivitetsdækning afventer fortsat faktisk registrering og godkendt brugersvar.
+Den skrivefri kataloglæsning #70 genkendte den installerede 4.0.43-funktion efter rettelsen af Windows-linjeskift. Den viste en uafklaret adgangspost. Den lokale ændring viser, om de ekstra poster udelukkende svarer til almindelig EXECUTE for Supabases standardroller, giver adgang til at tildele EXECUTE videre eller stadig er uafklarede. Læseren viser kun en fast kategori. Standardmønstret kræver fortsat vurdering og giver ingen godkendelse, aktivitetsdækning eller adgang til at aktivere varsling eller sletning. En faktisk kataloglæsning skal bekræfte, hvilken kategori der passer på driften.
 
 ## 27. november — giv kataloget til vandstandshalen tid i det almindelige DMI-forløb
 

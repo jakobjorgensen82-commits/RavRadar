@@ -33,16 +33,20 @@ function includeSignupBootstrapMetadata(receiptQuery) {
       'ownerMatches', owner.rolname = 'postgres' and (owner.rolsuper or owner.rolbypassrls),
       'bodySha256', pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(
         pg_catalog.btrim(p.prosrc, E' \n\r\t'), 'UTF8')), 'hex'),
-      'executeAcl', case
-        when exists (select 1 from pg_catalog.aclexplode(
-          coalesce(p.proacl, pg_catalog.acldefault('f', p.proowner))) a
-          where a.grantee <> p.proowner and
-            (a.grantee <> 0 or a.grantor <> p.proowner or a.privilege_type <> 'EXECUTE' or a.is_grantable))
+      'executeAcl', (select case
+        when pg_catalog.bool_or(a.grantee <> p.proowner and a.privilege_type = 'EXECUTE' and a.is_grantable)
+          then 'NON_OWNER_GRANT_OPTION'
+        when pg_catalog.bool_or(a.grantee <> p.proowner and
+          (a.grantor <> p.proowner or a.privilege_type <> 'EXECUTE' or a.is_grantable
+            or (a.grantee <> 0 and not coalesce(grantee.rolname in ('anon', 'authenticated', 'service_role'), false))))
           then 'UNREVIEWED'
-        when exists (select 1 from pg_catalog.aclexplode(
-          coalesce(p.proacl, pg_catalog.acldefault('f', p.proowner))) a where a.grantee = 0)
+        when pg_catalog.bool_or(a.grantee <> p.proowner and a.grantee <> 0)
+          then 'DOCUMENTED_API_ROLE_GRANTS_ONLY'
+        when pg_catalog.bool_or(a.grantee = 0)
           then 'HISTORICAL_PUBLIC_EXECUTE'
-        else 'OWNER_ONLY' end))
+        else 'OWNER_ONLY' end
+        from pg_catalog.aclexplode(coalesce(p.proacl, pg_catalog.acldefault('f', p.proowner))) a
+        left join pg_catalog.pg_roles grantee on grantee.oid = a.grantee)))
     from pg_catalog.pg_trigger t
     join pg_catalog.pg_class c on c.oid = t.tgrelid
     join pg_catalog.pg_namespace cn on cn.oid = c.relnamespace
@@ -65,8 +69,11 @@ function projectSignupBootstrap(rows) {
     return { status: 'SIGNUP_BOOTSTRAP_REFUSED' };
   const installerVersion = SIGNUP_BOOTSTRAP_BODIES.get(row.bodySha256);
   if (!installerVersion) return { status: 'SIGNUP_BOOTSTRAP_UNRECOGNIZED_BODY' };
-  if (!['OWNER_ONLY', 'HISTORICAL_PUBLIC_EXECUTE'].includes(row.executeAcl))
-    return { status: 'SIGNUP_BOOTSTRAP_UNREVIEWED_ACL', installerVersion };
+  if (!['OWNER_ONLY', 'HISTORICAL_PUBLIC_EXECUTE'].includes(row.executeAcl)) {
+    const executeAcl = ['DOCUMENTED_API_ROLE_GRANTS_ONLY', 'NON_OWNER_GRANT_OPTION'].includes(row.executeAcl)
+      ? row.executeAcl : 'UNREVIEWED';
+    return { status: 'SIGNUP_BOOTSTRAP_UNREVIEWED_ACL', installerVersion, executeAcl };
+  }
   return { status: 'SIGNUP_BOOTSTRAP_CATALOG_VERIFIED', installerVersion, executeAcl: row.executeAcl };
 }
 
