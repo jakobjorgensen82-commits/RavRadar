@@ -1,3 +1,9 @@
+## 27. november — genbrug sene DMI-filer til vandtemperatur
+
+- [x] Sammenhold den offentlige time fra #409 med originale DMI-felter og RavRadars almindelige opslag. Der var brugbare værdier ved 356 af 401 kystdele med manglende temperatur i den time.
+- [x] Gem vandstanden først. Afgræns temperaturarbejdet til samme autentificerede fil, konkrete huller og allerede beregnede gitteropslag. Den lokale prøve dækker gyldig aflæsning, afvisning ved afvigende kilde og fortsat vandstand ved timeout. En særskilt proces stopper fysisk, inden dens resultat kan bruges.
+- [ ] Verificér den præcise kandidat med de normale Linux-afhængigheder, og sammenlign reel offentlig temperaturdækning og de fire øvrige vejrtyper for alle forventede timer og zoner.
+
 ## 27. november — kendt 4.0.43-variant i tilmeldingsdiagnosen
 
 Den skrivefri kataloglæsning #70 genkendte den installerede 4.0.43-funktion efter rettelsen af Windows-linjeskift. Den viste en uafklaret adgangspost. Den lokale ændring viser, om de ekstra poster udelukkende svarer til almindelig EXECUTE for Supabases standardroller, giver adgang til at tildele EXECUTE videre eller stadig er uafklarede. Læseren viser kun en fast kategori. Standardmønstret kræver fortsat vurdering og giver ingen godkendelse, aktivitetsdækning eller adgang til at aktivere varsling eller sletning. En faktisk kataloglæsning skal bekræfte, hvilken kategori der passer på driften.

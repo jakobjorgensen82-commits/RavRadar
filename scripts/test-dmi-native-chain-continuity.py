@@ -12,6 +12,7 @@ import importlib.util
 import io
 import os
 import sys
+import subprocess
 import tempfile
 import types
 import unittest
@@ -96,6 +97,132 @@ def catalog_item(collection, offset):
 
 
 class FirstTurnMarineCatalogueTests(unittest.TestCase):
+    def test_temperature_child_timeout_leaves_parent_and_water_alive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = Path(directory) / "slow-reader.py"
+            started = Path(directory) / "started"
+            script.write_text(
+                f"from pathlib import Path\nimport sys, time\nsys.stdin.buffer.read()\n"
+                f"Path({str(started)!r}).write_text('ready')\n"
+                "time.sleep(10)\nprint('[]')\n", encoding="utf-8",
+            )
+            with patch.object(producer, "__file__", str(script)):
+                self.assertEqual(producer.run_late_temperature_reader([], [], 2.0), [])
+            self.assertEqual(started.read_text(), "ready")
+            script.write_text("import sys\nsys.stdin.buffer.read()\nprint('[[0, []]]')\n", encoding="utf-8")
+            with patch.object(producer, "__file__", str(script)):
+                self.assertEqual(producer.run_late_temperature_reader([], [], 5.0), [[0, []]])
+
+    def test_temperature_reader_reuses_only_warm_native_indices_after_exact_close(self):
+        collection = "dkss_nsbs"
+        raw = producer.RAW_DIR.absolute() / "test.grib"
+
+        for outcome in ("warm", "cold", "changed", "unclosed"):
+            with self.subTest(outcome=outcome):
+                capture = {**CAPTURE}
+                grids = ([] if outcome == "cold" else [[collection, [], ZONE["id"], 64, [POINT]]])
+                request = io.BytesIO(producer.json.dumps((
+                    [(str(raw), collection, RUN, VALID, capture, [ZONE])], grids, 6000.0
+                )).encode())
+                response = io.BytesIO()
+                reader = types.SimpleNamespace(
+                    capture={**capture, "contentSha256": "d" * 64} if outcome == "changed" else capture,
+                    handle=iter(("water-temperature", None)), check=lambda *args: None,
+                    remember_commit=lambda *args: None, commits=[], failure_flushes=[], native_handles=[],
+                    physically_closed=outcome != "unclosed", retained=False,
+                )
+                with (
+                    patch.object(producer.sys, "platform", "linux"),
+                    patch.object(producer.sys, "stdin", types.SimpleNamespace(buffer=request)),
+                    patch.object(producer.sys, "stdout", types.SimpleNamespace(buffer=response)),
+                    patch.object(producer.time, "monotonic", return_value=5000.0),
+                    patch.object(producer, "WORK_DEADLINE", 6000.0),
+                    patch.object(producer, "_grib_read_scope", return_value=nullcontext(reader)),
+                    patch.object(producer, "codes_grib_new_from_file", next),
+                    patch.object(producer, "field_signature", return_value={"shortName": "wt"}),
+                    patch.object(producer, "classify_parameter", return_value="water-temperature"),
+                    patch.object(producer, "grid_cache_signature", return_value=()),
+                    patch.object(producer, "safe_get", side_effect=lambda _gid, key, *_: {
+                        "typeOfLevel": "surface", "level": 0,
+                    }.get(key)),
+                    patch.dict(producer.GRID_INDEX_CACHE, {}, clear=True),
+                    patch.object(producer, "nearest_valid_batch",
+                                 return_value={ZONE["id"]: {**POINT, "value": 9.4}}) as sample,
+                ):
+                    exit_code = producer.read_cached_late_water_temperature()
+                if outcome == "unclosed":
+                    self.assertEqual(exit_code, 2)
+                    self.assertEqual(response.getvalue(), b"")
+                else:
+                    self.assertEqual(exit_code, 0)
+                    actual = producer.json.loads(response.getvalue())
+                    if outcome == "warm":
+                        _, [[zone_id, value, proof, _grid]] = actual[0]
+                        self.assertEqual((zone_id, value), (ZONE["id"], 9.4))
+                        self.assertEqual(proof["contentSha256"], CAPTURE["contentSha256"])
+                        self.assertEqual(proof["verticalLayer"], "surface:0")
+                        sample.assert_called_once()
+                    else:
+                        self.assertEqual(actual, [])
+                        sample.assert_not_called()
+
+    @unittest.skipUnless(sys.platform == "linux", "Requires the hosted native read lease")
+    def test_temperature_child_reads_an_owned_grib_using_real_eccodes(self):
+        make_fixture = '''
+import json, pathlib, runpy, sys
+import eccodes as ec
+producer, raw = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+sys.path.insert(0, str(producer.parent))
+p = runpy.run_path(str(producer))
+zone = dict(id="PART::TEST", parentZoneId="ZONE", coastalPart=True, coastType="east", lon=2.0, lat=1.0)
+when = "2026-09-19T03:00:00Z"
+gid = ec.codes_grib_new_from_samples("regular_ll_sfc_grib1")
+try:
+    for key, value in (("Ni", 3), ("Nj", 3),
+            ("latitudeOfFirstGridPointInDegrees", .9), ("latitudeOfLastGridPointInDegrees", 1.1),
+            ("longitudeOfFirstGridPointInDegrees", 1.9), ("longitudeOfLastGridPointInDegrees", 2.1),
+            ("iDirectionIncrementInDegrees", .1), ("jDirectionIncrementInDegrees", .1),
+            ("scanningMode", 64), ("resolutionAndComponentFlags", 128),
+            ("dataDate", 20260919), ("dataTime", 300), ("stepRange", "0")):
+        ec.codes_set(gid, key, value)
+    with raw.open("xb") as target:
+        for parm, value in ((82, 0.4), (80, 9.25)):
+            ec.codes_set(gid, "indicatorOfParameter", parm)
+            ec.codes_set_values(gid, [value] * 9)
+            if parm == 82:
+                assert p["nearest_valid_batch"](gid, "dkss_nsbs", [zone])
+            target.write(ec.codes_get_message(gid))
+finally:
+    ec.codes_release(gid)
+from hashlib import sha256
+p["register_raw_cache_asset"](raw, "https://example.invalid/local-fixture.grib",
+    "dkss_nsbs", when, when, item_id="temperature-fixture", acquired_at=when,
+    expected_size=raw.stat().st_size, content_sha256=sha256(raw.read_bytes()).hexdigest())
+with p["_grib_read_scope"](raw, "dkss_nsbs", when, when) as reader:
+    capture = dict(reader.capture)
+jobs = [[str(raw), "dkss_nsbs", when, when, capture, [zone]]]
+grids = [[*key, cells] for key, cells in p["GRID_INDEX_CACHE"].items()]
+print(json.dumps([jobs, grids]))
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            raw = Path(directory) / "owned-temperature.grib"
+            with patch.dict(producer.os.environ, {"DMI_BULK_RAW_DIR": directory}):
+                fixture = subprocess.run(
+                    [sys.executable, "-B", "-c", make_fixture, producer.__file__, str(raw)],
+                    check=True, capture_output=True, timeout=30,
+                )
+                jobs, grids = producer.json.loads(fixture.stdout)
+                original = raw.read_bytes()
+                manifest = raw.with_name(producer.CACHE_MANIFEST_NAME)
+                receipt = manifest.read_bytes()
+                response = producer.run_late_temperature_reader(jobs, grids, 20.0)
+                self.assertEqual(raw.read_bytes(), original)
+                self.assertEqual(manifest.read_bytes(), receipt)
+        [(asset_index, [(zone_id, value, proof, _grid)])] = response
+        self.assertEqual((asset_index, zone_id, value), (0, ZONE["id"], 9.25))
+        self.assertEqual(proof["contentSha256"], jobs[0][4]["contentSha256"])
+        self.assertEqual(proof["verticalLayer"], "surface:0")
+
     def test_scoped_grib_deadline_preserves_previous_outputs(self):
         for validator_enters_cutoff in (False, True):
             with self.subTest(validator_enters_cutoff=validator_enters_cutoff):
@@ -553,7 +680,9 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                 ), 0.0)
 
         bad_hour = gap_hours[1]
-        for run_fault in ("no fault", "unknown size", "truncated GRIB", "different capture", "unsettled read"):
+        temperature_cases = {"temperature present", "temperature timeout", "temperature unbound"}
+        for run_fault in ("no fault", "unknown size", "truncated GRIB", "different capture", "unsettled read",
+                          *sorted(temperature_cases)):
             with self.subTest(late_water_fault=run_fault):
                 attempted_captures = []
                 attempted_times = []
@@ -594,9 +723,31 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                         raise message
                     return message
 
+                def read_temperature(jobs, grids, seconds):
+                    self.assertEqual(attempted_times, gap_hours)
+                    controller.flush_if_due.assert_called_once_with(force=True)
+                    self.assertEqual(len(jobs), 1)
+                    self.assertEqual(jobs[0][3], gap_hours[0])
+                    self.assertEqual([zone["id"] for zone in jobs[0][5]], [ZONE["id"]])
+                    self.assertTrue(grids)
+                    self.assertLessEqual(seconds, 20.0)
+                    if run_fault == "temperature timeout":
+                        return []
+                    proof = producer.native_component_source(
+                        collection, jobs[0][2], jobs[0][3],
+                        component="waterTemperature", zone=ZONE, grid_candidate=POINT,
+                        capture=jobs[0][4], spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["waterTemperature"],
+                        verticalLayer="surface:0", verticalLayerRankM=0.0,
+                    )
+                    if run_fault == "temperature unbound":
+                        proof["contentSha256"] = "d" * 64
+                    return [[0, [[ZONE["id"], 9.4, proof, {**POINT, "verticalLayer": "surface:0"}]]]]
+
                 controller = Mock()
                 controller.can_start_asset.return_value = True
-                context = late_context(copy.deepcopy(old_saved), controller)
+                facts = (v2(water=(113, 114, 115, 116), temperature=(113, 117))
+                         if run_fault in temperature_cases else plan)
+                context = late_context(copy.deepcopy(old_saved), controller, facts=facts)
                 if run_fault == "unknown size":
                     context["retained_current_asset_proofs"] = []
                 with (
@@ -610,6 +761,10 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                     patch.object(producer, "codes_grib_new_from_file", next_grib_message),
                     patch.object(producer, "field_signature", lambda _: {"shortName": "smd"}),
                     patch.object(producer, "classify_parameter", lambda handle, _: handle),
+                    patch.dict(producer.GRID_INDEX_CACHE, {
+                        (collection, (), ZONE["id"], 64): [POINT],
+                    }, clear=True),
+                    patch.object(producer, "run_late_temperature_reader", side_effect=read_temperature) as temperature,
                     patch.object(producer, "nearest_valid_batch", lambda _handle, _collection, wanted: {
                         zone["id"]: {**POINT, "value": 0.4} for zone in wanted
                     }),
@@ -623,12 +778,14 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                 expected_attempts = gap_hours[:2] if run_fault == "unsettled read" else gap_hours
                 committed_hours = [
                     hour for hour in expected_attempts
-                    if run_fault in ("no fault", "unknown size") or hour != bad_hour
+                    if run_fault in ({"no fault", "unknown size"} | temperature_cases) or hour != bad_hour
                 ]
+                self.assertEqual(temperature.call_count, int(run_fault in temperature_cases))
                 request.assert_called_once()
                 self.assertEqual(attempted_times, expected_attempts)
                 self.assertEqual(download.call_count, len(expected_attempts))
-                self.assertEqual(controller.note_committed_asset.call_count, len(committed_hours))
+                self.assertEqual(controller.note_committed_asset.call_count,
+                                 len(committed_hours) + int(run_fault == "temperature present"))
                 self.assertEqual(context["primary_refresh_assets_remaining"], 2)
                 self.assertEqual(context["budget"]["bytes"], 128 * len(expected_attempts))
                 self.assertEqual(context["prefetched_marine"], first)
@@ -637,7 +794,11 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
                     current_hours = actual["zones"][target["id"]]["hourly"]
                     for gap_hour in committed_hours:
                         self.assertEqual(current_hours[gap_hour]["sea-mean-deviation"], 0.4)
-                        self.assertEqual(set(current_hours[gap_hour]["sources"]), {"waterLevel"})
+                        expected_components = {"waterLevel"}
+                        if run_fault == "temperature present" and target == ZONE and gap_hour == gap_hours[0]:
+                            expected_components.add("waterTemperature")
+                            self.assertEqual(current_hours[gap_hour]["water-temperature"], 9.4)
+                        self.assertEqual(set(current_hours[gap_hour]["sources"]), expected_components)
                         self.assertEqual(current_hours[gap_hour]["sources"]["waterLevel"]["modelRun"],
                                          producer.canonical_time(next_model))
                     self.assertEqual({key: row for key, row in current_hours.items() if key not in committed_hours},

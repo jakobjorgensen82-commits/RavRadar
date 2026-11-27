@@ -1,3 +1,9 @@
+## 27. november — vandtemperatur mangler i den sene DMI-runde
+
+Ved ét tidspunkt i den offentliggjorte prognose fra #409 manglede vandtemperaturen ved 401 af 673 kystdele. RavRadars almindelige gitteropslag fandt brugbare overfladeværdier fra de officielle DMI-felter ved 356 af dem. Den sene runde brugte de relevante samlinger til vandstand og læste kun vandstandsfeltet. [Vejrkørsel #409](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45939421960)
+
+Den lokale ændring gemmer den almindelige vandstand først. Derefter kan en kortlivet proces genlæse de samme kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller, når de nødvendige gitteropslag allerede er beregnet. Ved timeout standses kun denne proces, og hovedprocessen fortsætter. Tidligere kandidater, der kunne stoppe eller genstarte hovedprocessen, er forkastet. GitHub-kvalifikation og offentlig måling udestår.
+
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 
 Et almindeligt spørgsmål om, hvorfor rav lyser under UV, om lygten kan bruges i dagslys, og om alt lysende er rav, nåede den eksterne model. Assistenten bad om at få spørgsmålet delt op, selv om alle tre led var dækket af gennemgået viden.
