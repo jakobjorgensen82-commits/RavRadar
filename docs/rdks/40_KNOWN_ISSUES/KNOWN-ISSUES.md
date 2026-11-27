@@ -50,7 +50,10 @@ og slettemarkeringer, der skal bevares. Den genlæser alle ti databaser
 efter genanvendelse af sletningerne og kræver de samme data. En lokal
 prøve genskaber en manglende tur med den oprindelige stemplede
 registrering. En ufuldført reservation bevares som reservation. En
-konflikt i de eksisterende data standser forløbet. Førkopien skal være
+konflikt i de eksisterende data standser nu den lokale afstemning, før
+den genanvender en sletning. Kontrollen genlæser de bevarede rækker fra
+databasernes primære kopier og bekræfter derefter spærringen igen.
+Førkopien skal være
 fra før den første gendannelsesanmodning. Den lokale kandidat krypterer
 den oprindelige kørsels identitet og valgte gendannelsespunkter sammen med
 førkopien. Efter et runnerstop kan den samme kopi åbnes med det aktuelle

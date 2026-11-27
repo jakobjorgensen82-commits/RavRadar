@@ -191,6 +191,7 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   let edgeMode = 'restore-hold';
   let providerRequests = 0;
   let d1Requests = 0;
+  let d1Writes = 0;
   const activeHold = [{ hold_id: restorePlan.intentId, held_at: restorePlan.heldAt }];
   let holdReadbacks = [];
   const reinsertedTables = [];
@@ -261,6 +262,7 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
       } else assert.deepEqual(body.params, [erased.subject]);
       assert.equal(body.sql.includes(erased.subject), false);
       const read = body.sql.startsWith('select');
+      if (!read) d1Writes += 1;
       const statement = live.shards[index].prepare(body.sql).bind(...body.params);
       const result = read ? await statement.all() : await statement.run();
       return Response.json({ success: true, result: [{
@@ -319,6 +321,13 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(d1Requests, 0);
   edgeMode = 'restore-hold';
+  const otherDb = live.active.find(db => db.prepare('select 1 from trip_observations where owner_subject = ?').get(other.subject));
+  const original = otherDb.prepare('select * from trip_observations where owner_subject = ?').get(other.subject);
+  otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run('{}', other.subject);
+  await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_RETAINED_ROWS_MISMATCH/);
+  assert.equal(d1Writes, 0, 'Retained row conflicts must be found before erasure replay can write');
+  assert.equal(count('trip_observations', erased), 1);
+  otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run(original.payload_json, other.subject);
   const result = await reconcileCloudflareHeldTripErasures(provider);
   assert.deepEqual(result, {
     kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch: restoreIdentity.epoch, owners: 1, removedRows: 1, recoveredRows: 0, retainedTripRowsSha256,
@@ -330,8 +339,6 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   assert.equal(count('trip_observation_registry', erased), 0);
   assert.equal(count('trip_owner_erasure_tombstones', erased), 10);
   await assert.rejects(list(erased));
-  const otherDb = live.active.find(db => db.prepare('select 1 from trip_observations where owner_subject = ?').get(other.subject));
-  const original = otherDb.prepare('select * from trip_observations where owner_subject = ?').get(other.subject);
   const originalReservation = live.active[0].prepare('select * from trip_observation_registry where client_observation_id = ?').get(otherRow.client_observation_id);
   otherDb.prepare('delete from trip_observations where owner_subject = ?').run(other.subject);
   live.active[0].prepare('delete from trip_observation_registry where client_observation_id = ?').run(otherRow.client_observation_id);
@@ -340,11 +347,10 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   assert.deepEqual(otherDb.prepare('select * from trip_observations where owner_subject = ?').get(other.subject), original);
   assert.deepEqual(live.active[0].prepare('select * from trip_observation_registry where client_observation_id = ?').get(otherRow.client_observation_id), originalReservation);
   assert.equal((await reconcileCloudflareHeldTripErasures(provider)).recoveredRows, 0);
-  otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run('{}', other.subject);
-  await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_RETAINED_ROWS_MISMATCH/);
-  otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run(original.payload_json, other.subject);
+  const priorWrites = d1Writes;
   primaryRead = false;
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_D1_QUERY_UNVERIFIED/);
+  assert.equal(d1Writes, priorWrites, 'Unconfirmed primary reads must stop replay before writes');
   await assert.rejects(list(erased));
 
   live.hold('false');

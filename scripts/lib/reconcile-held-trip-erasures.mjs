@@ -379,7 +379,7 @@ export function openRetainedTripSnapshot({ scope, plan, archive, archiveSecret }
     || canonicalJson(resumed.plan) !== canonicalJson(retainedPlan(scope, plan))) throw archiveError();
   return resumed.rows;
 }
-async function restoreRetainedRows(shards, snapshot, subjects, requireHold) {
+async function planRetainedRows(shards, snapshot, subjects) {
   const current = await captureRetainedTripRows(shards, subjects);
   const work = [];
   // Restore earlier tombstones first, then reservations, then observations.
@@ -401,6 +401,10 @@ async function restoreRetainedRows(shards, snapshot, subjects, requireHold) {
       }
     }
   }
+  return work;
+}
+
+async function restoreRetainedRows(shards, work, requireHold) {
   for (let at = 0; at < work.length; at += pageSize) {
     await requireHold();
     for (const { index, sql, read, keyValue, row, parameters } of work.slice(at, at + pageSize)) {
@@ -448,6 +452,10 @@ export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRow
   }
   if (retainedDigest(retainedTripRows, new Set(subjects)) !== retainedTripRowsSha256) throw retainedRowsError();
   verifyRetainedIdentities(retainedTripRows);
+  // An unexpected retained row must stop recovery before any erasure is replayed.
+  // The read ignores only the subjects already authorized by the full journal.
+  await requireHold();
+  const retainedWork = await planRetainedRows(shards, retainedTripRows, subjects);
 
   const bindings = Object.fromEntries(shards.map((shard, index) => ['TRIP_DB_' + index, shard]));
   let removedRows = 0;
@@ -459,7 +467,7 @@ export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRow
     }
   }
   await requireHold();
-  const recoveredRows = await restoreRetainedRows(shards, retainedTripRows, subjects, requireHold);
+  const recoveredRows = await restoreRetainedRows(shards, retainedWork, requireHold);
   if ((await prepareRetainedTripSnapshot(shards, subjects)).sha256 !== retainedTripRowsSha256) {
     throw new Error('TRIP_RESTORE_RETAINED_ROWS_MISMATCH');
   }
