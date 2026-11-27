@@ -27,6 +27,12 @@ import {
 const ASSISTANT_QUOTA = { minute: 6, hour: 40, globalDay: 300 };
 const ASSISTANT_SEED = 827;
 const EMPTY_REPLY_RETRY_MIN_MS = 2_000;
+const EMPTY_REPLY_RETRY_OUTCOMES = [
+  "FIRST_REPLY_NOT_PLAIN_STOP", "NO_TIME_BEFORE_QUOTA", "RETRY_QUOTA_FAILED", "NO_TIME_AFTER_QUOTA",
+  "RETRY_PROVIDER_FAILED", "RETRY_REPLY_NOT_PLAIN_STOP", "RETRY_FINAL_CONTENT_EMPTY",
+  "RETRY_FINAL_CONTENT_NOT_STRING", "RETRY_RESULT_NOT_EXTRACTED", "RETRY_RESULT_REJECTED",
+] as const;
+type EmptyReplyRetryOutcome = typeof EMPTY_REPLY_RETRY_OUTCOMES[number];
 
 function assistantHeaders(request: Request) {
   const headers: Record<string, string> = {
@@ -199,7 +205,18 @@ function plainAssistantStopMessage(payload: Awaited<ReturnType<typeof assistantP
   return message;
 }
 
-// Failure observation contains only fixed categories and numeric HTTP status.
+function reportedCompletionUsage(payload: Awaited<ReturnType<typeof assistantProviderJson>>) {
+  const usage = (payload?.result ?? payload)?.usage;
+  const completionTokens = usage?.completion_tokens;
+  if (typeof completionTokens !== "number" || !Number.isSafeInteger(completionTokens)
+      || completionTokens < 0 || completionTokens > 1_000_000) return null;
+  const reasoning = usage?.completion_tokens_details?.reasoning_tokens;
+  const reasoningTokens = typeof reasoning === "number" && Number.isSafeInteger(reasoning)
+    && reasoning >= 0 && reasoning <= completionTokens ? reasoning : null;
+  return { completionTokens, reasoningTokens };
+}
+
+// Failure observation contains only fixed categories and bounded numbers.
 // A missing/failing logger must preserve the original public error unchanged.
 type AssistantFailureObservation = {
   quotaCompleted: ReturnType<AssistantDeadline["observation"]> | null;
@@ -207,12 +224,17 @@ type AssistantFailureObservation = {
   providerFetchCalled: boolean;
   providerOutputState: ProviderOutputState | null;
   deadlineCause: ReturnType<AssistantDeadline["cause"]> | null;
+  emptyReplyRetryOutcome: EmptyReplyRetryOutcome | null;
+  firstProviderUsage: ReturnType<typeof reportedCompletionUsage>;
+  retryProviderUsage: ReturnType<typeof reportedCompletionUsage>;
+  retryUpstreamStatus: number | null;
 };
 function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number, observation: AssistantFailureObservation | null = null) {
   try {
     const stages = ["UPSTREAM_REQUEST", "UPSTREAM_HTTP_REJECTED", "UPSTREAM_JSON_PARSE", "UPSTREAM_ENVELOPE_REJECTED", "RESULT_EXTRACTION", "RESULT_VALIDATION"];
     const milliseconds = (value: unknown, maximum = Number.MAX_SAFE_INTEGER) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= maximum ? value : null;
     const providerOutputState = observation?.providerOutputState;
+    const emptyReplyRetryOutcome = observation?.emptyReplyRetryOutcome;
     console.warn("RAVRADAR_ASSISTANT_FAILURE", {
       schemaVersion: 1,
       stage: stages.includes(stage) ? stage : "UNKNOWN",
@@ -221,6 +243,13 @@ function reportAssistantFailure(stage: string, upstreamStatus: number | null, re
       rejectionCode: typeof rejectionCode === "string" && RAV_ASSISTANT_REJECTION_CODES.includes(rejectionCode) ? rejectionCode : null,
       ...(stage === "RESULT_EXTRACTION" && providerOutputState && PROVIDER_OUTPUT_STATES.includes(providerOutputState)
         ? { providerOutputState } : {}),
+      ...(emptyReplyRetryOutcome && EMPTY_REPLY_RETRY_OUTCOMES.includes(emptyReplyRetryOutcome)
+        ? { emptyReplyRetryOutcome } : {}),
+      ...(observation?.firstProviderUsage ? { firstProviderUsage: observation.firstProviderUsage } : {}),
+      ...(observation?.retryProviderUsage ? { retryProviderUsage: observation.retryProviderUsage } : {}),
+      ...(observation?.retryUpstreamStatus != null && Number.isInteger(observation.retryUpstreamStatus)
+          && observation.retryUpstreamStatus >= 100 && observation.retryUpstreamStatus <= 599
+        ? { retryUpstreamStatus: observation.retryUpstreamStatus } : {}),
       quotaCompletedElapsedMs: milliseconds(observation?.quotaCompleted?.elapsedMs),
       quotaCompletedRemainingMs: milliseconds(observation?.quotaCompleted?.remainingMs, 7_000),
       providerStartElapsedMs: milliseconds(observation?.providerStarted?.elapsedMs),
@@ -243,6 +272,10 @@ Deno.serve(async (request) => {
   let providerStarted: ReturnType<AssistantDeadline["observation"]> | null = null;
   let providerFetchCalled = false;
   let providerOutputState: ProviderOutputState | null = null;
+  let emptyReplyRetryOutcome: EmptyReplyRetryOutcome | null = null;
+  let firstProviderUsage: ReturnType<typeof reportedCompletionUsage> = null;
+  let retryProviderUsage: ReturnType<typeof reportedCompletionUsage> = null;
+  let retryUpstreamStatus: number | null = null;
   try {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: assistantHeaders(request) });
@@ -323,28 +356,50 @@ Deno.serve(async (request) => {
     const parsed = extractCloudflareAssistantResult(payload);
     if (parsed === null) {
       try { providerOutputState = describeProviderOutput(payload); } catch { /* Keep the existing rejection path. */ }
+      firstProviderUsage = reportedCompletionUsage(payload);
     }
     observedStage = parsed === null ? "RESULT_EXTRACTION" : "RESULT_VALIDATION";
     let validated = validateAssistantResult(parsed, locale, body.context, rawQuestion,
       (code: string) => { observedRejectionCode = code; });
-    if (!validated && status === 200 && providerOutputState === "CHAT_STOP_EMPTY" && plainAssistantStopMessage(payload)
-        && deadline.observation().remainingMs >= EMPTY_REPLY_RETRY_MIN_MS) {
-      // Charge every provider request to the same quota and keep the same deadline.
-      try {
-        await deadline.wait(enforceRateLimits(request, "ravradar-assistant", ASSISTANT_QUOTA));
-        if (deadline.observation().remainingMs >= EMPTY_REPLY_RETRY_MIN_MS) {
-          const retry = await readProviderReply(ASSISTANT_SEED + 1);
-          const content = retry.status === 200 ? plainAssistantStopMessage(retry.payload)?.content : null;
-          if (typeof content === "string" && content.trim()) {
-            validated = validateAssistantResult(extractCloudflareAssistantResult(content), locale, body.context, rawQuestion);
+    if (!validated && status === 200 && providerOutputState === "CHAT_STOP_EMPTY") {
+      if (!plainAssistantStopMessage(payload)) {
+        emptyReplyRetryOutcome = "FIRST_REPLY_NOT_PLAIN_STOP";
+      } else if (deadline.observation().remainingMs < EMPTY_REPLY_RETRY_MIN_MS) {
+        emptyReplyRetryOutcome = "NO_TIME_BEFORE_QUOTA";
+      } else {
+        // Charge every provider request to the same quota and keep the same deadline.
+        try {
+          emptyReplyRetryOutcome = "RETRY_QUOTA_FAILED";
+          await deadline.wait(enforceRateLimits(request, "ravradar-assistant", ASSISTANT_QUOTA));
+          emptyReplyRetryOutcome = "NO_TIME_AFTER_QUOTA";
+          if (deadline.observation().remainingMs >= EMPTY_REPLY_RETRY_MIN_MS) {
+            emptyReplyRetryOutcome = "RETRY_PROVIDER_FAILED";
+            const retry = await readProviderReply(ASSISTANT_SEED + 1);
+            retryUpstreamStatus = retry.status;
+            retryProviderUsage = reportedCompletionUsage(retry.payload);
+            const message = retry.status === 200 ? plainAssistantStopMessage(retry.payload) : null;
+            const content = message?.content;
+            if (!message) {
+              emptyReplyRetryOutcome = "RETRY_REPLY_NOT_PLAIN_STOP";
+            } else if (content == null || (typeof content === "string" && !content.trim())) {
+              emptyReplyRetryOutcome = "RETRY_FINAL_CONTENT_EMPTY";
+            } else if (typeof content !== "string") {
+              emptyReplyRetryOutcome = "RETRY_FINAL_CONTENT_NOT_STRING";
+            } else {
+              const retryResult = extractCloudflareAssistantResult(content);
+              validated = validateAssistantResult(retryResult, locale, body.context, rawQuestion);
+              emptyReplyRetryOutcome = validated ? null
+                : retryResult === null ? "RETRY_RESULT_NOT_EXTRACTED" : "RETRY_RESULT_REJECTED";
+            }
           }
+        } catch {
+          // Keep the original rejection unless the request was cancelled or expired.
+          if (emptyReplyRetryOutcome === "RETRY_PROVIDER_FAILED") retryUpstreamStatus = observedUpstreamStatus;
+          deadline.check();
         }
-      } catch {
-        // Keep the original rejection unless the request was cancelled or expired.
-        deadline.check();
+        observedStage = "RESULT_EXTRACTION";
+        observedUpstreamStatus = status;
       }
-      observedStage = "RESULT_EXTRACTION";
-      observedUpstreamStatus = status;
     }
     if (!validated) throw new GatewayError(502, "ASSISTANT_RESPONSE_REJECTED");
     deadline.check();
@@ -354,7 +409,8 @@ Deno.serve(async (request) => {
   } catch (error) {
     const response = assistantErrorResponse(request, error);
     if (observedStage !== null) reportAssistantFailure(observedStage, observedUpstreamStatus, observedRejectionCode, response.status,
-      { quotaCompleted, providerStarted, providerFetchCalled, providerOutputState, deadlineCause:deadline?.cause() ?? null });
+      { quotaCompleted, providerStarted, providerFetchCalled, providerOutputState, deadlineCause:deadline?.cause() ?? null,
+        emptyReplyRetryOutcome, firstProviderUsage, retryProviderUsage, retryUpstreamStatus });
     return response;
   } finally {
     deadline?.close(); requestBody?.cancel();

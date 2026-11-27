@@ -1,3 +1,9 @@
+## 27. november — tomt eksternt svar i den offentlige assistent
+
+En almindelig tysk browserforespørgsel på den offentlige prognose fra #407 fik HTTP 502. Den afgrænsede driftslog viste HTTP 200 fra Cloudflare, men ingen afsluttende svartekst. Loggen viser første forsøg og kan derfor ikke afgøre, om anden forespørgsel blev sendt, kom tom tilbage eller blev afvist i valideringen.
+
+Den lokale ændring registrerer genforsøgets udfald og dets faktiske HTTP-status, når Cloudflare har svaret. Fejlloggen kan også vise de to afgrænsede tal for svar- og ræsonneringstokens, når Cloudflare selv rapporterer dem. Det gør det muligt at sammenholde et tomt svar med det anvendte tokenbudget. Samme to mulige providerkald, kvote, frist og svarvalidering gælder. Afprøvning i drift og afklaring af det tomme svar udestår.
+
 ## 26. november — kildekontrol kan blokere vejr før DMI
 
 #404 genlæste den beskyttede vejrtilstand og dens råfiler. GitHub-kontrollen for rotation fandt en mulig samtidig læser. Den beholdt alle kopier og standsede før DMI. Det automatiske genforsøg startede den almindelige #405, efter at køen var fri.
