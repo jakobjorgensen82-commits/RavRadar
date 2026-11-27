@@ -1,3 +1,9 @@
+## 26. november – brug pull request-kørslens faktiske grundlag
+
+GitHubs metadata for et allerede åbent pull request kan vise hovedgrenen, som den så ud ved oprettelsen. I #1762 fik det den normale kildeplan til at medtage allerede leverede SQL- og vejrændringer. Den målrettede kildekontrol skal i stedet bruge første forælder til den merge-commit, GitHub har givet det konkrete job. Anden forælder skal være det præcise pull request-head. Den afsluttende genlæsning skal stadig finde den samme merge-commit, og leveringskontrollen skal stadig genkende dens faktiske base i den leverede historik.
+
+Råcachekontrollen bevarer sin egen positive verifikation af workflowet. Ændringen af kildeplanens grundlag giver ingen adgang til råcachen.
+
 ## 26. november – ændret produktion af PostgreSQL-kvitteringen
 
 Ændres koden, der faktisk kører PostgreSQL-prøven og skriver kvitteringen, kræver den almindelige kildekontrol én ny udførelse af prøven. En prøvekørsel af læseren kan stadig gå den korte vej. Uændrede SQL- og modelinput dokumenteres stadig som uændrede. Når den første faktiske udførelse på den nye kode er verificeret, kan efterfølgende ændringer måles mod det nye kildegrundlag. De tidligere kvitteringer bevarer deres form og betydning.

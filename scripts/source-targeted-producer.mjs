@@ -174,7 +174,7 @@ function freshPostTargetReader(){
 export async function coordinateTargetedSourceProducer(){
   assert.equal(arguments.length,0,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');
   const env=process.env,head=env.SOURCE_GATE_HEAD_SHA;
-  let current,content,impactPlan,cumulativeImpactPlan,changeBase,baseline,get,jobRoute,pullRoute,pull,frontierDiscovery,frontierAccess;
+  let current,content,impactPlan,cumulativeImpactPlan,changeBase,baseline,get,jobRoute,pullRoute,pull,eventMergeSha,frontierDiscovery,frontierAccess;
   try{
     assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
     assert(oid(head));clean(head);
@@ -186,9 +186,20 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(pull.number,pullRequest);assert.equal(pull.state,'open');
     assert.equal(pull.head?.sha,head);assert.equal(pull.head?.repo?.full_name,env.GITHUB_REPOSITORY);
     assert.equal(pull.base?.ref,'main');assert.equal(pull.base?.repo?.full_name,env.GITHUB_REPOSITORY);
-    assert(oid(pull.base.sha));
-    const mergeBase=text(['merge-base','--all',pull.base.sha,head]);assert(oid(mergeBase));
-    changeBase={commit:mergeBase,gitTree:text(['rev-parse',mergeBase+'^{tree}']),pullBaseCommit:pull.base.sha};
+    // This is the immutable merge commit supplied to the pull_request job.
+    // The PR API can still project the base from when the PR was opened.
+    eventMergeSha=env.GITHUB_SHA;
+    assert.equal(env.GITHUB_REF,`refs/pull/${pullRequest}/merge`);
+    assert(oid(eventMergeSha));
+    assert.equal(pull.merge_commit_sha,eventMergeSha);
+    const eventMerge=await get(repo+'/git/commits/'+eventMergeSha);
+    assert.equal(eventMerge.sha,eventMergeSha);
+    assert(Array.isArray(eventMerge.parents)&&eventMerge.parents.length===2);
+    const [pullBaseCommit,eventHead]=eventMerge.parents.map(parent=>parent.sha);
+    assert(oid(pullBaseCommit)&&pullBaseCommit!==head);
+    assert.equal(eventHead,head);
+    const mergeBase=text(['merge-base','--all',pullBaseCommit,head]);assert(oid(mergeBase));
+    changeBase={commit:mergeBase,gitTree:text(['rev-parse',mergeBase+'^{tree}']),pullBaseCommit};
     impactPlan=await selectImpactPlan(mergeBase,head);
     if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
     let baselineHint=null;
@@ -324,7 +335,7 @@ export async function coordinateTargetedSourceProducer(){
   // A missing ROOT review is a precise CONTROL refusal, never an expensive
   // automatic FULL rerun or an unreviewed short qualification.
   const reviewInput=()=>({current,fullBaseline:baseline,changeBase,currentPlan:impactPlan.plan,cumulativePlan:cumulativeImpactPlan.plan});
-  const controlReview=readCurrentChangeReview(pull,reviewInput());
+  const controlReview=readCurrentChangeReview(pull,reviewInput(),changeBase.pullBaseCommit);
   assertCurrentChangeReceiptCapacity({...reviewInput(),frontier});
   clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands);
   const ownedCacheNative=prepareSelectedOwnedCacheNativeSourceTarget(executionPlan.commands);
@@ -365,12 +376,13 @@ export async function coordinateTargetedSourceProducer(){
   // Fresh post-test transport, exactly two reads, irrespective of test duration.
   const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);
   assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');
-  assert.equal(freshPull.head?.sha,head);assert.equal(freshPull.base?.sha,pull.base.sha);
+  assert.equal(freshPull.head?.sha,head);
   assert.equal(freshPull.head?.repo?.full_name,current.repository);
   assert.equal(freshPull.base?.repo?.full_name,current.repository);assert.equal(freshPull.base?.ref,'main');
   assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);
+  assert.equal(freshPull.merge_commit_sha,eventMergeSha,'SOURCE_TARGETED_EVENT_MERGE_MOVED');
   assert(isDeepStrictEqual(controlReview,
-    readCurrentChangeReview(freshPull,reviewInput())),
+    readCurrentChangeReview(freshPull,reviewInput(),changeBase.pullBaseCommit)),
     'SOURCE_TARGETED_CONTROL_REVIEW_MOVED');
   const receipt=await buildCurrentChangeSourceReceipt({...reviewInput(),frontier,commandResults});
   clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
