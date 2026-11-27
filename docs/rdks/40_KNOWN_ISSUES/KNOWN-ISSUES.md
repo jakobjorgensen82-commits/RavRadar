@@ -1,3 +1,9 @@
+## 27. november — svar på et samlet spørgsmål om UV-lygter
+
+Et almindeligt spørgsmål om, hvorfor rav lyser under UV, om lygten kan bruges i dagslys, og om alt lysende er rav, nåede den eksterne model. Assistenten bad om at få spørgsmålet delt op, selv om alle tre led var dækket af gennemgået viden.
+
+Den lokale rettelse genbruger de gennemgåede svar direkte på dansk, tysk og engelsk, når hele spørgsmålet matcher de tre led. Et ukendt ekstra led følger fortsat den almindelige behandling af hele spørgsmålet. De normale adgangsregler og kvoten gælder også for serverens gennemgåede svar. Den tomme eksterne forespørgsel nedenfor afventer fortsat særskilt afklaring. Offentlig virkning af UV-rettelsen udestår.
+
 ## 27. november — tomt eksternt svar i den offentlige assistent
 
 En almindelig tysk browserforespørgsel på den offentlige prognose fra #407 fik HTTP 502. Den afgrænsede driftslog viste HTTP 200 fra Cloudflare, men ingen afsluttende svartekst. Loggen viser første forsøg og kan derfor ikke afgøre, om anden forespørgsel blev sendt, kom tom tilbage eller blev afvist i valideringen.

@@ -321,8 +321,17 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
     try{
       for(const locale of ['da','de','en']){
         const row=reviewedUvRows[locale];
-        const full=await provider(row.question,locale,row.ids);assert.equal(full.answer,row.answer);uv++;
-        const partial=await provider(row.question,locale,row.ids.slice(2));assert.equal(partial.answer,focus[locale]);uv++;
+        reset();responseMutation=null;browserLanguage=locale;controlledQuotaResponse=null;
+        controlledProviderResponse = {}; // Enable the controlled quota seam without supplying an AI answer.
+        const beforeUvProvider=controlledProviderCalls,beforeUvQuota=controlledQuotaCalls;
+        assert.equal(await askRavRadar(row.question,{}, {language:locale}),row.answer);
+        assertRemote(row.question,locale,200);
+        assert.deepEqual(exchanges[0].result,{answer:row.answer});
+        assert.deepEqual(controlledSuccessProvenance,[{status:200,providerDelta:0,value:null}]);
+        assert.equal(controlledProviderCalls,beforeUvProvider);assert.equal(controlledQuotaCalls-beforeUvQuota,3);
+        assert.ok(!envReads.some(name => name.startsWith('CLOUDFLARE_')));uv++;
+        const uvExtra=row.question+' '+{da:'Forklar også en ukendt ravmåler.',de:'Erkläre auch ein unbekanntes Bernsteinmessgerät.',en:'Also explain an unknown amber device.'}[locale];
+        assert.equal((await provider(uvExtra,locale,row.ids)).answer,focus[locale]);uv++;
         const netRow=reviewedNetBeachRows[locale],netIds=['equipment.amber-net','field-signs.clues-not-proof'];
         const resolved=assistantPublicFollowupQuestion(netRow.raw,'public-knowledge:equipment.amber-net',locale);
         assert.equal(resolved,netRow.resolved);
@@ -345,9 +354,9 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
         const misclassified=await provider(question,locale,[],'out_of_scope');
         assert.equal(misclassified.answer,contract.RAV_ASSISTANT_REFUSALS[locale]);inventory++;
       }
-      assert.equal(controlledProviderCalls-startingProvider,27);assert.equal(controlledQuotaCalls-startingQuota,81);
+      assert.equal(controlledProviderCalls-startingProvider,24);assert.equal(controlledQuotaCalls-startingQuota,81);
       assert.equal(blockedNetworkCalls,0);assert.equal(Object.keys(headerValues).length,6);
-      console.log(JSON.stringify({status:'PASS',contract:'optical/beach/inventory normal main and Edge',uv,net,inventory,rawGuards,controlledHttp:27,controlledProvider:27,controlledQuota:81,realNetwork:0,hosted:false,inventoryModelSelectionUnproven:true}));
+      console.log(JSON.stringify({status:'PASS',contract:'optical/beach/inventory normal main and Edge',uv,net,inventory,rawGuards,controlledHttp:30,controlledProvider:24,controlledQuota:81,realNetwork:0,hosted:false,inventoryModelSelectionUnproven:true}));
     }finally{controlledProviderResponse=oldResponse;responseMutation=oldMutation;browserLanguage=savedLanguage;controlledQuotaResponse=null;reset();}
   };
 
