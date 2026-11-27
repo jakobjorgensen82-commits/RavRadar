@@ -369,6 +369,20 @@ test('active after601 treats all OFF account migrations as installed dependencie
   const remoteTrip=`\n | ${tripVersion} |`;
   const installedTrip=`\n${tripVersion} | ${tripVersion} |`;
   const pendingTrip=`\n${tripVersion} | |`;
+  const dryTrip=`DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${tripFile}\nFinished supabase db push.`;
+  await assert.rejects(cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'mixed'),
+    includeTripErasureRecoverySource:true,includeAccountErasureSource:true}), /separate exact schema plan/);
+  const tripInstall=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'trip'),
+    includeTripErasureRecoverySource:true});
+  const tripPlan={migrationListText:list()+pendingTrip,dryRunText:dryTrip,migrationsDirectory:tripInstall.migrationsDirectory};
+  assert.deepEqual((await cutover.assertTripErasureRecoveryMigrationPlan(tripPlan)).pendingVersions,[tripVersion]);
+  assert.deepEqual((await cutover.assertTripErasureRecoveryMigrationPlan({...tripPlan,
+    migrationListText:list()+installedTrip,dryRunText:noPending})).pendingVersions,[]);
+  await assert.rejects(cutover.assertTripErasureRecoveryMigrationPlan({...tripPlan,dryRunText:noPending}));
+  await assert.rejects(cutover.assertTripErasureRecoveryMigrationPlan({...tripPlan,migrationsDirectory:prepared.migrationsDirectory}),
+    /SQL missing from the prepared view/);
+  await assert.rejects(cutover.assertTripErasureRecoveryMigrationPlan({...tripPlan,
+    migrationListText:list()+pendingTrip+'\n20990101000000 | |'}), /Unknown post-cutover/);
   await assert.rejects(cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,
     migrationListText:list(cutover.CHECKPOINT_SCALAR_WALK_MIGRATION.version)+remoteTrip}), /requires installed scalar-walk/);
   const hydrated=await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list()+remoteTrip});
@@ -379,7 +393,7 @@ test('active after601 treats all OFF account migrations as installed dependencie
   assert.deepEqual((await cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip})).pendingVersions,[]);
   assert.equal(cutover.assertSupabaseMigrationsApplied(list()+installedTrip).appliedVersions.at(-1),tripVersion);
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+pendingTrip,
-    dryRunText:`DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${tripFile}\nFinished supabase db push.`}), /requires the matching installed append/);
+    dryRunText:dryTrip}), /requires the matching installed append/);
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+remoteTrip}), /requires the matching installed append/);
   await fs.promises.appendFile(stagedTrip,'\n-- changed\n');
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip}), /Trip recovery migration source changed/);
@@ -434,4 +448,22 @@ test('current80 normal workflow binds qualification finite plan and inactive rea
 test('current80 installation proof modes refuse before transport without exact owned FULL authority',async()=>{
  const {spawnSync}=await import('node:child_process');const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
  for(const mode of ['--qualify-account-native-receipt-source','--read-account-native-receipt-before','--read-account-native-receipt-installed']){const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],{env,encoding:'utf8',timeout:15000});assert.equal(result.status,1);assert.equal(result.stdout,'');assert.equal(result.stderr.trim(),'ACCOUNT_NATIVE_RECEIPT_QUALIFIED_INSTALL_EVIDENCE_REQUIRED');}
+});
+
+test('trip recovery install qualification requires the exact owned workflow and FULL reference',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const {qualifiedTripErasureRecovery}=await import('./source-impact-full-baseline.mjs');
+ const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+ const heldSource={...env,GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+  GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',GITHUB_JOB:'apply-trip-recovery-schema',
+  GITHUB_WORKFLOW_REF:'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main',
+  RAVRADAR_TRIP_RECOVERY_SCHEMA_CONFIRMATION:'APPLY-TRIP-RECOVERY-SCHEMA'};
+ assert.equal(qualifiedTripErasureRecovery({sqlFiles:83,receipt:{actualPostgres:true}}),null);
+ for(const candidate of [env, heldSource, {...heldSource,GITHUB_RUN_ATTEMPT:'2'},
+  {...heldSource,GITHUB_JOB:'apply-binding',RAVRADAR_TRIP_RECOVERY_SOURCE_REFERENCE:'{}'}]){
+  const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs','--qualify-trip-erasure-recovery-source'],
+   {env:candidate,encoding:'utf8',timeout:15000});
+  assert.equal(result.status,1);assert.equal(result.stdout,'');
+  assert.equal(result.stderr.trim(),'TRIP_RECOVERY_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED');
+ }
 });

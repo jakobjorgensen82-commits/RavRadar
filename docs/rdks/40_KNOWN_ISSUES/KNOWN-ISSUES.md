@@ -20,6 +20,9 @@ allerede installeret. Den midlertidige mappe får den verificerede SQL-fil fra
 lageret, når Supabase viser den som installeret og den foregående migration er
 til stede. Den normale kørsels migrationsplan afviser fortsat en ventende
 turlogsmigration eller ændret SQL. Installation og kontrol i drift afventes.
+Den afgrænsede installationsplan kan klargøre turlogsmigrationen alene og
+kontrollere, at Supabases prøveplan kun indeholder den. Planen tillader også
+en tom prøveplan, når migrationen allerede er registreret som installeret.
 
 En lokal prøve med den normale Worker og ti syntetiske databaser viste, at en
 tur blev synlig igen efter gendannelse af den kontrolbase, der havde modtaget

@@ -90,7 +90,7 @@ export const CHECKPOINT_SCALAR_WALK_MIGRATION = Object.freeze({
   filename: '20261126152500_checkpoint_scalar_privacy_walk.sql',
   sha256: '23f863a6ba9d3cebdae3944f010fb0517b632200cc2c4eac89e84efc59e78df2',
 });
-const TRIP_ERASURE_RECOVERY_SQL = Object.freeze({
+export const TRIP_ERASURE_RECOVERY_SQL = Object.freeze({
   version: '20261127095500',
   filename: '20261127095500_trip_owner_erasure_intents.sql',
   sha256: '734ae3e7a353a20afacf0f0cba2bdc180cad64989c2cd643ce8c6dd2c78b7526',
@@ -815,7 +815,7 @@ const ASSISTANT_AFTER601_ROWS=Object.freeze({
 function assistantLaterH0Rows(migrationListText){
   return fixedAssistantRows(migrationListText,ISSUED_ASSISTANT587_ROWS);
 }
-function fixedAssistantRows(migrationListText,profile){
+function fixedAssistantRows(migrationListText,profile,{allowPendingTripRecovery=false}={}){
   assert(profile===ISSUED_ASSISTANT587_ROWS||profile===PUBLIC587_SUCCESSOR_ROWS||profile===PUBLIC588_SUCCESSOR_ROWS||profile===PUBLIC590_SUCCESSOR_ROWS||profile===PUBLIC591_SUCCESSOR_ROWS||profile===INSTALLED593_ORIGINAL591_ROWS||profile===SCALAR597_LATER_H0_ROWS||profile===ASSISTANT_AFTER597_ROWS||profile===ASSISTANT_AFTER598_ROWS||profile===ASSISTANT_AFTER599_ROWS||profile===ASSISTANT_AFTER601_ROWS);
   const required=profile.required();
   const rows=parseSupabaseMigrationList(migrationListText);
@@ -834,7 +834,7 @@ function fixedAssistantRows(migrationListText,profile){
     const tripVersion = TRIP_ERASURE_RECOVERY_SQL.version;
     offVersions.add(tripVersion);
     if (local.has(tripVersion) || remote.has(tripVersion)) {
-      assert(local.has(tripVersion) && remote.has(tripVersion) && remote.has(version),
+      assert(local.has(tripVersion) && (remote.has(tripVersion) || allowPendingTripRecovery) && remote.has(version),
         'Trip recovery SQL requires the matching installed append and scalar-walk predecessor');
     }
   }
@@ -1085,6 +1085,25 @@ export async function assertAssistantAfter601MigrationPlan(options){
   assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
   return Object.freeze({pendingVersions:Object.freeze(pending),
     alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
+}
+export async function assertTripErasureRecoveryMigrationPlan({migrationListText, dryRunText, migrationsDirectory} = {}) {
+  assert(ACTIVE === INACTIVE_ASSISTANT_AFTER601_SUCCESSOR);
+  ACTIVE.requireOutput();
+  const {required, local, remote} = fixedAssistantRows(migrationListText, ASSISTANT_AFTER601_ROWS, {
+    allowPendingTripRecovery:true,
+  });
+  assert(remote.has(required.at(-1).version), 'Trip recovery requires installed 603');
+  const trip = TRIP_ERASURE_RECOVERY_SQL;
+  assert(local.has(trip.version), 'Trip recovery plan requires the exact local append');
+  assert(typeof migrationsDirectory === 'string' && migrationsDirectory.length > 0);
+  const staged = await inspectMigrationSources({migrationsDirectory});
+  assert.equal(staged.versionToFilename.get(trip.version), trip.filename, 'Trip recovery SQL missing from the prepared view');
+  await readCheckpointScalarWalkSource(migrationsDirectory);
+  const pendingVersions = [...local].filter(version => !remote.has(version));
+  assert.deepEqual(pendingVersions, remote.has(trip.version) ? [] : [trip.version],
+    'Only the exact trip recovery migration may be pending');
+  assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText), pendingVersions.length ? [trip.filename] : []);
+  return Object.freeze({pendingVersions:Object.freeze(pendingVersions)});
 }
 export async function prepareAssistantAfter598CutoverWorkdir(options){
   requireAssistantAfter598Output();assert.equal(arguments.length,1);
@@ -1539,9 +1558,17 @@ function assertTemporaryCutoverWorkdir(value) {
   return workdir;
 }
 
-export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false, includeAccountErasureSource = false, includeAccountNativeReceiptSource = false, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE } = {}) {
+export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false,
+  includeAccountErasureSource = false, includeAccountNativeReceiptSource = false, includeTripErasureRecoverySource = false,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE } = {}) {
   assert.equal(typeof includeAccountErasureSource,'boolean');
   assert.equal(typeof includeAccountNativeReceiptSource,'boolean');
+  assert.equal(typeof includeTripErasureRecoverySource, 'boolean');
+  if (includeTripErasureRecoverySource) {
+    assert.equal(sourcePhase, 'assistant-after601-successor');
+    assert(!includeAccountErasureSource && !includeAccountNativeReceiptSource && !includeStatisticsPreferenceRevisionSource,
+      'Trip recovery is a separate exact schema plan');
+  }
   if(includeAccountNativeReceiptSource){
     assert.equal(sourcePhase,'assistant-after599-successor');assert.equal(includeAccountErasureSource,false);
     assert(currentNativeActivityReceiptSourceContext(),'Exact current80 source required');
@@ -1581,6 +1608,10 @@ export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWor
   if(sourcePhase==='assistant-after601-successor'){
     const sql=await readCheckpointScalarWalkSource();
     await fs.writeFile(path.join(migrationsDirectory,CHECKPOINT_SCALAR_WALK_MIGRATION.filename),sql,{flag:'wx'});
+  }
+  if (includeTripErasureRecoverySource) {
+    const sql = await readTripErasureRecoverySql(MIGRATIONS_DIRECTORY);
+    await fs.writeFile(path.join(migrationsDirectory, TRIP_ERASURE_RECOVERY_SQL.filename), sql, {flag:'wx'});
   }
   // Statistics230 is now a required historical source and was copied above.
   // Its explicit legacy option still verifies the immutable source, not a grant.
@@ -2631,7 +2662,8 @@ async function runCli() {
     const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: argumentValue('--output'),
       includeStatisticsPreferenceRevisionSource:process.argv.includes('--statistics-preference-revision-source'),
       includeAccountErasureSource:process.argv.includes('--account-erasure-source'),
-      includeAccountNativeReceiptSource:process.argv.includes('--account-native-receipt-source') });
+      includeAccountNativeReceiptSource:process.argv.includes('--account-native-receipt-source'),
+      includeTripErasureRecoverySource:process.argv.includes('--trip-erasure-recovery-source') });
     console.log(`Temporary Supabase cutover view prepared with ${REQUIRED_CUTOVER_MIGRATIONS.length} exact source migrations.`);
     assert.ok(prepared.migrationsDirectory);
     return;
@@ -2643,6 +2675,15 @@ async function runCli() {
       migrationListText,
     });
     console.log(`Temporary migration view normalized with ${result.placeholders.length} already-applied remote history marker(s).`);
+    return;
+  }
+  if (command === 'trip-erasure-recovery-plan') {
+    const plan = await assertTripErasureRecoveryMigrationPlan({
+      migrationListText:await fs.readFile(argumentValue('--migration-list'), 'utf8'),
+      dryRunText:await fs.readFile(argumentValue('--dry-run'), 'utf8'),
+      migrationsDirectory:argumentValue('--migrations-directory'),
+    });
+    console.log(JSON.stringify(plan));
     return;
   }
   if (command === 'plan') {
@@ -2714,7 +2755,7 @@ async function runCli() {
     console.log(`Protected integrated cutover readiness is exact and read-only verified for ${payload.sourceHead}.`);
     return;
   }
-  throw new Error('Usage: integrated-cutover-readiness.mjs assert-source|prepare-workdir|hydrate-history|plan|applied|verify-db|publish|check|check-sealed');
+  throw new Error('Usage: integrated-cutover-readiness.mjs assert-source|prepare-workdir|hydrate-history|trip-erasure-recovery-plan|plan|applied|verify-db|publish|check|check-sealed');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
