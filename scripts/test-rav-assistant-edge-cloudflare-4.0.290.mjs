@@ -855,7 +855,7 @@ assert.match(edge, /minute: 6, hour: 40, globalDay: 300/);
 // The old literal only checked a headers-only timeout. The real handler/body
 // cases below now verify the same7s as one absolute POST deadline.
 assert.match(edge, /function assistantDeadline[\s\S]*performance\.now\(\) \+ 7_000/);
-assert.match(edge, /const answerResponse = assistantProviderResponse[\s\S]*deadline\.check\(\);\n\s*return answerResponse/);
+assert.match(edge, /const answerResponse = assistantProviderResponse[\s\S]*deadline\.check\(\);\r?\n\s*return answerResponse/);
 assert.match(edge, /validateAssistantResult/);
 assert.match(edge, /routeAssistantQuestion/);
 assert.match(edge, /!sameAssistantRavScoreModelBinding\(body\.context\?\.modelBinding\)/);
@@ -1089,7 +1089,26 @@ try {
     response=await edgeHandler(normalRequest());
     assert.equal(response.status,502);assert.equal(providerCalls,2);assert.equal(quotaCalls,6);
     assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    assert.equal(failureRows[0][1].emptyReplyRetryOutcome,'RETRY_FINAL_CONTENT_EMPTY');
     assert(!JSON.stringify(failureRows).includes('Public identification.'));
+
+    for (const [retryResponse, outcome] of [
+      [() => new Response(null, {status:503}), 'RETRY_PROVIDER_FAILED'],
+      [() => Response.json(chatReply([{type:'text',text:'SYNTHETIC_UNPARSEABLE_ANSWER'}])), 'RETRY_FINAL_CONTENT_NOT_STRING'],
+      [() => Response.json(chatReply('SYNTHETIC_UNPARSEABLE_ANSWER')), 'RETRY_RESULT_NOT_EXTRACTED'],
+      [() => Response.json(chatReply(validProvider.result.response.replace('"da"', '"en"'))), 'RETRY_RESULT_REJECTED'],
+    ]) {
+      resetDeadlineCase();
+      providerFactory = () => providerCalls === 1 ? Response.json(emptyChatReply) : retryResponse();
+      response = await edgeHandler(normalRequest());
+      assert.equal(response.status, 502);
+      assert.deepEqual(await response.json(), {error:'ASSISTANT_RESPONSE_REJECTED'});
+      assert.equal(providerCalls, 2);
+      assert.equal(quotaCalls, 6);
+      assert.equal(failureRows.length, 1);
+      assert.equal(failureRows[0][1].emptyReplyRetryOutcome, outcome);
+      assert(!JSON.stringify(failureRows).includes('SYNTHETIC_UNPARSEABLE_ANSWER'));
+    }
 
     for (const hiddenLevel of ['result', 'choice', 'message']) {
       resetDeadlineCase();
@@ -1103,6 +1122,7 @@ try {
       assert.equal(response.status, 502, hiddenLevel);
       assert.equal(providerCalls, 2);
       assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header), null);
+      assert.equal(failureRows[0][1].emptyReplyRetryOutcome, 'RETRY_REPLY_NOT_PLAIN_STOP');
     }
 
     resetDeadlineCase();
@@ -1113,8 +1133,13 @@ try {
     assert.equal(response.status, 502);
     assert.equal(providerCalls, 1);
     assert.equal(quotaCalls, 3);
+    assert.equal(failureRows[0][1].emptyReplyRetryOutcome, 'FIRST_REPLY_NOT_PLAIN_STOP');
 
-    for(const stop of ['remaining-before-quota','remaining-after-quota','quota-refused']){
+    for(const [stop,outcome] of [
+      ['remaining-before-quota','NO_TIME_BEFORE_QUOTA'],
+      ['remaining-after-quota','NO_TIME_AFTER_QUOTA'],
+      ['quota-refused','RETRY_QUOTA_FAILED'],
+    ]){
       resetDeadlineCase();
       providerFactory=()=>{if(stop==='remaining-before-quota')clock=5001;return Response.json(emptyChatReply);};
       quotaFactory=()=>{
@@ -1126,6 +1151,7 @@ try {
       assert.equal(quotaCalls,stop==='remaining-before-quota'?3:6);
       assert.deepEqual(await response.json(),{error:'ASSISTANT_RESPONSE_REJECTED'});
       assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+      assert.equal(failureRows[0][1].emptyReplyRetryOutcome,outcome);
     }
 
     resetDeadlineCase();
@@ -1141,6 +1167,7 @@ try {
     for(const release of retryQuotaReleases)release();
     await pause();await pause();assert.equal(providerCalls,1,'Late retry quota must never start an aborted provider request.');
     assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    assert.equal(failureRows[0][1].emptyReplyRetryOutcome,'RETRY_QUOTA_FAILED');
 
     resetDeadlineCase();
     providerFactory=request=>providerCalls===1?Response.json(emptyChatReply):new Promise((_resolve,reject)=>
@@ -1151,6 +1178,7 @@ try {
     assert.equal(response.status,504);assert.equal(lastProviderSignal.aborted,true);
     assert.equal(failureRows.length, 1);
     assert.equal(failureRows[0][1].upstreamStatus, null);
+    assert.equal(failureRows[0][1].emptyReplyRetryOutcome, 'RETRY_PROVIDER_FAILED');
     assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
     // Preserve the old JSON parser behaviour: content type was not an added gate.
     resetDeadlineCase();const plain=normalRequest();const plainHeaders=new Headers(plain.headers);plainHeaders.set('content-type','text/plain');

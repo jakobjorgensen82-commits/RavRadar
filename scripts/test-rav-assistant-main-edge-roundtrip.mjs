@@ -3254,9 +3254,9 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
       { payload: { result: { text: secret } }, outputState: 'UNKNOWN' },
       { payload: { result: { choices: [{ finish_reason: 'length', message: { role: 'assistant', content: secret } }] } }, outputState: 'CHAT_LENGTH' },
       { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: secret } }] } }, outputState: 'CHAT_STOP_TEXT' },
-      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, reasoning_content: secret } }] } }, outputState: 'CHAT_STOP_EMPTY', retries: true },
-      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, refusal: secret } }] } }, outputState: 'CHAT_STOP_EMPTY' },
-      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, tool_calls: [{ id: secret }] } }] } }, outputState: 'CHAT_STOP_EMPTY' },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, reasoning_content: secret } }] } }, outputState: 'CHAT_STOP_EMPTY', retries: true, retryOutcome: 'RETRY_FINAL_CONTENT_EMPTY' },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, refusal: secret } }] } }, outputState: 'CHAT_STOP_EMPTY', retryOutcome: 'FIRST_REPLY_NOT_PLAIN_STOP' },
+      { payload: { result: { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: null, tool_calls: [{ id: secret }] } }] } }, outputState: 'CHAT_STOP_EMPTY', retryOutcome: 'FIRST_REPLY_NOT_PLAIN_STOP' },
       { payload: { result: { choices: [{ finish_reason: secret, message: { role: 'assistant', content: null } }] } }, outputState: 'UNKNOWN' },
       { payload: { result: { object: 'response', status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' } } }, outputState: 'RESPONSES_TOKEN_LIMIT' },
       { payload: { result: { object: 'response', status: 'completed', output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: secret }] }] } }, outputState: 'RESPONSES_COMPLETED_TEXT' },
@@ -3292,7 +3292,8 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
           stage: row.stage ?? (row.outputState ? 'RESULT_EXTRACTION' : 'RESULT_VALIDATION'),
           responseStatus: 502, upstreamStatus: row.http ?? 200,
           rejectionCode: row.outputState ? 'RESULT_NOT_OBJECT' : row.code,
-          ...(row.outputState ? { providerOutputState: row.outputState } : {}) }]);
+          ...(row.outputState ? { providerOutputState: row.outputState } : {}),
+          ...(row.retryOutcome ? { emptyReplyRetryOutcome: row.retryOutcome } : {}) }]);
         for(const value of [quotaCompletedElapsedMs,quotaCompletedRemainingMs,providerStartElapsedMs,providerStartRemainingMs])assert(Number.isSafeInteger(value)&&value>=0&&value<=7000);
         for(const total of [quotaCompletedElapsedMs+quotaCompletedRemainingMs,providerStartElapsedMs+providerStartRemainingMs])assert(total===6999||total===7000);
         assert(providerStartElapsedMs>=quotaCompletedElapsedMs);assert.equal(providerFetchCalled,true);assert.equal(deadlineCause,null);
