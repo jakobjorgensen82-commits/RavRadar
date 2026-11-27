@@ -205,7 +205,18 @@ function plainAssistantStopMessage(payload: Awaited<ReturnType<typeof assistantP
   return message;
 }
 
-// Failure observation contains only fixed categories and numeric HTTP status.
+function reportedCompletionUsage(payload: Awaited<ReturnType<typeof assistantProviderJson>>) {
+  const usage = (payload?.result ?? payload)?.usage;
+  const completionTokens = usage?.completion_tokens;
+  if (typeof completionTokens !== "number" || !Number.isSafeInteger(completionTokens)
+      || completionTokens < 0 || completionTokens > 1_000_000) return null;
+  const reasoning = usage?.completion_tokens_details?.reasoning_tokens;
+  const reasoningTokens = typeof reasoning === "number" && Number.isSafeInteger(reasoning)
+    && reasoning >= 0 && reasoning <= completionTokens ? reasoning : null;
+  return { completionTokens, reasoningTokens };
+}
+
+// Failure observation contains only fixed categories and bounded numbers.
 // A missing/failing logger must preserve the original public error unchanged.
 type AssistantFailureObservation = {
   quotaCompleted: ReturnType<AssistantDeadline["observation"]> | null;
@@ -214,6 +225,9 @@ type AssistantFailureObservation = {
   providerOutputState: ProviderOutputState | null;
   deadlineCause: ReturnType<AssistantDeadline["cause"]> | null;
   emptyReplyRetryOutcome: EmptyReplyRetryOutcome | null;
+  firstProviderUsage: ReturnType<typeof reportedCompletionUsage>;
+  retryProviderUsage: ReturnType<typeof reportedCompletionUsage>;
+  retryUpstreamStatus: number | null;
 };
 function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number, observation: AssistantFailureObservation | null = null) {
   try {
@@ -231,6 +245,11 @@ function reportAssistantFailure(stage: string, upstreamStatus: number | null, re
         ? { providerOutputState } : {}),
       ...(emptyReplyRetryOutcome && EMPTY_REPLY_RETRY_OUTCOMES.includes(emptyReplyRetryOutcome)
         ? { emptyReplyRetryOutcome } : {}),
+      ...(observation?.firstProviderUsage ? { firstProviderUsage: observation.firstProviderUsage } : {}),
+      ...(observation?.retryProviderUsage ? { retryProviderUsage: observation.retryProviderUsage } : {}),
+      ...(observation?.retryUpstreamStatus != null && Number.isInteger(observation.retryUpstreamStatus)
+          && observation.retryUpstreamStatus >= 100 && observation.retryUpstreamStatus <= 599
+        ? { retryUpstreamStatus: observation.retryUpstreamStatus } : {}),
       quotaCompletedElapsedMs: milliseconds(observation?.quotaCompleted?.elapsedMs),
       quotaCompletedRemainingMs: milliseconds(observation?.quotaCompleted?.remainingMs, 7_000),
       providerStartElapsedMs: milliseconds(observation?.providerStarted?.elapsedMs),
@@ -254,6 +273,9 @@ Deno.serve(async (request) => {
   let providerFetchCalled = false;
   let providerOutputState: ProviderOutputState | null = null;
   let emptyReplyRetryOutcome: EmptyReplyRetryOutcome | null = null;
+  let firstProviderUsage: ReturnType<typeof reportedCompletionUsage> = null;
+  let retryProviderUsage: ReturnType<typeof reportedCompletionUsage> = null;
+  let retryUpstreamStatus: number | null = null;
   try {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: assistantHeaders(request) });
@@ -334,6 +356,7 @@ Deno.serve(async (request) => {
     const parsed = extractCloudflareAssistantResult(payload);
     if (parsed === null) {
       try { providerOutputState = describeProviderOutput(payload); } catch { /* Keep the existing rejection path. */ }
+      firstProviderUsage = reportedCompletionUsage(payload);
     }
     observedStage = parsed === null ? "RESULT_EXTRACTION" : "RESULT_VALIDATION";
     let validated = validateAssistantResult(parsed, locale, body.context, rawQuestion,
@@ -352,6 +375,8 @@ Deno.serve(async (request) => {
           if (deadline.observation().remainingMs >= EMPTY_REPLY_RETRY_MIN_MS) {
             emptyReplyRetryOutcome = "RETRY_PROVIDER_FAILED";
             const retry = await readProviderReply(ASSISTANT_SEED + 1);
+            retryUpstreamStatus = retry.status;
+            retryProviderUsage = reportedCompletionUsage(retry.payload);
             const message = retry.status === 200 ? plainAssistantStopMessage(retry.payload) : null;
             const content = message?.content;
             if (!message) {
@@ -369,6 +394,7 @@ Deno.serve(async (request) => {
           }
         } catch {
           // Keep the original rejection unless the request was cancelled or expired.
+          if (emptyReplyRetryOutcome === "RETRY_PROVIDER_FAILED") retryUpstreamStatus = observedUpstreamStatus;
           deadline.check();
         }
         observedStage = "RESULT_EXTRACTION";
@@ -384,7 +410,7 @@ Deno.serve(async (request) => {
     const response = assistantErrorResponse(request, error);
     if (observedStage !== null) reportAssistantFailure(observedStage, observedUpstreamStatus, observedRejectionCode, response.status,
       { quotaCompleted, providerStarted, providerFetchCalled, providerOutputState, deadlineCause:deadline?.cause() ?? null,
-        emptyReplyRetryOutcome });
+        emptyReplyRetryOutcome, firstProviderUsage, retryProviderUsage, retryUpstreamStatus });
     return response;
   } finally {
     deadline?.close(); requestBody?.cancel();

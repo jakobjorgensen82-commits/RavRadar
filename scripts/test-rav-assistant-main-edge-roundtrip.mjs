@@ -3293,7 +3293,8 @@ const inventoryQuestions={"da":"Hvor mange ravstykker ligger der lige nu på en 
           responseStatus: 502, upstreamStatus: row.http ?? 200,
           rejectionCode: row.outputState ? 'RESULT_NOT_OBJECT' : row.code,
           ...(row.outputState ? { providerOutputState: row.outputState } : {}),
-          ...(row.retryOutcome ? { emptyReplyRetryOutcome: row.retryOutcome } : {}) }]);
+          ...(row.retryOutcome ? { emptyReplyRetryOutcome: row.retryOutcome } : {}),
+          ...(row.retries ? { retryUpstreamStatus: 200 } : {}) }]);
         for(const value of [quotaCompletedElapsedMs,quotaCompletedRemainingMs,providerStartElapsedMs,providerStartRemainingMs])assert(Number.isSafeInteger(value)&&value>=0&&value<=7000);
         for(const total of [quotaCompletedElapsedMs+quotaCompletedRemainingMs,providerStartElapsedMs+providerStartRemainingMs])assert(total===6999||total===7000);
         assert(providerStartElapsedMs>=quotaCompletedElapsedMs);assert.equal(providerFetchCalled,true);assert.equal(deadlineCause,null);

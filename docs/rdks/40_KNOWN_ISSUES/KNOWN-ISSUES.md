@@ -2,7 +2,7 @@
 
 En almindelig tysk browserforespørgsel på den offentlige prognose fra #407 fik HTTP 502. Den afgrænsede driftslog viste HTTP 200 fra Cloudflare, men ingen afsluttende svartekst. Loggen viser første forsøg og kan derfor ikke afgøre, om anden forespørgsel blev sendt, kom tom tilbage eller blev afvist i valideringen.
 
-Den lokale ændring registrerer én fast kategori for genforsøgets stop i den eksisterende fejllog. Samme to mulige providerkald, kvote, frist og svarvalidering gælder. Kategorien indeholder alene genforsøgets udfald. Afprøvning af loggen i drift og afklaring af det tomme svar udestår.
+Den lokale ændring registrerer genforsøgets udfald og dets faktiske HTTP-status, når Cloudflare har svaret. Fejlloggen kan også vise de to afgrænsede tal for svar- og ræsonneringstokens, når Cloudflare selv rapporterer dem. Det gør det muligt at sammenholde et tomt svar med det anvendte tokenbudget. Samme to mulige providerkald, kvote, frist og svarvalidering gælder. Afprøvning i drift og afklaring af det tomme svar udestår.
 
 ## 26. november — kildekontrol kan blokere vejr før DMI
 

@@ -1085,18 +1085,26 @@ try {
     resetDeadlineCase();
     const reasoningOnly=chatReply(null);
     reasoningOnly.result.choices[0].message.reasoning_content=validProvider.result.response;
-    providerFactory=()=>Response.json(providerCalls===1 ? emptyChatReply : reasoningOnly);
+    reasoningOnly.result.usage={completion_tokens:251,completion_tokens_details:{reasoning_tokens:240}};
+    const firstWithUsage=chatReply(null);
+    firstWithUsage.result.usage={completion_tokens:256,completion_tokens_details:{reasoning_tokens:300},
+      prompt_tokens:'SYNTHETIC_PRIVATE_USAGE_FIELD'};
+    providerFactory=()=>Response.json(providerCalls===1 ? firstWithUsage : reasoningOnly);
     response=await edgeHandler(normalRequest());
     assert.equal(response.status,502);assert.equal(providerCalls,2);assert.equal(quotaCalls,6);
     assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
     assert.equal(failureRows[0][1].emptyReplyRetryOutcome,'RETRY_FINAL_CONTENT_EMPTY');
+    assert.deepEqual(failureRows[0][1].firstProviderUsage,{completionTokens:256,reasoningTokens:null});
+    assert.deepEqual(failureRows[0][1].retryProviderUsage,{completionTokens:251,reasoningTokens:240});
+    assert.equal(failureRows[0][1].retryUpstreamStatus,200);
     assert(!JSON.stringify(failureRows).includes('Public identification.'));
+    assert(!JSON.stringify(failureRows).includes('SYNTHETIC_PRIVATE_USAGE_FIELD'));
 
-    for (const [retryResponse, outcome] of [
-      [() => new Response(null, {status:503}), 'RETRY_PROVIDER_FAILED'],
-      [() => Response.json(chatReply([{type:'text',text:'SYNTHETIC_UNPARSEABLE_ANSWER'}])), 'RETRY_FINAL_CONTENT_NOT_STRING'],
-      [() => Response.json(chatReply('SYNTHETIC_UNPARSEABLE_ANSWER')), 'RETRY_RESULT_NOT_EXTRACTED'],
-      [() => Response.json(chatReply(validProvider.result.response.replace('"da"', '"en"'))), 'RETRY_RESULT_REJECTED'],
+    for (const [retryResponse, outcome, retryStatus] of [
+      [() => new Response(null, {status:503}), 'RETRY_PROVIDER_FAILED', 503],
+      [() => Response.json(chatReply([{type:'text',text:'SYNTHETIC_UNPARSEABLE_ANSWER'}])), 'RETRY_FINAL_CONTENT_NOT_STRING', 200],
+      [() => Response.json(chatReply('SYNTHETIC_UNPARSEABLE_ANSWER')), 'RETRY_RESULT_NOT_EXTRACTED', 200],
+      [() => Response.json(chatReply(validProvider.result.response.replace('"da"', '"en"'))), 'RETRY_RESULT_REJECTED', 200],
     ]) {
       resetDeadlineCase();
       providerFactory = () => providerCalls === 1 ? Response.json(emptyChatReply) : retryResponse();
@@ -1107,6 +1115,10 @@ try {
       assert.equal(quotaCalls, 6);
       assert.equal(failureRows.length, 1);
       assert.equal(failureRows[0][1].emptyReplyRetryOutcome, outcome);
+      assert.equal(failureRows[0][1].upstreamStatus, 200);
+      assert.equal(failureRows[0][1].retryUpstreamStatus, retryStatus);
+      assert.equal(failureRows[0][1].firstProviderUsage, undefined);
+      assert.equal(failureRows[0][1].retryProviderUsage, undefined);
       assert(!JSON.stringify(failureRows).includes('SYNTHETIC_UNPARSEABLE_ANSWER'));
     }
 
