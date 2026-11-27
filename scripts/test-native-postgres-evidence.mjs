@@ -3410,10 +3410,11 @@ test('after601 receipt accepts the measured whole-history and quota results and 
       size_in_bytes:archive.length,digest:'sha256:'+cryptoHash('sha256').update(archive).digest('hex'),
       workflow_run:{id:r.id,head_sha:r.head_sha},created_at:stamp(shape.nativeUploadNumber)});
     const base='/repos/'+native.ORIGIN.repository,actions=base+'/actions';
-    const build=(fault=null)=>{
+    const build=(fault=null,cancelledStep=null)=>{
       const origin=runFor(originRunId),active=runFor(currentRunId,'in_progress'),later=runFor(originRunId+1);
       const transition=typeof fault==='string'&&fault.startsWith('transition-');
-      const history=fault==='later-failure'||transition?[active,later,origin]:[active,origin];
+      if(cancelledStep)later.conclusion='cancelled';
+      const history=fault==='later-failure'||transition||cancelledStep?[active,later,origin]:[active,origin];
       const calls=[];let inputReads=0,historyReads=0,decoding=origin;
       const observedRows=()=>history.map(r=>r.id!==later.id||!transition?r:historyReads<=1
         ?{...r,status:'in_progress',conclusion:null}:fault==='transition-skip'?r:{...r,conclusion:'failure'});
@@ -3427,6 +3428,16 @@ test('after601 receipt accepts the measured whole-history and quota results and 
           if(route===actions+'/runs/'+r.id+'/attempts/1/jobs?per_page=100'){
             const jobs=jobsFor(r);if(fault==='later-failure'&&r.id===later.id)
               jobs.jobs[0].steps.find(step=>step.name===native.STEP).conclusion='failure';
+            if(cancelledStep&&r.id===later.id){
+              const steps=jobs.jobs[0].steps;
+              const stopped=steps.findIndex(step=>step.name===cancelledStep);
+              assert(stopped>=0,cancelledStep);
+              const stoppedAt=steps[stopped].completed_at;
+              steps[stopped].conclusion='cancelled';
+              for(const step of steps.slice(stopped+1)){
+                Object.assign(step,{conclusion:'skipped',started_at:stoppedAt,completed_at:stoppedAt});
+              }
+            }
             if(transition&&r.id===later.id&&historyReads>1){
               const job=jobs.jobs[0],upload=job.steps.find(step=>step.name===native.CURRENT586_PHASE_UPLOAD);
               if(fault==='transition-upload-failed')upload.conclusion='failure';
@@ -3487,6 +3498,15 @@ test('after601 receipt accepts the measured whole-history and quota results and 
       assert(accepted,state);assert.equal(accepted.origin.run,originRunId,'A later native or skip never replaces the original SQL origin');
       if(state==='transition-native-ok')assert(f.calls.includes(actions+'/artifacts/'+(originRunId+1+2000)+'/zip'));
       else assert(!f.calls.includes(actions+'/artifacts/'+(originRunId+1+2000)+'/zip'));
+    }
+    for(const step of ['Install source-gate dependencies','Validate isolated acquisition ownership and raw-save cohort']){
+      const f=build(null,step),accepted=await native.decideAssistantAfter601Reuse(f.options);
+      assert.equal(accepted?.origin.run,originRunId,step);
+      assert.equal(accepted.executedInThisRun,false);
+      assert(!f.calls.includes(actions+'/runs/'+(originRunId+1)+'/artifacts?per_page=100'));
+    }
+    for(const step of ['Build deterministic source-tree content identity','Validate source contracts and release governance',native.STEP]){
+      assert.equal(await native.decideAssistantAfter601Reuse(build(null,step).options),null,step);
     }
     const self=copy(reused);self.origin.run=currentRunId;
     await assert.rejects(native.verifyAssistantAfter601ReuseV2Receipt(self,callerCurrent,readGit));

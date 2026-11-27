@@ -2572,9 +2572,16 @@ async function decideAssistantNativeReuse(options,after601){
       assert.deepEqual(steps.map(step=>[step.name,step.number]),stepNames.map((name,index)=>[name,index+1]));
       const sourceIndex=steps.findIndex(step=>step.conclusion===row.conclusion);
       const source=steps[sourceIndex];
-      assert(terminalCancellation?source?.name==='Install source-gate dependencies'
-        :source?.name==='Build deterministic source-tree content identity'
+      if(terminalCancellation){
+        // The exact same workflow first binds the Git input, then runs
+        // preparation and isolated fixtures before source/SQL validation.
+        const identityIndex=stepNames.indexOf('Build deterministic source-tree content identity');
+        const sourceGateIndex=stepNames.indexOf('Validate source contracts and release governance');
+        assert(identityIndex>=0&&sourceIndex>identityIndex&&sourceIndex<sourceGateIndex);
+      }else{
+        assert(source?.name==='Build deterministic source-tree content identity'
           ||source?.name==='Validate source contracts and release governance');
+      }
       assert(sourceIndex<nativeUploadNumber-2);
       assert.equal(steps[nativeUploadNumber-2],pg);
       assert.equal(steps[nativeUploadNumber-1].name,CURRENT586_PHASE_UPLOAD);

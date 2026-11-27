@@ -611,6 +611,17 @@ I første kørsel for #1058 bestod alle 13 mål, mens den samtidige vejrhentning
 
 I GitHub-kørsel #1676 blev PR-jobbet afbrudt under installation af kildeafhængigheder. Den daværende prøve mistede muligheden for at genbruge en tidligere databaseafprøvning med samme input, selv om GitHub viser, at både databasen og kvitteringsuploaden blev sprunget over. Kildekontrollen medregner kun denne afbrydelse som en uudført databasefase, når workflowfilen er byteidentisk med den aktuelle, og kørslen, jobbet, det præcise opsætningstrin og alle efterfølgende trin stemmer. En tidligere gyldig kvittering og de aktuelle kildeprøver er stadig påkrævet. Afbrydelser senere i forløbet og samtidige job med uafklaret databaseaktivitet spærrer fortsat for genbrug. Virkningen i GitHub afventer.
 
+**Tillæg 27. november.** #1776 blev afbrudt under den isolerede prøve af
+råcachehåndteringen. GitHub registrerede databaseprøven og dens upload som
+sprunget over. Kandidaten kan genkende det samme bevis ved afbrydelse efter
+vellykket binding til Git-træet og før den fælles kildekontrol. Byteidentisk
+workflow, uændrede databaseinput, fuldstændige trinstatusser og autentisk
+databasekvittering med samme runtime er fortsat påkrævet. Afbrudt
+kildekontrol, afbrudt databaseprøve og uafklarede trin stopper stadig genbrug.
+Den aktive lokale prøve dækker forløbet. Ved ændring af selve producenten
+kræves først en ny faktisk PostgreSQL-kvittering. Målt besparelse i GitHub
+afventer en senere kvalificeret kørsel.
+
 ### Vejrvagtens GitHub-læser
 
 Almindelige ændringer i vejrvagtens eksisterende skrivefri GitHub-læser
