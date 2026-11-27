@@ -102,7 +102,8 @@ const tripTestTag = '&trip-test=20261125';
 const previousCareSuffix = previousTopicTabSuffix.replace('assistant-help=20261125-uv-identification-daylight', 'assistant-help=20261126-cracked-amber-care');
 const previousTripTestSuffix = `${previousTopicTabSuffix}${tripTestTag}`;
 const previousCareTripTestSuffix = `${previousCareSuffix}${tripTestTag}`;
-const suffix = previousCareTripTestSuffix.replace('assistant-help=20261126-cracked-amber-care', 'assistant-help=20261127-beach-signs');
+const suffix = previousCareTripTestSuffix.replace('assistant-help=20261126-cracked-amber-care', 'assistant-help=20261127-beach-signs')
+  .replace('assistant-locale=topic-tab-20261125', 'assistant-locale=topic-tab-raman-20261127');
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const oldAccountPanelSuffix = `?v=${releaseVersion}&ui=account-20261006`;
@@ -238,9 +239,10 @@ const previousWaterChangeHelpPath = previousLandingHelpPath.replace('ui=public-h
 const previousUvHelpPath = previousWaterChangeHelpPath.replace('ui=public-help-20261124-water-change', 'ui=public-help-20261125-uv-identification-daylight');
 const previousTopicTabHelpPath = `${previousUvHelpPath}&locale=topic-tab-20261125`;
 const previousCareHelpPath = previousTopicTabHelpPath.replace('ui=public-help-20261125-uv-identification-daylight', 'ui=public-help-20261126-cracked-amber-care');
-const helpPath = previousCareHelpPath.replace('ui=public-help-20261126-cracked-amber-care', 'ui=public-help-20261127-beach-signs');
+const helpPath = previousCareHelpPath.replace('ui=public-help-20261126-cracked-amber-care', 'ui=public-help-20261127-beach-signs')
+  .replace('locale=topic-tab-20261125', 'locale=topic-tab-raman-20261127');
 const previousAssistantPath = `./js/services/rav-assistant.js?v=${releaseVersion}`;
-const assistantPath = `${previousAssistantPath}&locale=topic-tab-20261125`;
+const assistantPath = `${previousAssistantPath}&locale=topic-tab-raman-20261127`;
 assert.ok(app.includes(`from "${assistantPath}"`));
 const helpSource = await fs.readFile(new URL('../js/services/rav-assistant-public-help.js', import.meta.url), 'utf8');
 assert.ok(helpSource.includes(`from '${assistantPath.replace('./js/services/', './')}'`));

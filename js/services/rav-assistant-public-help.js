@@ -1,6 +1,6 @@
 // App-owned public help for complete questions. Mixed questions keep the
 // existing whole-question path.
-import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.603&locale=topic-tab-20261125';
+import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.603&locale=topic-tab-raman-20261127';
 import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.603';
 import {t} from '../i18n.js?v=4.0.603';
 

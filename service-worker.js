@@ -2,15 +2,15 @@ const APP_VERSION = "4.0.603";
 const CACHE_PREFIX = "ravradar-app-";
 const PUBLIC_JSON_TRANSPORT = "public-json-bridge-20261103";
 const COMPACT_MAP = "plain-map-v3-20261104";
-const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}-${COMPACT_MAP}-owner-notice-20261109-account-report-20261125-assistant-wave-sorting-trip-test`;
+const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}-${COMPACT_MAP}-owner-notice-20261109-account-report-20261125-assistant-raman-route-trip-test`;
 const ACCOUNT_PANEL_ASSET = `./js/ui/account-panel.js?v=${APP_VERSION}&ui=account-20261006&trip-test=20261125`;
 const STATIC = [
   `./js/services/public-delivery-transport-binding.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
   `./js/services/plain-map-hour.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
   `./js/services/zone-hour-preview.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
   `./js/ui/info-panel.js?v=${APP_VERSION}&ui=zone-panels-20261027&map=${COMPACT_MAP}`,
-  `./bootstrap.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261127-beach-signs&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123&assistant-locale=topic-tab-20261125&trip-test=20261125`,
-  `./app.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261127-beach-signs&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123&assistant-locale=topic-tab-20261125&trip-test=20261125`,
+  `./bootstrap.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261127-beach-signs&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123&assistant-locale=topic-tab-raman-20261127&trip-test=20261125`,
+  `./app.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}&assistant-topic=wind-followup-20261110&assistant-find=20261119&assistant-help=20261127-beach-signs&assistant-ready=20261122&assistant-followup=daylight-frame-20261122&assistant-data=ready-20261123&assistant-locale=topic-tab-raman-20261127&trip-test=20261125`,
   `./js/services/data-service.js?v=${APP_VERSION}&ui=forecast-share-20261024&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}`,
   `./js/services/app-update-flow.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,
   `./js/services/public-json-transport.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,

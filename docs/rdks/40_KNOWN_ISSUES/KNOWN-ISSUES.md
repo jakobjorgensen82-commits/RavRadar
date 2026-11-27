@@ -1,3 +1,11 @@
+## 27. november — laboratoriemetoden faldt ud af svaret om rav og plast
+
+Den offentlige danske assistent svarede med visuelle kendetegn og UV, da
+spørgsmålet handlede om at skelne rav fra moderne plast med Raman-spektroskopi.
+Den lokale rettelse sender hele spørgsmålet til den eksisterende faglige
+svarvej. Allerede dækkede lokale fagspørgsmål og private afvisninger bevares.
+Kildekontrol og offentlig afprøvning af den nye rute udestår.
+
 ## 27. november — en fastfrosset fejlupload kan overleve den fælles frist
 
 Den eksisterende GitHub-prøve stoppede uploadens overvågningsproces, mens SDK'et afventede svar på den afsluttende upload. Handlingen meldte fejl, og skrivelåsen blev bevaret. Uploadens processer ophørte først, da prøven genoptog overvågningen.

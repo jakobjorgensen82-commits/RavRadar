@@ -17,8 +17,8 @@ after(() => {
   if (savedStorage) Object.defineProperty(globalThis, 'localStorage', savedStorage);
   else delete globalThis.localStorage;
 });
-const assistant = await import(`../js/services/rav-assistant.js?v=${version}&locale=topic-tab-20261125`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261127-beach-signs&followup=daylight-20261122&locale=topic-tab-20261125`);
+const assistant = await import(`../js/services/rav-assistant.js?v=${version}&locale=topic-tab-raman-20261127`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261127-beach-signs&followup=daylight-20261122&locale=topic-tab-raman-20261127`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = (await fs.readFile(new URL('../app.js', import.meta.url), 'utf8')).replace(/\r\n/gu, '\n');
@@ -623,11 +623,11 @@ test('assistant followup cache identity reaches the app and the assistant servic
     assert.equal(url.searchParams.getAll('assistant-followup').length, 1);
     assert.equal(url.searchParams.get('assistant-data'), 'ready-20261123');
     assert.equal(url.searchParams.getAll('assistant-data').length, 1);
-    assert.deepEqual(url.searchParams.getAll('assistant-locale'), ['topic-tab-20261125']);
+    assert.deepEqual(url.searchParams.getAll('assistant-locale'), ['topic-tab-raman-20261127']);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
   assert.equal(serviceImports.length, 1);
-  assert.equal(serviceImports[0][1], `./js/services/rav-assistant.js?v=${version}&locale=topic-tab-20261125`);
+  assert.equal(serviceImports[0][1], `./js/services/rav-assistant.js?v=${version}&locale=topic-tab-raman-20261127`);
 });
 const dynamic = { da: 'Hvorfor denne score?', de: 'Warum dieser Score?', en: 'Why this score?' };
 const fact = { da: 'Hvad er rav?', de: 'Was ist Bernstein?', en: 'What is amber?' };

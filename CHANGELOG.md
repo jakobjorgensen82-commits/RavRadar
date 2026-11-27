@@ -7,6 +7,7 @@
 - Spørg RavRadar besvarer også spørgsmålet om forskellen mellem et præcist landingssted for rav og en vurdering af kystområdet.
 - Spørg RavRadar forklarer nu på dansk, tysk og engelsk, hvorfor almindelige bølger om vinteren kan efterlade rav blandt skaller og tang, og hvad man kan holde øje med på stranden.
 - Spørg RavRadar svarer med konkrete tegn at kigge efter, når spørgsmålet handler om et opskyl med tang og træ efter en storm.
+- Når du spørger, om Raman-spektroskopi kan skelne rav fra plast, bruger Spørg RavRadar den faglige svarvej på dansk, tysk og engelsk.
 
 ## Drift — vandtemperatur fra allerede hentede DMI-filer
 

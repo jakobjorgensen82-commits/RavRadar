@@ -484,6 +484,13 @@ function unknownAmberEquipmentQuestion(question, locale) {
   return false;
 }
 
+function requestsRamanMaterialComparison(value) {
+  const text = String(value || '').normalize('NFKC');
+  return /(?<![\p{L}\p{N}_])(?:rav(?:et|ets)?|bernstein(?:s)?|amber)(?![\p{L}\p{N}_])/iu.test(text)
+    && /(?<![\p{L}\p{N}_])raman[ \-‐‑]*(?:spektroskopi(?:ens?|e)?|spectroscopy)(?![\p{L}\p{N}_])/iu.test(text)
+    && /(?<![\p{L}\p{N}_])(?:plast(?:ik|materiale)?|kunststoff(?:en|e|s)?|plastics?)(?![\p{L}\p{N}_])/iu.test(text);
+}
+
 export function routeRavQuestion(question) {
   const text = String(question || '').trim();
   if (!text || SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return 'fixed-refusal';
@@ -492,7 +499,7 @@ export function routeRavQuestion(question) {
   if (mixedKnowledgeForecastQuestion(text,getLanguage())
     || knownAmberNetDefinitionUseQuestion(text,getLanguage())) return 'local-deterministic';
   if (unknownAmberEquipmentQuestion(text, getLanguage())) return 'remote-candidate';
-  if (requiresWholeRavAnswer(text, getLanguage())) {
+  if (requestsRamanMaterialComparison(text) || requiresWholeRavAnswer(text, getLanguage())) {
     return 'remote-candidate';
   }
   if (requestsExactAmberLandingPrediction(text)) return 'remote-candidate';
@@ -982,7 +989,7 @@ export async function askRavRadar(question, context = {}, options = {}) {
     + localAnswer(mixed.forecastQuestion,context,language,options?.now ?? Date.now());
   const field = fieldCompoundAnswer(raw, language);
   if (field) return field.answer;
-  if (requiresWholeRavAnswer(raw, language)) {
+  if (requestsRamanMaterialComparison(raw) || requiresWholeRavAnswer(raw, language)) {
     if (raw.length > 600 || options?.localOnly) return t('assistant.unknown', {}, language);
     return await remoteAnswer(safe, context, language) || t('assistant.unknown', {}, language);
   }
