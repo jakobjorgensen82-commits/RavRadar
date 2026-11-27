@@ -175,14 +175,12 @@ export async function coordinateTargetedSourceProducer(){
   assert.equal(arguments.length,0,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');
   const env=process.env,head=env.SOURCE_GATE_HEAD_SHA;
   let current,content,impactPlan,cumulativeImpactPlan,changeBase,baseline,get,jobRoute,pullRoute,pull,eventMergeSha,frontierDiscovery,frontierAccess;
-  let precondition='RUNNER_IDENTITY';
   try{
     assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
     assert(oid(head));clean(head);
     const pullRequest=Number(env.PULL_REQUEST_NUMBER),runId=Number(env.GITHUB_RUN_ID),runAttempt=Number(env.GITHUB_RUN_ATTEMPT);
     for(const id of [pullRequest,runId,runAttempt])assert(positive(id));
     assert.equal(runAttempt,1);assert.equal(env.GITHUB_JOB,'validate');
-    precondition='PULL_REQUEST_IDENTITY';
     get=assistantPublic591Reader();const repo='/repos/'+env.GITHUB_REPOSITORY;
     pullRoute=repo+'/pulls/'+pullRequest;pull=await get(pullRoute);
     assert.equal(pull.number,pullRequest);assert.equal(pull.state,'open');
@@ -190,7 +188,6 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(pull.base?.ref,'main');assert.equal(pull.base?.repo?.full_name,env.GITHUB_REPOSITORY);
     // This is the immutable merge commit supplied to the pull_request job.
     // The PR API can still project the base from when the PR was opened.
-    precondition='EVENT_MERGE_IDENTITY';
     eventMergeSha=env.GITHUB_SHA;
     assert.equal(env.GITHUB_REF,`refs/pull/${pullRequest}/merge`);
     assert(oid(eventMergeSha));
@@ -203,7 +200,6 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(eventHead,head);
     const mergeBase=text(['merge-base','--all',pullBaseCommit,head]);assert(oid(mergeBase));
     changeBase={commit:mergeBase,gitTree:text(['rev-parse',mergeBase+'^{tree}']),pullBaseCommit};
-    precondition='CURRENT_CHANGE_PLAN';
     impactPlan=await selectImpactPlan(mergeBase,head);
     if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
     let baselineHint=null;
@@ -216,7 +212,6 @@ export async function coordinateTargetedSourceProducer(){
     }
     content=sourceTreeContentSha256(head,{git});current={repository:env.GITHUB_REPOSITORY,head,
       sourceTreeSha256:content,pullRequest,runId,runAttempt,jobId:0};
-    precondition='SOURCE_JOB_IDENTITY';
     const runRoute=repo+'/actions/runs/'+runId,run=await get(runRoute);
     assert.equal(run.id,runId);assert.equal(run.run_attempt,runAttempt);assert.equal(run.head_sha,head);
     assert.equal(run.event,'pull_request');assert.equal(run.path,PULL_REQUEST_SOURCE_WORKFLOW);
@@ -231,7 +226,6 @@ export async function coordinateTargetedSourceProducer(){
     // The latest source receipt supplies an untrusted FULL locator, never test
     // authority. The existing FULL reader still authenticates it independently.
     let originReference=null;
-    precondition='SOURCE_BASELINE_EVIDENCE';
     if(!baselineHint){
       const access=sourceImpactEvidenceAccess();frontierAccess=access;
       const found=await discoverTargetedSourceGate({GITHUB_REPOSITORY:current.repository,GITHUB_REF:'refs/heads/main',
@@ -295,9 +289,6 @@ export async function coordinateTargetedSourceProducer(){
     clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
   }catch(error){
     if(error?.code==='SOURCE_TARGETED_FRONTIER_REFUSED')throw error;
-    // Keep the existing safe fallback. Print only the fixed phase, never the
-    // failing request, credential, response body, or exception payload.
-    console.log('SOURCE_TARGETED_PRECONDITION '+precondition);
     return full('TARGETED_PRECONDITION_UNAVAILABLE');
   }
 
