@@ -98,6 +98,14 @@ class ProviderLaunchTests(unittest.TestCase):
         self.assertTrue(source.closed)
         self.assertEqual(failures, [])
 
+        diagnostic = "DMI_RAW_SAVE_DIAGNOSTIC stage=API reason=DMI_RAW_SAVE_API_FAILED\n"
+        terminal_source = io.StringIO("runtime data\n::set-output name=uploaded::true\n" + diagnostic)
+        terminal_out = io.StringIO()
+        with redirect_stdout(terminal_out):
+            LAUNCH["relay_provider_log"](terminal_source, failures, relay=False)
+        self.assertEqual(terminal_out.getvalue(), diagnostic)
+        self.assertEqual(failures, [])
+
     def test_open_meteo_keeps_its_provider_inputs_and_runtime_budget(self):
         kind = LAUNCH["OPEN_METEO"]
         executable = str(Path("python").resolve())

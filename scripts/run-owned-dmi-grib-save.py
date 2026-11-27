@@ -116,11 +116,14 @@ def main():
             script = script.replace(b'/./', b'/')
         if script == os.fsencode(str(ENTRY)):
             parent_fields[1] = script
+    cipher_parent = [os.fsencode(str(ENTRY))]
+    if 'RAVRADAR_TERMINAL_CIPHER_HANDOFF' in os.environ:
+        cipher_parent.append(b'--managed-terminal-upload')
     if (len(parent_argv) > 16384 or os.getppid() != parent_pid
             or Path(parent_executable).name != 'node'
             or os.fsencode(str(ENTRY)) not in parent_fields
             or (distribution and parent_fields[1:] != [os.fsencode(str(ENTRY)), b'--prepare-distribution'])
-            or (ciphertext and (parent_fields[1:] != [os.fsencode(str(ENTRY))]
+            or (ciphertext and (parent_fields[1:] != cipher_parent
                                 or os.environ.get('INPUT_OPERATION') != 'upload-encrypted-progress'))):
         raise RuntimeError('DMI_RAW_SAVE_PARENT_UNPROVED')
     os.fstat(3)  # Own inherited private IPC pipe, never a path supplied by callers.

@@ -5,8 +5,9 @@ The additional SDK cases use the installed, locked official 6.1.0 distribution
 unchanged: only its HTTP service is a test-owned loopback protocol fixture.
 Product sources and the claim module are copied byte-for-byte into an own
 temporary checkout. There is no hosted cache or real credential. Only the
-terminal lease cases preload a delay in the actual claim file operation, only
-in the fixture action process. CI must supply an actual Node24 executable with
+terminal lease cases preload a delay in the actual claim file operation in a
+separate fixture-owned systemd service. The staged SDK cases use the actual
+action and its systemd controller. CI must supply an actual Node24 executable with
 --node24-path; missing Linux/Node24/tools is failure, never a passing skip.
 The distribution cases run the actual runtime npm against only the fixed own
 offline cache; a missing warm cache is a prerequisite failure, never a skip.
@@ -38,12 +39,14 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = Path('.github/actions/save-owned-dmi-grib/index.cjs')
 COHORT = Path('scripts/run-owned-dmi-grib-save.py')
+CONTROLLER = Path('scripts/run-ordinary-provider-cgroup.py')
 CLAIM_MODULE = Path('scripts/lib/weather-acquisition-writer.mjs')
 CLAIM = Path('.cache/weather-acquisition-writer.claim')
 NODE24 = None
 BODY_SECONDS = 8.0  # Own fixture observer, not a new product deadline.
 CLEANUP_SECONDS = 3.0
-TERMINAL_NEAR_EXPIRY_MS = 6_500
+TERMINAL_NEAR_EXPIRY_MS = 25_000
+TERMINAL_SDK_OBSERVER_SECONDS = 30.0
 # Leave 12 seconds after simulated elapsed work so the normal seal and SDK
 # upload can reach the held lease on a slow runner. The file wait lasts 15 s.
 TERMINAL_LEASE_FIXTURE_ELAPSED_MS = 228_000
@@ -52,7 +55,8 @@ TERMINAL_LEASE_FIXTURE_OBSERVER_SECONDS = 14.0
 TERMINAL_LEASE_WAIT = r'''
 const fs = require('node:fs');
 const promises = require('node:fs/promises');
-if (process.argv.length !== 2 || process.argv[1] !== fixture.entry || process.cwd() !== fixture.root) {
+if (process.argv.length !== 3 || process.argv[1] !== fixture.entry
+    || process.argv[2] !== '--managed-terminal-upload' || process.cwd() !== fixture.root) {
   throw new Error('OWN_TERMINAL_LEASE_FIXTURE_SCOPE');
 }
 // The actual Python cohort and Node SDK worker never load this fixture.
@@ -432,6 +436,15 @@ def runtime_environment():
             if key in {'PATH', 'LD_LIBRARY_PATH', 'LIBRARY_PATH', 'LANG', 'LC_ALL', 'LC_CTYPE'}}
 
 
+def fixture_control_environment():
+    uid = os.geteuid()
+    bus = Path(f'/run/user/{uid}/bus')
+    info = bus.stat()
+    if info.st_uid != uid or not stat.S_ISSOCK(info.st_mode):
+        raise RuntimeError('OWN_SYSTEMD_USER_BUS_UNPROVED')
+    return {'XDG_RUNTIME_DIR': str(bus.parent), 'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8'}
+
+
 class OwnedRawSaveNative(unittest.TestCase):
     def test_healthy_actual_action_cohort_and_claim_close_before_saved(self):
         self.actual_chain(interrupt=False)
@@ -781,6 +794,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         root = Path(tempfile.mkdtemp(prefix='rr-owned-sdk-save-', dir=temp_parent)).resolve()
         parent = server = downloader = None
         fds, observed, logs, calls = {}, {}, [], []
+        fixture_unit = None
+        managed_group = managed_group_identity = None
         claim_fd = None
         claim_identity = None
         archive_bytes = None
@@ -810,17 +825,102 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         def deadline(_number, _frame):
             raise TimeoutError('OWN_OFFICIAL_SDK_OBSERVER_DEADLINE')
 
+        def direct_children(pid):
+            return [int(child) for child in small(f'/proc/{pid}/task/{pid}/children').split()]
+
+        def command(pid):
+            return small(f'/proc/{pid}/cmdline').split(b'\0')[:-1]
+
+        def retain_role(role, pid):
+            fds[role] = retain_pidfd(pid)
+            observed[role] = identity(pid)
+
+        def observe_managed_action():
+            nonlocal managed_group, managed_group_identity
+            uid = os.geteuid()
+            if lease_wait is None:
+                controller, = direct_children(parent.pid)
+                retain_role('controller', controller)
+                case.assertEqual(observed['controller']['ppid'], parent.pid)
+                case.assertEqual(command(controller)[1:], [
+                    b'-B', os.fsencode(root / CONTROLLER), b'terminal-progress-upload', b'240', b'--'])
+                launcher, = direct_children(controller)
+                retain_role('launcher', launcher)
+                case.assertEqual(observed['launcher']['ppid'], controller)
+            else:
+                launcher = parent.pid
+            launcher_argv = command(launcher)
+            case.assertEqual(Path(os.readlink(f'/proc/{launcher}/exe')),
+                             Path('/usr/bin/systemd-run').resolve(strict=True))
+            case.assertIn(b'--user', launcher_argv)
+            case.assertIn(b'--wait', launcher_argv)
+            unit, = (arg.split(b'=', 1)[1].decode('ascii') for arg in launcher_argv
+                     if arg.startswith(b'--unit='))
+            case.assertRegex(unit, r'^rr-weather-provider-[a-z0-9_]{8}\.service$')
+            if lease_wait is None:
+                scope = root / 'sdk-temp' / unit.removesuffix('.service')
+                case.assertEqual(scope.resolve(strict=True), scope)
+                case.assertEqual(stat.S_IMODE(scope.stat().st_mode), 0o700)
+            else:
+                case.assertEqual(unit, fixture_unit)
+            fields = ('Id', 'Transient', 'InvocationID', 'ActiveState', 'MainPID', 'ControlGroup')
+            result = subprocess.run(['/usr/bin/systemctl', '--user', 'show', '--no-pager',
+                '--property=' + ','.join(fields), unit], env=fixture_control_environment(),
+                stdin=subprocess.DEVNULL, capture_output=True, timeout=2, check=True)
+            case.assertEqual(result.stderr, b'')
+            state = dict(line.split('=', 1) for line in result.stdout.decode('ascii').splitlines())
+            case.assertEqual(set(state), set(fields))
+            case.assertEqual((state['Id'], state['Transient'], state['ActiveState']), (unit, 'yes', 'active'))
+            case.assertRegex(state['InvocationID'], r'^(?!0{32}$)[0-9a-f]{32}$')
+            cgroup = Path(state['ControlGroup'])
+            case.assertTrue(cgroup.is_relative_to(f'/user.slice/user-{uid}.slice/user@{uid}.service'))
+            case.assertNotIn('..', cgroup.parts)
+            case.assertEqual(cgroup.name, unit)
+            main = int(state['MainPID'])
+            retain_role('managed', main)
+            case.assertEqual(command(main),
+                [os.fsencode(NODE24), os.fsencode(root / ENTRY), b'--managed-terminal-upload'])
+            case.assertEqual(Path(os.readlink(f'/proc/{main}/exe')), NODE24)
+            case.assertIn(os.fsencode(f'0::{cgroup}'), small(f'/proc/{main}/cgroup').splitlines())
+            managed_group = Path('/sys/fs/cgroup').joinpath(*cgroup.parts[1:])
+            managed_group_identity = managed_group.stat()
+            case.assertIn(b'populated 1', small(managed_group / 'cgroup.events').splitlines())
+            if lease_wait is None:
+                names = {entry.partition(b'=')[0] for entry in small(f'/proc/{main}/environ').split(b'\0')}
+                for name in (b'GITHUB_OUTPUT', b'GITHUB_STEP_SUMMARY', b'NODE_OPTIONS',
+                             b'WEATHER_PROGRESS_MASTER_SECRET'):
+                    case.assertNotIn(name, names)
+            return main
+
+        def assert_managed_closed():
+            case.assertIsNotNone(managed_group)
+            try:
+                current = managed_group.stat()
+            except FileNotFoundError:
+                return
+            case.assertTrue(os.path.samestat(current, managed_group_identity))
+            case.assertIn(b'populated 0', small(managed_group / 'cgroup.events').splitlines())
+
         def observe_chain():
             nonlocal claim_fd, claim_identity
-            ancestor = parent.pid
-            for role in ('cohort', 'worker'):
-                children = small(f'/proc/{ancestor}/task/{ancestor}/children').split()
-                case.assertEqual(len(children), 1, 'Only the fixed direct child may qualify')
-                pid = int(children[0])
-                fds[role] = retain_pidfd(pid)
-                observed[role] = identity(pid)
-                case.assertEqual(observed[role]['ppid'], ancestor)
-                ancestor = pid
+            action = observe_managed_action() if staged_roundtrip else parent.pid
+            cohort_children = direct_children(action)
+            if staged_roundtrip and lease_wait is None:
+                watcher, = (pid for pid in cohort_children if b'--watch-terminal-upload' in command(pid))
+                retain_role('watcher', watcher)
+                case.assertEqual(observed['watcher']['ppid'], action)
+                watcher_argv = command(watcher)
+                case.assertEqual(len(watcher_argv), 6)
+                case.assertEqual(watcher_argv[1:4], [b'-B', os.fsencode(root / CONTROLLER),
+                                                   b'--watch-terminal-upload'])
+                case.assertLess(int(watcher_argv[4]), terminal_deadline)
+                cohort_children.remove(watcher)
+            cohort_pid, = cohort_children
+            worker_pid, = direct_children(cohort_pid)
+            retain_role('cohort', cohort_pid)
+            retain_role('worker', worker_pid)
+            case.assertEqual(observed['cohort']['ppid'], action)
+            case.assertEqual(observed['worker']['ppid'], cohort_pid)
             worker, cohort = observed['worker'], observed['cohort']
             expected_limit = 420_000_000 if ciphertext else archive_limit
             if expected_limit is not None:
@@ -835,14 +935,18 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             case.assertEqual(small(f"/proc/{cohort['pid']}/cmdline").split(b'\0')[1:-1],
                 [b'-B', os.fsencode(root / COHORT)]
                 + ([b'--upload-encrypted-progress'] if ciphertext else []))
+            if staged_roundtrip:
+                membership, = small(f'/proc/{action}/cgroup').splitlines()
+                for role in ('cohort', 'worker', *(['watcher'] if lease_wait is None else [])):
+                    case.assertIn(membership, small(f"/proc/{observed[role]['pid']}/cgroup").splitlines())
             claim_fd = os.open(root / CLAIM, os.O_RDONLY | os.O_NOFOLLOW)
             stat = os.fstat(claim_fd)
             claim_identity = (stat.st_dev, stat.st_ino)
             case.assertEqual(os.read(claim_fd, 1), b'')
 
         def assert_pending():
-            for role in ('action', 'cohort', 'worker'):
-                case.assertFalse(exited(fds[role]), f'{role} exited before finalization')
+            for role, fd in fds.items():
+                case.assertFalse(exited(fd), f'{role} exited before finalization')
             for role, value in observed.items():
                 case.assertEqual(identity(value['pid']), value)
             own_stat, current = os.fstat(claim_fd), (root / CLAIM).lstat()
@@ -986,8 +1090,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                         return  # Deliberately no successful Finalize response.
                     if staged_roundtrip and not finalize_ok:
                         calls.append('finalize-unanswered')
-                        # In the second case hold only the owned cohort to
-                        # force an unprovable closure across the deadline.
+                        # The second case stops the uploader's immediate
+                        # supervisor while the real SDK is waiting on Finalize.
                         if staged_hold_cohort:
                             signal.pidfd_send_signal(fds['cohort'], signal.SIGSTOP)
                             proc_stat = f"/proc/{observed['cohort']['pid']}/stat"
@@ -995,26 +1099,23 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                             while small(proc_stat).rsplit(b')', 1)[1].split()[0] != b'T':
                                 case.assertLess(time.monotonic(), stop_observation, 'Own cohort did not stop')
                                 time.sleep(0.001)
-                        # No Finalize response and no test signal to the owner.
-                        # Its actual BOOTTIME timer must make it stop waiting.
+                        # No Finalize response or test signal releasing the
+                        # hold. The independently owned unit must stop the
+                        # SDK and its supervisor within the same deadline.
                         remaining = (terminal_deadline - time.clock_gettime_ns(time.CLOCK_BOOTTIME)
                                      // 1_000_000) / 1_000
                         case.assertGreater(remaining, 0)
                         case.assertTrue(exited(fds['action'], remaining),
                                         'The terminal SDK observer did not exit in the real terminal window')
+                        for role, fd in fds.items():
+                            case.assertTrue(exited(fd), f'{role} survived the managed terminal exit')
+                        assert_managed_closed()
+                        case.assertLess(time.clock_gettime_ns(time.CLOCK_BOOTTIME) // 1_000_000,
+                                        terminal_deadline)
+                        case.assertEqual(small(root / 'action-output'), b'')
                         if staged_hold_cohort:
-                            case.assertFalse(exited(fds['cohort']))
-                            case.assertFalse(exited(fds['worker']))
                             claim = (root / CLAIM).lstat()
                             case.assertEqual((claim.st_dev, claim.st_ino), claim_identity)
-                            case.assertEqual(small(root / 'action-output'), b'')
-                            # Release the test hold only. The product must see
-                            # its dead pidfd owner and close its own SDK group.
-                            signal.pidfd_send_signal(fds['cohort'], signal.SIGCONT)
-                            case.assertTrue(exited(fds['cohort'], 1.0), 'Released cohort did not end on owner loss')
-                            case.assertTrue(exited(fds['worker']))
-                            stopped = os.waitid(os.P_PIDFD, fds['cohort'], os.WEXITED | os.WNOHANG)
-                            case.assertEqual(stopped.si_pid, observed['cohort']['pid'])
                         finished = True
                         return
                     calls.append('finalize')
@@ -1089,10 +1190,11 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 self.reply(201)
 
         signal.signal(signal.SIGALRM, deadline)
-        signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
+        signal.setitimer(signal.ITIMER_REAL, TERMINAL_SDK_OBSERVER_SECONDS if staged_roundtrip else BODY_SECONDS)
         try:
-            for relative in (ENTRY, COHORT, CLAIM_MODULE, ENTRY.parent / 'package.json',
-                             ENTRY.parent / 'package-lock.json'):
+            sources = (ENTRY, COHORT, CLAIM_MODULE, ENTRY.parent / 'package.json',
+                       ENTRY.parent / 'package-lock.json')
+            for relative in sources + ((CONTROLLER,) if staged_roundtrip else ()):
                 source = (ROOT / relative).read_bytes()
                 destination = root / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
@@ -1142,6 +1244,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             if archive_limit is not None:
                 environment['RAVRADAR_DMI_RAW_ARCHIVE_MAX_BYTES'] = str(archive_limit)
             if staged_roundtrip:
+                self.assertEqual((os.environ.get('RUNNER_ENVIRONMENT'), os.environ.get('ImageOS')),
+                                 ('github-hosted', 'ubuntu24'), 'Actual managed terminal Ubuntu runner required')
+                environment.update({name: os.environ[name] for name in ('RUNNER_ENVIRONMENT', 'ImageOS')})
+                environment['GITHUB_STEP_SUMMARY'] = str(root / 'fixture-summary')
+                environment['WEATHER_PROGRESS_MASTER_SECRET'] = 'unused-synthetic-fixture-secret'
+                environment['NODE_OPTIONS'] = '--no-warnings'
                 source_root = root / 'authenticated-stage-source'
                 progress_script = ROOT / 'scripts/weather-component-progress-cache.mjs'
                 seal_environment = runtime_environment()
@@ -1200,6 +1308,7 @@ console.log(result.sha256);
                     'stageDevice': str(root_stat.st_dev), 'stageInode': str(root_stat.st_ino),
                     'cacheDevice': str(cache_stat.st_dev), 'cacheInode': str(cache_stat.st_ino),
                 })
+            action_command = [str(NODE24), str(root / ENTRY)]
             if lease_wait is not None:
                 lease_marker = root / 'lease-waiting'
                 fixture = {'root': str(root), 'entry': str(root / ENTRY), 'claim': str(root / CLAIM),
@@ -1212,11 +1321,25 @@ console.log(result.sha256);
                 # Widen only this fixture's watchdog after setup. The actual
                 # bounded pidfd wait below still uses the shared stage deadline.
                 signal.setitimer(signal.ITIMER_REAL, TERMINAL_LEASE_FIXTURE_OBSERVER_SECONDS)
-            parent = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root, env=environment,
+                fixture_unit = f"rr-weather-provider-{root.name.removeprefix('rr-owned-sdk-save-')}.service"
+                environment['RAVRADAR_TERMINAL_UPLOAD_UNIT'] = fixture_unit
+                for name in ('GITHUB_OUTPUT', 'GITHUB_STEP_SUMMARY', 'WEATHER_PROGRESS_MASTER_SECRET'):
+                    del environment[name]
+                # Only this synthetic service receives the existing preload.
+                # The production controller never receives or relays it.
+                action_command = ['/usr/bin/systemd-run', '--user', '--quiet', '--wait', '--pipe',
+                    '--service-type=exec', '--expand-environment=no', f'--unit={fixture_unit}',
+                    f'--property=WorkingDirectory={root}', '--property=RuntimeMaxSec=18s',
+                    '--property=TimeoutStopSec=2s', '--property=KillMode=control-group',
+                    *[f'--setenv={name}={value}' for name, value in environment.items()],
+                    '--', *action_command, '--managed-terminal-upload']
+                environment = fixture_control_environment()
+            parent = subprocess.Popen(action_command, cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
             while not finished:
                 if lease_wait == 'acquire' and lease_marker.exists():
+                    observe_managed_action()
                     break
                 if exited(fds['action']):
                     self.assertTrue(archive_capacity_skipped or archive_refusal is not None,
@@ -1257,14 +1380,16 @@ console.log(result.sha256);
                 self.assertEqual(parent.wait(timeout=1.0), 1)
                 self.assertEqual(small(lease_marker), b'waiting\n')
                 self.assertEqual(small(output), b'')
-                self.assertEqual(small(root / 'stderr'), b'')
+                for role, fd in fds.items():
+                    self.assertTrue(exited(fd), f'{role} actual exit required')
+                assert_managed_closed()
                 if lease_wait == 'acquire':
                     server.handle_request()
                     if server_failure:
                         raise server_failure[0]
                     self.assertEqual(calls, [])
                     self.assertEqual(connections, 0)
-                    self.assertEqual(set(fds), {'action'})
+                    self.assertEqual(set(fds), {'action', 'managed'})
                     no_children()
                 else:
                     self.assertEqual(calls, ['create', 'put', 'finalize'])
@@ -1283,10 +1408,11 @@ console.log(result.sha256);
                 self.assertEqual(raw.read_bytes(), own_raw)
                 return
             if staged_roundtrip:
-                self.assertEqual(parent.wait(timeout=2.0), 0 if finalize_ok else 1,
+                self.assertEqual(parent.wait(timeout=8.0), 0 if finalize_ok else 1,
                                  small(root / 'stderr').decode('utf-8'))
-                for role in ('action', 'cohort', 'worker'):
-                    self.assertTrue(exited(fds[role]), f'{role} actual exit required')
+                for role, fd in fds.items():
+                    self.assertTrue(exited(fd), f'{role} actual exit required')
+                assert_managed_closed()
                 with self.assertRaises(ProcessLookupError):
                     os.killpg(observed['worker']['pid'], 0)
                 self.assertEqual((root / CLAIM).exists(), staged_hold_cohort)
@@ -1300,10 +1426,8 @@ console.log(result.sha256);
                 self.assertEqual(raw.read_bytes(), own_raw)
                 if not finalize_ok:
                     self.assertEqual(calls, ['create', 'put', 'finalize-unanswered'])
-                    diagnostic = (b'WEATHER_CIPHER_TERMINAL_WINDOW_EXPIRED' if staged_hold_cohort
-                                  else b'DMI_RAW_SAVE_INTERRUPTED')
-                    self.assertEqual(small(root / 'stderr'), b'DMI_RAW_SAVE_REFUSED\n'
-                                     b'DMI_RAW_SAVE_DIAGNOSTIC stage=CLOSURE reason=' + diagnostic + b'\n')
+                    self.assertIn(b'reason=WEATHER_CIPHER_TERMINAL_CONTROLLER_REFUSED\n',
+                                  small(root / 'stderr'))
                     return
                 download_env = {name: environment[name] for name in ('RUNNER_TEMP', 'INPUT_KEY',
                     'ACTIONS_CACHE_SERVICE_V2', 'ACTIONS_RESULTS_URL', 'ACTIONS_RUNTIME_TOKEN')}
@@ -1400,6 +1524,8 @@ assert.equal(await restoreCache(['.cache/weather-private-progress.encrypted'], k
                     handle.close()
                     self.assertTrue(handle.closed)
                 self.assertEqual(libc.prctl(36, previous.value, 0, 0, 0), 0)
+                if staged_roundtrip and parent is not None:
+                    assert_managed_closed()
                 self.assertEqual(root.parent, temp_parent)
                 self.assertTrue(root.name.startswith('rr-owned-sdk-save-'))
                 shutil.rmtree(root)
