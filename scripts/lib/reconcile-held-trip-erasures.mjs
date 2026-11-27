@@ -26,13 +26,15 @@ const retainedTables = [
 ];
 const retainedRowsError = () => new Error('TRIP_RESTORE_RETAINED_ROWS_UNVERIFIED');
 const archiveError = () => new Error('TRIP_RESTORE_RETAINED_ARCHIVE_UNVERIFIED');
-const archiveDomain = 'RavRadar/trip-d1-retained-rows/v1';
-const archiveMagic = Buffer.from('RR-TRIP-D1-RETAINED-1\n');
+const archiveDomain = 'RavRadar/trip-d1-retained-rows/v2';
+const archiveMagic = Buffer.from('RR-TRIP-D1-RETAINED-2\n');
 const archiveSaltBytes = 16;
 const archiveNonceBytes = 12;
 const archiveTagBytes = 16;
 const archivePrefixBytes = archiveMagic.length + archiveSaltBytes + archiveNonceBytes;
 const maximumSnapshotBytes = 32 * 1024 * 1024;
+const maximumDescriptorBytes = 16 * 1024;
+const maximumArchiveBytes = maximumSnapshotBytes + 64 * 1024;
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 
 function timestampKey(time) {
@@ -41,6 +43,21 @@ function timestampKey(time) {
     throw new Error('TRIP_RESTORE_RECEIPT_TIME_INVALID');
   }
   return time.slice(0, 19) + '.' + (time.includes('.') ? time.slice(20, -1) : '').padEnd(6, '0');
+}
+
+function isTripRestoreScope(scope) {
+  const { bindings, accountId, projectRef, versionId, deploymentId } = scope ?? {};
+  return Array.isArray(bindings) && bindings.length === 10
+    && TRIP_STORAGE_REQUIRED_SHARD_NAMES.every((name, index) => {
+      const binding = bindings[index];
+      return binding?.binding === `TRIP_DB_${index}`
+        && binding.database_name === name
+        && typeof binding.database_id === 'string' && databaseIdPattern.test(binding.database_id);
+    })
+    && new Set(bindings.map(binding => binding.database_id)).size === 10
+    && typeof accountId === 'string' && /^[a-f0-9]{32}$/.test(accountId)
+    && typeof projectRef === 'string' && /^[a-z0-9]{20}$/.test(projectRef)
+    && [versionId, deploymentId].every(id => typeof id === 'string' && databaseIdPattern.test(id));
 }
 
 // Receipt inputs belong to the locked, authenticated management caller that
@@ -140,13 +157,19 @@ async function* readRetainedRows(shard, table, erased) {
 }
 
 async function captureRetainedTripRows(shards, erasedSubjects) {
+  if (!Array.isArray(shards) || shards.length !== 10) throw retainedRowsError();
   const erased = new Set(erasedSubjects);
   const snapshot = [];
+  let bytes = Buffer.byteLength(canonicalJson(shards.map(() => retainedTables.map(() => []))));
   for (const shard of shards) {
     const tables = [];
     for (const table of retainedTables) {
       const rows = [];
-      for await (const row of readRetainedRows(shard, table, erased)) rows.push(row);
+      for await (const row of readRetainedRows(shard, table, erased)) {
+        bytes += Buffer.byteLength(canonicalJson(row)) + (rows.length ? 1 : 0);
+        if (bytes > maximumSnapshotBytes) throw archiveError();
+        rows.push(row);
+      }
       tables.push(rows);
     }
     snapshot.push(tables);
@@ -206,16 +229,43 @@ export async function prepareRetainedTripSnapshot(shards, erasedSubjects) {
   return { rows, sha256 };
 }
 
-// Bind the copy to the deployment and the intended restore before any POST.
-// The journal cutoff and provider receipt only exist after the restore.
-function retainedArchiveContext(scope, plan) {
+function retainedPlan(scope, plan) {
+  const { intentId, sourceSha, runId, attempt, heldAt, snapshotAt,
+    journalCoveredFrom, retainedTripRowsSha256, targets } = plan ?? {};
+  if (!isTripRestoreScope(scope) || typeof intentId !== 'string' || !databaseIdPattern.test(intentId)
+    || typeof sourceSha !== 'string' || !/^[a-f0-9]{40}$/.test(sourceSha)
+    || typeof runId !== 'string' || !/^[1-9]\d{0,19}$/.test(runId) || attempt !== 1
+    || typeof retainedTripRowsSha256 !== 'string' || !digestPattern.test(retainedTripRowsSha256)
+    || !Array.isArray(targets) || targets.length < 1 || targets.length > 10) throw archiveError();
+  const held = timestampKey(heldAt);
+  const covered = timestampKey(journalCoveredFrom);
+  if (covered > held || held > timestampKey(snapshotAt)) throw archiveError();
+  const databases = new Set(scope.bindings.map(binding => binding.database_id));
+  const points = targets.map(target => {
+    const { databaseId, at, bookmark } = target ?? {};
+    const point = timestampKey(at);
+    if (!databases.delete(databaseId) || point <= covered || point > held || !bookmarkValid(bookmark)) throw archiveError();
+    return { databaseId, at, bookmark };
+  });
+  return { intentId, sourceSha, runId, attempt, heldAt, snapshotAt, journalCoveredFrom,
+    retainedTripRowsSha256, targets: points };
+}
+
+function protectedHoldTime(heldAt) {
+  return timestampKey(typeof heldAt === 'string' ? heldAt.replace(/\+00:00$/, 'Z') : heldAt);
+}
+
+// Only the current authenticated hold and unchanged deployment are needed to
+// open the envelope. Its authenticated plaintext carries the original plan.
+function retainedArchiveContext(scope, hold) {
+  if (!isTripRestoreScope(scope) || typeof hold?.intentId !== 'string' || !databaseIdPattern.test(hold.intentId)) {
+    throw archiveError();
+  }
   const { accountId, projectRef, bindings, versionId, deploymentId } = scope;
-  const { intentId, sourceSha, runId, attempt, heldAt, snapshotAt, journalCoveredFrom, retainedTripRowsSha256, targets } = plan;
   return Buffer.from(canonicalJson({
     purpose: archiveDomain, accountId, projectRef, versionId, deploymentId,
     databases: bindings.map(({ database_id }) => database_id),
-    intentId, sourceSha, runId, attempt, heldAt, snapshotAt, journalCoveredFrom, retainedTripRowsSha256,
-    targets: targets.map(({ databaseId, at, bookmark }) => ({ databaseId, at, bookmark })),
+    intentId: hold.intentId, heldAt: protectedHoldTime(hold.heldAt),
   }));
 }
 
@@ -225,46 +275,67 @@ function retainedArchiveKey(archiveSecret, salt) {
 }
 
 export function sealRetainedTripSnapshot({ scope, plan, snapshot, archiveSecret }) {
+  const descriptor = Buffer.from(canonicalJson(retainedPlan(scope, plan)));
   if (snapshot?.sha256 !== plan.retainedTripRowsSha256
     || retainedDigest(snapshot.rows, new Set()) !== snapshot.sha256) throw retainedRowsError();
   verifyRetainedIdentities(snapshot.rows);
-  const plain = Buffer.from(canonicalJson(snapshot.rows));
-  if (plain.length > maximumSnapshotBytes) throw archiveError();
+  const rows = Buffer.from(canonicalJson(snapshot.rows));
+  if (rows.length > maximumSnapshotBytes || descriptor.length > maximumDescriptorBytes) throw archiveError();
   const salt = randomBytes(archiveSaltBytes);
   const nonce = randomBytes(archiveNonceBytes);
   const prefix = Buffer.concat([archiveMagic, salt, nonce]);
   const cipher = createCipheriv('aes-256-gcm', retainedArchiveKey(archiveSecret, salt), nonce, { authTagLength: archiveTagBytes });
   cipher.setAAD(Buffer.concat([prefix, retainedArchiveContext(scope, plan)]));
+  const plain = Buffer.concat([descriptor, Buffer.from('\n'), rows]);
   const archive = Buffer.concat([prefix, cipher.update(gzipSync(plain)), cipher.final(), cipher.getAuthTag()]);
+  if (archive.length > maximumArchiveBytes) throw archiveError();
   return { archive, sha256: sha256(archive) };
 }
 
-// The management caller reopens the independently stored bytes before
-// starting Time Travel. Reconciliation must reopen them again after it.
-export function openRetainedTripSnapshot({ scope, plan, archive, archiveSecret }) {
+// The caller supplies the hold just read from the protected service, then
+// verifies live provider receipts separately before any restore or replay.
+export function resumeRetainedTripSnapshot({ scope, hold, archive, archiveSecret }) {
   if (!Buffer.isBuffer(archive) || archive.length <= archivePrefixBytes + archiveTagBytes
-    || archive.length > maximumSnapshotBytes + (64 * 1024)
-    || !archive.subarray(0, archiveMagic.length).equals(archiveMagic)
-    || sha256(archive) !== plan.retainedArchiveSha256) throw archiveError();
+    || archive.length > maximumArchiveBytes || !archive.subarray(0, archiveMagic.length).equals(archiveMagic)) {
+    throw archiveError();
+  }
   const prefix = archive.subarray(0, archivePrefixBytes);
   const salt = prefix.subarray(archiveMagic.length, archiveMagic.length + archiveSaltBytes);
   const nonce = prefix.subarray(archiveMagic.length + archiveSaltBytes);
   const end = archive.length - archiveTagBytes;
-  let rows;
+  let descriptor, rows;
   try {
     const decipher = createDecipheriv('aes-256-gcm', retainedArchiveKey(archiveSecret, salt), nonce, { authTagLength: archiveTagBytes });
-    decipher.setAAD(Buffer.concat([prefix, retainedArchiveContext(scope, plan)]));
+    decipher.setAAD(Buffer.concat([prefix, retainedArchiveContext(scope, hold)]));
     decipher.setAuthTag(archive.subarray(end));
     const compressed = Buffer.concat([decipher.update(archive.subarray(archivePrefixBytes, end)), decipher.final()]);
-    rows = JSON.parse(gunzipSync(compressed, { maxOutputLength: maximumSnapshotBytes }).toString('utf8'));
+    const plain = gunzipSync(compressed, { maxOutputLength: maximumSnapshotBytes + maximumDescriptorBytes + 1 });
+    const separator = plain.indexOf(0x0a);
+    if (separator <= 0 || separator > maximumDescriptorBytes || plain.length - separator - 1 > maximumSnapshotBytes) {
+      throw archiveError();
+    }
+    const decode = new TextDecoder('utf-8', { fatal: true });
+    const metadata = JSON.parse(decode.decode(plain.subarray(0, separator)));
+    descriptor = retainedPlan(scope, metadata);
+    if (descriptor.intentId !== hold.intentId || timestampKey(descriptor.heldAt) !== protectedHoldTime(hold.heldAt)
+      || canonicalJson(descriptor) !== canonicalJson(metadata)) throw archiveError();
+    rows = JSON.parse(decode.decode(plain.subarray(separator + 1)));
   } catch {
     throw archiveError();
   }
-  if (retainedDigest(rows, new Set()) !== plan.retainedTripRowsSha256) throw retainedRowsError();
+  if (retainedDigest(rows, new Set()) !== descriptor.retainedTripRowsSha256) throw retainedRowsError();
   verifyRetainedIdentities(rows);
-  return rows;
+  return { plan: descriptor, rows, sha256: sha256(archive) };
 }
 
+// An active caller also checks that the sealed descriptor matches its own
+// original plan. The separate capture time and provider receipts remain live.
+export function openRetainedTripSnapshot({ scope, plan, archive, archiveSecret }) {
+  const resumed = resumeRetainedTripSnapshot({ scope, hold: plan, archive, archiveSecret });
+  if (resumed.sha256 !== plan.retainedArchiveSha256
+    || canonicalJson(resumed.plan) !== canonicalJson(retainedPlan(scope, plan))) throw archiveError();
+  return resumed.rows;
+}
 async function restoreRetainedRows(shards, snapshot, subjects, requireHold) {
   const current = await captureRetainedTripRows(shards, subjects);
   const work = [];
@@ -360,18 +431,11 @@ export async function reconcileCloudflareHeldTripErasures({
   restorePlan, restoreReplies, retainedArchive, archiveSecret, readHoldEpoch, bindings, accountId, cloudflareToken, projectRef, serviceKey,
   gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId, fetchImpl = fetch,
 }) {
-  if (!Array.isArray(bindings) || bindings.length !== 10
-    || bindings.some((binding, index) => binding?.binding !== `TRIP_DB_${index}`
-      || binding.database_name !== TRIP_STORAGE_REQUIRED_SHARD_NAMES[index]
-      || typeof binding.database_id !== 'string' || !databaseIdPattern.test(binding.database_id))
-    || new Set(bindings.map(binding => binding.database_id)).size !== 10
-    || typeof accountId !== 'string' || !/^[a-f0-9]{32}$/.test(accountId)
-    || typeof projectRef !== 'string' || !/^[a-z0-9]{20}$/.test(projectRef)
+  if (!isTripRestoreScope({ bindings, accountId, projectRef, versionId, deploymentId })
     || typeof cloudflareToken !== 'string' || !cloudflareToken
     || typeof serviceKey !== 'string' || !serviceKey
     || typeof sharedSecret !== 'string' || sharedSecret.length < 32
     || typeof publishableKey !== 'string' || !publishableKey
-    || ![versionId, deploymentId].every(id => typeof id === 'string' && databaseIdPattern.test(id))
     || typeof readHoldEpoch !== 'function') {
     throw new Error('TRIP_RESTORE_PROVIDER_INPUT_INVALID');
   }

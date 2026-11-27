@@ -44,11 +44,14 @@ prøve genskaber en manglende tur med den oprindelige stemplede
 registrering. En ufuldført reservation bevares som reservation. En
 konflikt i de eksisterende data standser forløbet. Førkopien skal være
 fra før den første gendannelsesanmodning. Den lokale kandidat krypterer
-kopien og knytter den til den konkrete kørsel, spærring og de valgte
-gendannelsespunkter. En prøve gemmer og genlæser den krypterede testkopi
-før og efter en simuleret gendannelse. En ændret kopi, forkert nøgle
-eller forkert kørsel afvises inden leverandørkald. Et vedvarende privat
-lager med godkendt opbevaring og det samlede gendannelsesjob udestår.
+den oprindelige kørsels identitet og valgte gendannelsespunkter sammen med
+førkopien. Efter et runnerstop kan den samme kopi åbnes med det aktuelle
+spærrings-id og tidspunkt samt de aktive databasebindinger og Worker-version.
+Indsamlingen stopper ved den faste grænse på 32 MiB for de bevarede rækker.
+Den eksisterende prøve fortsætter en simuleret gendannelse fra den
+genlæste fil og kræver fortsat leverandørens kvitteringer særskilt.
+Et vedvarende privat lager med godkendt opbevaring og det samlede
+gendannelsesjob udestår.
 
 Den eksisterende D1-installation og dennes fejlgenoptagelse læser nu den
 aktive Workers bindingsmetadata før de berørte skriveruter. Samme kontrol

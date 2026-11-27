@@ -12,7 +12,7 @@ import {
 import {
   identifyCloudflareTripRestore, openRetainedTripSnapshot, prepareRetainedTripSnapshot,
   reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures,
-  sealRetainedTripSnapshot,
+  resumeRetainedTripSnapshot, sealRetainedTripSnapshot,
 } from './lib/reconcile-held-trip-erasures.mjs';
 
 const migrations = ['001_trip_observations', '002_owner_export_keyset', '003_owner_erasure_insert_guard']
@@ -115,7 +115,7 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   const scope = { accountId, projectRef, bindings, versionId, deploymentId };
   const restorePlan = {
     intentId: '88888888-8888-4888-8888-888888888888', sourceSha: 'e'.repeat(40), runId: '1234', attempt: 1,
-    heldAt: '2026-08-26T11:55:00.000Z', snapshotAt: '2026-08-26T11:55:30.000Z', captureAt, journalCoveredFrom, retainedTripRowsSha256,
+    heldAt: '2026-08-26T11:55:00.123456Z', snapshotAt: '2026-08-26T11:55:30.000Z', captureAt, journalCoveredFrom, retainedTripRowsSha256,
     targets: [{
       databaseId, at: restoreFrom, bookmark: providerBookmark, baselineLookup,
       lookup: { method: 'GET', url: baseRestoreUrl + 'bookmark?timestamp=' + encodeURIComponent(restoreFrom), status: 200,
@@ -138,6 +138,32 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     scope, plan: restorePlan, archive: readFileSync(filename), archiveSecret,
   });
   assert.deepEqual(reopened, JSON.parse(JSON.stringify(saved.rows)));
+  const hold = { intentId: restorePlan.intentId, heldAt: restorePlan.heldAt };
+  const savedEnvelope = readFileSync(filename);
+  const resumed = resumeRetainedTripSnapshot({ scope, hold, archive: savedEnvelope, archiveSecret });
+  assert.equal(savedEnvelope.includes(providerBookmark), false);
+  assert.equal(savedEnvelope.includes(otherRow.client_observation_id), false);
+  assert.equal(resumed.plan.runId, '1234');
+  assert.equal(resumed.plan.attempt, 1);
+  assert.equal(resumed.sha256, sealed.sha256);
+  assert.deepEqual(resumed.rows, reopened);
+  assert.deepEqual(resumed.plan.targets, [{ databaseId, at: restoreFrom, bookmark: providerBookmark }]);
+  assert.equal(Object.hasOwn(resumed.plan, 'captureAt'), false);
+  assert.deepEqual(resumeRetainedTripSnapshot({ scope, hold: { ...hold, heldAt: '2026-08-26T11:55:00.123456+00:00' },
+    archive: savedEnvelope, archiveSecret }), resumed);
+  const reversedBindings = { ...scope, bindings: [...bindings.slice(1), bindings[0]] };
+  const alteredEnvelope = Buffer.from(savedEnvelope);
+  alteredEnvelope[alteredEnvelope.length - 1] ^= 1;
+  for (const override of [{ archive: alteredEnvelope },
+    { hold: { ...hold, heldAt: '2026-08-26T11:55:00.123457+00:00' } },
+    { hold: { ...hold, intentId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' } },
+    { scope: { ...scope, deploymentId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' } },
+    { scope: reversedBindings }]) {
+    assert.throws(() => resumeRetainedTripSnapshot({ scope, hold, archive: savedEnvelope, archiveSecret, ...override }),
+      /TRIP_RESTORE_RETAINED_ARCHIVE_UNVERIFIED/);
+  }
+  const resumedPlan = { ...resumed.plan, captureAt, retainedArchiveSha256: resumed.sha256,
+    targets: [{ ...resumed.plan.targets[0], baselineLookup, lookup: restorePlan.targets[0].lookup }] };
 
   live.active[0] = snapshot.active[0];
   assert.equal(count('trip_owner_erasure_tombstones', erased), 0);
@@ -159,7 +185,7 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   let d1Requests = 0;
   const reinsertedTables = [];
   const provider = {
-    bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan, restoreReplies,
+    bindings, projectRef, accountId, serviceKey, cloudflareToken, restorePlan: resumedPlan, restoreReplies,
     retainedArchive: readFileSync(filename), archiveSecret,
     gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId,
     async readHoldEpoch() { return restoreIdentity.epoch; },
@@ -292,6 +318,22 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   assert.deepEqual(await list(erased), []);
   await assert.rejects(storeCloudflareTrip({ ...live.config, owner: erased, payload: erasedRow }));
   assert.equal((await list(other)).length, 1);
+});
+
+test('retained snapshots stop collecting rows at the archive budget', async () => {
+  const oversizedPayload = 'x'.repeat(360_000);
+  const firstPage = Array.from({ length: 100 }, (_, index) => ({
+    storage_schema_version: 1, owner_subject: 'usr_v1_' + 'a'.repeat(43), owner_kind: 'user', trip_id: null,
+    client_observation_id: String(index).padStart(4, '0'), observed_at: time, submitted_at: time,
+    payload_json: oversizedPayload, payload_sha256: 'a'.repeat(64), source: 'fixture', created_at: time,
+  }));
+  let requests = 0;
+  const shards = Array.from({ length: 10 }, () => ({ prepare: () => ({ bind: () => ({ all: async () => {
+    assert.equal(++requests, 1);
+    return { success: true, results: firstPage };
+  } }) }) }));
+  await assert.rejects(prepareRetainedTripSnapshot(shards, []), /TRIP_RESTORE_RETAINED_ARCHIVE_UNVERIFIED/);
+  assert.equal(requests, 1);
 });
 
 test('a changed hold or incomplete journal cannot authorize restoration writes', async t => {
