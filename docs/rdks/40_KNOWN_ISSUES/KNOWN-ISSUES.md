@@ -31,6 +31,12 @@ En almindelig tysk browserforespørgsel på den offentlige prognose fra #407 fik
 
 Den lokale ændring registrerer genforsøgets udfald og dets faktiske HTTP-status, når Cloudflare har svaret. Fejlloggen kan også vise de to afgrænsede tal for svar- og ræsonneringstokens, når Cloudflare selv rapporterer dem. Det gør det muligt at sammenholde et tomt svar med det anvendte tokenbudget. Samme to mulige providerkald, kvote, frist og svarvalidering gælder. Afprøvning i drift og afklaring af det tomme svar udestår.
 
+## 27. november — backupkontrol kan mangle efter flere korte vejrvinduer
+
+Den almindelige vedligeholdelse giver vejrhentningen forrang. Hvis de næste vejrvinduer er for korte, kan backupdelen springes over med grøn status. Efterkontrol #114 bekræftede en gendannelsesprøvet, endnu aktuel databasebackup. Den viste også den eksisterende positive GitHub-markør, som en daglig overvågning kan genkende. [Efterkontrol #114](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45932339037/job/140289969173)
+
+Den lokale ændring føjer en skrivefri aflæsning af kørselsstatus til den eksisterende daglige lagerkontrol. Den daglige kontrol giver en GitHub-fejl, hvis den ikke finder en positiv backupbekræftelse fra de foregående 48 timer. En ufuldstændig aflæsning vises særskilt. En lokal prøve mod GitHubs faktiske metadata fandt den normale bekræftelse fra #116 i to læsninger. Kildekvalifikation, almindelig daglig kørsel og en eventuel ejerunderretning skal verificeres særskilt. GitHub kan slå planlagte kørsler fra efter 60 dage uden aktivitet i offentlige repositories. [Bekræftelse #116](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45987926529/job/140471465285) · [GitHubs planlægning](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+
 ## 26. november — kildekontrol kan blokere vejr før DMI
 
 #404 genlæste den beskyttede vejrtilstand og dens råfiler. GitHub-kontrollen for rotation fandt en mulig samtidig læser. Den beholdt alle kopier og standsede før DMI. Det automatiske genforsøg startede den almindelige #405, efter at køen var fri.
