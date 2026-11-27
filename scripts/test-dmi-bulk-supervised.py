@@ -572,6 +572,7 @@ if _owned_read is None:
         allowed_parameters,
         locked_operational_reference=locked_operational_reference,
         trusted_current_pair_source_keys=trusted_current_pair_source_keys,
+        work_deadline=work_deadline,
     )
 """).body[0]
         self.assertEqual(ast.dump(decoder.body[0]), ast.dump(expected_adapter),
@@ -590,6 +591,7 @@ process_grib(
     shadow_stage, private_output_stage, part_outcomes_stage,
     allowed_parameters=allowed_parameters,
     _owned_read=reader,
+    **({"work_deadline": work_deadline} if work_deadline is not None else {}),
     **({"locked_operational_reference": locked_operational_reference}
        if locked_operational_reference is not None else {}),
     **({"trusted_current_pair_source_keys": trusted_current_pair_source_keys}

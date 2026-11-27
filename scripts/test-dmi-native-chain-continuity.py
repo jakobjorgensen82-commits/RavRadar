@@ -96,6 +96,50 @@ def catalog_item(collection, offset):
 
 
 class FirstTurnMarineCatalogueTests(unittest.TestCase):
+    def test_scoped_grib_deadline_preserves_previous_outputs(self):
+        for validator_enters_cutoff in (False, True):
+            with self.subTest(validator_enters_cutoff=validator_enters_cutoff):
+                result = {"zones": {ZONE["id"]: {"hourly": {VALID: {"time": VALID}}}}}
+                private = copy.deepcopy(result)
+                diagnostics = {"previous": True}
+                shadow = {}
+                outcomes = {"previous": True}
+                before = copy.deepcopy((result, private, diagnostics, shadow, outcomes))
+                reader = types.SimpleNamespace(check=Mock(), remember_commit=Mock(), commits=[], failure_flushes=[])
+                failure_flush = Mock()
+                tick = [399.0 if validator_enters_cutoff else 400.0]
+
+                def parse(_path, _collection, _run, _time, _zones, staged, observed,
+                          staged_shadow, staged_private, staged_outcomes, *, work_deadline, _owned_read,
+                          **_kwargs):
+                    self.assertEqual(work_deadline, 400.0)
+                    self.assertIs(_owned_read, reader)
+                    staged["candidate"] = True
+                    observed["candidate"] = True
+                    staged_shadow["candidate"] = True
+                    staged_private["candidate"] = True
+                    staged_outcomes["candidate"] = True
+                    return {"synthetic-field"}, {ZONE["id"]}, False, 1, 1
+
+                def validate(*_args):
+                    tick[0] = 400.0
+                    return True
+
+                with (
+                    patch.object(producer, "_grib_read_scope", return_value=nullcontext(reader)),
+                    patch.object(producer, "process_grib", side_effect=parse),
+                    patch.object(producer.time, "monotonic", side_effect=lambda: tick[0]),
+                ):
+                    outcome = producer.process_grib_transactionally(
+                        Path("synthetic.grib"), "dkss_nsbs", RUN, VALID, [ZONE],
+                        result, diagnostics, shadow, private, outcomes, work_deadline=400.0,
+                        stage_validator=validate, failure_flush=failure_flush,
+                    )
+
+                self.assertEqual(outcome, (set(), set(), True, 0, 0))
+                self.assertEqual((result, private, diagnostics, shadow, outcomes), before)
+                self.assertEqual(reader.failure_flushes, [failure_flush])
+
     def test_actual_first_turn_catalogue_preserves_existing_work_and_proofs(self):
         # Actual 249 acquisition timing; all data and item identities here are
         # synthetic. Replay the unmodified main turn/ledger call, no HTTP or GRIB.
@@ -422,6 +466,92 @@ class FirstTurnMarineCatalogueTests(unittest.TestCase):
         # absolute work deadline. Keep that deadline on this fixture's clock.
         late_now = 2500.0
         late_work_deadline = late_now + 180.0
+
+        # The ordinary run used to reach maintenance with only 10 or 39
+        # seconds left. Replay the caller's actual reserve and release.
+        main = next(node for node in ast.parse(Path(producer.__file__).read_text(encoding="utf-8")).body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+        planning = next(node for node in main.body if isinstance(node, ast.If)
+                        and any(isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                                and call.func.id == "late_water_tail_runtime_reserve" for call in ast.walk(node)))
+        allowed = next(node for node in turn.body if isinstance(node, ast.Assign)
+                       and any(isinstance(name, ast.Name) and name.id == "may_hold_water_tail"
+                               for name in node.targets))
+        assign_hold = next(node for node in ast.walk(turn) if isinstance(node, ast.If)
+                           and any(isinstance(child, ast.Assign) and isinstance(child.value, ast.Name)
+                                   and child.value.id == "late_water_tail_reserve" for child in node.body))
+        add_hold = next(node for node in ast.walk(turn) if isinstance(node, ast.Assign)
+                        and isinstance(node.value, ast.BinOp) and isinstance(node.value.right, ast.Name)
+                        and node.value.right.id == "water_tail_asset_reserve")
+        hold = compile(ast.Module(body=copy.deepcopy([allowed, assign_hold, add_hold]), type_ignores=[]),
+                       producer.__file__, "exec")
+        for seconds_left in (10.0, 39.0):
+            with self.subTest(actual_ordinary_seconds_left=seconds_left):
+                result = copy.deepcopy(old_saved)
+                controller = producer.ProgressCheckpointController(result, set(), {"bytes": 0})
+                context = late_context(result, controller)
+                context.update(late_water_tail_reserve=0.0, reserve_for_pending_critical=30.0, progress=Mock())
+                exec(compile(ast.Module(body=copy.deepcopy([planning]), type_ignores=[]),
+                             producer.__file__, "exec"), context)
+                allowance = context["late_water_tail_reserve"]
+                self.assertEqual(allowance, producer.DKSS_LATE_WATER_TAIL_RESERVE_SECONDS)
+                for pending, atmosphere, wave, current, horizon, saved_assets, elapsed, expected in (
+                    ([collection], False, False, True, False, 10, 120, 0.0),
+                    ([], True, False, False, False, 0, 120, 0.0),
+                    ([], False, True, False, False, 10, 120, 0.0),
+                    ([], False, False, True, False, 0, 120, 0.0),
+                    ([], False, False, True, False, 1, 59, 0.0),
+                    ([], False, False, False, True, 0, 120, 0.0),
+                    ([], False, False, False, True, 1, 59, 0.0),
+                    ([], False, False, True, False, 1, 60, allowance),
+                    ([], False, False, False, True, 1, 60, allowance),
+                ):
+                    admission = dict(context, pending_critical_wam=[], pending_critical_current=pending,
+                                     collection_is_critical_atmosphere=atmosphere, collection_is_critical_wam=wave,
+                                     collection_is_critical_current=current, collection_is_horizon=horizon,
+                                     critical_reserve_for_turn=30.0, water_tail_asset_reserve=0.0,
+                                     run_info={"assetsProcessed": saved_assets},
+                                     collection_turn_started=late_now, protected_turn_seconds=60.0)
+                    with (
+                        patch.object(producer, "WORK_DEADLINE", late_now + elapsed + 240.0),
+                        patch.object(producer.time, "monotonic", return_value=late_now + elapsed),
+                    ):
+                        exec(hold, admission)
+                        self.assertEqual(admission["reserve_for_pending_critical"], 30.0 + expected)
+                        self.assertEqual(controller.can_start_asset(admission["reserve_for_pending_critical"],
+                                                                    cost_family=collection), expected == 0.0)
+                with (
+                    patch.object(producer, "WORK_DEADLINE", late_work_deadline),
+                    patch.object(producer.time, "monotonic", return_value=late_work_deadline - seconds_left),
+                ):
+                    self.assertFalse(controller.can_start_asset(producer.DKSS_FIRST_TURN_CATALOGUE_MAX_SECONDS,
+                                                                cost_family=collection))
+                with (
+                    patch.object(producer, "WORK_DEADLINE", late_work_deadline),
+                    patch.object(producer.time, "monotonic", return_value=late_work_deadline - allowance),
+                    patch.object(producer, "request_json", return_value=page(collection, (old_model, 121))) as request,
+                    patch.object(producer, "asset_download_work_deadline", side_effect=lambda _: nullcontext()),
+                    patch.object(producer, "progress"),
+                ):
+                    self.assertFalse(controller.can_start_asset(allowance, cost_family=collection))
+                    exec(late, context)
+                request.assert_called_once()
+                self.assertEqual(context["late_water_tail_reserve"], 0.0)
+                self.assertEqual(context["result"], old_saved)
+
+        reserve_kwargs = dict(required_times=hours, zones=[ZONE, source_zone], cached_zones=old_saved["zones"])
+        for facts, remaining_bytes, cap in (
+            (None, 1024, producer.MAX_ASSETS_PER_COLLECTION),
+            (v2(trend=(117,)), 1024, producer.MAX_ASSETS_PER_COLLECTION),
+            (plan, 0, producer.MAX_ASSETS_PER_COLLECTION),
+            (plan, 1024, len(catalogues[collection][1])),
+        ):
+            with patch.object(producer, "MAX_ASSETS_PER_COLLECTION", cap):
+                self.assertEqual(producer.late_water_tail_runtime_reserve(
+                    [(collection, "maintenance")], catalogues, {collection: 2235.5},
+                    plan=facts, remaining_bytes=remaining_bytes, **reserve_kwargs,
+                ), 0.0)
+
         bad_hour = gap_hours[1]
         for run_fault in ("no fault", "unknown size", "truncated GRIB", "different capture", "unsettled read"):
             with self.subTest(late_water_fault=run_fault):
@@ -1164,10 +1294,10 @@ class SchedulingContinuityTests(unittest.TestCase):
         self.assertTrue(eval(gate,state))
         siblings = next(value for node in ast.walk(main) for _key,value in ast.iter_fields(node)
             if isinstance(value,list) and cap in value)
-        reserve = siblings[siblings.index(cap)+1]
-        self.assertIsInstance(reserve, ast.If)
-        self.assertIsInstance(reserve.test, ast.UnaryOp)
-        self.assertEqual(reserve.test.operand.func.attr,"can_start_asset")
+        reserve = next(node for node in siblings[siblings.index(cap)+1:]
+            if isinstance(node, ast.If) and isinstance(node.test, ast.UnaryOp)
+            and isinstance(node.test.operand, ast.Call) and isinstance(node.test.operand.func, ast.Attribute)
+            and node.test.operand.func.attr == "can_start_asset")
         self.assertEqual([keyword.arg for keyword in reserve.test.operand.keywords],["reserve_seconds","cost_family"])
         self.assertEqual(reserve.test.operand.keywords[0].value.id,"reserve_for_pending_critical")
         controller = producer.ProgressCheckpointController({},set(),{"bytes":0})
