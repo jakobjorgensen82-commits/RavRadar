@@ -96,12 +96,17 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   const databaseId = bindings[0].database_id;
   const baseRestoreUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/time_travel/`;
   const providerBookmark = 'synthetic-selected-bookmark';
+  const journalCoveredFrom = '2026-08-26T06:00:00.000Z';
+  const baselineLookup = {
+    method: 'GET', url: baseRestoreUrl + 'bookmark?timestamp=' + encodeURIComponent(journalCoveredFrom), status: 200,
+    body: { success: true, result: { bookmark: 'synthetic-older-baseline-bookmark' } },
+  };
   const scope = { accountId, projectRef, bindings, versionId, deploymentId };
   const restorePlan = {
     intentId: '88888888-8888-4888-8888-888888888888', sourceSha: 'e'.repeat(40), runId: '1234', attempt: 1,
-    heldAt: '2026-08-26T11:55:00.000Z', captureAt, journalCoveredFrom: '2026-08-26T06:00:00.000Z',
+    heldAt: '2026-08-26T11:55:00.000Z', captureAt, journalCoveredFrom,
     targets: [{
-      databaseId, at: restoreFrom, bookmark: providerBookmark,
+      databaseId, at: restoreFrom, bookmark: providerBookmark, baselineLookup,
       lookup: { method: 'GET', url: baseRestoreUrl + 'bookmark?timestamp=' + encodeURIComponent(restoreFrom), status: 200,
         body: { success: true, result: { bookmark: providerBookmark } } },
     }],
@@ -112,7 +117,7 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
     body: { success: true, result: { bookmark: 'synthetic-after-restore-bookmark', previous_bookmark: 'synthetic-before-restore-bookmark' } },
   }];
   const restoreIdentity = identifyCloudflareTripRestore({ ...scope, plan: restorePlan, replies: restoreReplies });
-  assert.equal(restoreIdentity.restoreFrom, restoreFrom);
+  assert.equal(restoreIdentity.restoreFrom, journalCoveredFrom);
   assert.equal(restoreIdentity.captureAt, captureAt);
   assert.notEqual(restoreIdentity.epoch, epoch);
   let primaryRead = true;
@@ -140,7 +145,9 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
         assert.equal(url.pathname, '/rest/v1/rpc/read_trip_erasure_restore_subjects');
         assert.equal(request.headers.get('apikey'), serviceKey);
         assert.equal(request.headers.get('authorization'), null);
-        assert.deepEqual(await request.json(), { p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: null });
+        assert.deepEqual(await request.json(), {
+          p_hold_id: restorePlan.intentId, p_restore_from: journalCoveredFrom, p_capture_at: captureAt, p_after_subject: null,
+        });
         return Response.json([{ owner_subject: erased.subject }]);
       }
       assert.equal(url.hostname, 'api.cloudflare.com');
@@ -180,6 +187,12 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
   await assert.rejects(reconcileCloudflareHeldTripErasures({
     ...provider, restorePlan: { ...restorePlan, journalCoveredFrom: '2026-08-26T09:00:00.000001Z' },
+  }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
+  await assert.rejects(reconcileCloudflareHeldTripErasures({
+    ...provider, restorePlan: { ...restorePlan, targets: [{
+      ...restorePlan.targets[0],
+      baselineLookup: { ...baselineLookup, body: { success: true, result: { bookmark: providerBookmark } } },
+    }] },
   }), /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
   assert.equal(d1Requests, 0);
   edgeMode = 'd1';

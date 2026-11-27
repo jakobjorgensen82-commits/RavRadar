@@ -11,6 +11,70 @@ alter table public.trip_owner_erasure_intents enable row level security;
 alter table public.trip_owner_erasure_intents force row level security;
 revoke all on table public.trip_owner_erasure_intents from public, anon, authenticated, service_role;
 
+-- This gate lives outside the databases restored by D1 Time Travel.
+create table public.trip_erasure_recovery_gate (
+  singleton boolean primary key check (singleton),
+  hold_id uuid,
+  held_at timestamptz,
+  check ((hold_id is null and held_at is null)
+    or (hold_id is not null and held_at is not null and isfinite(held_at)))
+);
+insert into public.trip_erasure_recovery_gate (singleton) values (true);
+alter table public.trip_erasure_recovery_gate enable row level security;
+alter table public.trip_erasure_recovery_gate force row level security;
+revoke all on table public.trip_erasure_recovery_gate from public, anon, authenticated, service_role;
+
+create function public.guard_trip_erasure_recovery_write()
+returns trigger language plpgsql security definer set search_path = '' set lock_timeout = '5s'
+as $$
+declare active_hold uuid;
+begin
+  select gate.hold_id into active_hold
+    from public.trip_erasure_recovery_gate as gate where gate.singleton for share;
+  if not found or active_hold is not null then
+    raise exception 'TRIP_ERASURE_RECOVERY_HOLD' using errcode = '55000';
+  end if;
+  return null;
+end;
+$$;
+revoke all on function public.guard_trip_erasure_recovery_write() from public, anon, authenticated, service_role;
+create trigger trip_owner_erasure_recovery_guard
+  before insert or update or delete or truncate on public.trip_owner_erasure_intents
+  for each statement execute function public.guard_trip_erasure_recovery_write();
+create trigger account_erasure_recovery_guard
+  before insert or update or delete or truncate on public.account_erasure_operations
+  for each statement execute function public.guard_trip_erasure_recovery_write();
+
+-- Preserve the hold across a runner failure. Only the controlled recovery
+-- caller may later release it after confirming the exact replay.
+create function public.acquire_trip_erasure_recovery_hold(p_hold_id uuid)
+returns timestamptz language plpgsql security definer set search_path = '' set lock_timeout = '5s'
+as $$
+declare gate public.trip_erasure_recovery_gate%rowtype;
+begin
+  if p_hold_id is null or p_hold_id = '00000000-0000-0000-0000-000000000000'::uuid then
+    raise exception 'TRIP_ERASURE_RECOVERY_HOLD_ID_INVALID' using errcode = '22023';
+  end if;
+  if pg_catalog.current_setting('transaction_isolation') <> 'read committed' then
+    raise exception 'TRIP_ERASURE_RECOVERY_REQUIRES_FRESH_SNAPSHOT' using errcode = '40001';
+  end if;
+  select * into strict gate from public.trip_erasure_recovery_gate where singleton for update;
+  if gate.hold_id = p_hold_id then return gate.held_at; end if;
+  if gate.hold_id is not null or exists (
+    select 1 from public.account_erasure_operations
+    where auth_claimed_at is not null and auth_absent_at is null
+  ) then
+    raise exception 'TRIP_ERASURE_RECOVERY_ADMISSION_BLOCKED' using errcode = '55000';
+  end if;
+  -- This separate READ COMMITTED statement follows the wait for all writers.
+  update public.trip_erasure_recovery_gate set hold_id = p_hold_id, held_at = pg_catalog.clock_timestamp()
+    where singleton returning held_at into gate.held_at;
+  return gate.held_at;
+end;
+$$;
+revoke all on function public.acquire_trip_erasure_recovery_hold(uuid) from public, anon, authenticated, service_role;
+grant execute on function public.acquire_trip_erasure_recovery_hold(uuid) to service_role;
+
 create function public.record_trip_owner_erasure_intent(p_owner_subject text, p_completed boolean)
 returns boolean
 language plpgsql
@@ -41,7 +105,7 @@ grant execute on function public.record_trip_owner_erasure_intent(text, boolean)
 -- The recovery caller supplies the earliest restored shard and an established
 -- capture boundary. A held recovery also checks all ten shards before reopen.
 create function public.read_trip_erasure_restore_subjects(
-  p_restore_from timestamptz, p_capture_at timestamptz, p_after_subject text
+  p_hold_id uuid, p_restore_from timestamptz, p_capture_at timestamptz, p_after_subject text
 )
 returns table (owner_subject text)
 language plpgsql
@@ -56,6 +120,12 @@ begin
     or (p_after_subject is not null and p_after_subject !~ '^usr_v1_[A-Za-z0-9_-]{43}$')
   then
     raise exception 'invalid trip restore evidence window' using errcode = '22023';
+  end if;
+  if not exists (
+    select 1 from public.trip_erasure_recovery_gate as gate
+    where gate.singleton and gate.hold_id = p_hold_id and gate.held_at <= p_capture_at
+  ) then
+    raise exception 'TRIP_ERASURE_RECOVERY_HOLD_UNVERIFIED' using errcode = '55000';
   end if;
 
   return query
@@ -76,8 +146,8 @@ begin
     limit 100;
 end;
 $$;
-revoke all on function public.read_trip_erasure_restore_subjects(timestamptz, timestamptz, text)
+revoke all on function public.read_trip_erasure_restore_subjects(uuid, timestamptz, timestamptz, text)
   from public, anon, authenticated, service_role;
-grant execute on function public.read_trip_erasure_restore_subjects(timestamptz, timestamptz, text) to service_role;
+grant execute on function public.read_trip_erasure_restore_subjects(uuid, timestamptz, timestamptz, text) to service_role;
 
 commit;

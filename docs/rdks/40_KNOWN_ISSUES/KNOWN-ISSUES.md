@@ -15,8 +15,7 @@ En lokal spærring stopper turkald i både Edge og Worker og varer ud over den
 normale korte vedligeholdelsesfrist. Kontrollen kræver, at den signerede
 Worker-prøve bekræfter spærringen. Den serverbeskyttede databaseforespørgsel
 samler udestående og relevante afsluttede markeringer fra begge sletteforløb.
-Den bruger den ældste gendannede databases tidspunkt og returnerer kun
-ejerpseudonymer til den eksisterende servicekonto.
+Den returnerer kun ejerpseudonymer til den eksisterende servicekonto.
 
 Den lokale afstemning følger de sorterede sider og genbruger den almindelige
 D1-sletning. Efter sletningen kontrollerer den, at turen og registerposten er
@@ -30,7 +29,10 @@ Denne forbindelse er afprøvet med lokale svar og faktiske SQLite-tabeller.
 
 Den lokale afstemning kræver nu både det valgte gendannelsespunkt og
 Cloudflares kvittering for selve gendannelsen af hver berørt database.
-Et punkt før starten på den dækkede slettehistorik afvises. Det private
+Cloudflare kan vælge et punkt, der ligger før det ønskede klokkeslæt.
+Det valgte punkt skal derfor være dokumenteret nyere end det punkt,
+Cloudflare returnerer ved starten på den dækkede slettehistorik. Selve
+afstemningen bruger hele den dækkede periode. Det private
 installationsforløb kontrollerer desuden den aktive Workers spærring,
 før det ændrer databasen eller udgiver Workeren og genåbner turloggen.
 Begge ændringer er afprøvet lokalt.
@@ -44,11 +46,14 @@ der ingen D1-databaser findes.
 
 Kandidaten afventer et kontrolleret gendannelsesjob, der selv indsamler
 kvitteringerne, og bruger de eksisterende vejr- og turlagerlåse i den
-rækkefølge. Kontosletning via databasen eller brugerens browser ligger
-uden for GitHub-låsene. Før turloggen kan genåbnes, skal det kontrolleres,
-at allerede modtagne kald er afsluttet og at eventuelle yderligere
-slettemarkeringer er medtaget. Opbevaringen skal dække frem til de ældste
-anvendelige gendannelsespunkter.
+rækkefølge. Den lokale PostgreSQL-kandidat fastholder begge slettejournaler
+under samme spærring. En kontosletning med uafklaret Auth-udfald stopper
+starten. Den eksisterende servicekonto kan kun læse den faste liste, når
+dens id matcher spærringen. De nye rettigheder og adfærd er afprøvet lokalt
+i én databasesession. Kald, som allerede var i gang, og parallelle skrivere
+kræver egne beviser. Genåbningen skal være bundet til den verificerede
+afstemning, og slettehistorikken skal dække frem til de ældste anvendelige
+gendannelsespunkter.
 
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 

@@ -38,19 +38,26 @@ export function identifyCloudflareTripRestore({ accountId, projectRef, bindings,
   const covered = timestampKey(plan.journalCoveredFrom);
   if (covered > held || held > captured) throw failure();
 
-  let oldestKey = null;
-  let restoreFrom = null;
+  function verifyBookmarkLookup(databaseId, time, receipt) {
+    const lookup = new URL(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/time_travel/bookmark`);
+    lookup.searchParams.set('timestamp', time);
+    const bookmark = receipt?.body?.result?.bookmark;
+    if (receipt?.method !== 'GET' || receipt.url !== lookup.href || receipt.status !== 200
+      || receipt.body?.success !== true || !bookmarkValid(bookmark)
+      || !Array.isArray(receipt.body.errors ?? []) || (receipt.body.errors ?? []).length !== 0) throw failure();
+    return bookmark;
+  }
+
   const ids = new Set();
   const restored = plan.targets.map(target => {
     const point = timestampKey(target?.at);
     if (!bindings.some(binding => binding.database_id === target.databaseId) || ids.has(target.databaseId)
-      || point < covered || point > held || !bookmarkValid(target.bookmark)) throw failure();
-    const lookup = new URL(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${target.databaseId}/time_travel/bookmark`);
-    lookup.searchParams.set('timestamp', target.at);
-    if (target.lookup?.method !== 'GET' || target.lookup.url !== lookup.href || target.lookup.status !== 200
-      || target.lookup.body?.success !== true || target.lookup.body.result?.bookmark !== target.bookmark) {
-      throw failure();
-    }
+      || point <= covered || point > held || !bookmarkValid(target.bookmark)) throw failure();
+    const baselineBookmark = verifyBookmarkLookup(target.databaseId, plan.journalCoveredFrom, target.baselineLookup);
+    const selectedBookmark = verifyBookmarkLookup(target.databaseId, target.at, target.lookup);
+    // Cloudflare's lookup returns the last bookmark at or before its timestamp.
+    // A strictly later bookmark therefore lies within covered journal history.
+    if (selectedBookmark !== target.bookmark || selectedBookmark <= baselineBookmark) throw failure();
     ids.add(target.databaseId);
     const matching = replies.filter(reply => reply?.databaseId === target.databaseId);
     if (matching.length !== 1) throw failure();
@@ -64,20 +71,16 @@ export function identifyCloudflareTripRestore({ accountId, projectRef, bindings,
       || !bookmarkValid(reply.body.result?.bookmark) || !bookmarkValid(reply.body.result?.previous_bookmark)) {
       throw failure();
     }
-    if (oldestKey === null || point < oldestKey) {
-      oldestKey = point;
-      restoreFrom = target.at;
-    }
     return {
-      databaseId: target.databaseId, at: target.at, requestedBookmark: target.bookmark,
+      databaseId: target.databaseId, at: target.at, requestedBookmark: target.bookmark, baselineBookmark,
       startedAt: reply.startedAt, completedAt: reply.completedAt,
       restoredBookmark: reply.body.result.bookmark, previousBookmark: reply.body.result.previous_bookmark,
     };
   });
   return {
-    restoreFrom, captureAt: plan.captureAt,
+    restoreFrom: plan.journalCoveredFrom, captureAt: plan.captureAt,
     epoch: createHash('sha256').update(canonicalJson({
-      scope: 'ravradar-trip-d1-restore-v1', accountId, projectRef, versionId, deploymentId, bindings,
+      scope: 'ravradar-trip-d1-restore-v2', accountId, projectRef, versionId, deploymentId, bindings,
       intentId: plan.intentId, sourceSha: plan.sourceSha, runId: plan.runId, attempt: plan.attempt,
       heldAt: plan.heldAt, captureAt: plan.captureAt, journalCoveredFrom: plan.journalCoveredFrom, restored,
     })).digest('hex'),
@@ -222,7 +225,7 @@ export async function reconcileCloudflareHeldTripErasures({
   return reconcileHeldTripErasures({
     shards, epoch, readHoldEpoch: verifyRecoveryHoldEpoch,
     readJournalPage: cursor => request(journalUrl, journalHeaders, {
-      p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: cursor,
+      p_hold_id: restorePlan.intentId, p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: cursor,
     }, 'TRIP_RESTORE_JOURNAL_UNVERIFIED'),
   });
 }
