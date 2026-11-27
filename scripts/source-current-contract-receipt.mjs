@@ -234,13 +234,15 @@ function currentChangeProjection(input){
   const reference=fullBaseline(input.fullBaseline,current);
   keys(changeBase,['commit','gitTree','pullBaseCommit']);
   must(Object.values(changeBase).every(oid),'CHANGE_BASE_IDENTITY');
+  // Preserve the field order issued by the normal producer in v4 receipts.
+  const orderedChangeBase={commit:changeBase.commit,gitTree:changeBase.gitTree,pullBaseCommit:changeBase.pullBaseCommit};
   const impact=contractPlanProjection(currentPlan,{commit:changeBase.commit,tree:changeBase.gitTree},true);
   const continuity=contractPlanProjection(cumulativePlan,
     {commit:input.fullBaseline.mergeCommit,tree:input.fullBaseline.gitTree},true);
   must(impact.candidateTree===continuity.candidateTree,'CHANGE_TREE_MISMATCH');
   for(const family of ['postgres','C','I','T'])must(impact.inputDigests[family+'After']
     ===continuity.inputDigests[family+'After'],'CHANGE_INPUT_MISMATCH');
-  return {reference,changeBase:structuredClone(changeBase),impact,continuity};
+  return {reference,changeBase:orderedChangeBase,impact,continuity};
 }
 export function currentChangePlanSha256(input){
   must(arguments.length===1,'ARGUMENTS');keys(input,['current','fullBaseline','changeBase','currentPlan','cumulativePlan']);
