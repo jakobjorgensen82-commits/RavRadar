@@ -1,3 +1,7 @@
+## 27. november — kendt 4.0.43-variant i tilmeldingsdiagnosen
+
+Den skrivefri kataloglæsning #69 genkendte trigger, funktionstype og ejer. Den installerede funktionskrop fik status ukendt. Den lokale kandidat tilføjer den eksakte SHA-256 for 4.0.43-installeren med Windows-linjeskift. De 12 linjeskift ligger uden for tekstliteraler, og SQL-tokenrækkefølgen er identisk. Andre ukendte identiteter afvises fortsat. En ny faktisk kataloglæsning skal afgøre, om varianten forklarer #69. Aktivitetsdækning afventer fortsat faktisk registrering og godkendt brugersvar.
+
 ## 27. november — giv kataloget til vandstandshalen tid i det almindelige DMI-forløb
 
 - [x] #405 og #407 nåede først til den sene vandstandsrunde med henholdsvis 10 og 39 sekunders arbejdstid tilbage. Det var for lidt til katalogopslag og sikker færdiggørelse af selv én fil. #407 havde stadig ledige filpladser.
