@@ -35,9 +35,20 @@ installationsforløb kontrollerer desuden den aktive Workers spærring,
 før det ændrer databasen eller udgiver Workeren og genåbner turloggen.
 Begge ændringer er afprøvet lokalt.
 
+Den eksisterende D1-installation og dennes fejlgenoptagelse læser nu den
+aktive Workers bindingsmetadata før de berørte skriveruter. Samme kontrol
+beskytter de to særskilte schemaopgraderinger. Et gendannelsesflag i den
+aktive binding eller en uklar binding stopper skrivningen. Den normale
+førstegangsinstallation følger fortsat sin egen vej efter kontrol af, at
+der ingen D1-databaser findes.
+
 Kandidaten afventer et kontrolleret gendannelsesjob, der selv indsamler
-kvitteringerne, samt kontrol af de øvrige skriveveje og opbevaring frem til
-de ældste anvendelige gendannelsespunkter.
+kvitteringerne, og bruger de eksisterende vejr- og turlagerlåse i den
+rækkefølge. Kontosletning via databasen eller brugerens browser ligger
+uden for GitHub-låsene. Før turloggen kan genåbnes, skal det kontrolleres,
+at allerede modtagne kald er afsluttet og at eventuelle yderligere
+slettemarkeringer er medtaget. Opbevaringen skal dække frem til de ældste
+anvendelige gendannelsespunkter.
 
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 

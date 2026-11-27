@@ -340,6 +340,7 @@ export async function verifyActiveWorkerDeployment({
 
 export async function verifyExistingWorkerBindings({
   accountId, apiToken, workerName, expectedVersion, expectedBindings, expectedPlainTextBindings,
+  requireUnheld = false,
   fetchImpl = globalThis.fetch, timeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
 }) {
   const failure = () => new Error('TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED');
@@ -348,7 +349,7 @@ export async function verifyExistingWorkerBindings({
   if (expectedPlainTextBindings !== undefined
     && (!object(expectedPlainTextBindings) || Object.keys(expectedPlainTextBindings).join(',') !== 'TRIP_AGGREGATE_ENABLED'
       || !['false', 'true'].includes(expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED))) throw failure();
-  if (!Array.isArray(expectedBindings) || expectedBindings.length !== 10
+  if (typeof requireUnheld !== 'boolean' || !Array.isArray(expectedBindings) || expectedBindings.length !== 10
     || expectedBindings.some((row, index) => !object(row) || row.binding !== `TRIP_DB_${index}`
       || row.database_name !== `ravradar-trips-${index}` || typeof row.database_id !== 'string' || !uuid.test(row.database_id))
     || new Set(expectedBindings.map(row => row.database_id.toLowerCase())).size !== 10) throw failure();
@@ -370,6 +371,7 @@ export async function verifyExistingWorkerBindings({
       const row = d1.find(binding => binding.name === expected.binding);
       return !row || typeof row.id !== 'string' || row.id.toLowerCase() !== expected.database_id.toLowerCase();
     })) throw failure();
+    if (requireUnheld && bindings.some(row => row.name === 'TRIP_RESTORE_HOLD')) throw failure();
     if (expectedPlainTextBindings !== undefined) {
       const setting = bindings.find(row => row.name === 'TRIP_AGGREGATE_ENABLED');
       if (!setting || setting.type !== 'plain_text' || setting.text !== expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED) throw failure();
@@ -384,6 +386,16 @@ export async function verifyExistingWorkerBindings({
 
 
 async function main() {
+  const args = process.argv.slice(2);
+  if (args.length === 1 && args[0] === '--before-replace') {
+    const { name, d1_databases: expectedBindings } = JSON.parse(fs.readFileSync(process.env.TRIP_WRANGLER_CONFIG_PATH, 'utf8'));
+    await verifyExistingWorkerBindings({
+      accountId: process.env.CLOUDFLARE_ACCOUNT_ID, apiToken: process.env.CLOUDFLARE_API_TOKEN,
+      workerName: name, expectedBindings, requireUnheld: true,
+    });
+    return;
+  }
+  if (args.length !== 0) throw new Error('TRIP_STORAGE_WORKER_VERIFY_ARGUMENTS_INVALID');
   const gatewayUrl = normalizeCloudflareGatewayUrl(process.env.CLOUDFLARE_TRIP_GATEWAY_URL || '');
   const sharedSecret = process.env.TRIP_GATEWAY_SHARED_SECRET || '';
   if (sharedSecret.length < 32) throw new Error('Worker-verifikationens delte hemmelighed mangler.');
