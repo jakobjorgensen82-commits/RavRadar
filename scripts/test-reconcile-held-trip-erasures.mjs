@@ -6,7 +6,7 @@ import { handleRequest } from '../cloudflare/trip-gateway/worker.js';
 import {
   deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, storeCloudflareTrip,
 } from '../supabase/functions/_shared/trip-storage.js';
-import { reconcileHeldTripErasures } from './lib/reconcile-held-trip-erasures.mjs';
+import { reconcileCloudflareHeldTripErasures, reconcileHeldTripErasures } from './lib/reconcile-held-trip-erasures.mjs';
 import { runWorkerCountReadProbe, WORKER_COUNT_SIGNED_PROBE_KIND } from './verify-cloudflare-trip-gateway.mjs';
 
 const migrations = ['001_trip_observations', '002_owner_export_keyset', '003_owner_erasure_insert_guard']
@@ -79,20 +79,61 @@ test('recovery replays a pending erasure on a rolled-back control shard while or
   assert.equal(count('trip_observations', erased), 1);
   await assert.rejects(list(erased));
 
-  const result = await reconcileHeldTripErasures({
-    shards: live.shards, epoch,
+  const projectRef = 'tttttttttttttttttttt';
+  const accountId = 'c'.repeat(32);
+  const serviceKey = 'sb_secret_SYNTHETIC_DELETE_TEST';
+  const cloudflareToken = 'SYNTHETIC_LOCAL_D1_TEST_ONLY';
+  const restoreFrom = '2026-08-26T09:00:00.000Z';
+  const captureAt = '2026-08-26T12:00:00.123456Z';
+  const bindings = live.shards.map((_, index) => ({
+    binding: `TRIP_DB_${index}`, database_name: `ravradar-trips-${index}`,
+    database_id: `55555555-5555-4555-8555-${String(index).padStart(12, '0')}`,
+  }));
+  let primaryRead = true;
+  const provider = {
+    bindings, projectRef, accountId, serviceKey, cloudflareToken, epoch, restoreFrom, captureAt,
     async readHoldEpoch() {
       const proof = await runWorkerCountReadProbe({
         ...live.config, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true,
       });
       return proof.restoreHeld ? epoch : null;
     },
-    async readJournalPage() { return [{ owner_subject: erased.subject }]; },
-  });
+    async fetchImpl(input, init) {
+      const url = new URL(input);
+      const request = new Request(input, init);
+      const body = await request.json();
+      assert.equal(request.method, 'POST');
+      assert.equal(request.redirect, 'error');
+      if (url.hostname === `${projectRef}.supabase.co`) {
+        assert.equal(url.pathname, '/rest/v1/rpc/read_trip_erasure_restore_subjects');
+        assert.equal(request.headers.get('apikey'), serviceKey);
+        assert.equal(request.headers.get('authorization'), null);
+        assert.deepEqual(body, { p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: null });
+        return Response.json([{ owner_subject: erased.subject }]);
+      }
+      assert.equal(url.hostname, 'api.cloudflare.com');
+      assert.equal(request.headers.get('authorization'), `Bearer ${cloudflareToken}`);
+      const index = bindings.findIndex(binding => url.pathname ===
+        `/client/v4/accounts/${accountId}/d1/database/${binding.database_id}/query`);
+      assert.notEqual(index, -1);
+      assert.deepEqual(body.params, [erased.subject]);
+      assert.equal(body.sql.includes(erased.subject), false);
+      const read = body.sql.startsWith('select');
+      const statement = live.shards[index].prepare(body.sql).bind(...body.params);
+      const result = read ? await statement.all() : await statement.run();
+      return Response.json({ success: true, result: [{
+        ...result, results: result.results ?? [], meta: { ...result.meta, served_by_primary: !read || primaryRead },
+      }] });
+    },
+  };
+  const result = await reconcileCloudflareHeldTripErasures(provider);
   assert.deepEqual(result, { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch, owners: 1, removedRows: 1 });
   assert.equal(count('trip_observations', erased), 0);
   assert.equal(count('trip_observation_registry', erased), 0);
   assert.equal(count('trip_owner_erasure_tombstones', erased), 10);
+  await assert.rejects(list(erased));
+  primaryRead = false;
+  await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_D1_QUERY_UNVERIFIED/);
   await assert.rejects(list(erased));
 
   live.hold('false');

@@ -23,6 +23,10 @@ D1-sletning. Efter sletningen kontrollerer den, at turen og registerposten er
 væk, og at slettemarkeringen findes i alle ti databaser. Identiteten på
 spærringen kontrolleres før og efter afstemning. Prøven med en gendannet
 kontrolbase gentager en afbrudt sletning og bevarer en anden ejers tur.
+Afstemningen bruger Supabases beskyttede sletteoversigt og sender
+parameterbundne forespørgsler gennem Cloudflares eksisterende D1-adgang.
+En negativ eller ukendt kvittering fra hoveddatabasen stopper arbejdet.
+Denne forbindelse er afprøvet med lokale svar og faktiske SQLite-tabeller.
 
 Tilbagehold kandidaten fra installation, indtil den normale deployvej
 bevarer spærringen, gendannelsesjobbet binder afstemningen til den faktiske
