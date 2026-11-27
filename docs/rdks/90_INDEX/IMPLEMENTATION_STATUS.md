@@ -1,7 +1,8 @@
 ## 27. november — fysisk stop af upload i fejlbehandlingen
 
 - [x] Knyt gemning og upload til den samme lokale Linux-frist. Lad den indre upload beholde den eksisterende skrivelås og kontrollér gruppens ophør før succes.
-- [ ] Bekræft den styrede upload i den eksisterende GitHub-prøve med et gyldigt forløb og en fastfrosset overvågning. Følg derefter almindelig drift og en eventuel naturlig genoptagelse.
+- [x] Kildekontrol #1786 på den oprindelige ændring bekræftede gyldig upload og fysisk ophør, når den indre overvågning var frosset.
+- [ ] Bekræft den samlede ændrings kildekontrol efter sammenlægning med assistentrettelsen. Følg derefter almindelig drift og en eventuel naturlig genoptagelse.
 
 ## 27. november — genbrug sene DMI-filer til vandtemperatur
 
