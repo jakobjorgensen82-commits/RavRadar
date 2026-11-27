@@ -5,6 +5,7 @@
 - Spørg RavRadar besvarer ét samlet spørgsmål om skånsom undersøgelse og opbevaring af et revnet fund på dansk, tysk og engelsk.
 - Et tysk spørgsmål om et apparat med et dansk ravnavn får det samme afklarende svar som spørgsmålet med et tysk navn.
 - Spørg RavRadar besvarer også spørgsmålet om forskellen mellem et præcist landingssted for rav og en vurdering af kystområdet.
+- Spørg RavRadar forklarer nu på dansk, tysk og engelsk, hvorfor almindelige bølger om vinteren kan efterlade rav blandt skaller og tang, og hvad man kan holde øje med på stranden.
 
 ## Drift — tid til vandstand sidst i prognosen
 
