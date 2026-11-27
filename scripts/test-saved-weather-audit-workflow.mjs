@@ -1113,7 +1113,7 @@ import { execFile } from 'node:child_process';
 import { Writable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { auditB374WaterSourceSupport, B374_H0 as H0, B374_H3 as H3, B374_SCOPE as scope,
+import { auditB374WaterSourceSupport, auditB411WaterSourceSupport, B374_H0 as H0, B374_H3 as H3, B374_SCOPE as scope,
   b374VerifyNormalInputSteps as verifyNormalInputSteps, b374StageIdentity as ordinaryStageIdentity,
   b374ArtifactRedirectUrl as artifactRedirectUrl, b374CheckArtifactMetadata as checkArtifactMetadata,
   b374TransferExact as transferExact } from './audit-b358-water-level-trend.mjs';
@@ -1180,6 +1180,56 @@ test('B374 all routed donors have hidden same-series H3; output stays categorica
   })));
   assert.doesNotMatch(JSON.stringify(report), /PRIVATE_FIXTURE_SOURCE|waterLevel|gridPoint|modelRun|56/);
   assert.equal(JSON.stringify([inputs.activeBulk, inputs.protectedBulk, [...inputs.sealedIndex], inputs.routing]), before);
+});
+
+test('B411 Dokkedal checks paired public water and reports only the qualified alternative bank', async () => {
+  const referenceAt = '2026-11-27T12:00:00.000Z';
+  const h = '2026-11-27T18:00:00.000Z';
+  const h3 = '2026-11-27T21:00:00.000Z';
+  const priorModel = '2026-11-27T06:00:00.000Z';
+  const zoneId = 'DK-B02-11';
+  const partId = 'dk-b02-11-national-part-01-locality-01';
+  const stock = makeRows => ({ generatedAt: referenceAt, timeStrideHours: 3,
+    zones: Object.fromEntries(sources.map(source => [`SOURCE::${source.sourceKey}`, { hourly: makeRows(source) }])) });
+  const activeBulk = stock(source => Object.fromEntries(Array.from({ length: 40 }, (_, offset) => {
+    const time = new Date(Date.parse(referenceAt) + offset * 3 * 3_600_000).toISOString();
+    return [time, dmiWaterSourceFixture(source, time, time === h ? -6 : -5, time === h ? priorModel : referenceAt)];
+  })));
+  const protectedBulk = stock(source => ({ [h3]: dmiWaterSourceFixture(source, h3, -4, priorModel) }));
+  const index = normal.buildWaterSourceForecastIndex(sources, activeBulk, referenceAt, { protectedBulkCache: protectedBulk });
+  const sealedIndex = await normal.unpackWaterSourceForecastContinuity(
+    await normal.packWaterSourceForecastContinuity(index, referenceAt), referenceAt);
+  const stationRegistry = normal.applyWaterSourceForecastStatus(sources, sealedIndex, referenceAt);
+  const routing = { zones: { [zoneId]: { enabled: true, requireAll: true, method: 'manual-weights',
+    stations: sources.map(source => ({ sourceKey: source.sourceKey, weight: 1 })) } } };
+  const publicHours = new Map([
+    [h, { waterLevelCm: -6, waterLevelTrendCm3h: null }],
+    [h3, { waterLevelCm: -5, waterLevelTrendCm3h: null }],
+  ]);
+  const cases = new Map([[partId, { part: { partId, zoneId, waterPoint: [10.04, 55.9] },
+    feature: { properties: { id: zoneId } }, publicHours }]]);
+  const input = { normal, cases, stationRegistry, routing, routingConfigurationSha256: normal.waterRoutingConfigurationSha256(routing),
+    sealedIndex, activeBulk, protectedBulk, historicalBulk: null, retainedIndex: new Map() };
+  const before = JSON.stringify([...sealedIndex]);
+  assert.deepEqual(auditB411WaterSourceSupport(input), { kind: 'B411_DOKKEDAL_WATER_SOURCE_SUPPORT_AUDIT_V1',
+    parts: [{ partId, decision: 'QUALIFIED_SUPPORT_EXISTS', candidateBanks: ['PROTECTED_BULK'] }] });
+  assert.equal(JSON.stringify([...sealedIndex]), before);
+  publicHours.set(h3, { waterLevelCm: -300, waterLevelTrendCm3h: null });
+  assert.throws(() => auditB411WaterSourceSupport(input), /SEALED_B374_ROUTE_MISMATCH/);
+
+  const workflow = await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml', import.meta.url), 'utf8');
+  const block = workflow.split('\n  water-source-support-374:')[1];
+  const confirmation = 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT';
+  const runnerCommand = 'node scripts/audit-b358-water-level-trend.mjs --b411-dokkedal';
+  assert.ok(block?.includes(`inputs.confirmation == '${confirmation}'`));
+  assert.ok(block.includes(`['${confirmation}', '45997841484']`));
+  const proof = block.indexOf('test "$SOURCE_REQUIRED" = false');
+  const call = block.indexOf(runnerCommand);
+  assert.ok(proof >= 0 && proof < call && call < block.indexOf('WEATHER_PROGRESS_MASTER_SECRET:'));
+  for (const job of ['audit', 'component-summary', 'voersaa-water-trace', 'water-level-basis-272']) {
+    assert.ok(workflow.split('\n  ' + job + ':\n')[1]?.split('\n')[0]
+      .includes(`inputs.confirmation != '${confirmation}'`));
+  }
 });
 
 test('B374 missing one donor or changing its native grid does not produce support', async () => {
