@@ -44,6 +44,11 @@ create trigger trip_owner_erasure_recovery_guard
 create trigger account_erasure_recovery_guard
   before insert or update or delete or truncate on public.account_erasure_operations
   for each statement execute function public.guard_trip_erasure_recovery_write();
+-- Fence the Supabase fallback at its storage boundary as well. The normal
+-- D1 route is fenced by the held Worker before it reaches any shard.
+create trigger trip_observation_recovery_guard
+  before insert or update or delete or truncate on public.observations
+  for each statement execute function public.guard_trip_erasure_recovery_write();
 
 -- Preserve the hold across a runner failure. Only the controlled recovery
 -- caller may later release it after confirming the exact replay.

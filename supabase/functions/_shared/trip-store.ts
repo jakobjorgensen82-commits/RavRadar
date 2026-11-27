@@ -27,7 +27,7 @@ const SUPABASE_IDEMPOTENCY_TIMESTAMPS = [
 ];
 const SUPABASE_IDEMPOTENCY_UUIDS = ["client_observation_id", "trip_id"];
 
-export type TripStorageMode = "d1" | "supabase" | "maintenance" | "restore-hold";
+export type TripStorageMode = "d1" | "supabase" | "maintenance";
 export const TRIP_STORAGE_MAINTENANCE_MAX_LEASE_MS = 30 * 60_000;
 
 function requiredEnvironment(name: string) {
@@ -37,9 +37,6 @@ function requiredEnvironment(name: string) {
 }
 
 export function tripStorageMode(now = Date.now()): TripStorageMode {
-  // A data restore can outlive the short Worker repair lease.
-  const restoreHold = Deno.env.get("TRIP_RESTORE_HOLD");
-  if (restoreHold !== undefined && restoreHold !== "false") return "restore-hold";
   const rawValue = Deno.env.get("TRIP_STORAGE_MODE")?.trim() || "";
   const value = rawValue.toLowerCase();
   if (value === "d1" || value === "supabase") return value;
@@ -57,9 +54,8 @@ export function tripStorageMode(now = Date.now()): TripStorageMode {
   throw new GatewayError(503, "TRIP_STORAGE_MODE_INVALID");
 }
 
-function activeTripStorageMode(): Exclude<TripStorageMode, "maintenance" | "restore-hold"> {
+function activeTripStorageMode(): Exclude<TripStorageMode, "maintenance"> {
   const mode = tripStorageMode();
-  if (mode === "restore-hold") throw new GatewayError(503, "TRIP_RESTORE_HOLD");
   if (mode === "maintenance") throw new GatewayError(503, "TRIP_STORAGE_MAINTENANCE");
   return mode;
 }
@@ -243,8 +239,7 @@ async function listFromSupabase(userId: string, limit: number) {
 
 export async function storeObservation(payload: Record<string, unknown>, authenticatedUserId: string | null) {
   const safePayload = projectLegacyExternalTripPayload(payload);
-  const storageMode = activeTripStorageMode();
-  if (Object.hasOwn(safePayload, 'observation_origin') && storageMode === "supabase") {
+  if (Object.hasOwn(safePayload, 'observation_origin') && activeTripStorageMode() === "supabase") {
     throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
   }
   await assertActiveRavScoreTripBinding(safePayload);

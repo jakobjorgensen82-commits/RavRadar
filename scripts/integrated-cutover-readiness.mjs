@@ -93,7 +93,7 @@ export const CHECKPOINT_SCALAR_WALK_MIGRATION = Object.freeze({
 export const TRIP_ERASURE_RECOVERY_SQL = Object.freeze({
   version: '20261127095500',
   filename: '20261127095500_trip_owner_erasure_intents.sql',
-  sha256: '734ae3e7a353a20afacf0f0cba2bdc180cad64989c2cd643ce8c6dd2c78b7526',
+  sha256: 'a642ed82053544f48be7de53867d846736feb6c8d6e0862c029f0493d7b0c59a',
 });
 const MODEL_BINDING_FIELDS = Object.freeze([
   'modelId', 'stateSchemaVersion', 'variantId', 'profileId', 'componentSchemaId',

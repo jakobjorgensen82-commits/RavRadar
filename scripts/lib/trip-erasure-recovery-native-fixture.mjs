@@ -32,6 +32,7 @@ export async function exerciseTripErasureRecoveryHold({
   const observedHold = async () => JSON.parse(await pg(serviceRole
     + `set time zone 'Pacific/Auckland'; select json_agg(state) from ${readHold} as state;`));
   assert.deepEqual(await observedHold(), [{ hold_id: null, held_at: null }]);
+  assert.equal((await raw(serviceRole + 'delete from public.observations where false;')).code, 0);
   for (const role of ['anon', 'authenticated']) {
     const refused = await raw(`set role ${role}; select * from ${readHold};`);
     assert.equal(refused.code, 3);
@@ -135,6 +136,15 @@ export async function exerciseTripErasureRecoveryHold({
     '${otherHold}', statement_timestamp()-interval '1 day', statement_timestamp(), null)`,
   'TRIP_ERASURE_RECOVERY_HOLD_UNVERIFIED'));
   assert.equal(await pg(serviceRole + `select ${acquire};`), heldAt);
+  for (const statement of [
+    'insert into public.observations(id,user_id) values(613,null);',
+    'update public.observations set user_id=null where false;',
+    'delete from public.observations where false;',
+  ]) {
+    const refused = await raw(serviceRole + statement);
+    assert.equal(refused.code, 3);
+    assert.equal(refused.sqlState, '55000');
+  }
   assert.equal(await pg(`select not exists (select from public.trip_owner_erasure_intents where owner_subject='${lateSubject}')
     and not exists (select from public.account_erasure_operations where operation_id='${otherOperation}');`), 't');
   return {
@@ -142,7 +152,7 @@ export async function exerciseTripErasureRecoveryHold({
     migrationSha256: createHash('sha256').update(migrationSql).digest('hex'),
     actualPostgres: true, syntheticSqlHost: true, realGoTrue: false,
     accountClaimCommitRefusesHold: true, priorTripIntentInHeldJournal: true,
-    heldTripAndAccountWritesRefused: true, sameHoldIdRequired: true,
+    heldTripAndAccountWritesRefused: true, supabaseObservationWritesRefused: true, sameHoldIdRequired: true,
     productionReleaseVerified: false,
   };
 }

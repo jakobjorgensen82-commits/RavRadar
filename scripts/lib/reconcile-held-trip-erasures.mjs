@@ -541,7 +541,7 @@ export async function reconcileCloudflareHeldTripErasures({
       if (deployment.deploymentId !== deploymentId) return null;
       const [edge, worker, signed] = await Promise.all([
         waitForTripStorageEdgeReadiness({
-          baseUrl, publishableKey, expectedStorageMode: 'restore-hold', fetchImpl,
+          baseUrl, publishableKey, expectedStorageMode: 'd1', fetchImpl,
           retryDelaysMs: [0], requiredConsecutiveSuccesses: 1,
         }),
         waitForWorkerHealth({ gatewayUrl: gateway, expectedRestoreHold: true, fetchImpl, retryDelaysMs: [0] }),

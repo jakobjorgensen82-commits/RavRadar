@@ -3370,7 +3370,8 @@ test('after601 receipt accepts the measured whole-history and quota results and 
   const tripErasureRecovery={migration:TRIP_ERASURE_RECOVERY_MIGRATION,
     migrationSha256:hasTripErasure?cryptoHash('sha256').update(readGit(['cat-file','blob',realHead+':'+tripSql])).digest('hex'):null,
     actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,accountClaimCommitRefusesHold:true,
-    priorTripIntentInHeldJournal:true,heldTripAndAccountWritesRefused:true,sameHoldIdRequired:true,productionReleaseVerified:false};
+    priorTripIntentInHeldJournal:true,heldTripAndAccountWritesRefused:true,supabaseObservationWritesRefused:true,
+    sameHoldIdRequired:true,productionReleaseVerified:false};
   const checkpointScalarWalk={migrationVersion:append.version,migrationSha256:append.sha256,
     installedLedgerBeforeRows:70,installedLedgerAfterRows:71,
     sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,
@@ -3390,6 +3391,7 @@ test('after601 receipt accepts the measured whole-history and quota results and 
   if(hasTripErasure){
     for(const mutate of [value=>delete value.report.tripErasureRecovery,
       value=>value.report.tripErasureRecovery.actualPostgres=false,
+      value=>value.report.tripErasureRecovery.supabaseObservationWritesRefused=false,
       value=>value.report.tripErasureRecovery.productionReleaseVerified=true,
       value=>value.report.tripErasureRecovery.migrationSha256='a'.repeat(64)]){
       const changed=copy(v2);mutate(changed);

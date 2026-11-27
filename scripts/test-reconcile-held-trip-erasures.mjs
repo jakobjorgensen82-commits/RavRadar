@@ -188,7 +188,7 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   assert.equal(restoreIdentity.captureAt, captureAt);
   assert.notEqual(restoreIdentity.epoch, epoch);
   let primaryRead = true;
-  let edgeMode = 'restore-hold';
+  let edgeMode = 'd1';
   let providerRequests = 0;
   let d1Requests = 0;
   let d1Writes = 0;
@@ -317,10 +317,10 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
     assert.equal(d1Requests, 0);
     assert.equal(holdReadbacks.length, 0);
   }
-  edgeMode = 'd1';
+  edgeMode = 'supabase';
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(d1Requests, 0);
-  edgeMode = 'restore-hold';
+  edgeMode = 'd1';
   const verifyOnly = () => reconcileCloudflareHeldTripErasures({ ...provider, verifyOnly: true });
   await assert.rejects(verifyOnly(), /TRIP_DELETE_INVALID/);
   assert.equal(d1Writes, 0, 'A remaining trip must not turn a readback into a replay');

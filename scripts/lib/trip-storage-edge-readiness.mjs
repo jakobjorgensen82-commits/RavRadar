@@ -266,7 +266,7 @@ export async function waitForTripStorageEdgeReadiness({
   requiredConsecutiveSuccesses = 2,
   fetchTimeoutMs = TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS,
 }) {
-  if (!['d1', 'supabase', 'maintenance', 'restore-hold'].includes(expectedStorageMode)) throw new Error('TRIP_STORAGE_EDGE_MODE_INVALID');
+  if (!['d1', 'supabase', 'maintenance'].includes(expectedStorageMode)) throw new Error('TRIP_STORAGE_EDGE_MODE_INVALID');
   if (!Number.isInteger(requiredConsecutiveSuccesses) || requiredConsecutiveSuccesses < 1) {
     throw new Error('TRIP_STORAGE_EDGE_CONSECUTIVE_SUCCESSES_INVALID');
   }

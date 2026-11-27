@@ -224,7 +224,8 @@ with function_scope(signature, volatility, service_execute) as (values
 ), table_scope(name) as (values ('public.trip_erasure_recovery_gate'), ('public.trip_owner_erasure_intents')),
 trigger_scope(relation, trigger_name) as (values
  ('public.trip_owner_erasure_intents', 'trip_owner_erasure_recovery_guard'),
- ('public.account_erasure_operations', 'account_erasure_recovery_guard')
+ ('public.account_erasure_operations', 'account_erasure_recovery_guard'),
+ ('public.observations', 'trip_observation_recovery_guard')
 )
 select
  (select count(*) = 5 and bool_and(p.prosecdef and p.provolatile::text = s.volatility
@@ -242,7 +243,7 @@ select
      where a.grantee <> c.relowner)
    and not pg_catalog.has_table_privilege('service_role', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER'))
   from table_scope s join pg_catalog.pg_class c on c.oid = pg_catalog.to_regclass(s.name)) as tables_ok,
- (select count(*) = 2 and bool_and(not t.tgisinternal and t.tgenabled = 'O' and t.tgtype = 62
+ (select count(*) = 3 and bool_and(not t.tgisinternal and t.tgenabled = 'O' and t.tgtype = 62
    and t.tgfoid = pg_catalog.to_regprocedure('public.guard_trip_erasure_recovery_write()'))
   from trigger_scope s join pg_catalog.pg_trigger t on t.tgrelid = pg_catalog.to_regclass(s.relation)
    and t.tgname = s.trigger_name) as triggers_ok;`;

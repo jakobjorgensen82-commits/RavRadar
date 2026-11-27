@@ -16,8 +16,8 @@ const preUpgrade = process.env.TRIP_STORAGE_UPGRADE_PREFLIGHT === '1';
 const sharedSecret = process.env.TRIP_GATEWAY_SHARED_SECRET || '';
 const fetchWithDeadline = createBoundedFetch({ timeoutMs: TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS });
 if (!baseUrl || !publishableKey) throw new Error('Edge-verifikationens offentlige konfiguration mangler.');
-if (!['d1', 'supabase', 'maintenance', 'restore-hold'].includes(expectedStorageMode)) {
-  throw new Error('Edge-verifikationen kræver EXPECTED_TRIP_STORAGE_MODE=d1|supabase|maintenance|restore-hold.');
+if (!['d1', 'supabase', 'maintenance'].includes(expectedStorageMode)) {
+  throw new Error('Edge-verifikationen kræver EXPECTED_TRIP_STORAGE_MODE=d1|supabase|maintenance.');
 }
 
 async function invoke(functionName, { origin, method = 'POST', body = '{}' } = {}) {

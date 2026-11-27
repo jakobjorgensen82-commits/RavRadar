@@ -2854,7 +2854,8 @@ function after601ExecutedV2Receipt(current,runtime,report,nativeInput){
       migrationSha256:nativeInput.tripErasureRecoveryMigrationSha256,
       actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,
       accountClaimCommitRefusesHold:true,priorTripIntentInHeldJournal:true,
-      heldTripAndAccountWritesRefused:true,sameHoldIdRequired:true,productionReleaseVerified:false};
+      heldTripAndAccountWritesRefused:true,supabaseObservationWritesRefused:true,
+      sameHoldIdRequired:true,productionReleaseVerified:false};
     assert.deepEqual(report.tripErasureRecovery,tripErasureRecovery,'Missing exact trip erasure recovery execution proof');
     receipt.report.tripErasureRecovery=tripErasureRecovery;
   }else assert.equal(report.tripErasureRecovery,undefined);

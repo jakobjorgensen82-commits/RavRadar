@@ -60,9 +60,12 @@ tidspunkterne. Serveren afslutter kvitteringen efter kontrol af begge lagre.
 Genforsøg genbruger samme markering. Den eksisterende kontosletning bruger
 fortsat sin egen kø. Kaldet og SQL-rettighederne er afprøvet lokalt.
 
-En lokal spærring stopper turkald i både Edge og Worker og varer ud over den
-normale korte vedligeholdelsesfrist. Kontrollen kræver, at den signerede
-Worker-prøve bekræfter spærringen. Den serverbeskyttede databaseforespørgsel
+Den lokale gendannelsesvej kræver, at begge Edge-ruter peger på D1, og at
+den signerede Worker-prøve bekræfter spærringen af D1-kald. Spærringen
+varer ud over den korte vedligeholdelsesfrist. Supabase afviser skrivning
+til reservebeholdningen og begge slettejournaler, mens den præcise
+gendannelseslås holdes. Kontrollen prøver de tre skrivemåder i PostgreSQL.
+Den serverbeskyttede databaseforespørgsel
 samler udestående og relevante afsluttede markeringer fra begge sletteforløb.
 Den returnerer kun ejerpseudonymer til den eksisterende servicekonto.
 
