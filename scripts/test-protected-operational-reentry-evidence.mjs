@@ -1104,6 +1104,7 @@ test('closed ordinary phase retires only its authenticated unchanged-model defau
 function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRow=null,isolatedRestoreTarget=null}={}) {
   const primary=primaryMap,slots=new Map(),events=[],unexpected=[],statuses=[],pending=[];
   let row=initialRow,primaryFailure=null,primaryBucketRead=null,r2Failure=false,nextPut=null,lateCas=null,nextCas=null,pointerHang=false,bucketHang=false,foreignBytes=0,archiveReservation=null;
+  let archiveReservationError='NoSuchKey';
   const bucket=policy.bucketId,base='https://synthetic.supabase.co';
   const readPath='/storage/v1/object/authenticated/'+bucket+'/',writePath='/storage/v1/object/'+bucket+'/';
   const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -1160,8 +1161,10 @@ function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRo
     if(r2Failure)return new Response('',{status:403});
     const reservationKey='operational-evidence/weather-archive-upload/v1.json';
     if(u.pathname==='/'+bucket+'/'+reservationKey&&method==='GET'){
+      assert.equal(options.cache,'no-store');
       return archiveReservation ? new Response(archiveReservation,{headers:{etag:etag(archiveReservation)}})
-        : new Response(null,{status:404});
+        : new Response('<Error><Code>'+archiveReservationError+'</Code></Error>',
+          {status:404,headers:{'content-type':'application/xml'}});
     }
     if(u.pathname==='/'+bucket&&method==='HEAD')return new Response(null,{status:200});
     if(u.pathname==='/'+bucket&&method==='GET'&&u.searchParams.get('list-type')==='2'){
@@ -1195,7 +1198,7 @@ function slotTransportFixture({operationMs=10_000,primaryMap=new Map(),initialRo
       accountId:'a'.repeat(32),accessKeyId:'synthetic-id',secretAccessKey:'synthetic-secret',bucketId:bucket,fetchImpl:fetchBound,delayImpl})});
   return {clients,primary,slots,events,statuses,decode,rawFetch:fetchImpl,setForeignBytes:value=>{foreignBytes=value;},setArchiveReservation:value=>{archiveReservation=value;},hangBucket:value=>{bucketHang=value;},hangReplicaPointer:value=>{pointerHang=value;},row:()=>clone(row),setRow:value=>{row=clone(value);},
     failPrimary:value=>{primaryFailure=value;},setPrimaryBucketRead:value=>{primaryBucketRead=value;},
-    failR2:value=>{r2Failure=value;},nextPut:value=>{nextPut=value;},
+    failR2:value=>{r2Failure=value;},setArchiveReservationError:value=>{archiveReservationError=value;},nextPut:value=>{nextPut=value;},
     nextCas:value=>{nextCas=value;},releaseCas:()=>{const apply=lateCas;lateCas=null;return apply();},
     releasePuts:()=>pending.splice(0).map(apply=>apply()),check:()=>assert.deepEqual(unexpected,[])};
 }
@@ -1512,6 +1515,12 @@ test('operational replica reserves the exact ordinary next-archive admission thr
     assert.equal(heldForUnknown.result.published,true);
     assert.equal(heldForUnknown.result.replica.status,'OPERATIONAL_REPLICA_HOLD');
     assert.equal(unclear.events.filter(event=>event==='r2-PUT').length,0);
-    for(const t of [probe,at,over,deniedBeforePut,withDebt,unclear]){assert.equal(t.events.includes('r2-DELETE'),false);t.check();}
+    const missingBucket=slotTransportFixture();
+    missingBucket.setArchiveReservationError('NoSuchBucket');
+    const heldForBucket=await slotPublication(work,missingBucket,9001);
+    assert.equal(heldForBucket.result.published,true);
+    assert.equal(heldForBucket.result.replica.status,'OPERATIONAL_SLOT_READ_REFUSED');
+    assert.equal(missingBucket.events.filter(event=>event==='r2-PUT').length,0);
+    for(const t of [probe,at,over,deniedBeforePut,withDebt,unclear,missingBucket]){assert.equal(t.events.includes('r2-DELETE'),false);t.check();}
   }finally{await fs.rm(work,{recursive:true,force:true});}
 });

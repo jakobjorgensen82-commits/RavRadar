@@ -11,8 +11,37 @@ const digest = body => crypto.createHash('sha256').update(body).digest('hex');
 const hmac = (key, body) => crypto.createHmac('sha256', key).update(body).digest();
 const validEtag = value => typeof value === 'string' && /^"[a-zA-Z0-9-]{1,128}"$/.test(value);
 
+export async function hasR2MissingObjectCode(response) {
+  if (response.status !== 404
+      || !/^application\/xml(?:[ \t]*;[ \t]*charset=utf-8)?$/i.test(response.headers.get('content-type') ?? '')
+      || !response.body?.getReader) return false;
+  const maximum = 4096;
+  const declared = response.headers.get('content-length');
+  if (declared !== null && (!/^[1-9][0-9]*$/.test(declared) || Number(declared) > maximum)) return false;
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) break;
+      size += next.value.byteLength;
+      if (size > maximum) return false;
+      chunks.push(Buffer.from(next.value));
+    }
+    if (declared !== null && size !== Number(declared)) return false;
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, size));
+    return /^(?:<\?xml version="1\.0"(?: encoding="UTF-8")?\?>\s*)?<Error>\s*<Code>NoSuchKey<\/Code>(?:\s*<(Message|Resource|RequestId|HostId|Key|BucketName)>[^<>]*<\/\1>)*\s*<\/Error>\s*$/.test(text);
+  } catch {
+    return false;
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 function fixedR2ConditionalObject({
-  accountId, accessKeyId, secretAccessKey, fetchImpl, now, objectPath, maximumBytes,
+  accountId, accessKeyId, secretAccessKey, fetchImpl, now, objectPath, maximumBytes, typedAbsence = false,
 }) {
   const host = `${accountId}.eu.r2.cloudflarestorage.com`;
   async function request(method, object, body = null, etag = undefined) {
@@ -36,7 +65,10 @@ function fixedR2ConditionalObject({
   }
   async function read(object) {
     const response = await request('GET', object);
-    if (response.status === 404) { await response.body?.cancel?.(); return null; }
+    if (response.status === 404 && (!typedAbsence || await hasR2MissingObjectCode(response))) {
+      await response.body?.cancel?.();
+      return null;
+    }
     if (response.status !== 200) { await response.body?.cancel?.(); throw new Error('OPERATIONAL_SLOT_READ_REFUSED'); }
     const etag = response.headers.get('etag'), declared = response.headers.get('content-length');
     if (!validEtag(etag) || (declared !== null && (!/^[1-9][0-9]*$/.test(declared)
@@ -163,7 +195,8 @@ export function createPrivateWeatherUploadReservationR2({
   createR2PrivateRuntimeStorage({ accountId, accessKeyId, secretAccessKey, fetchImpl, now,
     bucketId, maximumObjectBytes: PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES });
   const record = fixedR2ConditionalObject({
-    accountId, accessKeyId, secretAccessKey, fetchImpl, now,
+    accountId, accessKeyId, secretAccessKey, now, typedAbsence: true,
+    fetchImpl: (url, request) => fetchImpl(url, { ...request, cache: 'no-store' }),
     objectPath: () => `/${bucketId}/operational-evidence/weather-archive-upload/v1.json`,
     maximumBytes: PRIVATE_WEATHER_UPLOAD_RESERVATION_BYTES,
   });

@@ -145,6 +145,8 @@ export async function assertNormalStagePublication(t) {
   const r2Calls = [];
   const reservations = new WeakMap();
   const reservationPath = 'operational-evidence/weather-archive-upload/v1.json';
+  const absentObject = (code = 'NoSuchKey') => new Response('<Error><Code>' + code + '</Code></Error>',
+    { status: 404, headers: { 'content-type': 'application/xml' } });
   const r2OptionsFor = (remote, calls, listPositions, fault = {}) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
     secretAccessKey: 'synthetic-secret', delayImpl: async () => {}, fetchImpl: async (url, request) => {
       const address = new URL(url);
@@ -152,11 +154,13 @@ export async function assertNormalStagePublication(t) {
       if (key === reservationPath) {
         const previous = reservations.get(remote);
         if (request.method === 'GET') {
+          assert(request.headers.authorization);
+          assert.equal(request.cache, 'no-store');
           const faultResponse = await fault.reservationGet?.();
           if (faultResponse) return faultResponse;
           return previous
             ? new Response(previous.bytes, { headers: { ETag: previous.etag, 'Content-Length': String(previous.bytes.length) } })
-            : new Response(null, { status: 404 });
+            : absentObject();
         }
         assert.equal(request.method, 'PUT');
         assert(request.headers.authorization);
@@ -192,7 +196,7 @@ export async function assertNormalStagePublication(t) {
       if (request.method === 'GET') {
         const faultResponse = await fault.objectGet?.(key);
         if (faultResponse) return faultResponse;
-        if (!remote.objects.has(key)) return new Response(null, { status: 404 });
+        if (!remote.objects.has(key)) return absentObject();
         const bytes = await remote.storage.download(key);
         return new Response(bytes, { headers: { 'content-length': String(bytes.length) } });
       }
@@ -230,8 +234,6 @@ export async function assertNormalStagePublication(t) {
   const pendingObjects = bytes => decodePrivateWeatherArchiveReservation(bytes).objects
     .filter(part => part.status === 'pending').map(({ path, bytes }) => ({ path, bytes }));
   const pending = remote => pendingObjects(reservations.get(remote).bytes);
-  const absentObject = (code = 'NoSuchKey') => new Response('<Error><Code>' + code + '</Code></Error>',
-    { status: 404, headers: { 'content-type': 'application/xml' } });
   const clonePublication = original => {
     const remote = normalBAndSTransports();
     for (const [key, value] of original.documents) remote.documents.set(key, structuredClone(value));
@@ -295,6 +297,7 @@ export async function assertNormalStagePublication(t) {
     const failedReadback = priorGeneration();
     const rollbackCalls = [];
     let acknowledged;
+    let failedInitialRead = false;
     await assert.rejects(publishOn(failedReadback, rollbackCalls, {
       reservationPut({ bytes, commit }) {
         if (clearUnknown && pendingObjects(bytes).length === 0) throw new Error('synthetic clearing response lost');
@@ -302,7 +305,10 @@ export async function assertNormalStagePublication(t) {
       },
       objectPut(key, bytes) { acknowledged = { path: key, bytes: bytes.length }; },
       objectGet(key) {
-        if (key === acknowledged?.path) return new Response(null, { status: 500 });
+        if (key === acknowledged?.path && !failedInitialRead) {
+          failedInitialRead = true;
+          return new Response(null, { status: 500 });
+        }
       },
     }), /download failed closed/);
     assert(acknowledged, 'The immutable archive PUT received a terminal successful response');
@@ -502,6 +508,82 @@ export async function assertNormalStagePublication(t) {
   assert.equal(journal(delayedOrphan).objects[0].status, 'orphan-deleting', 'Bucket-level 404 cannot settle the exact object');
   await replayWinner(delayedOrphan, { objectGet: key => key === knownArchive.path ? absentObject() : undefined });
   assert.deepEqual(journal(delayedOrphan), { objects: [], intents: [] });
+
+  const failedBeforeB = priorGeneration();
+  let createdBeforeB;
+  let failedVerify = false;
+  let rollbackDeletes = 0;
+  await assert.rejects(publishOn(failedBeforeB, [], {
+    objectPut(key) { createdBeforeB = key; },
+    objectGet(key) {
+      if (key === createdBeforeB && !failedVerify) {
+        failedVerify = true;
+        return new Response(null, { status: 403 });
+      }
+    },
+    objectDelete(key) {
+      assert.equal(key, createdBeforeB);
+      assert.equal(journal(failedBeforeB).objects[0].status, 'orphan-deleting');
+      rollbackDeletes++;
+      return new Response(null, { status: 503 });
+    },
+  }));
+  assert.equal(failedVerify, true);
+  assert.equal(rollbackDeletes, 1, 'The frozen rollback sends at most one physical DELETE too');
+  assert.deepEqual(failedBeforeB.documents.get(pointerKey), heldParent);
+  assert.equal(failedBeforeB.objects.has(createdBeforeB), true);
+  for (const reservationGet of [() => absentObject('NoSuchBucket'), () => new Response(null, { status: 404 })]) {
+    const calls = [];
+    const held = clonePublication(failedBeforeB);
+    let sawExistingArchive = false;
+    await assert.rejects(publishOn(held, calls, {
+      reservationGet,
+      afterObjectHead(key, present) {
+        if (key === createdBeforeB && present) sawExistingArchive = true;
+      },
+    }), error => error.cause?.message === 'OPERATIONAL_SLOT_READ_REFUSED');
+    assert.equal(sawExistingArchive, true, 'An ambiguous journal cannot permit reuse of the positive HEAD');
+    assert.equal(calls.includes('PUT') || calls.includes('DELETE'), false);
+    assert.deepEqual(held.documents.get(pointerKey), heldParent);
+  }
+  const heldPreBCalls = [];
+  await assert.rejects(publishOn(failedBeforeB, heldPreBCalls),
+    error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
+  assert.equal(heldPreBCalls.includes('PUT') || heldPreBCalls.includes('DELETE'), false);
+
+  const legacyDelete = clonePublication(failedBeforeB);
+  const oldHold = JSON.parse(reservations.get(legacyDelete).bytes.toString('utf8'));
+  oldHold.objects[0].status = 'deleting';
+  const oldHoldBytes = Buffer.from(JSON.stringify(oldHold));
+  reservations.set(legacyDelete, { bytes: oldHoldBytes,
+    etag: '"' + crypto.createHash('sha256').update(oldHoldBytes).digest('hex') + '"' });
+  await legacyDelete.storage.removeExact(createdBeforeB);
+  const legacyCalls = [];
+  await assert.rejects(publishOn(legacyDelete, legacyCalls),
+    error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
+  assert.equal(legacyCalls.includes('PUT') || legacyCalls.includes('DELETE'), false);
+  assert.equal(journal(legacyDelete).objects[0].status, 'deleting');
+
+  const archiveHeads = [];
+  let retryArchiveDeletes = 0;
+  const resumedPreB = await publishOn(failedBeforeB, [], {
+    async afterObjectHead(key, present) {
+      if (key !== createdBeforeB) return;
+      archiveHeads.push(present);
+      if (archiveHeads.length === 1) await failedBeforeB.storage.removeExact(key);
+    },
+    objectPut(key) {
+      if (key === createdBeforeB) assert.deepEqual(journal(failedBeforeB).intents, []);
+    },
+    objectDelete(key) {
+      if (key === createdBeforeB) retryArchiveDeletes++;
+    },
+  });
+  assert.deepEqual(archiveHeads.slice(0, 2), [true, false], 'Typed readback triggers a new HEAD before reuse');
+  assert.equal(retryArchiveDeletes, 0, 'Same-bundle recovery sends no second archive DELETE');
+  assert.equal(resumedPreB.published, true);
+  assert.equal(failedBeforeB.objects.has(createdBeforeB), true);
+  assert.deepEqual(journal(failedBeforeB), { objects: [], intents: [] });
 
   const staleOwner = clonePublication(alternateWinner);
   let sawStaleOwner = false;

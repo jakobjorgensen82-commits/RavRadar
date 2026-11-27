@@ -147,6 +147,8 @@ Den lokale journal bevarer kendte arkivdele efter positiv genlæsning af byteant
 
 Den normale udgiver kontrollerer højst én tidligere journalført arkivdel før næste pladsoptælling. Delen skal være positivt oprettet og verificeret, og journalen skal vise, at B-skrivningen aldrig blev sendt, eller at en anden kandidat vandt den næste centrale version. Udgiveren bevarer den indkommende arkivgruppe og begge centralt beskyttede generationer. Oprydningen genlæser de eksakte bytes, den aktuelle B-peger og den samme journalversion omkring en betinget journalopdatering. Den sender højst ét fysisk slettekald. Efter et tabt svar kræves en autentificeret R2-kvittering om, at netop objektnøglen mangler. Ukendte udfald, tidligere ubeviste poster og den eksisterende autoriserede rotation bevares.
 
+Fravær af journalen eller arkivdelen kræver, at R2 entydigt angiver den manglende nøgle i svar på et autentificeret opslag. En tom 404 eller en 404 for hele lageret afklarer intet. Tilbagerulning før B registrerer samme ene sletteforsøg i journalen før sletning. En senere kørsel kan genlæse fraværet for den samme indkommende arkivdel og kontrollere den igen før upload. Ældre sletteposter med mulig gentagelse holdes fortsat tilbage.
+
 Den valgfrie R2-kopi af driftsbevis afstår ved manglende plads eller uafklaret journal, mens den primære udgivelse til Supabase kan fortsætte. Den primære private vejrarkivering stopper før en ny skrivning, hvis pladsen eller reservationsloftet er opbrugt. De lokale prøver dækker tabte svar og præcis genlæsning. GitHub-kildekontrol og normal publicering på den leverede kode udestår. Se DEC-0255.
 
 ## 22. november — tysk AI-svar afvist efter assistentudgivelsen
