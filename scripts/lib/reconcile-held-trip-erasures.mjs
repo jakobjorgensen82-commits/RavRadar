@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { deleteOwnerTrips } from '../../cloudflare/trip-gateway/worker.js';
+import { assertOwnerTripErasureReadback, deleteOwnerTrips } from '../../cloudflare/trip-gateway/worker.js';
 import { canonicalJson, normalizeCloudflareGatewayUrl } from '../../supabase/functions/_shared/trip-storage.js';
 import {
   runWorkerCountReadProbe, verifyExistingWorkerBindings, waitForWorkerHealth, WORKER_COUNT_SIGNED_PROBE_KIND,
@@ -421,12 +421,14 @@ async function restoreRetainedRows(shards, work, requireHold) {
 // The management caller owns the production lock. It binds the epoch to the
 // live hold, restored shards and journal cutoff, and uses bound D1 queries.
 // This function never changes either runtime's hold configuration.
-export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRowsSha256, retainedTripRows, readHoldEpoch, readJournalPage }) {
+export async function reconcileHeldTripErasures({
+  shards, epoch, retainedTripRowsSha256, retainedTripRows, readHoldEpoch, readJournalPage, verifyOnly = false,
+}) {
   if (!Array.isArray(shards) || shards.length !== 10 || new Set(shards).size !== 10
     || shards.some(shard => typeof shard?.prepare !== 'function')
     || typeof epoch !== 'string' || !digestPattern.test(epoch)
     || typeof retainedTripRowsSha256 !== 'string' || !digestPattern.test(retainedTripRowsSha256)
-    || typeof readHoldEpoch !== 'function' || typeof readJournalPage !== 'function') {
+    || typeof readHoldEpoch !== 'function' || typeof readJournalPage !== 'function' || typeof verifyOnly !== 'boolean') {
     throw new Error('TRIP_RESTORE_RECONCILIATION_INPUT_INVALID');
   }
   async function requireHold() {
@@ -452,12 +454,30 @@ export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRow
   }
   if (retainedDigest(retainedTripRows, new Set(subjects)) !== retainedTripRowsSha256) throw retainedRowsError();
   verifyRetainedIdentities(retainedTripRows);
+  const bindings = Object.fromEntries(shards.map((shard, index) => ['TRIP_DB_' + index, shard]));
+  async function requireRetainedSnapshot() {
+    const { sha256 } = await prepareRetainedTripSnapshot(shards, subjects);
+    if (sha256 !== retainedTripRowsSha256) throw new Error('TRIP_RESTORE_RETAINED_ROWS_MISMATCH');
+  }
+
+  await requireHold();
+  if (verifyOnly) {
+    // Reissue proof of an already completed replay without performing any
+    // recovery writes. The retained digest alone omits erased owners.
+    for (let start = 0; start < subjects.length; start += pageSize) {
+      for (const ownerSubject of subjects.slice(start, start + pageSize)) {
+        await assertOwnerTripErasureReadback(bindings, ownerSubject);
+      }
+      await requireHold();
+    }
+    await requireRetainedSnapshot();
+    await requireHold();
+    return { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_READBACK_VERIFIED', epoch, owners: subjects.length, retainedTripRowsSha256 };
+  }
+
   // An unexpected retained row must stop recovery before any erasure is replayed.
   // The read ignores only the subjects already authorized by the full journal.
-  await requireHold();
   const retainedWork = await planRetainedRows(shards, retainedTripRows, subjects);
-
-  const bindings = Object.fromEntries(shards.map((shard, index) => ['TRIP_DB_' + index, shard]));
   let removedRows = 0;
   for (let start = 0; start < subjects.length; start += pageSize) {
     await requireHold();
@@ -468,9 +488,7 @@ export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRow
   }
   await requireHold();
   const recoveredRows = await restoreRetainedRows(shards, retainedWork, requireHold);
-  if ((await prepareRetainedTripSnapshot(shards, subjects)).sha256 !== retainedTripRowsSha256) {
-    throw new Error('TRIP_RESTORE_RETAINED_ROWS_MISMATCH');
-  }
+  await requireRetainedSnapshot();
   await requireHold();
   return { kind: 'TRIP_RESTORE_ERASURE_JOURNAL_REPLAYED', epoch, owners: subjects.length, removedRows, recoveredRows, retainedTripRowsSha256 };
 }
@@ -480,13 +498,13 @@ export async function reconcileHeldTripErasures({ shards, epoch, retainedTripRow
 // and never sends recovery traffic through the held public Worker.
 export async function reconcileCloudflareHeldTripErasures({
   restorePlan, restoreReplies, retainedArchive, archiveSecret, bindings, accountId, cloudflareToken, projectRef, serviceKey,
-  gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId, fetchImpl = fetch,
+  gatewayUrl, sharedSecret, publishableKey, versionId, deploymentId, verifyOnly = false, fetchImpl = fetch,
 }) {
   if (!isTripRestoreScope({ bindings, accountId, projectRef, versionId, deploymentId })
     || typeof cloudflareToken !== 'string' || !cloudflareToken
     || typeof serviceKey !== 'string' || !serviceKey
     || typeof sharedSecret !== 'string' || sharedSecret.length < 32
-    || typeof publishableKey !== 'string' || !publishableKey) {
+    || typeof publishableKey !== 'string' || !publishableKey || typeof verifyOnly !== 'boolean') {
     throw new Error('TRIP_RESTORE_PROVIDER_INPUT_INVALID');
   }
   const boundDatabases = bindings.map(({ binding, database_name, database_id }) => ({
@@ -562,7 +580,8 @@ export async function reconcileCloudflareHeldTripErasures({
   const journalHeaders = recoveryServiceHeaders(serviceKey);
 
   return reconcileHeldTripErasures({
-    shards, epoch, retainedTripRowsSha256: restorePlan.retainedTripRowsSha256, retainedTripRows, readHoldEpoch: verifyRecoveryHoldEpoch,
+    shards, epoch, retainedTripRowsSha256: restorePlan.retainedTripRowsSha256, retainedTripRows,
+    readHoldEpoch: verifyRecoveryHoldEpoch, verifyOnly,
     readJournalPage: cursor => request(journalUrl, journalHeaders, {
       p_hold_id: restorePlan.intentId, p_restore_from: restoreFrom, p_capture_at: captureAt, p_after_subject: cursor,
     }, 'TRIP_RESTORE_JOURNAL_UNVERIFIED'),

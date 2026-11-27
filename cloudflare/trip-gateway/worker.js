@@ -415,9 +415,26 @@ async function assertOwnerTripRowsAbsent(databaseList, ownerSubject) {
   }
 }
 
+const erasureOwnerSubjectPattern = /^(?:usr|anon)_v1_[A-Za-z0-9_-]{43}$/;
+
+async function assertOwnerTripTombstones(databaseList, ownerSubject) {
+  for (const database of databaseList) {
+    if (!await ownerErased(database, ownerSubject)) throw new Error('TRIP_DELETE_INVALID');
+  }
+}
+
+export async function assertOwnerTripErasureReadback(env, ownerSubject) {
+  if (typeof ownerSubject !== 'string' || !erasureOwnerSubjectPattern.test(ownerSubject)) {
+    throw new Error('TRIP_OWNER_INVALID');
+  }
+  const databaseList = databases(env);
+  await assertOwnerTripRowsAbsent(databaseList, ownerSubject);
+  await assertOwnerTripTombstones(databaseList, ownerSubject);
+}
+
 export async function deleteOwnerTrips(env, body, { verifyTombstones = false } = {}) {
   const ownerSubject = body.owner_subject;
-  if (typeof ownerSubject !== 'string' || !/^(?:usr|anon)_v1_[A-Za-z0-9_-]{43}$/.test(ownerSubject)) {
+  if (typeof ownerSubject !== 'string' || !erasureOwnerSubjectPattern.test(ownerSubject)) {
     throw new Error('TRIP_OWNER_INVALID');
   }
   const databaseList = databases(env);
@@ -434,9 +451,7 @@ export async function deleteOwnerTrips(env, body, { verifyTombstones = false } =
   const deleted = await purgeOwnerTrips(databaseList, ownerSubject);
   await assertOwnerTripRowsAbsent(databaseList, ownerSubject);
   if (verifyTombstones) {
-    for (const database of databaseList) {
-      if (!await ownerErased(database, ownerSubject)) throw new Error('TRIP_DELETE_INVALID');
-    }
+    await assertOwnerTripTombstones(databaseList, ownerSubject);
   }
   return deleted;
 }

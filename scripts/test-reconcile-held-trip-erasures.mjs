@@ -321,6 +321,9 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   await assert.rejects(reconcileCloudflareHeldTripErasures(provider), /TRIP_RESTORE_HOLD_UNVERIFIED/);
   assert.equal(d1Requests, 0);
   edgeMode = 'restore-hold';
+  const verifyOnly = () => reconcileCloudflareHeldTripErasures({ ...provider, verifyOnly: true });
+  await assert.rejects(verifyOnly(), /TRIP_DELETE_INVALID/);
+  assert.equal(d1Writes, 0, 'A remaining trip must not turn a readback into a replay');
   const otherDb = live.active.find(db => db.prepare('select 1 from trip_observations where owner_subject = ?').get(other.subject));
   const original = otherDb.prepare('select * from trip_observations where owner_subject = ?').get(other.subject);
   otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run('{}', other.subject);
@@ -339,7 +342,35 @@ test('recovery replays a pending erasure on a rolled-back data shard while ordin
   assert.equal(count('trip_observation_registry', erased), 0);
   assert.equal(count('trip_owner_erasure_tombstones', erased), 10);
   await assert.rejects(list(erased));
-  const originalReservation = live.active[0].prepare('select * from trip_observation_registry where client_observation_id = ?').get(otherRow.client_observation_id);
+  const writesAfterReplay = d1Writes;
+  assert.deepEqual(await verifyOnly(), {
+    kind: 'TRIP_RESTORE_ERASURE_JOURNAL_READBACK_VERIFIED', epoch: restoreIdentity.epoch, owners: 1, retainedTripRowsSha256,
+  });
+  const erasedInTarget = live.active[targetIndex].prepare(
+    'select * from trip_owner_erasure_tombstones where owner_subject = ?'
+  ).get(erased.subject);
+  live.active[targetIndex].prepare('delete from trip_owner_erasure_tombstones where owner_subject = ?').run(erased.subject);
+  await assert.rejects(verifyOnly(), /TRIP_DELETE_INVALID/);
+  live.active[targetIndex].prepare('insert into trip_owner_erasure_tombstones (owner_subject, erased_at) values (?, ?)').run(
+    erasedInTarget.owner_subject, erasedInTarget.erased_at,
+  );
+  const control = live.active[0];
+  const originalReservation = control.prepare(
+    'select * from trip_observation_registry where client_observation_id = ?'
+  ).get(otherRow.client_observation_id);
+  control.prepare(`insert into trip_observation_registry
+    (client_observation_id, trip_id, owner_subject, payload_sha256, target_database_index, created_at)
+    values (?, ?, ?, ?, ?, ?)`).run(
+    erasedRow.client_observation_id, null, erased.subject, originalReservation.payload_sha256, targetIndex, time,
+  );
+  await assert.rejects(verifyOnly(), /TRIP_DELETE_INVALID/);
+  control.prepare('delete from trip_observation_registry where client_observation_id = ?').run(erasedRow.client_observation_id);
+  otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run('{}', other.subject);
+  await assert.rejects(verifyOnly(), /TRIP_RESTORE_RETAINED_ROWS_MISMATCH/);
+  otherDb.prepare('update trip_observations set payload_json = ? where owner_subject = ?').run(original.payload_json, other.subject);
+  await assert.rejects(reconcileCloudflareHeldTripErasures({ ...provider, verifyOnly: true, restoreReplies: [] }),
+    /TRIP_RESTORE_RECEIPT_UNVERIFIED/);
+  assert.equal(d1Writes, writesAfterReplay, 'Readback must use only primary SELECT queries');
   otherDb.prepare('delete from trip_observations where owner_subject = ?').run(other.subject);
   live.active[0].prepare('delete from trip_observation_registry where client_observation_id = ?').run(otherRow.client_observation_id);
   assert.equal((await reconcileCloudflareHeldTripErasures(provider)).recoveredRows, 2);

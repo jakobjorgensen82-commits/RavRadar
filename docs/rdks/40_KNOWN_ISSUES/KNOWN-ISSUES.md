@@ -25,6 +25,15 @@ afstemningen, før den skriver til D1. Den lokale afprøvning bruger kunstige
 leverandørsvar. PostgreSQL-rettigheder og faktisk genoptagelse mangler endnu
 at blive verificeret på Linux og gennem det kontrollerede forløb.
 
+En tabt afslutningskvittering kan i den lokale kandidat genskabes ved
+genlæsning. Det kræver de oprindelige, bekræftede Cloudflare-svar, den
+forseglede førkopi og den samme aktive spærring. Genlæsningen kontrollerer
+slettemarkeringer og fravær af ture på alle ti databaser, det fælles
+register samt identiteten på de bevarede rækker. Den bruger skrivefri
+forespørgsler og genbekræfter spærringen inden kvitteringen. Manglende
+bevis stopper genlæsningen. Det er afprøvet lokalt med kunstige
+leverandørsvar og faktiske SQLite-tabeller.
+
 Den lokale afstemning følger de sorterede sider og genbruger den almindelige
 D1-sletning. Efter sletningen kontrollerer den, at turen og registerposten er
 væk, og at slettemarkeringen findes i alle ti databaser. Identiteten på
