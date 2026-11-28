@@ -3360,7 +3360,7 @@ test('after601 receipt accepts the measured whole-history and quota results and 
   const realHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
   const exactCurrent={...current,head:realHead};
   const input=await native.captureAssistantAfter601PgInput({ref:realHead,physical:false});
-  const {CHECKPOINT_SCALAR_WALK_MIGRATION:append}=await import('./integrated-cutover-readiness.mjs');
+  const {CHECKPOINT_SCALAR_WALK_MIGRATION:append,CHECKPOINT_DISTINCT_PRIVACY_MIGRATION:privacy}=await import('./integrated-cutover-readiness.mjs');
   const readGit=(args,options)=>execFileSync('git',args,{...options,maxBuffer:32*1024*1024});
   const scalarWalk=readGit(['ls-tree',realHead,'--','supabase/migrations/'+append.filename]).length!==0;
   const {TRIP_ERASURE_RECOVERY_MIGRATION}=await import('./lib/trip-erasure-recovery-native-fixture.mjs');
@@ -3369,7 +3369,8 @@ test('after601 receipt accepts the measured whole-history and quota results and 
   const {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS}=await import('./lib/account-automatic-off-source.mjs');
   const offSql=ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(({filename})=>'supabase/migrations/'+filename);
   const automaticOffCount=offSql.filter(file=>readGit(['ls-tree',realHead,'--',file]).length!==0).length;
-  assert.equal(input.sqlFiles,(scalarWalk?82:81)+Number(hasTripErasure)+automaticOffCount);
+  const distinctPrivacy=readGit(['ls-tree',realHead,'--','supabase/migrations/'+privacy.filename]).length!==0;
+  assert.equal(input.sqlFiles,(scalarWalk?82:81)+Number(hasTripErasure)+automaticOffCount+Number(distinctPrivacy));
   const tripErasureRecovery={migration:TRIP_ERASURE_RECOVERY_MIGRATION,
     migrationSha256:hasTripErasure?cryptoHash('sha256').update(readGit(['cat-file','blob',realHead+':'+tripSql])).digest('hex'):null,
     actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,accountClaimCommitRefusesHold:true,
@@ -3379,10 +3380,14 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     installedLedgerBeforeRows:70,installedLedgerAfterRows:71,
     sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,
     priorDataPreserved:true,forbiddenKeysUnchanged:true,normalCasUnchanged:true};
+  const checkpointDistinctPrivacy={migrationVersion:privacy.version,migrationSha256:privacy.sha256,
+    installedLedgerBeforeRows:71,installedLedgerAfterRows:72,
+    sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,priorDataPreserved:true,
+    forbiddenKeysUnchanged:true,normalCasUnchanged:true,integratedPartCount:673,companionPartCount:673};
   const issued={...receipt,current:exactCurrent};
   const v2={...issued,schemaVersion:2,kind:native.ASSISTANT_AFTER601_EXECUTED_V2_KIND,
     nativeInput:input,report:{...report,...(scalarWalk?{checkpointScalarWalk}:{}),
-      ...(hasTripErasure?{tripErasureRecovery}:{})}};
+      ...(hasTripErasure?{tripErasureRecovery}:{}),...(distinctPrivacy?{checkpointDistinctPrivacy}:{})}};
   assert.equal(await native.verifyAssistantAfter601ExecutedV2Receipt(v2,exactCurrent,readGit),v2);
   if(automaticOffCount){
     assert.deepEqual(v2.nativeInput.automaticAccountOffMigrationSha256,ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(({sha256})=>sha256));
@@ -3395,6 +3400,17 @@ test('after601 receipt accepts the measured whole-history and quota results and 
       value=>value.nativeInput.automaticAccountOffSourceSha256='a'.repeat(64)]){
       const changed=copy(v2);mutate(changed);
       assert.throws(()=>native.verifyAssistantAfter601PgInput(changed.nativeInput));
+    }
+  }
+  if(distinctPrivacy){
+    assert.equal(v2.nativeInput.checkpointDistinctPrivacyMigrationSha256,privacy.sha256);
+    for(const mutate of [value=>delete value.report.checkpointDistinctPrivacy,
+      value=>value.report.checkpointDistinctPrivacy.companionPartCount=672,
+      value=>value.report.checkpointDistinctPrivacy.helperOnlyCatalogChange=false,
+      value=>value.report.checkpointDistinctPrivacy.normalCasUnchanged=false]){
+      const changed=copy(v2);mutate(changed);
+      await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(changed,exactCurrent,readGit),
+        /checkpoint distinct privacy execution proof/);
     }
   }
   if(scalarWalk){
@@ -3738,7 +3754,7 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
   const capture=ref=>captureAssistantAfter601PgInput({ref,readGit,physical:false});
   const current=await captureAssistantAfter601PgInput({ref:head,physical:false});
   assert.equal(current.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
-  const {CHECKPOINT_SCALAR_WALK_MIGRATION:append}=await import('./integrated-cutover-readiness.mjs');
+  const {CHECKPOINT_SCALAR_WALK_MIGRATION:append,CHECKPOINT_DISTINCT_PRIVACY_MIGRATION:privacy}=await import('./integrated-cutover-readiness.mjs');
   const scalarWalkFile='supabase/migrations/'+append.filename;
   const scalarWalk=treeFor(head).paths.has(scalarWalkFile);
   const {TRIP_ERASURE_RECOVERY_MIGRATION}=await import('./lib/trip-erasure-recovery-native-fixture.mjs');
@@ -3748,7 +3764,9 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
   const offSql=ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(({filename})=>'supabase/migrations/'+filename);
   const automaticOffSource='scripts/lib/account-automatic-off-source.mjs';
   const automaticOffCount=offSql.filter(file=>treeFor(head).paths.has(file)).length;
-  assert.equal(current.sqlFiles,(scalarWalk?82:81)+Number(tripErasure)+automaticOffCount);
+  const distinctPrivacyFile='supabase/migrations/'+privacy.filename;
+  const distinctPrivacy=treeFor(head).paths.has(distinctPrivacyFile);
+  assert.equal(current.sqlFiles,(scalarWalk?82:81)+Number(tripErasure)+automaticOffCount+Number(distinctPrivacy));
   assert.equal(current.complete,true);
   assert.ok(current.frozenGitTrees.some(({head,tree})=>head===SOURCE601_ORIGINAL_DATA_PROFILE.head
     &&tree===SOURCE601_ORIGINAL_DATA_PROFILE.tree));
@@ -3789,6 +3807,15 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
       await assert.rejects(capture(variant(file,null)),/both exact SQL files and the source helper/);
       await assert.rejects(capture(variant(file,appendTo(file,'\n-- changed OFF input\n'))),/Automatic account OFF input changed/);
     }
+  }
+
+  if(distinctPrivacy){
+    assert.equal(current.checkpointDistinctPrivacyMigrationSha256,privacy.sha256);
+    const prior=await capture(variant(distinctPrivacyFile,null));
+    assert.equal(prior.sqlFiles,85);
+    assert.equal(prior.checkpointDistinctPrivacyMigrationSha256,undefined);
+    await assert.rejects(capture(variant(distinctPrivacyFile,appendTo(distinctPrivacyFile,'\n-- changed fixture SQL\n'))),
+      /distinct privacy SQL input changed/);
   }
 
   const scope='js/core/package.json';

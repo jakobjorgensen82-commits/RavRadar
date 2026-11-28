@@ -4,6 +4,7 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {analyzeSourceDomainInputs} from './source-impact-domain-inputs.mjs';
 import {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS} from './lib/account-automatic-off-source.mjs';
+import {CHECKPOINT_DISTINCT_PRIVACY_MIGRATION} from './integrated-cutover-readiness.mjs';
 
 test('current automatic account OFF inventory binds both SQL files and the source helper', () => {
   const cwd = fileURLToPath(new URL('../', import.meta.url));
@@ -16,7 +17,14 @@ test('current automatic account OFF inventory binds both SQL files and the sourc
     'historicalNationalExecuted','productionAuthority']) assert.equal(result[key], false);
   assert.equal(result.analysis, 'COMPLETE', result.failureCode);
   const {before, after, unchanged} = result.actualPostgresInput;
-  assert.equal(after.sqlFiles, 85);
+  const privacyFile = 'supabase/migrations/' + CHECKPOINT_DISTINCT_PRIVACY_MIGRATION.filename;
+  const privacyInput = after.files.find(row => row.file === privacyFile);
+  const gitHasPrivacy = execFileSync('git', ['ls-tree', head, '--', privacyFile], {
+    cwd, encoding:'utf8', timeout:10_000,
+  }).trim().length > 0;
+  assert.equal(after.sqlFiles, 85 + Number(gitHasPrivacy));
+  if (gitHasPrivacy) assert.equal(privacyInput?.sha256, CHECKPOINT_DISTINCT_PRIVACY_MIGRATION.sha256);
+  else assert.equal(privacyInput, undefined);
   assert.equal(unchanged, true);
   assert.deepEqual(after, before);
   for (const {filename,sha256} of ACCOUNT_AUTOMATIC_OFF_MIGRATIONS) {
