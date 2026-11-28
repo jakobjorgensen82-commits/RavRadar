@@ -12,6 +12,7 @@ import {
   assertSupabaseMigrationPlan,
   verifyIntegratedDatabaseReadback,
   CHECKPOINT_SCALAR_WALK_MIGRATION,
+  TRIP_ERASURE_RECOVERY_SQL,
 } from './integrated-cutover-readiness.mjs';
 import * as accountInactivityCutover from './integrated-cutover-readiness.mjs';
 const ACCOUNT_ERASURE_APP_MIGRATION=accountInactivityCutover.ACCOUNT_ERASURE_APP_MIGRATION;
@@ -25,17 +26,7 @@ function argument(name) {
   return process.argv[index + 1];
 }
 
-async function qualifyCurrentAccountErasureChecks(receiptMode=false){
-  assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch');assert.equal(process.env.GITHUB_REF,'refs/heads/main');
-  assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
-  assert.equal(process.env[receiptMode?'RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN':'RAVRADAR_ACCOUNT_ERASURE_OPT_IN'],'true');
-  if(receiptMode){
-    assert.notEqual(process.env.RAVRADAR_ACCOUNT_ERASURE_OPT_IN,'true');
-    assert.equal(process.env.GITHUB_REPOSITORY,'jakobjorgensen82-commits/RavRadar');
-    assert.equal(process.env.GITHUB_JOB,'apply-binding');
-    assert.equal(process.env.GITHUB_WORKFLOW_REF,'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main');
-  }
-  const raw=process.env.RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE;
+async function qualifyExactMergedFullSource(raw){
   assert(typeof raw==='string'&&Buffer.byteLength(raw)>0&&Buffer.byteLength(raw)<=16384);
   const reference=JSON.parse(raw),head=process.env.GITHUB_SHA;
   assert.match(head,/^[a-f0-9]{40}$/);assert.equal(reference.repository,process.env.GITHUB_REPOSITORY);
@@ -50,9 +41,24 @@ async function qualifyCurrentAccountErasureChecks(receiptMode=false){
     readGit(['fetch','--no-tags','origin',reference.producerHead]);
   }
   const {sourceImpactEvidenceAccess}=await import('./native-postgres-evidence.mjs');
-  const {qualifySourceImpactFullBaseline,qualifiedAccountErasureChecks,qualifiedAccountInactivityChecks,qualifiedAccountNativeReceipt}=await import('./source-impact-full-baseline.mjs');
+  const {qualifySourceImpactFullBaseline}=await import('./source-impact-full-baseline.mjs');
   const access=sourceImpactEvidenceAccess({env:process.env});
-  const qualified=await qualifySourceImpactFullBaseline({candidateCommit:head,reference},{...access,readGit});
+  return qualifySourceImpactFullBaseline({candidateCommit:head,reference},{...access,readGit});
+}
+
+async function qualifyCurrentAccountErasureChecks(receiptMode=false){
+  assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch');assert.equal(process.env.GITHUB_REF,'refs/heads/main');
+  assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
+  assert.equal(process.env[receiptMode?'RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN':'RAVRADAR_ACCOUNT_ERASURE_OPT_IN'],'true');
+  if(receiptMode){
+    assert.notEqual(process.env.RAVRADAR_ACCOUNT_ERASURE_OPT_IN,'true');
+    assert.equal(process.env.GITHUB_REPOSITORY,'jakobjorgensen82-commits/RavRadar');
+    assert.equal(process.env.GITHUB_JOB,'apply-binding');
+    assert.equal(process.env.GITHUB_WORKFLOW_REF,'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main');
+  }
+  const head=process.env.GITHUB_SHA;
+  const qualified=await qualifyExactMergedFullSource(process.env.RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE);
+  const {qualifiedAccountErasureChecks,qualifiedAccountInactivityChecks,qualifiedAccountNativeReceipt}=await import('./source-impact-full-baseline.mjs');
   const facit=qualifiedAccountErasureChecks(qualified);
   assert(facit&&facit.candidateCommit===head&&facit.migrationSQLSha256===readAccountErasureSource().sha256,
     'The exact qualified native phase must contain this app SQL CHECK facit');
@@ -76,6 +82,45 @@ async function qualifyCurrentAccountErasureChecks(receiptMode=false){
   return {manual:facit.checkReference,inactivity:inactivity?.checkReference??null,receipt};
 }
 const appProofMode=process.argv[2];
+const tripRecoveryQualification = appProofMode === '--qualify-trip-erasure-recovery-source';
+if (tripRecoveryQualification || appProofMode === '--read-trip-erasure-recovery-installed') {
+  try {
+    assert.equal(process.argv.length, 3);
+    assert.equal(process.env.GITHUB_EVENT_NAME, 'workflow_dispatch');
+    assert.equal(process.env.GITHUB_REF, 'refs/heads/main');
+    assert.equal(process.env.GITHUB_RUN_ATTEMPT, '1');
+    assert.equal(process.env.GITHUB_REPOSITORY, 'jakobjorgensen82-commits/RavRadar');
+    assert.equal(process.env.GITHUB_JOB, 'apply-trip-recovery-schema');
+    assert.equal(process.env.GITHUB_WORKFLOW_REF,
+      'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main');
+    assert.equal(process.env.RAVRADAR_TRIP_RECOVERY_SCHEMA_CONFIRMATION, 'APPLY-TRIP-RECOVERY-SCHEMA');
+    if (tripRecoveryQualification) {
+      const qualified = await qualifyExactMergedFullSource(process.env.RAVRADAR_TRIP_RECOVERY_SOURCE_REFERENCE);
+      const {qualifiedTripErasureRecovery} = await import('./source-impact-full-baseline.mjs');
+      const trip = qualifiedTripErasureRecovery(qualified);
+      assert(trip && trip.candidateCommit === process.env.GITHUB_SHA && trip.sqlFiles === 83);
+      assert.equal(trip.receipt.migration, TRIP_ERASURE_RECOVERY_SQL.filename);
+      assert.equal(trip.receipt.migrationSha256, TRIP_ERASURE_RECOVERY_SQL.sha256);
+      assert.equal(trip.receipt.actualPostgres, true);
+      assert.equal(trip.receipt.productionReleaseVerified, false);
+      console.log(JSON.stringify({kind:'QUALIFIED_TRIP_ERASURE_RECOVERY_SOURCE', sqlFiles:trip.sqlFiles,
+        migrationSha256:trip.receipt.migrationSha256, nativeInputSha256:trip.nativeInputSha256,
+        status:trip.status, executedInThisRun:trip.executedInThisRun, activationAuthority:false}));
+    } else {
+      assert.match(process.env.GITHUB_SHA ?? '', /^[a-f0-9]{40}$/);
+      const head = execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8', timeout:10000}).trim();
+      assert.equal(head, process.env.GITHUB_SHA);
+      const {verifyInstalledTripErasureRecoverySchema} = await import('./lib/reconcile-held-trip-erasures.mjs');
+      console.log(JSON.stringify(await verifyInstalledTripErasureRecoverySchema({
+        accessToken:process.env.SUPABASE_ACCESS_TOKEN, serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
+      })));
+    }
+  } catch {
+    console.error(tripRecoveryQualification ? 'TRIP_RECOVERY_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED' : 'TRIP_RECOVERY_OPEN_SCHEMA_READBACK_REQUIRED');
+    process.exitCode = 1;
+  }
+  process.exit(process.exitCode ?? 0);
+}
 const receiptProofModes=['--qualify-account-native-receipt-source','--read-account-native-receipt-before','--read-account-native-receipt-installed'];
 if(receiptProofModes.includes(appProofMode)){
   let readbackPhase;

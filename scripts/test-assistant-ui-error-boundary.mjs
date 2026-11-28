@@ -17,8 +17,8 @@ after(() => {
   if (savedStorage) Object.defineProperty(globalThis, 'localStorage', savedStorage);
   else delete globalThis.localStorage;
 });
-const assistant = await import(`../js/services/rav-assistant.js?v=${version}&locale=topic-tab-20261125`);
-const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261126-winter-wave-sorting&followup=daylight-20261122&locale=topic-tab-20261125`);
+const assistant = await import(`../js/services/rav-assistant.js?v=${version}&locale=topic-tab-raman-20261127`);
+const {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup,publicRavAssistantDaylightFollowup,publicRavAssistantEquipmentFollowup}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261127-beach-signs&followup=daylight-20261122&locale=topic-tab-raman-20261127`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = (await fs.readFile(new URL('../app.js', import.meta.url), 'utf8')).replace(/\r\n/gu, '\n');
@@ -521,6 +521,24 @@ test('winter wave sorting leaves additional unknown or protected requests to the
   }
 });
 
+test('a question about clues in beach wash after a storm receives field advice', async () => {
+  const questions = [
+    ['da', 'Hvilke tegn skal jeg kigge efter i tang og små træstumper efter en storm for at finde rav?', /kanter.*lommer/iu],
+    ['de', 'Welche Hinweise helfen, eine feine Schicht aus Tang und Holzstückchen nach einem Sturm am Ostseestrand für die Bernsteinsuche zu beurteilen?', /ränder.*taschen/iu],
+    ['en', 'What clues should I look for in seaweed and wood fragments after a storm when looking for amber?', /edges.*pockets/iu],
+  ];
+  for (const [language, question, fieldClues] of questions) {
+    const ui = fixture(language);
+    ui.state.selectedZone = { id: 'zoneA' };
+    await ui.submit(question);
+    assert.match(ui.answers().at(-1), fieldClues);
+    assert.equal(ui.detailCalls(), 0);
+    assert.equal(publicRavAssistantHelp(question + ' Can the model also predict the exact landing point?', language), null);
+  }
+  assert.equal(publicRavAssistantHelp('Wie berechnet RavRadar die Wirkung der Wellen nach einem Sturm?', 'de'), null);
+  assert.equal(fetchCalls, 0);
+});
+
 test('actual extracted topic state/frame/reset dependencies remain live, not guard stubs', async () => {
   const ui = fixture('da');
   const question = 'Når strømmen går langs stranden i stedet for mod land, er det så stadig godt at lede efter rav?';
@@ -597,7 +615,7 @@ test('assistant followup cache identity reaches the app and the assistant servic
     assert.equal(url.searchParams.getAll('ui').length, 1);
     assert.equal(url.searchParams.get('assistant'), 'forecast-followup-20261101');
     assert.equal(url.searchParams.getAll('assistant').length, 1);
-    assert.equal(url.searchParams.get('assistant-help'), '20261126-winter-wave-sorting');
+    assert.equal(url.searchParams.get('assistant-help'), '20261127-beach-signs');
     assert.equal(url.searchParams.getAll('assistant-help').length, 1);
     assert.equal(url.searchParams.get('assistant-ready'), '20261122');
     assert.equal(url.searchParams.getAll('assistant-ready').length, 1);
@@ -605,11 +623,11 @@ test('assistant followup cache identity reaches the app and the assistant servic
     assert.equal(url.searchParams.getAll('assistant-followup').length, 1);
     assert.equal(url.searchParams.get('assistant-data'), 'ready-20261123');
     assert.equal(url.searchParams.getAll('assistant-data').length, 1);
-    assert.deepEqual(url.searchParams.getAll('assistant-locale'), ['topic-tab-20261125']);
+    assert.deepEqual(url.searchParams.getAll('assistant-locale'), ['topic-tab-raman-20261127']);
   }
   const serviceImports = [...app.matchAll(/from "(\.\/js\/services\/rav-assistant\.js\?[^"<>]+)"/gu)];
   assert.equal(serviceImports.length, 1);
-  assert.equal(serviceImports[0][1], `./js/services/rav-assistant.js?v=${version}&locale=topic-tab-20261125`);
+  assert.equal(serviceImports[0][1], `./js/services/rav-assistant.js?v=${version}&locale=topic-tab-raman-20261127`);
 });
 const dynamic = { da: 'Hvorfor denne score?', de: 'Warum dieser Score?', en: 'Why this score?' };
 const fact = { da: 'Hvad er rav?', de: 'Was ist Bernstein?', en: 'What is amber?' };
@@ -1039,6 +1057,25 @@ test('app explains the three-hour water level change without waiting for forecas
     }
   }
   assert.equal(fetchCalls,0);
+});
+
+test('the assistant explains a wind shift and continuing onshore current even without zone data', async () => {
+  const rows = [
+    ['da', 'Hvad ændrer sig, hvis vinden vender, mens strømmen stadig går mod land?', /uroen i overfladen.*stadig går mod land/u],
+    ['de', 'Was ändert sich, wenn der Wind dreht, während die Strömung weiterhin zur Küste fließt?', /Wasseroberfläche.*weiterhin zur Küste/u],
+    ['en', 'What changes if the wind shifts while the current still flows towards shore?', /surface chop.*still flows towards shore/u],
+  ];
+  for (const [locale, question, expected] of rows) {
+    const ui = fixture(locale, { startup:'failed' });
+    ui.state.selectedZone = { id:'zoneA' };
+    ui.context.activeLandingView = {};
+    ui.context.loadConditions = async () => assert.fail('A general question should not load the forecast');
+    await ui.submit(question);
+    assert.match(ui.answers().at(-1), expected);
+    assert.equal(ui.detailCalls(), 0);
+    assert.equal(ui.loading(), false);
+  }
+  assert.equal(fetchCalls, 0);
 });
 
 test('app public help preserves complete raw guard language and unknown-clause boundaries',async()=>{

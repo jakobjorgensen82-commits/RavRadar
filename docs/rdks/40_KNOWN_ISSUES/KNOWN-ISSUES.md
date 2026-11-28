@@ -1,8 +1,181 @@
+## 28. november — fjern feltet for vandstandsændring over tre timer
+
+Ejerens beslutning prioriterer den timevise vandstandsprognose. Den lokale ændring skjuler det særskilte felt i zonevisningen, i kortets forhåndsvisning og i den valgte prognosedag. Vandstandstallene vises fortsat time for time. Interne vandstandsdata, RavScore og de eksisterende kriterier for bedste tidspunkt bevares. Kildekontrol og offentlig levering udestår.
+
+## 28. november — download af RAW-kvitteringen standsede #414 før vejrhentning
+
+Den normale kørsel fandt den netop udgivne kvittering, men dens ene download
+blev afvist. Det oprindelige logtrin gemte kun en generel fejlkode. De samme
+bytes kunne senere hentes og verificeres. Den lokale rettelse genlæser kun den
+samme kvittering ved midlertidige transportfejl og viser en fast fase og
+HTTP-status ved afslag. Ejerens eksisterende, beskyttede genforsøg bruger nu den
+faktiske læser, når den kontrollerer samtidige kildeprøver. Det skal prøves
+gennem den normale ejervej før driftsverifikation.
+
+## 27. november — et spørgsmål om både vind og strøm fik kun et svar om strøm
+
+På den offentlige side fik spørgsmålet »Hvad ændrer sig, hvis vinden vender, mens
+strømmen stadig går mod land?« alene den generelle strømforklaring. Den lokale
+rettelse svarer om både uro i vandoverfladen og kystrettet transport. Den kræver
+hele det generelle spørgsmål, så en tilføjelse om en bestemt zone eller dag
+fortsat behandles som del af hele spørgsmålet. Målprøver for dansk, tysk og
+engelsk består. GitHub-kontrol og offentlig levering udestår.
+
+## 27. november — laboratoriemetoden faldt ud af svaret om rav og plast
+
+Den offentlige danske assistent svarede med visuelle kendetegn og UV, da
+spørgsmålet handlede om at skelne rav fra moderne plast med Raman-spektroskopi.
+Forhåndsprøven med den eksterne svarvej ramte timeout på dansk og tysk. Den
+lokale rettelse genbruger den eksisterende gennemgåede laboratorieforklaring
+for netop det hele spørgsmål på dansk, tysk og engelsk. Andre sammensatte
+spørgsmål og private afvisninger følger fortsat deres almindelige behandling.
+Kildekontrol og offentlig afprøvning af den nye rute udestår.
+
+## 27. november — en fastfrosset fejlupload kan overleve den fælles frist
+
+Den eksisterende GitHub-prøve stoppede uploadens overvågningsproces, mens SDK'et afventede svar på den afsluttende upload. Handlingen meldte fejl, og skrivelåsen blev bevaret. Uploadens processer ophørte først, da prøven genoptog overvågningen.
+
+Den lokale kandidat lader den eksisterende Linux-processtyring afslutte hele uploaden efter samme frist som den forudgående gemning. Den indre upload behandler skrivelåsen som hidtil. Muligheden for genoptagelse afgøres senere ved autentificeret genlæsning. Den oprindelige kandidats Linux-kontrol #1786 bestod den almindelige prøve og bekræftede fysisk ophør uden indgreb fra prøven. Efter sammenlægningen med assistentrettelsen er den normale kildekontrol af den samlede ændring og virkningen i drift fortsat åbne.
+
+## 27. november — et spørgsmål om opskyl fik svar om bølgemodellen
+
+Den offentlige tyske assistent svarede med RavScores bølgemodel på et
+spørgsmål om, hvad man kan se efter i tang og træstumper opskyllet efter en
+storm. Ordet for storm valgte bølgesvaret, selv om spørgsmålet bad om tegn på
+stranden. Den lokale rettelse genbruger det gennemgåede svar om opskyl på
+dansk, tysk og engelsk. Et ekstra spørgsmål bevares i den almindelige
+behandling af hele henvendelsen. Offentlig levering udestår.
+
+## 27. november — bevar påbegyndt sletning ved gendannelse af turloggen
+
+Den lokale migrationslæser kan nu genkende den præcise turlogsmigration som
+allerede installeret. Den midlertidige mappe får den verificerede SQL-fil fra
+lageret, når Supabase viser den som installeret og den foregående migration er
+til stede. Den normale kørsels migrationsplan afviser fortsat en ventende
+turlogsmigration eller ændret SQL. Installation og kontrol i drift afventes.
+Den afgrænsede installationsplan kan klargøre turlogsmigrationen alene og
+kontrollere, at Supabases prøveplan kun indeholder den. Planen tillader også
+en tom prøveplan, når migrationen allerede er registreret som installeret.
+Installationsjobbet bruger de eksisterende låse for vejr og turlog. Det
+kræver et PostgreSQL-bevis for den eksakte migrerede kilde, tillader én
+skrivning og genlæser migrationshistorik, adgangsrettigheder og den åbne
+gendannelseslås. Et uafklaret svar ved installation giver en genlæsning.
+Der er ingen automatisk gentagelse af skrivningen. Kontrollerne er prøvet
+lokalt med simulerede svar og afventer PostgreSQL og installation i drift.
+
+En lokal prøve med den normale Worker og ti syntetiske databaser viste, at en
+tur blev synlig igen efter gendannelse af den kontrolbase, der havde modtaget
+den eneste slettemarkering. Samme normale sletning kunne derefter fjerne turen
+og bevare en anden ejers tur.
+
+Den lokale kandidat kræver en kvittering i Supabase, før den eksplicit bekræftede
+tursletning starter. Den gemmer kun den eksisterende ejerpseudonymnøgle og
+tidspunkterne. Serveren afslutter kvitteringen efter kontrol af begge lagre.
+Genforsøg genbruger samme markering. Den eksisterende kontosletning bruger
+fortsat sin egen kø. Kaldet og SQL-rettighederne er afprøvet lokalt.
+
+Den lokale gendannelsesvej kræver, at begge Edge-ruter peger på D1, og at
+den signerede Worker-prøve bekræfter spærringen af D1-kald. Spærringen
+varer ud over den korte vedligeholdelsesfrist. Supabase afviser skrivning
+til reservebeholdningen og begge slettejournaler, mens den præcise
+gendannelseslås holdes. Kontrollen prøver de tre skrivemåder i PostgreSQL.
+Den serverbeskyttede databaseforespørgsel
+samler udestående og relevante afsluttede markeringer fra begge sletteforløb.
+Den returnerer kun ejerpseudonymer til den eksisterende servicekonto.
+
+Gendannelsen læser nu i den lokale kandidat den eksisterende spærrings
+identitet og præcise starttid direkte fra Supabase med den samme servicekonto.
+Den sammenholder begge felter med den oprindelige gendannelsesplan før og
+efter kontrollen af Edge og Worker. Åben, ændret eller ukendt spærring stopper
+afstemningen, før den skriver til D1. Den lokale afprøvning bruger kunstige
+leverandørsvar. PostgreSQL-rettigheder og faktisk genoptagelse mangler endnu
+at blive verificeret på Linux og gennem det kontrollerede forløb.
+
+En tabt afslutningskvittering kan i den lokale kandidat genskabes ved
+genlæsning. Det kræver de oprindelige, bekræftede Cloudflare-svar, den
+forseglede førkopi og den samme aktive spærring. Genlæsningen kontrollerer
+slettemarkeringer og fravær af ture på alle ti databaser, det fælles
+register samt identiteten på de bevarede rækker. Den bruger skrivefri
+forespørgsler og genbekræfter spærringen inden kvitteringen. Manglende
+bevis stopper genlæsningen. Det er afprøvet lokalt med kunstige
+leverandørsvar og faktiske SQLite-tabeller.
+
+Den lokale afstemning følger de sorterede sider og genbruger den almindelige
+D1-sletning. Efter sletningen kontrollerer den, at turen og registerposten er
+væk, og at slettemarkeringen findes i alle ti databaser. Identiteten på
+spærringen kontrolleres før og efter afstemning. Prøven med en gendannet
+kontrolbase gentager en afbrudt sletning og bevarer en anden ejers tur.
+Afstemningen bruger Supabases beskyttede sletteoversigt og sender
+parameterbundne forespørgsler gennem Cloudflares eksisterende D1-adgang.
+En negativ eller ukendt kvittering fra hoveddatabasen stopper arbejdet.
+Denne forbindelse er afprøvet med lokale svar og faktiske SQLite-tabeller.
+
+Den lokale afstemning kræver nu både det valgte gendannelsespunkt og
+Cloudflares kvittering for selve gendannelsen af hver berørt database.
+Cloudflare kan vælge et punkt, der ligger før det ønskede klokkeslæt.
+Det valgte punkt skal derfor være dokumenteret nyere end det punkt,
+Cloudflare returnerer ved starten på den dækkede slettehistorik. Selve
+afstemningen bruger hele den dækkede periode. Det private
+installationsforløb kontrollerer desuden den aktive Workers spærring,
+før det ændrer databasen eller udgiver Workeren og genåbner turloggen.
+Begge ændringer er afprøvet lokalt.
+
+Afstemningen kræver desuden en førmåling af de turrækker, registreringer
+og slettemarkeringer, der skal bevares. Den genlæser alle ti databaser
+efter genanvendelse af sletningerne og kræver de samme data. En lokal
+prøve genskaber en manglende tur med den oprindelige stemplede
+registrering. En ufuldført reservation bevares som reservation. En
+konflikt i de eksisterende data standser nu den lokale afstemning, før
+den genanvender en sletning. Kontrollen genlæser de bevarede rækker fra
+databasernes primære kopier og bekræfter derefter spærringen igen.
+Førkopien skal være
+fra før den første gendannelsesanmodning. Den lokale kandidat krypterer
+den oprindelige kørsels identitet og valgte gendannelsespunkter sammen med
+førkopien. Efter et runnerstop kan den samme kopi åbnes med det aktuelle
+spærrings-id og tidspunkt samt de aktive databasebindinger og Worker-version.
+Indsamlingen stopper ved den faste grænse på 32 MiB for de bevarede rækker.
+Den eksisterende prøve fortsætter en simuleret gendannelse fra den
+genlæste fil og kræver fortsat leverandørens kvitteringer særskilt.
+Et vedvarende privat lager med godkendt opbevaring og det samlede
+gendannelsesjob udestår. Den lokale adgangskontrol afviser gendannelse af
+kontroldatabasen, indtil aktiveringsmarkøren, privatlivsregnskabet og
+statistikjobbenes tilstand kan bevares. Det eksisterende turlager og
+slettejournalerne er afprøvet med tilbagerulning af en almindelig datashard.
+
+Den eksisterende D1-installation og dennes fejlgenoptagelse læser nu den
+aktive Workers bindingsmetadata før de berørte skriveruter. Samme kontrol
+beskytter de to særskilte schemaopgraderinger. Et gendannelsesflag i den
+aktive binding eller en uklar binding stopper skrivningen. Den normale
+førstegangsinstallation følger fortsat sin egen vej efter kontrol af, at
+der ingen D1-databaser findes.
+
+Kandidaten afventer et kontrolleret gendannelsesjob, der selv indsamler
+kvitteringerne, og bruger de eksisterende vejr- og turlagerlåse i den
+rækkefølge. Den lokale PostgreSQL-kandidat fastholder begge slettejournaler
+under samme spærring. En kontosletning med uafklaret Auth-udfald stopper
+starten. Den eksisterende servicekonto kan kun læse den faste liste, når
+dens id matcher spærringen. De nye rettigheder og adfærd er afprøvet lokalt
+i én databasesession. En målrettet prøve er klargjort til den eksisterende
+lokale PostgreSQL-prøvevært med to samtidige forbindelser. Den observerer
+de faktiske transaktionslåse og kontrollerer begge normale slettejournaler
+og afvisning af et andet spærrings-id. Det lokale prøvekald genbruger den
+eksisterende isolerede PostgreSQL-vært, dens Unix-sokkel og kontrollen af
+fysisk processtop. Det starter kun prøven af slettejournalerne. Prøven
+afventer udførelse på den eksisterende Linux-runner. Den nye D1-migration
+er fil 83. På den lokale kandidat vælger den eksisterende kildekontrol
+prøven, når den præcise migration findes. Dens kvittering binder de læste
+SQL-bytes og måler begge slettejournaler. De tidligere kvitteringer dækker
+deres oprindelige SQL. Genåbningen skal bindes til den
+verificerede afstemning, og slettehistorikken skal dække frem til de
+ældste anvendelige gendannelsespunkter.
+
 ## 27. november — vandtemperatur mangler i den sene DMI-runde
 
 Ved ét tidspunkt i den offentliggjorte prognose fra #409 manglede vandtemperaturen ved 401 af 673 kystdele. RavRadars almindelige gitteropslag fandt brugbare overfladeværdier fra de officielle DMI-felter ved 356 af dem. Den sene runde brugte de relevante samlinger til vandstand og læste kun vandstandsfeltet. [Vejrkørsel #409](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45939421960)
 
 Den lokale ændring gemmer den almindelige vandstand først. Derefter kan en kortlivet proces genlæse de samme kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller, når de nødvendige gitteropslag allerede er beregnet. Ved timeout standses kun denne proces, og hovedprocessen fortsætter. Tidligere kandidater, der kunne stoppe eller genstarte hovedprocessen, er forkastet. GitHub-kvalifikation og offentlig måling udestår.
+
+Efter #412 er der stadig afgrænsede temperaturhuller ved Hennedal, Sølyst og Kollund Strand. Den eksisterende skrivefri arkivlæsning er lokalt udvidet til at sammenholde fire faste kystdelstimer fra #412 med de gemte kildebeviser. Bøsbæk Hage er positiv kontrol. Uden en kildeknyttet gemt time vises årsagen som ukendt. Læsningen kræver det forseglede arkiv fra #412 før dets udløb og starter ingen ny vejrhentning. Kildekontrol og faktisk arkivlæsning udestår.
 
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 
@@ -15,6 +188,12 @@ Den lokale rettelse genbruger de gennemgåede svar direkte på dansk, tysk og en
 En almindelig tysk browserforespørgsel på den offentlige prognose fra #407 fik HTTP 502. Den afgrænsede driftslog viste HTTP 200 fra Cloudflare, men ingen afsluttende svartekst. Loggen viser første forsøg og kan derfor ikke afgøre, om anden forespørgsel blev sendt, kom tom tilbage eller blev afvist i valideringen.
 
 Den lokale ændring registrerer genforsøgets udfald og dets faktiske HTTP-status, når Cloudflare har svaret. Fejlloggen kan også vise de to afgrænsede tal for svar- og ræsonneringstokens, når Cloudflare selv rapporterer dem. Det gør det muligt at sammenholde et tomt svar med det anvendte tokenbudget. Samme to mulige providerkald, kvote, frist og svarvalidering gælder. Afprøvning i drift og afklaring af det tomme svar udestår.
+
+## 27. november — backupkontrol kan mangle efter flere korte vejrvinduer
+
+Den almindelige vedligeholdelse giver vejrhentningen forrang. Hvis de næste vejrvinduer er for korte, kan backupdelen springes over med grøn status. Efterkontrol #114 bekræftede en gendannelsesprøvet, endnu aktuel databasebackup. Den viste også den eksisterende positive GitHub-markør, som en daglig overvågning kan genkende. [Efterkontrol #114](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45932339037/job/140289969173)
+
+Den lokale ændring føjer en skrivefri aflæsning af kørselsstatus til den eksisterende daglige lagerkontrol. Den daglige kontrol giver en GitHub-fejl, hvis den ikke finder en positiv backupbekræftelse fra de foregående 48 timer. En ufuldstændig aflæsning vises særskilt. En lokal prøve mod GitHubs faktiske metadata fandt den normale bekræftelse fra #116 i to læsninger. Kildekvalifikation, almindelig daglig kørsel og en eventuel ejerunderretning skal verificeres særskilt. GitHub kan slå planlagte kørsler fra efter 60 dage uden aktivitet i offentlige repositories. [Bekræftelse #116](https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/45987926529/job/140471465285) · [GitHubs planlægning](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
 
 ## 26. november — kildekontrol kan blokere vejr før DMI
 
@@ -125,6 +304,16 @@ Den lokale rettelse læser højst hvert halve minut det normale offentlige manif
 GitHubs kørselsannotation viser de samme to lageroptællinger som joboversigten. Den udgiver tal for byte og objekter, eller en tom værdi for en fase uden måling. Den bruger de allerede læste tal fra både almindelig udgivelse og genoptagelse. Den første faktiske aflæsning af annotationen udestår.
 
 Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lageropslagene før den første nye arkivfil og før upload af rotationsmarkøren. Den normale backupplan rapporterer målt lagerplads, når den kan læse den. Det samme lageropslag bruges fortsat til hver adgangskontrol. Offentlig prognose, bevaringsregler, sletning og adgang er uændrede. Måling i almindelig drift og Free-budget over hele fakturaperioden afventer.
+
+**27. november, lokal rettelse.** Den normale vejrarkivering registrerer nøglen og bytestørrelsen i én fast privat R2-journal, før den sender en ny arkivfil. Den kræver præcis genlæsning af journalen. Ved tabt svar forbliver de uafklarede bytes reserveret på tværs af kørsler. En senere normal kørsel kan bruge en allerede gemt del efter kontrol af længde og SHA-256. Et fraværende objekt beholder reservationen. Den almindelige 350 MB arkivgrænse, 100 MB reserve og eksisterende rotationsmarkør består.
+
+Den lokale journal bevarer kendte arkivdele efter positiv genlæsning af byteantal og SHA-256. Disse dele indgår i den normale lageroptælling. Før en central B-skrivning gemmer udgiveren den præcise før-version og forventede efterværdi i den samme journal. Ved genoptagelse kan en frisk læsning af den præcise B-peger overtage beskyttelsen. Hvis en anden generation vandt den næste version, bevares både de berørte dele og beviset for efterfølgeren. Gentagelse af en uafklaret B-skrivning afvises. S færdiggøres gennem det eksisterende forløb.
+
+Den normale udgiver kontrollerer højst én tidligere journalført arkivdel før næste pladsoptælling. Delen skal være positivt oprettet og verificeret, og journalen skal vise, at B-skrivningen aldrig blev sendt, eller at en anden kandidat vandt den næste centrale version. Udgiveren bevarer den indkommende arkivgruppe og begge centralt beskyttede generationer. Oprydningen genlæser de eksakte bytes, den aktuelle B-peger og den samme journalversion omkring en betinget journalopdatering. Den sender højst ét fysisk slettekald. Efter et tabt svar kræves en autentificeret R2-kvittering om, at netop objektnøglen mangler. Ukendte udfald, tidligere ubeviste poster og den eksisterende autoriserede rotation bevares.
+
+Fravær af journalen eller arkivdelen kræver, at R2 entydigt angiver den manglende nøgle i svar på et autentificeret opslag. En tom 404 eller en 404 for hele lageret afklarer intet. Tilbagerulning før B registrerer samme ene sletteforsøg i journalen før sletning. En senere kørsel kan genlæse fraværet for den samme indkommende arkivdel og kontrollere den igen før upload. Ældre sletteposter med mulig gentagelse holdes fortsat tilbage.
+
+Den valgfrie R2-kopi af driftsbevis afstår ved manglende plads eller uafklaret journal, mens den primære udgivelse til Supabase kan fortsætte. Den primære private vejrarkivering stopper før en ny skrivning, hvis pladsen eller reservationsloftet er opbrugt. De lokale prøver dækker tabte svar og præcis genlæsning. GitHub-kildekontrol og normal publicering på den leverede kode udestår. Se DEC-0255.
 
 ## 22. november — tysk AI-svar afvist efter assistentudgivelsen
 

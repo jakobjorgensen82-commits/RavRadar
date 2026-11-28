@@ -34,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'ASSISTANT_AFTER599_SUCCESSOR', 'ASSISTANT_AFTER601_SUCCESSOR', 'ACCOUNT_ERASURE_APP', 'ACCOUNT_NATIVE_RECEIPT_APP80', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'ASSISTANT_AFTER599_SUCCESSOR', 'ASSISTANT_AFTER601_SUCCESSOR', 'ACCOUNT_ERASURE_APP', 'ACCOUNT_NATIVE_RECEIPT_APP80', 'TRIP_ERASURE_RECOVERY_FIXTURE', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -43,7 +43,8 @@ const NATIVE_PSQL_STATES = Object.freeze({
   '42703':'SQL_UNDEFINED_COLUMN', '42804':'SQL_DATATYPE',
   '42809':'SQL_OBJECT_TYPE', '42883':'SQL_UNDEFINED_FUNCTION',
   '42P01':'SQL_UNDEFINED_TABLE', '53200':'SQL_MEMORY',
-  '54000':'SQL_LIMIT', '54001':'SQL_COMPLEXITY', '55P03':'SQL_LOCK',
+  '54000':'SQL_LIMIT', '54001':'SQL_COMPLEXITY',
+  '55000':'SQL_OBJECT_NOT_IN_PREREQUISITE_STATE', '55P03':'SQL_LOCK',
   '57014':'SQL_CANCELED', 'P0001':'SQL_RAISED_EXCEPTION', 'XX000':'SQL_INTERNAL',
 });
 export function nativePostgresFailureDiagnostic(phase, stderr) {
@@ -690,6 +691,14 @@ export async function runAssistantAfter601NativeCheckpointSqlComparison(options)
     includeAccountStatisticsAssistant:true,includeAssistantAfter601Successor:true});
 }
 
+export async function runNativeTripErasureRecoverySqlFixture() {
+  assert.equal(arguments.length, 0, 'The trip erasure fixture uses only this checkout');
+  return runNativeCheckpointSqlComparison({
+    repositoryRoot: path.resolve(fileURLToPath(new URL('../..', import.meta.url))),
+    tripErasureRecoveryOnly: true,
+  });
+}
+
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
@@ -699,7 +708,14 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   includeAssistantPublic590Successor = false, includeAssistantPublic591Successor = false,
   includeInstalled593Original591Successor = false,includeScalar597LaterH0Successor=false,
   includeAssistantAfter597Successor=false,includeAssistantAfter598Successor=false,includeAssistantAfter599Successor=false,
-  includeAssistantAfter601Successor=false } = {}) {
+  includeAssistantAfter601Successor=false, tripErasureRecoveryOnly=false } = {}) {
+  assert.equal(typeof tripErasureRecoveryOnly, 'boolean');
+  if (tripErasureRecoveryOnly) {
+    assert.equal(repositoryRoot, path.resolve(fileURLToPath(new URL('../..', import.meta.url))));
+    assert.equal(sourceDocumentAt, undefined);
+    assert.equal(atHour, undefined);
+    assert.equal(saveCheckpoint, undefined);
+  }
   assert.equal(typeof includeAssistantAfter601Successor,'boolean');
   if(includeAssistantAfter601Successor){
     const {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_ASSISTANT_AFTER601_SUCCESSOR}=await import('./assistant-later-h0-successor-source.mjs');
@@ -804,9 +820,9 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
-  const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor||includeAssistantAfter601Successor
+  const nativeProgramsBefore=tripErasureRecoveryOnly||includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor||includeAssistantAfter601Successor
     ?await nativePostgresProgramIdentity(programs):null;
-  assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
+  if (!tripErasureRecoveryOnly) assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'));
   assert.match(root, /^[A-Za-z0-9_/-]+$/, 'private native directory cannot be passed safely to pg_ctl');
@@ -853,6 +869,14 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     assert.equal(launch.code, 0, 'private Unix-socket PostgreSQL failed to start');
     started = true; owner = await readOwner();
     assert.equal(await psql("select current_setting('listen_addresses');"), '', 'TCP must remain disabled');
+    if (tripErasureRecoveryOnly) {
+      nativePhase = 'TRIP_ERASURE_RECOVERY_FIXTURE';
+      await psql('create role service_role nologin bypassrls; create role anon nologin; create role authenticated nologin;');
+      const { exerciseAccountErasureOutbox } = await import('./account-erasure-outbox-native-fixture.mjs');
+      const proof = await exerciseAccountErasureOutbox({ psql, runSql, repositoryRoot, tripRecoveryOnly: true });
+      completedReport = { kind: 'NATIVE_TRIP_ERASURE_RECOVERY_FIXTURE', postgresMajorVersion: programs.majorVersion, ...proof };
+      return completedReport;
+    }
     const oldSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', OLD_MIGRATION), 'utf8'));
     const newSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', NEW_MIGRATION), 'utf8'));
     const accountSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', ACCOUNT_MIGRATION), 'utf8'));
@@ -1219,6 +1243,14 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       nativePhase='ASSISTANT_AFTER601_SUCCESSOR';
       const {compareAssistantAfter601Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter601Successor=await compareAssistantAfter601Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      const { TRIP_ERASURE_RECOVERY_MIGRATION } = await import('./trip-erasure-recovery-native-fixture.mjs');
+      const files = await fs.readdir(path.join(repositoryRoot, 'supabase', 'migrations'));
+      if (files.includes(TRIP_ERASURE_RECOVERY_MIGRATION)) {
+        nativePhase = 'TRIP_ERASURE_RECOVERY_FIXTURE';
+        const { exerciseAccountErasureOutbox } = await import('./account-erasure-outbox-native-fixture.mjs');
+        const tripErasureRecovery = await exerciseAccountErasureOutbox({ psql, runSql, repositoryRoot, tripRecoveryOnly: true });
+        assistantAfter601Successor = { ...assistantAfter601Successor, tripErasureRecovery };
+      }
     }
     let assistantAfter598Successor,accountErasure,accountInactivity,accountNativeReceipt;
     if(includeAssistantAfter598Successor){

@@ -19,6 +19,8 @@ import { sealStagedPrivateProductionRuntime, openStagedPrivateProductionRuntime 
 import { publishProtectedPrivateProductionRuntime } from './protected-private-production-runtime.mjs';
 import { appendPrivateWeatherPublicationSummary, checkCodeOnlyPrivateWeatherRebind, publishPrivateWeatherRuntime }
   from './publish-private-weather-runtime.mjs';
+import { decodePrivateWeatherArchiveReservation, sumPrivateWeatherArchiveReservationBytes }
+  from './lib/operational-evidence-r2-slots.mjs';
 import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
@@ -141,27 +143,69 @@ export async function assertNormalStagePublication(t) {
   const parentReceipt = { parentPin: pin.pin, parentDescriptor: pin.descriptor };
   let virtualUsed = 2_050_000_001;
   const r2Calls = [];
-  const r2OptionsFor = (remote, calls, listPositions) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
+  const reservations = new WeakMap();
+  const reservationPath = 'operational-evidence/weather-archive-upload/v1.json';
+  const absentObject = (code = 'NoSuchKey') => new Response('<Error><Code>' + code + '</Code></Error>',
+    { status: 404, headers: { 'content-type': 'application/xml' } });
+  const r2OptionsFor = (remote, calls, listPositions, fault = {}) => ({ storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
     secretAccessKey: 'synthetic-secret', delayImpl: async () => {}, fetchImpl: async (url, request) => {
       const address = new URL(url);
+      const key = decodeURIComponent(address.pathname.slice('/ravradar-private-production-runtime/'.length));
+      if (key === reservationPath) {
+        const previous = reservations.get(remote);
+        if (request.method === 'GET') {
+          assert(request.headers.authorization);
+          assert.equal(request.cache, 'no-store');
+          const faultResponse = await fault.reservationGet?.();
+          if (faultResponse) return faultResponse;
+          return previous
+            ? new Response(previous.bytes, { headers: { ETag: previous.etag, 'Content-Length': String(previous.bytes.length) } })
+            : absentObject();
+        }
+        assert.equal(request.method, 'PUT');
+        assert(request.headers.authorization);
+        const bytes = Buffer.from(request.body);
+        let status;
+        const commit = () => {
+          const current = reservations.get(remote);
+          if (current ? request.headers['if-match'] !== current.etag
+            : request.headers['if-none-match'] !== '*') return status = 412;
+          reservations.set(remote, { bytes, etag: '"' + crypto.createHash('sha256').update(bytes).digest('hex') + '"' });
+          return status = 200;
+        };
+        if (fault.reservationPut) await fault.reservationPut({ bytes, commit });
+        else commit();
+        return new Response(null, { status });
+      }
       calls.push(request.method);
       if (request.method === 'GET' && address.searchParams.has('list-type')) {
         listPositions?.push(calls.length - 1);
         return new Response(`<ListBucketResult><Contents><Key>preserved</Key><Size>${virtualUsed}</Size></Contents><KeyCount>1</KeyCount><IsTruncated>false</IsTruncated></ListBucketResult>`);
       }
       if (request.method === 'HEAD' && address.pathname === '/ravradar-private-production-runtime') return new Response(null);
-      const key = decodeURIComponent(address.pathname.slice('/ravradar-private-production-runtime/'.length));
-      if (request.method === 'HEAD') return new Response(null, { status: remote.objects.has(key) ? 200 : 404 });
+      if (request.method === 'HEAD') {
+        const present = remote.objects.has(key);
+        await fault.afterObjectHead?.(key, present);
+        return new Response(null, { status: present ? 200 : 404 });
+      }
       if (request.method === 'PUT') {
+        if (fault.objectPut) await fault.objectPut(key, request.body);
         const result = await remote.storage.uploadImmutable(key, request.body);
         return new Response(null, { status: result.created ? 200 : 412 });
       }
       if (request.method === 'GET') {
-        if (!remote.objects.has(key)) return new Response(null, { status: 404 });
+        const faultResponse = await fault.objectGet?.(key);
+        if (faultResponse) return faultResponse;
+        if (!remote.objects.has(key)) return absentObject();
         const bytes = await remote.storage.download(key);
         return new Response(bytes, { headers: { 'content-length': String(bytes.length) } });
       }
-      if (request.method === 'DELETE') { await remote.storage.removeExact(key); return new Response(null, { status: 204 }); }
+      if (request.method === 'DELETE') {
+        const faultResponse = await fault.objectDelete?.(key);
+        if (faultResponse) return faultResponse;
+        await remote.storage.removeExact(key);
+        return new Response(null, { status: 204 });
+      }
       throw new Error('unexpected normal publisher storage method');
     } });
   const r2ListPositions = [];
@@ -175,8 +219,201 @@ export async function assertNormalStagePublication(t) {
     'Capacity refusal never reaches parent CAS.');
   assert.equal(r2Calls.includes('PUT'), false, 'Capacity refusal reaches no actual PUT.');
   virtualUsed = 1_734_856_529;
-  const late = normalBAndSTransports();
   const pointerKey = 'ravscore-private-production-runtime-pointer';
+  function priorGeneration() {
+    const remote = normalBAndSTransports();
+    remote.documents.set(pointerKey, structuredClone(heldParent));
+    for (const [key, value] of transport.objects) remote.objects.set(key, Buffer.from(value));
+    return remote;
+  }
+  const publishOn = (remote, calls, fault = {}, options = normalPublication) => publishPrivateWeatherRuntime({
+    ...options, request: bindOrdinaryStagePublicationRequest(remote.documentRequest, parentReceipt),
+  }, r2OptionsFor(remote, calls, undefined, fault));
+  const journal = remote => reservations.has(remote)
+    ? decodePrivateWeatherArchiveReservation(reservations.get(remote).bytes) : null;
+  const pendingObjects = bytes => decodePrivateWeatherArchiveReservation(bytes).objects
+    .filter(part => part.status === 'pending').map(({ path, bytes }) => ({ path, bytes }));
+  const pending = remote => pendingObjects(reservations.get(remote).bytes);
+  const clonePublication = original => {
+    const remote = normalBAndSTransports();
+    for (const [key, value] of original.documents) remote.documents.set(key, structuredClone(value));
+    for (const [key, value] of original.objects) remote.objects.set(key, Buffer.from(value));
+    if (reservations.has(original)) reservations.set(remote, reservations.get(original));
+    return remote;
+  };
+
+  const interruptedAcknowledgment = priorGeneration();
+  let loseAcknowledgment = false;
+  let reservationWrites = 0;
+  let archivedParts = 0;
+  const acknowledgedAfterReadRetry = await publishOn(interruptedAcknowledgment, [], {
+    reservationPut({ bytes, commit }) {
+      assert.equal(commit(), 200);
+      if (pendingObjects(bytes).length) {
+        reservationWrites += 1;
+        loseAcknowledgment = true;
+      }
+    },
+    reservationGet() {
+      if (loseAcknowledgment) {
+        loseAcknowledgment = false;
+        return new Response(null, { status: 503 });
+      }
+    },
+    objectPut(key) { if (pending(interruptedAcknowledgment).some(part => part.path === key)) archivedParts += 1; },
+  });
+  assert.equal(acknowledgedAfterReadRetry.published, true);
+  assert.equal(reservationWrites, 1, 'A transient acknowledgment GET never resends the journal CAS');
+  assert.equal(archivedParts, 1, 'The visible reservation authorizes exactly one archive PUT after reread');
+  assert.deepEqual(pending(interruptedAcknowledgment), []);
+
+  for (const reserveCommitsFirst of [false, true]) {
+    const lateReservation = priorGeneration();
+    let finishDelayedReservation;
+    let fences = 0;
+    const lateReservationCalls = [];
+    await assert.rejects(publishOn(lateReservation, lateReservationCalls, {
+      reservationPut({ bytes, commit }) {
+        if (pendingObjects(bytes).length) {
+          assert.equal(finishDelayedReservation, undefined, 'The same reserve is never blindly retried');
+          finishDelayedReservation = commit;
+          throw new Error('synthetic lost response before the reservation is visible');
+        }
+        if (++fences === 1 && reserveCommitsFirst) {
+          assert.equal(finishDelayedReservation(), 200);
+          assert.equal(commit(), 412, 'The first fence loses to the delayed reservation');
+        } else assert.equal(commit(), 200);
+      },
+    }), error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
+    assert.equal(fences, reserveCommitsFirst ? 2 : 1);
+    assert.equal(lateReservationCalls.includes('PUT'), false, 'Unknown reservation cannot authorize any archive write');
+    assert.deepEqual(lateReservation.documents.get(pointerKey), heldParent);
+    if (!reserveCommitsFirst) assert.equal(finishDelayedReservation(), 412, 'The confirmed fence excludes the late reservation');
+    assert.deepEqual(pending(lateReservation), []);
+    assert.equal((await publishOn(lateReservation, [])).published, true, 'Normal retry can use the unsent archive key');
+  }
+
+  for (const clearUnknown of [false, true]) {
+    const failedReadback = priorGeneration();
+    const rollbackCalls = [];
+    let acknowledged;
+    let failedInitialRead = false;
+    await assert.rejects(publishOn(failedReadback, rollbackCalls, {
+      reservationPut({ bytes, commit }) {
+        if (clearUnknown && pendingObjects(bytes).length === 0) throw new Error('synthetic clearing response lost');
+        assert.equal(commit(), 200);
+      },
+      objectPut(key, bytes) { acknowledged = { path: key, bytes: bytes.length }; },
+      objectGet(key) {
+        if (key === acknowledged?.path && !failedInitialRead) {
+          failedInitialRead = true;
+          return new Response(null, { status: 500 });
+        }
+      },
+    }), /download failed closed/);
+    assert(acknowledged, 'The immutable archive PUT received a terminal successful response');
+    assert.deepEqual(failedReadback.documents.get(pointerKey), heldParent, 'The failure preceded pointer mutation');
+    assert.equal(rollbackCalls.includes('DELETE'), !clearUnknown);
+    assert.equal(failedReadback.objects.has(acknowledged.path), clearUnknown);
+    assert.deepEqual(pending(failedReadback), clearUnknown ? [acknowledged] : []);
+    const retried = await publishOn(failedReadback, [], {
+      objectPut(key) {
+        if (clearUnknown) assert.notEqual(key, acknowledged.path, 'Reuse the preserved acknowledged bytes');
+      },
+    });
+    assert.equal(retried.published, true);
+    assert.deepEqual(pending(failedReadback), []);
+  }
+
+  const lateArchive = priorGeneration();
+  let finishDelayedArchive;
+  let lostReservationResponse = false;
+  let physicalArchivePuts = 0;
+  const lateArchiveCalls = [];
+  await assert.rejects(publishOn(lateArchive, lateArchiveCalls, {
+    reservationPut({ commit }) {
+      commit();
+      if (!lostReservationResponse) {
+        lostReservationResponse = true;
+        throw new Error('synthetic lost response after the conditional reservation committed');
+      }
+    },
+    objectPut(key, bytes) {
+      physicalArchivePuts += 1;
+      assert.deepEqual(pending(lateArchive), [{ path: key, bytes: bytes.length }]);
+      finishDelayedArchive = () => lateArchive.storage.uploadImmutable(key, bytes);
+      throw new Error('synthetic lost first physical archive PUT, still pending remotely');
+    },
+  }));
+  assert.equal(lostReservationResponse, true);
+  assert.equal(physicalArchivePuts, 1);
+  assert.deepEqual(lateArchive.documents.get(pointerKey), heldParent);
+  const [unresolved] = pending(lateArchive);
+  assert.equal(lateArchive.objects.has(unresolved.path), false);
+  const retryAbsent = [];
+  await assert.rejects(publishOn(lateArchive, retryAbsent),
+    error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_ALREADY_UNRESOLVED');
+  assert.equal(retryAbsent.includes('PUT'), false, 'An absent object is not terminal and is not retried');
+  assert.deepEqual(pending(lateArchive), [unresolved]);
+
+  const other = await create(target, 'unrelated-archive');
+  const different = { ...normalPublication, bundlePath: other };
+  const stock = virtualUsed;
+  virtualUsed = 2_500_000_000 - 100_000_000 - 350_000_000 - 16_384 - 16_384;
+  const tooFull = [];
+  await assert.rejects(publishOn(lateArchive, tooFull, {}, different),
+    error => error.cause?.code === 'PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
+  assert.equal(tooFull.includes('PUT'), false, 'Invisible reserved bytes count against the generation budget');
+  virtualUsed = stock;
+  const allowDifferent = priorGeneration();
+  reservations.set(allowDifferent, reservations.get(lateArchive));
+  const differentOutcome = await publishOn(allowDifferent, [], {}, different);
+  assert.equal(differentOutcome.published, true);
+  assert.deepEqual(pending(allowDifferent), [unresolved],
+    'An unrelated ordinary generation may proceed while it continues to count the unresolved bytes');
+
+  const recoveredCalls = [];
+  const remoteHeadObservations = [];
+  const recovered = await publishOn(lateArchive, recoveredCalls, {
+    async afterObjectHead(key, present) {
+      if (key !== unresolved.path) return;
+      remoteHeadObservations.push(present);
+      if (remoteHeadObservations.length === 1) {
+        assert.equal(present, false);
+        await finishDelayedArchive();
+      }
+    },
+    objectPut(key) {
+      assert.notEqual(key, unresolved.path, 'A stale negative HEAD cannot send a second archive PUT');
+    },
+  });
+  assert.deepEqual(remoteHeadObservations, [false, true], 'The second HEAD really observes the delayed original');
+  assert.equal(recovered.published, true, 'The same candidate can finish after the exact immutable bytes appear');
+  assert.deepEqual(pending(lateArchive), []);
+  assert.equal(lateArchive.objects.has(unresolved.path), true);
+
+  const movedBeforeB = priorGeneration();
+  let movedPointerWrites = 0;
+  let simulatedMoved = false;
+  await assert.rejects(publishPrivateWeatherRuntime({ ...normalPublication,
+    request: async (query, options, phase) => {
+      if (phase === 'compare-and-swap') movedPointerWrites++;
+      const rows = await movedBeforeB.documentRequest(query, options, phase);
+      if (!simulatedMoved && phase === 'read' && options.cache === 'no-store'
+          && journal(movedBeforeB)?.objects.some(part => part.status === 'present')) {
+        simulatedMoved = true;
+        return rows.map(row => ({ ...row, version: Number(row.version) + 1 }));
+      }
+      return rows;
+    },
+  }, r2OptionsFor(movedBeforeB, [])),
+  error => error.cause?.code === 'PRIVATE_WEATHER_PUBLICATION_RETIREMENT_POINTER_CHANGED'
+    || error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_CHANGED');
+  assert.equal(movedPointerWrites, 0);
+  assert.equal(simulatedMoved, true);
+  assert.deepEqual(movedBeforeB.documents.get(pointerKey), heldParent);
+
+  const late = normalBAndSTransports();
   late.documents.set(pointerKey, structuredClone(heldParent));
   for (const [key, value] of transport.objects) late.objects.set(key, Buffer.from(value));
   let finishDelayedCas;
@@ -195,6 +432,198 @@ export async function assertNormalStagePublication(t) {
   assert.deepEqual(late.documents.get(pointerKey), heldParent, 'Both recovery reads still saw the exact old pointer.');
   assert.equal(lateCalls.includes('DELETE'), false, 'Ambiguous pointer write protects the candidate on the wire.');
   assert.equal(typeof finishDelayedCas, 'function');
+  const [unconfirmed] = journal(late).intents;
+  assert.equal(unconfirmed.beforeVersion, Number(heldParent.version));
+  assert.equal(unconfirmed.successorSha256, null);
+  const [knownArchive] = journal(late).objects;
+  assert.deepEqual(unconfirmed.paths, [knownArchive.path]);
+  assert.equal(knownArchive.status, 'present');
+  assert.equal(knownArchive.created, true);
+  assert.equal(sumPrivateWeatherArchiveReservationBytes(journal(late).objects), 0,
+    'Verified physical stock is kept in the journal without charging a second reservation');
+  assert.deepEqual(pending(late), []);
+  let retriedPointerWrites = 0;
+  await assert.rejects(publishPrivateWeatherRuntime({ ...normalPublication,
+    request: bindOrdinaryStagePublicationRequest(async (query, options, phase) => {
+      if (phase === 'compare-and-swap') retriedPointerWrites++;
+      return late.documentRequest(query, options, phase);
+    }, parentReceipt) }, r2OptionsFor(late, [])),
+  error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_POINTER_UNRESOLVED');
+  assert.equal(retriedPointerWrites, 0);
+  assert.deepEqual(journal(late).intents, [unconfirmed]);
+
+  const alternateWinner = priorGeneration();
+  reservations.set(alternateWinner, reservations.get(late));
+  alternateWinner.objects.set(knownArchive.path, Buffer.from(late.objects.get(knownArchive.path)));
+  const priorStock = virtualUsed;
+  virtualUsed = 2_500_000_000 - 100_000_000 - 350_000_000 - 16_384 - 16_384;
+  const alternate = await publishOn(alternateWinner, [], {}, different);
+  virtualUsed = priorStock;
+  assert.equal(alternate.published, true,
+    'The physical bytes are counted in stock and a later normal generation can still win the same B version');
+  const [loser] = journal(alternateWinner).intents;
+  assert.equal(loser.afterSha256, unconfirmed.afterSha256);
+  assert.match(loser.successorSha256, /^[0-9a-f]{64}$/);
+  assert.notEqual(loser.successorSha256, loser.afterSha256);
+  assert.deepEqual(journal(alternateWinner).objects, [knownArchive]);
+  assert.equal(alternateWinner.objects.has(knownArchive.path), true,
+    'The loser remains owned without triggering a new deletion');
+
+  const replayWinner = (remote, fault = {}, request = remote.documentRequest) => publishPrivateWeatherRuntime({
+    ...different, request,
+  }, r2OptionsFor(remote, [], undefined, fault));
+  const cleared = clonePublication(alternateWinner);
+  let orphanDeletes = 0;
+  await replayWinner(cleared, {
+    objectDelete(key) {
+      if (key === knownArchive.path) orphanDeletes++;
+      assert.equal(journal(cleared).objects[0].status, 'orphan-deleting', 'A durable fence precedes the wire DELETE');
+    },
+    objectGet: key => key === knownArchive.path && !cleared.objects.has(key) ? absentObject() : undefined,
+  });
+  assert.equal(orphanDeletes, 1);
+  assert.equal(cleared.objects.has(knownArchive.path), false);
+  assert.deepEqual(journal(cleared), { objects: [], intents: [] });
+  assert.deepEqual(cleared.documents.get(pointerKey), alternateWinner.documents.get(pointerKey));
+  for (const part of [cleared.documents.get(pointerKey).payload.current, cleared.documents.get(pointerKey).payload.previous]
+    .flatMap(descriptor => descriptor.objects)) assert.equal(cleared.objects.has(part.objectPath), true);
+
+  const delayedOrphan = clonePublication(alternateWinner);
+  let physicalDeletes = 0;
+  const lostOrphan = {
+    objectDelete(key) {
+      if (key === knownArchive.path) {
+        physicalDeletes++;
+        return new Response(null, { status: 503 });
+      }
+    },
+  };
+  await replayWinner(delayedOrphan, lostOrphan);
+  await replayWinner(delayedOrphan, lostOrphan);
+  assert.equal(physicalDeletes, 1, 'Neither adapter retry nor restart sends a second DELETE');
+  assert.equal(journal(delayedOrphan).objects[0].status, 'orphan-deleting');
+  assert.equal(delayedOrphan.objects.has(knownArchive.path), true);
+  await delayedOrphan.storage.removeExact(knownArchive.path);
+  await replayWinner(delayedOrphan, { objectGet: key => key === knownArchive.path ? absentObject('NoSuchBucket') : undefined });
+  assert.equal(journal(delayedOrphan).objects[0].status, 'orphan-deleting', 'Bucket-level 404 cannot settle the exact object');
+  await replayWinner(delayedOrphan, { objectGet: key => key === knownArchive.path ? absentObject() : undefined });
+  assert.deepEqual(journal(delayedOrphan), { objects: [], intents: [] });
+
+  const failedBeforeB = priorGeneration();
+  let createdBeforeB;
+  let failedVerify = false;
+  let rollbackDeletes = 0;
+  await assert.rejects(publishOn(failedBeforeB, [], {
+    objectPut(key) { createdBeforeB = key; },
+    objectGet(key) {
+      if (key === createdBeforeB && !failedVerify) {
+        failedVerify = true;
+        return new Response(null, { status: 403 });
+      }
+    },
+    objectDelete(key) {
+      assert.equal(key, createdBeforeB);
+      assert.equal(journal(failedBeforeB).objects[0].status, 'orphan-deleting');
+      rollbackDeletes++;
+      return new Response(null, { status: 503 });
+    },
+  }));
+  assert.equal(failedVerify, true);
+  assert.equal(rollbackDeletes, 1, 'The frozen rollback sends at most one physical DELETE too');
+  assert.deepEqual(failedBeforeB.documents.get(pointerKey), heldParent);
+  assert.equal(failedBeforeB.objects.has(createdBeforeB), true);
+  for (const reservationGet of [() => absentObject('NoSuchBucket'), () => new Response(null, { status: 404 })]) {
+    const calls = [];
+    const held = clonePublication(failedBeforeB);
+    let sawExistingArchive = false;
+    await assert.rejects(publishOn(held, calls, {
+      reservationGet,
+      afterObjectHead(key, present) {
+        if (key === createdBeforeB && present) sawExistingArchive = true;
+      },
+    }), error => error.cause?.message === 'OPERATIONAL_SLOT_READ_REFUSED');
+    assert.equal(sawExistingArchive, true, 'An ambiguous journal cannot permit reuse of the positive HEAD');
+    assert.equal(calls.includes('PUT') || calls.includes('DELETE'), false);
+    assert.deepEqual(held.documents.get(pointerKey), heldParent);
+  }
+  const heldPreBCalls = [];
+  await assert.rejects(publishOn(failedBeforeB, heldPreBCalls),
+    error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
+  assert.equal(heldPreBCalls.includes('PUT') || heldPreBCalls.includes('DELETE'), false);
+
+  const legacyDelete = clonePublication(failedBeforeB);
+  const oldHold = JSON.parse(reservations.get(legacyDelete).bytes.toString('utf8'));
+  oldHold.objects[0].status = 'deleting';
+  const oldHoldBytes = Buffer.from(JSON.stringify(oldHold));
+  reservations.set(legacyDelete, { bytes: oldHoldBytes,
+    etag: '"' + crypto.createHash('sha256').update(oldHoldBytes).digest('hex') + '"' });
+  await legacyDelete.storage.removeExact(createdBeforeB);
+  const legacyCalls = [];
+  await assert.rejects(publishOn(legacyDelete, legacyCalls),
+    error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_CLEANUP_HELD');
+  assert.equal(legacyCalls.includes('PUT') || legacyCalls.includes('DELETE'), false);
+  assert.equal(journal(legacyDelete).objects[0].status, 'deleting');
+
+  const archiveHeads = [];
+  let retryArchiveDeletes = 0;
+  const resumedPreB = await publishOn(failedBeforeB, [], {
+    async afterObjectHead(key, present) {
+      if (key !== createdBeforeB) return;
+      archiveHeads.push(present);
+      if (archiveHeads.length === 1) await failedBeforeB.storage.removeExact(key);
+    },
+    objectPut(key) {
+      if (key === createdBeforeB) assert.deepEqual(journal(failedBeforeB).intents, []);
+    },
+    objectDelete(key) {
+      if (key === createdBeforeB) retryArchiveDeletes++;
+    },
+  });
+  assert.deepEqual(archiveHeads.slice(0, 2), [true, false], 'Typed readback triggers a new HEAD before reuse');
+  assert.equal(retryArchiveDeletes, 0, 'Same-bundle recovery sends no second archive DELETE');
+  assert.equal(resumedPreB.published, true);
+  assert.equal(failedBeforeB.objects.has(createdBeforeB), true);
+  assert.deepEqual(journal(failedBeforeB), { objects: [], intents: [] });
+
+  const staleOwner = clonePublication(alternateWinner);
+  let sawStaleOwner = false;
+  let staleDeletes = 0;
+  await replayWinner(staleOwner, { objectDelete(key) { if (key === knownArchive.path) staleDeletes++; } },
+    async (query, options, phase) => {
+      const rows = await staleOwner.documentRequest(query, options, phase);
+      if (phase === 'read' && options.cache === 'no-store' && !sawStaleOwner
+          && journal(staleOwner)?.objects[0]?.status === 'orphan-deleting') {
+        sawStaleOwner = true;
+        return rows.map(row => ({ ...row, version: Number(row.version) - 1 }));
+      }
+      return rows;
+    });
+  assert.equal(sawStaleOwner, true);
+  assert.equal(staleDeletes, 0);
+  assert.equal(staleOwner.objects.has(knownArchive.path), true);
+
+  const movedJournal = clonePublication(alternateWinner);
+  let sawMovedJournal = false;
+  let racedDeletes = 0;
+  await replayWinner(movedJournal, {
+    reservationPut({ bytes, commit }) {
+      if (decodePrivateWeatherArchiveReservation(bytes).objects[0]?.status === 'orphan-deleting') {
+        const prior = JSON.parse(reservations.get(movedJournal).bytes.toString('utf8'));
+        const replacement = Buffer.from(JSON.stringify({ ...prior, revision: crypto.randomUUID() }));
+        reservations.set(movedJournal, { bytes: replacement,
+          etag: '"' + crypto.createHash('sha256').update(replacement).digest('hex') + '"' });
+        assert.equal(commit(), 412);
+        sawMovedJournal = true;
+      } else {
+        commit();
+      }
+    },
+    objectDelete(key) { if (key === knownArchive.path) racedDeletes++; },
+  });
+  assert.equal(sawMovedJournal, true);
+  assert.equal(racedDeletes, 0);
+  assert.equal(movedJournal.objects.has(knownArchive.path), true);
+
   await finishDelayedCas();
   const lateRow = late.documents.get(pointerKey);
   assert.equal(lateRow.version, 2);
@@ -203,6 +632,12 @@ export async function assertNormalStagePublication(t) {
     assert.equal(crypto.createHash('sha256').update(await late.storage.download(part.objectPath)).digest('hex'),
       part.objectSha256, 'The late authoritative CAS still points at every verified candidate byte.');
   }
+  const beforeRemoteArchiveRetry = [];
+  const lateCommitted = await publishPrivateWeatherRuntime({ ...normalPublication, request: late.documentRequest },
+    r2OptionsFor(late, beforeRemoteArchiveRetry));
+  assert.equal(lateCommitted.published, false, 'The frozen publisher recognizes the already committed runtime');
+  assert.equal(beforeRemoteArchiveRetry.includes('PUT'), false);
+  assert.deepEqual(journal(late), { objects: [], intents: [] }, 'Exact newer B takes over journal-owned bytes');
   const beforeSuccessfulPublicationCalls = r2Calls.length;
   const publication = await publishChild();
   assert.equal(publication.published, true);
@@ -311,15 +746,36 @@ export async function assertNormalStagePublication(t) {
   await assert.rejects(publishPrivateWeatherRuntime({
     ...thirdPublication,
     request: async (query, options, phase) => {
-      if (phase === 'compare-and-swap') {
-        assert(transport.objects.size >= prepared.size + 2, 'Both candidate and marker have been read back.');
-        throw new Error('synthetic runner loss before the CAS request is delivered');
-      }
+      if (phase === 'compare-and-swap') assert.fail('A B request needs the durable journal intent first');
       return transport.documentRequest(query, options, phase);
     },
-  }, r2OptionsFor(transport, beforeCasCalls)), /Private runtime pointer compare-and-swap failed closed/);
+  }, r2OptionsFor(transport, beforeCasCalls, undefined, {
+    reservationPut({ bytes, commit }) {
+      if (decodePrivateWeatherArchiveReservation(bytes).intents.length) {
+        assert(transport.objects.size >= prepared.size + 2, 'Both candidate and marker have been read back.');
+        throw new Error('synthetic runner loss before arming B publication');
+      }
+      commit();
+    },
+  })), error => error.cause?.code === 'PRIVATE_WEATHER_UPLOAD_RESERVATION_WRITE_UNKNOWN');
   assert.deepEqual(transport.documents.get(pointerKey), beforeThird);
   assert.equal(beforeCasCalls.includes('DELETE'), false);
+  const [neverSent] = journal(transport).objects;
+  assert.equal(neverSent.status, 'present');
+  assert.equal(neverSent.created, true);
+  assert.deepEqual(journal(transport).intents, [], 'The exact pending B mutation was never armed');
+  const abortedBeforeB = clonePublication(transport);
+  let preBDeletes = 0;
+  const unaffectedCurrent = await publishPrivateWeatherRuntime({ ...normalPublication,
+    request: abortedBeforeB.documentRequest }, r2OptionsFor(abortedBeforeB, [], undefined, {
+    objectDelete(key) { if (key === neverSent.path) preBDeletes++; },
+    objectGet: key => key === neverSent.path && !abortedBeforeB.objects.has(key) ? absentObject() : undefined,
+  }));
+  assert.equal(unaffectedCurrent.published, false);
+  assert.equal(preBDeletes, 1);
+  assert.equal(abortedBeforeB.objects.has(neverSent.path), false);
+  assert.deepEqual(abortedBeforeB.documents.get(pointerKey), beforeThird);
+  assert.deepEqual(journal(abortedBeforeB), { objects: [], intents: [] });
   const afterPrepared = new Set(transport.objects.keys());
   await assert.rejects(checkCodeOnlyPrivateWeatherRebind(transport.documentRequest, r2OptionsFor(transport, [])),
     { code: 'PRIVATE_WEATHER_PUBLICATION_PENDING_POINTER_ADVANCE' });
@@ -359,7 +815,8 @@ export async function assertNormalStagePublication(t) {
   const changedOwner = await publishPrivateWeatherRuntime({
     ...thirdPublication,
     request: async (query, options, phase) => {
-      if (phase === 'read' && ++reads === 2) return [{ ...thirdRow, version: 4 }];
+      // Initial B and journal handoff are stable. Change the read at retirement.
+      if (phase === 'read' && ++reads === 3) return [{ ...thirdRow, version: 4 }];
       return transport.documentRequest(query, options, phase);
     },
   }, r2OptionsFor(transport, changedOwnerCalls));

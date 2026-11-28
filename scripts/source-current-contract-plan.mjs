@@ -94,6 +94,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
     'node scripts/test-ravscore-public-browser-closure.mjs',
   ],
+  zoneInfoPanel:['node --test scripts/test-map-forecast-panel.mjs'],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -139,6 +140,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node --test scripts/test-admin-document-history-workflow.mjs',
     'node --test scripts/test-admin-document-history-maintenance.mjs',
   ],
+  backupConfirmation:['node --test scripts/test-monitor-database-backup-confirmation.mjs'],
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
     'node --test scripts/test-archive-supabase-database-backup.mjs',
@@ -314,13 +316,13 @@ const PATH_AREAS=freeze({
     'scripts/test-assistant-ui-error-boundary.mjs',
     'scripts/test-rav-assistant-local-knowledge-4.0.293.mjs',
   ],
+  zoneInfoPanel:['js/ui/info-panel.js','scripts/test-map-forecast-panel.mjs'],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'js/services/data-service.js',
     'scripts/test-ravscore-public-data-service-binding.mjs',
     'scripts/test-ravscore-public-browser-closure.mjs',
     'scripts/test-map-forecast-timeline.mjs',
-    'scripts/test-map-forecast-panel.mjs',
     'scripts/test-map-timeline-generation.mjs',
     'scripts/test-public-json-reader-bridge.mjs',
     'scripts/test-public-cold-start-4.0.303.mjs',
@@ -416,6 +418,11 @@ const PATH_AREAS=freeze({
     'scripts/test-admin-document-history-workflow.mjs',
     'scripts/admin-document-history-maintenance.mjs',
     'scripts/test-admin-document-history-maintenance.mjs',
+  ],
+  backupConfirmation:[
+    '.github/workflows/monitor-trip-storage.yml',
+    'scripts/monitor-database-backup-confirmation.mjs',
+    'scripts/test-monitor-database-backup-confirmation.mjs',
   ],
   backupRestore:[
     '.github/workflows/maintain-admin-document-history.yml',
@@ -599,6 +606,9 @@ export function currentWorkflowTargets(relative){
 // Existing whole callers for precise app and Pages inputs. This lookup
 // selects test commands without adding short-path qualification authority.
 const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
+const TRIP_HYBRID_SOURCE_TEST='node --test scripts/test-hybrid-trip-storage-4.0.287.mjs';
+const TRIP_EDGE_SOURCE_TEST='node --test scripts/test-trip-storage-edge-transient-retry.mjs';
+const TRIP_RECOVERY_SOURCE_TEST='node --test scripts/test-reconcile-held-trip-erasures.mjs';
 const PROTECTED_HANDBOOK_SOURCE_TESTS=[
   'node scripts/test-protected-handbook-merge-4.0.270.mjs',
   'node --test scripts/test-supabase-quota-controls.mjs',
@@ -653,6 +663,11 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/verify-account-erasure-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/verify-code-only-migration-plan.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
   'scripts/audit-cloudflare-trip-storage.mjs':['node scripts/test-hybrid-trip-storage-4.0.287.mjs'],
+  'cloudflare/trip-gateway/worker.js':[TRIP_HYBRID_SOURCE_TEST,TRIP_RECOVERY_SOURCE_TEST,TRIP_EDGE_SOURCE_TEST],
+  'scripts/lib/reconcile-held-trip-erasures.mjs':[TRIP_RECOVERY_SOURCE_TEST,ACCOUNT_SCHEMA_SOURCE_TEST],
+  'scripts/lib/trip-erasure-recovery-native-fixture.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST,'node --test scripts/test-native-postgres-evidence.mjs'],
+  'scripts/prepare-cloudflare-trip-storage.mjs':[TRIP_HYBRID_SOURCE_TEST,TRIP_EDGE_SOURCE_TEST],
+  'scripts/verify-cloudflare-trip-gateway.mjs':[TRIP_EDGE_SOURCE_TEST,TRIP_RECOVERY_SOURCE_TEST],
   'supabase/functions/_shared/account-inactivity-notice.js':[TRIP_LOG_SOURCE_TEST],
   'supabase/functions/_shared/account-lifecycle.js':[TRIP_LOG_SOURCE_TEST,...COMMANDS.ownerErasure],
   'supabase/functions/_shared/inactivity-notice-mail.mjs':[TRIP_LOG_SOURCE_TEST],

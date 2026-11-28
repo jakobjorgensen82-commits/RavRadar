@@ -36,6 +36,7 @@ const REFUSAL_REASONS = new Set([
   'DMI_RAW_SAVE_RECEIPT_INVALID', 'DMI_RAW_SAVE_API_FAILED', 'DMI_RAW_SAVE_NOT_FINALIZED',
   'WEATHER_CIPHER_UPLOAD_NOT_FINALIZED', 'DMI_RAW_DISTRIBUTION_NOT_READY',
   'WEATHER_CIPHER_TERMINAL_HANDOFF_REFUSED', 'WEATHER_CIPHER_TERMINAL_WINDOW_EXPIRED',
+  'WEATHER_CIPHER_TERMINAL_OWNER_UNPROVED', 'WEATHER_CIPHER_TERMINAL_CONTROLLER_REFUSED',
   'EEXIST', 'EACCES', 'ENOENT',
 ]);
 function refusalDiagnostic(error) {
@@ -166,6 +167,18 @@ function fixedCipherInputs() {
     throw refused('WEATHER_CIPHER_UPLOAD_INPUT_REFUSED');
   }
   return { key: env.INPUT_KEY, path: CIPHER_PATH, stage: fixedTerminalCipherStage(env) };
+}
+
+function requireManagedTerminalCipher() {
+  const unit = process.env.RAVRADAR_TERMINAL_UPLOAD_UNIT;
+  const uid = process.geteuid();
+  const membership = fs.readFileSync('/proc/self/cgroup', 'ascii').split('\n')
+    .find(line => line.startsWith('0::'));
+  if (!/^rr-weather-provider-[a-z0-9_]{8}\.service$/.test(unit ?? '')
+      || !membership?.startsWith(`0::/user.slice/user-${uid}.slice/user@${uid}.service/`)
+      || path.posix.basename(membership) !== unit) {
+    throw refused('WEATHER_CIPHER_TERMINAL_OWNER_UNPROVED');
+  }
 }
 
 function assertFixedWorkerParent() {
@@ -400,6 +413,7 @@ async function runApiWorker() {
 
 async function runCipherApiWorker() {
   const input = fixedCipherInputs();
+  if (input.stage) requireManagedTerminalCipher();
   assertFixedWorkerParent();
   assertDistributionLock();
   const cipherRoot = input.stage?.root ?? ROOT;
@@ -561,6 +575,7 @@ async function runOwnedOperation(operation) {
   if (require.main === module) cliPhase = 'INPUT';
   const input = operation === 'save' ? fixedInputs()
     : operation === 'cipher' ? fixedCipherInputs() : fixedDistributionInputs();
+  if (input?.stage) requireManagedTerminalCipher();
   if (require.main === module) cliPhase = 'LOAD';
   const owner = require('../../../scripts/lib/weather-acquisition-writer.mjs');
   let lease;
@@ -748,7 +763,54 @@ async function runOwnedOperation(operation) {
 
 async function runOwnedSave() { return runOwnedOperation('save'); }
 async function runOwnedDistribution() { return runOwnedOperation('distribution'); }
-async function runOwnedCipherUpload() { return runOwnedOperation('cipher'); }
+
+async function runOwnedCipherUpload() {
+  const { stage } = fixedCipherInputs();
+  if (!stage) return runOwnedOperation('cipher');
+  if (process.env.RAVRADAR_TERMINAL_UPLOAD_UNIT !== undefined) {
+    throw refused('WEATHER_CIPHER_TERMINAL_OWNER_UNPROVED');
+  }
+  const child = spawn('python3', ['-B', path.join(ROOT, 'scripts/run-ordinary-provider-cgroup.py'),
+    'terminal-progress-upload', '240', '--'], {cwd: ROOT, stdio: ['ignore', 'inherit', 'inherit']});
+  let interrupted = false;
+  const interrupt = () => {
+    interrupted = true;
+    child.kill('SIGTERM');
+  };
+  process.on('SIGTERM', interrupt);
+  process.on('SIGINT', interrupt);
+  let deadline;
+  try {
+    await new Promise((resolve, reject) => {
+      deadline = setInterval(() => {
+        try { stage.requireTime(TERMINAL_CIPHER_OBSERVER_RESERVE_MS); }
+        catch (error) {
+          // The systemd unit independently owns the writer. The controller
+          // never holds its lease, so an expired observer cannot release it.
+          child.kill('SIGKILL');
+          reject(error);
+        }
+      }, 50);
+      child.once('error', () => reject(refused('WEATHER_CIPHER_TERMINAL_CONTROLLER_REFUSED')));
+      child.once('close', (code, signal) => {
+        if (interrupted) return reject(refused('DMI_RAW_SAVE_INTERRUPTED'));
+        if (code !== 0 || signal) return reject(refused('WEATHER_CIPHER_TERMINAL_CONTROLLER_REFUSED'));
+        resolve();
+      });
+    });
+    stage.requireTime();
+    return { uploaded: true };
+  } finally {
+    clearInterval(deadline);
+    process.removeListener('SIGTERM', interrupt);
+    process.removeListener('SIGINT', interrupt);
+  }
+}
+
+async function runManagedTerminalCipherUpload() {
+  if (!fixedCipherInputs().stage) throw refused('WEATHER_CIPHER_TERMINAL_HANDOFF_REFUSED');
+  return runOwnedOperation('cipher');
+}
 module.exports = { rawInventorySha256, runApiWorker, runOwnedSave, runOwnedDistribution };
 if (require.main === module) {
   cliPhase = 'INPUT';
@@ -757,6 +819,7 @@ if (require.main === module) {
   const operation = process.argv.length === 2 ? selectedSave
     : process.argv.length === 3 && process.argv[2] === '--fixed-api-worker' ? runApiWorker
     : process.argv.length === 3 && process.argv[2] === '--fixed-cipher-worker' ? runCipherApiWorker
+    : process.argv.length === 3 && process.argv[2] === '--managed-terminal-upload' ? runManagedTerminalCipherUpload
     : process.argv.length === 3 && process.argv[2] === '--prepare-distribution' ? runOwnedDistribution
     : process.argv.length === 3 && process.argv[2] === '--fixed-distribution-worker' ? runDistributionWorker : null;
   Promise.resolve().then(() => {

@@ -10,11 +10,11 @@ import { submitTripEvidenceObservation, syncPendingObservations } from "./js/ser
 import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.603";
 import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.603";
 import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.603";
-import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.603&ui=zone-panels-20261027&map=plain-map-v3-20261104";
+import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.603&ui=zone-panels-20261027&map=plain-map-v3-20261104&water-level-card=20261128";
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.603&ui=account-20261006&trip-test=20261125";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.603";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.603&locale=topic-tab-20261125";
-import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.603&ui=public-help-20261126-winter-wave-sorting&followup=daylight-20261122&locale=topic-tab-20261125";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.603&locale=topic-tab-raman-20261127";
+import { publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup, publicRavAssistantDaylightFollowup, publicRavAssistantEquipmentFollowup } from "./js/services/rav-assistant-public-help.js?v=4.0.603&ui=public-help-20261127-beach-signs&followup=daylight-20261122&locale=topic-tab-raman-20261127";
 import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.603";
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.603";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.603";

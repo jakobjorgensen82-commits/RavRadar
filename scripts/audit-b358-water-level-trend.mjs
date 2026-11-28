@@ -189,7 +189,7 @@ function hourlyIndex(rows) {
   return new Map(rows.map(row => [row.time, row]));
 }
 
-async function readSelectedPublicPartWeather(module, packPath, conditions, scope, { target = TARGET, publicEvidence, offsets, sourceDetailsSha256, expectedModelBinding } = {}) {
+async function readSelectedPublicPartWeather(module, packPath, conditions, scope, { target = TARGET, publicEvidence, offsets, sourceDetailsSha256, expectedModelBinding, exactHourShas, temperatureOnly = false } = {}) {
   const { manifest, payloadOffset, bytes } = await module.inspectPrivatePublicHourDeliveryPack({ packPath, conditions });
   if (manifest.datasetId !== target.datasetId || manifest.productionReferenceAt !== target.productionReferenceAt
     || manifest.entries.length !== PUBLIC_HOURS
@@ -205,6 +205,7 @@ async function readSelectedPublicPartWeather(module, packPath, conditions, scope
         position += entry.compressedBytes;
         continue;
       }
+      if (exactHourShas && entry.sha256 !== exactHourShas[entry.time]) inputFailure('PUBLIC_HOUR_DIGEST');
       const compressed = Buffer.alloc(entry.compressedBytes);
       let read = 0;
       while (read < compressed.length) {
@@ -229,6 +230,12 @@ async function readSelectedPublicPartWeather(module, packPath, conditions, scope
         const part = document.coastalParts?.parts?.[id];
         if (part?.id !== id || part.zoneId !== entryOutput.zone || part.current?.time !== entry.time || !part.current.weather)
           inputFailure('PUBLIC_PART_BINDING');
+        if (temperatureOnly) {
+          const temperature = part.current.weather.waterTemperatureC;
+          if (temperature != null && !finite(temperature)) inputFailure('B412_PUBLIC_TEMPERATURE_TYPE');
+          entryOutput.rows.set(entry.time, { temperaturePresent: finite(temperature) });
+          continue;
+        }
         const { waterLevelCm, waterLevelTrendCm3h } = part.current.weather;
         if ((waterLevelCm != null && !finite(waterLevelCm)) || (waterLevelTrendCm3h != null && !finite(waterLevelTrendCm3h)))
           inputFailure('PUBLIC_PART_WATER_TYPE');
@@ -881,59 +888,77 @@ const b374Qualifies = (row, initial, zoneId, normal) => Number.isFinite(row?.wat
   && b374Series(row) !== null && b374Equal(b374Series(initial), b374Series(row))
   && normal.collectionAllowedForZone(row.sources.waterLevel.collection, zoneId, 'waterLevel');
 
-function b374SelectRoute(normal, part, feature, stationRegistry, index, routing) {
+const B374_SUPPORT = { scope: B374_SCOPE, referenceAt: B374_H0, slots: B374_SLOTS,
+  romo: true, kind: 'B374_WATER_SOURCE_SUPPORT_AUDIT_V1' };
+const B411_SUPPORT = { scope: [['DK-B02-11', 'dk-b02-11-national-part-01-locality-01']],
+  referenceAt: '2026-11-27T12:00:00.000Z',
+  slots: ['2026-11-27T18:00:00.000Z', '2026-11-27T21:00:00.000Z'],
+  romo: false, kind: 'B411_DOKKEDAL_WATER_SOURCE_SUPPORT_AUDIT_V1' };
+
+function selectAuditRoute(normal, part, feature, stationRegistry, index, routing, support) {
   return normal.applyVerifiedWaterSourceRoutingToPartHourly({
-    part, parentFeature: feature, hourly: B374_SLOTS.map(time => ({ time })),
+    part, parentFeature: feature, hourly: support.slots.map(time => ({ time })),
     sources: stationRegistry, index, routing, haversineKm: normal.haversineKm,
-    diagnosticReferenceAt: B374_H0,
+    diagnosticReferenceAt: support.referenceAt,
   });
 }
 
-function b374NormalDecision(zoneId, partId, publicHours, result) {
+function selectedAuditSources(zoneId, partId, publicHours, result, support) {
   const observation = result.romoWaterTrendObservation;
   const [initial, future] = result.hourly;
   const keys = initial?.waterLevelProvenance?.sourceKeys;
-  if (observation?.zoneId !== zoneId || observation?.partId !== partId
+  const romoMismatch = support.romo && (observation?.zoneId !== zoneId || observation?.partId !== partId
     || observation.selectedPath !== 'ROUTED_SOURCE' || !observation.selectedSourceT3Qualified
-    || observation.seriesMatch !== false || observation.comparisonUsed !== false
-    || !Array.isArray(keys) || keys.length === 0 || keys.length > 16
-    || new Set(keys).size !== keys.length || !b374Equal(keys, future?.waterLevelProvenance?.sourceKeys)
-    || !B374_SLOTS.every((time, offset) => Number.isFinite(result.hourly[offset]?.waterLevelCm)
-      && result.hourly[offset].waterLevelCm === publicHours.get(time)?.waterLevelCm)
-    || publicHours.get(B374_H0)?.waterLevelTrendCm3h !== null) b374Fail('SEALED_B374_ROUTE_MISMATCH');
+    || observation.seriesMatch !== false || observation.comparisonUsed !== false);
+  if (romoMismatch || !validKeys(keys) || !b374Equal(keys, future?.waterLevelProvenance?.sourceKeys)
+    || !support.slots.every((time, offset) => {
+      const row = result.hourly[offset];
+      return row?.waterLevelProvenance?.sourceClass === 'verified-dmi-water-source-routing'
+        && Number.isFinite(row.waterLevelCm) && row.waterLevelCm === publicHours.get(time)?.waterLevelCm;
+    })
+    || initial.waterLevelTrendCm3h !== null
+    || publicHours.get(support.slots[0])?.waterLevelTrendCm3h !== null) b374Fail('SEALED_B374_ROUTE_MISMATCH');
   return keys;
 }
 
 // Pure projection. The caller authenticates both B archives, geometry, public
 // hour member and installed normal module before it constructs these inputs.
-export function auditB374WaterSourceSupport({
+export function auditB374WaterSourceSupport(inputs) {
+  return projectFixedWaterSourceSupport(inputs, B374_SUPPORT);
+}
+
+export function auditB411WaterSourceSupport(inputs) {
+  return projectFixedWaterSourceSupport(inputs, B411_SUPPORT);
+}
+
+function projectFixedWaterSourceSupport({
   normal, cases, stationRegistry, routing, routingConfigurationSha256, sealedIndex,
   activeBulk, protectedBulk, historicalBulk, retainedIndex,
-}) {
+}, support) {
   if (!/^[0-9a-f]{64}$/.test(routingConfigurationSha256 ?? '')
     || normal.waterRoutingConfigurationSha256(routing) !== routingConfigurationSha256) {
     b374Fail('SEALED_B374_ROUTING_CONFIGURATION_MISMATCH');
   }
-  if (!(cases instanceof Map) || cases.size !== B374_SCOPE.length || !Array.isArray(stationRegistry)
+  if (!(cases instanceof Map) || cases.size !== support.scope.length || !Array.isArray(stationRegistry)
     || !(sealedIndex instanceof Map) || !(retainedIndex instanceof Map)
     || !activeBulk?.zones || !protectedBulk?.zones
     || (historicalBulk !== null && !historicalBulk?.zones)) b374Fail('AUTHENTICATED_INPUTS_REQUIRED');
 
-  const chosen = B374_SCOPE.map(([zoneId, partId]) => {
+  const chosen = support.scope.map(([zoneId, partId]) => {
     const item = cases.get(partId);
     if (item?.part?.partId !== partId || item.part.zoneId !== zoneId
       || item.feature?.properties?.id !== zoneId || !(item.publicHours instanceof Map)) {
       b374Fail('SEALED_B374_PART_SCOPE_MISMATCH');
     }
-    const result = b374SelectRoute(normal, item.part, item.feature, stationRegistry, sealedIndex, routing);
-    return { zoneId, partId, keys: b374NormalDecision(zoneId, partId, item.publicHours, result) };
+    const result = selectAuditRoute(normal, item.part, item.feature, stationRegistry, sealedIndex, routing, support);
+    return { zoneId, partId, keys: selectedAuditSources(zoneId, partId, item.publicHours, result, support) };
   });
 
   const selectedKeys = new Set(chosen.flatMap(row => row.keys));
   const selectedStations = stationRegistry.filter(source => selectedKeys.has(b374SourceKey(source)));
   if (selectedStations.length !== selectedKeys.size
     || new Set(selectedStations.map(b374SourceKey)).size !== selectedKeys.size) b374Fail('SEALED_B374_STATIONS_MISMATCH');
-  const build = (bulk, options) => normal.buildWaterSourceForecastIndex(selectedStations, bulk, B374_H0, options);
+  const build = (bulk, options) => normal.buildWaterSourceForecastIndex(selectedStations, bulk, support.referenceAt, options);
   const union = build(activeBulk, { protectedBulkCache: protectedBulk, historicalBulkCache: historicalBulk,
     retainedSourceIndex: retainedIndex });
   const banks = [
@@ -950,14 +975,22 @@ export function auditB374WaterSourceSupport({
       || !b374Equal(JSON.parse(JSON.stringify(record.hourly)), sealed.hourly)) b374Fail('SEALED_B374_SOURCE_UNION_MISMATCH');
   }
 
+  const [firstHour, laterHour] = support.slots;
   const parts = chosen.map(({ zoneId, partId, keys }) => {
+    let observedDifferentSeries = false;
     const supports = keys.map(key => {
       const record = union.get(key);
-      const initial = b374At(record, B374_H0);
-      const selectedFuture = b374At(record, B374_H3);
+      const initial = b374At(record, firstHour);
+      const selectedFuture = b374At(record, laterHour);
       if (b374Qualifies(selectedFuture, initial, zoneId, normal)) return { selectedFuture, banks: [], conflict: false };
+      if (!support.romo && (!Number.isFinite(selectedFuture?.waterLevelCm)
+        || !b374Series(selectedFuture) || !b374Series(initial)
+        || !normal.collectionAllowedForZone(selectedFuture.sources.waterLevel.collection, zoneId, 'waterLevel'))) {
+        b374Fail('SEALED_B374_ROUTE_MISMATCH');
+      }
+      observedDifferentSeries = true;
       const alternatives = banks.flatMap(([bank, index]) => {
-        const future = b374At(index.get(key), B374_H3);
+        const future = b374At(index.get(key), laterHour);
         return b374Qualifies(future, initial, zoneId, normal) ? [{ bank, future }] : [];
       });
       return {
@@ -966,6 +999,7 @@ export function auditB374WaterSourceSupport({
         conflict: new Set(alternatives.map(row => row.future.waterLevelCm)).size > 1,
       };
     });
+    if (!observedDifferentSeries) b374Fail('SEALED_B374_ROUTE_MISMATCH');
     const candidateBanks = banks.map(([bank]) => bank)
       .filter(bank => supports.some(support => support.banks.includes(bank)));
     if (supports.some(support => support.conflict)) return { partId, decision: 'CONFLICTING_SUPPORT', candidateBanks };
@@ -977,18 +1011,19 @@ export function auditB374WaterSourceSupport({
     keys.forEach((key, i) => {
       const record = sealedIndex.get(key);
       possible.set(key, { ...record, hourly: record.hourly.map(row =>
-        row.time === B374_H3 ? supports[i].selectedFuture : row) });
+        row.time === laterHour ? supports[i].selectedFuture : row) });
     });
     const { part, feature, publicHours } = cases.get(partId);
-    const result = b374SelectRoute(normal, part, feature, stationRegistry, possible, routing);
+    const result = selectAuditRoute(normal, part, feature, stationRegistry, possible, routing, support);
     const initial = result.hourly[0];
-    if (result.romoWaterTrendObservation?.comparisonUsed !== true
+    if ((support.romo && result.romoWaterTrendObservation?.comparisonUsed !== true)
+      || !Number.isFinite(initial?.waterLevelTrendCm3h)
       || !b374Equal(keys, initial?.waterLevelProvenance?.sourceKeys)
-      || initial.waterLevelCm !== publicHours.get(B374_H0).waterLevelCm) b374Fail('ALTERNATIVE_NORMAL_PREDICATE_MISMATCH');
+      || initial.waterLevelCm !== publicHours.get(firstHour).waterLevelCm) b374Fail('ALTERNATIVE_NORMAL_PREDICATE_MISMATCH');
     return { partId, decision: 'QUALIFIED_SUPPORT_EXISTS', candidateBanks };
   });
 
-  return { kind: 'B374_WATER_SOURCE_SUPPORT_AUDIT_V1', parts };
+  return { kind: support.kind, parts };
 }
 
 const B374_REPO = 'jakobjorgensen82-commits/RavRadar';
@@ -1013,10 +1048,33 @@ const B374_ZONES_SHA = 'cd2ff012e1c5b9c8536ed02e13c756ed3cc982780a9c901cc67a3305
 const B374_ROUTING_FILE_SHA = '9a814f69bab416f419aed65787796e9d8b53036f216691edbbdd7ca94e39d7b1';
 const B374_ROUTING_CONFIG_SHA = '167a62644387018349e0d16837f953e7b8c7b0b364ca21ec6ad5345728e4d4ee';
 
+const B411_TARGETS = [
+  { runId: 45964967865, head: 'cb34506224545f8d3cd0c3ddf4ee30be824ba363',
+    id: 15192135197, bytes: 262984914, digest: 'sha256:543d579bd0d507ec3b5c9c46fd34449e4d94a273b0e03f8f3cc730737f98c449',
+    datasetId: 'rr-20261127100031-210', reference: '2026-11-27T08:00:00.000Z', jobId: 140391789217,
+    bundleSha256: '213ad90cc8105e8dbeac813523c01f487bd0fd9dad945a3de1dbddcc791fc401' },
+  { runId: 45997841484, head: '1681a3615f5186dd58cae1bf96f9869f17fc24de',
+    id: 15212041894, bytes: 264225464, digest: 'sha256:bd797831213ac511deece64f110a38ab26a65a317d05e54b0aa9413e275f7fe9',
+    datasetId: 'rr-20261127142024-210', reference: B411_SUPPORT.referenceAt, jobId: 140502175230,
+    bundleSha256: '46ff255c1a3ced8e489dcbf1e0018de434ef2f7d20dee8f14b4b7783b1577b52' },
+];
+const B411_CURRENT = B411_TARGETS[1];
+const B411_RESTORED_INPUT_SHA = '213ad90cc8105e8dbeac813523c01f487bd0fd9dad945a3de1dbddcc791fc401';
+const B411_MANIFEST_SHA = '58296e182319a3614f87a4c5327a34497c7a4601eedb7083345ed11acac1ecb1';
+const B411_ZONES_SHA = '892117a80f29c01a8c9efaa94693e4819dc85c2b8d795d1058a6dd47bfc85f96';
+const B411_HOUR_SHAS = {
+  [B411_SUPPORT.slots[0]]: '997595f15f2a2d957685364b686867ec34f41025a27dd6e16fedc889fcfb0bc7',
+  [B411_SUPPORT.slots[1]]: 'dfe9338490a0eaa015df57c7d6f27e10b6834c4a60b9965760177a436ffd0022',
+};
+
+function fixedStageIdentity(target) {
+  return { repository: B374_REPO, runId: String(target.runId), runAttempt: String(B374_ATTEMPT), sourceHead: target.head };
+}
+
 export function b374StageIdentity(runNumber) {
   const target = B374_TARGETS.find(row => row.runId === runNumber);
   if (!target) b374Fail('B374_UNPINNED_STAGE');
-  return { repository: B374_REPO, runId: String(target.runId), runAttempt: String(B374_ATTEMPT), sourceHead: target.head };
+  return fixedStageIdentity(target);
 }
 
 const B374_RESTORE_STEP = 'Verify and restore the private production runtime bundle';
@@ -1059,6 +1117,41 @@ export function b374VerifyNormalInputSteps(job) {
   return restore;
 }
 
+function b411VerifyNormalInputSteps(job) {
+  // The authenticated attempt-1 build log bound step 59 to
+  // B411_RESTORED_INPUT_SHA and reported CACHE_MISS, restored=false at step 79.
+  // A green step 79 alone would also allow an installed progress snapshot.
+  const required = [
+    [59, B374_RESTORE_STEP], [64, B374_INSTALLED_STEP],
+    [65, 'Reconcile only authenticated CURRENT B to its exact protected S before providers'],
+    [66, B374_SELECTOR_STEP],
+    [79, 'Bind optional progress to the exact protected baseline'],
+    [90, B374_COPY_STEP], [120, 'Update DMI bulk model cache'], [154, B374_BUILD_STEP],
+    [164, 'Rebuild deterministic public weather runtime before validation and deploy'],
+    [175, 'Encrypt exact completed private build for late-failure recovery'],
+    [176, 'Save only encrypted completed private build for one day'],
+  ];
+  const skipped = [
+    [60, B374_MODIFIED_INPUT_STEPS[0]], [61, B374_MODIFIED_INPUT_STEPS[1]],
+    [62, B374_MODIFIED_INPUT_STEPS[2]], [63, B374_MODIFIED_INPUT_STEPS[3]],
+    [67, B374_DONOR_STEP],
+    [82, B374_MODIFIED_INPUT_STEPS[5]], [83, B374_MODIFIED_INPUT_STEPS[6]],
+    [85, B374_MODIFIED_INPUT_STEPS[4]],
+    [151, 'Verify rebuilt closure exactly matches the run-bound source handoff'],
+  ];
+  if (job?.id !== B411_CURRENT.jobId || job.head_sha !== B411_CURRENT.head || job.run_id !== B411_CURRENT.runId
+    || job.run_attempt !== B374_ATTEMPT || job.conclusion !== 'success' || !Array.isArray(job.steps)) {
+    b374Fail('B411_PRODUCER_JOB_IDENTITY');
+  }
+  const check = (rows, conclusion) => rows.every(([number, name]) => {
+    const matches = job.steps.filter(step => step.name === name || step.number === number);
+    const step = matches[0];
+    return matches.length === 1 && step.number === number && step.name === name
+      && step.status === 'completed' && step.conclusion === conclusion;
+  });
+  if (!check(required, 'success') || !check(skipped, 'skipped')) b374Fail('B411_ACTUAL_STEP_BINDING');
+}
+
 async function b374SourceModules(root, target) {
   const directory = await fs.realpath(root);
   const git = async args => (await b374Exec('git', ['-C', directory, ...args], { timeout: 12_000 })).stdout.trim();
@@ -1077,12 +1170,12 @@ async function b374SourceModules(root, target) {
   return { load, directory, stage, expected };
 }
 
-async function b374OpenStage(target, modules, privateRoot, token, masterSecret, artifacts) {
-  const identity = b374StageIdentity(target.runId);
+async function b374OpenStage(target, modules, privateRoot, token, masterSecret, artifacts, observeJob = target === B374_CURRENT) {
+  const identity = fixedStageIdentity(target);
   let producerJobs;
   const observe = async (url, options) => {
     const response = await fetch(url, options);
-    if (target === B374_CURRENT && url === `${B374_API}/actions/runs/${target.runId}/attempts/1/jobs?per_page=100`
+    if (observeJob && url === `${B374_API}/actions/runs/${target.runId}/attempts/1/jobs?per_page=100`
       && response.status === 200) producerJobs = response.clone().json().catch(() => null);
     return response;
   };
@@ -1103,14 +1196,15 @@ async function b374OpenStage(target, modules, privateRoot, token, masterSecret, 
   }));
   const manifest = JSON.parse(await fs.readFile(path.join(bundlePath, 'manifest.json')));
   if (result.restored !== true || result.productionPointerUnchanged !== true
-    || manifest.bundleContentSha256 !== result.bundleContentSha256 || manifest.bundleContentSha256 !== target.bundleSha256
+    || manifest.bundleContentSha256 !== result.bundleContentSha256
+    || (target !== B412_STAGE && manifest.bundleContentSha256 !== target.bundleSha256)
     || manifest.productionReferenceAt !== reference || manifest.datasetId !== datasetId
     || !b374Equal(manifest.modelBinding, modules.expected.modelBinding) || !b374Equal(manifest.contractHashes, modules.expected.contractHashes)) {
     b374Fail('B374_STAGE_BUNDLE_IDENTITY');
   }
   const jobs = await producerJobs;
   const job = jobs?.jobs?.find(row => row.id === downloaded.producer.jobId);
-  if (target === B374_CURRENT && (!job || job.run_id !== target.runId || job.run_attempt !== B374_ATTEMPT
+  if (observeJob && (!job || job.run_id !== target.runId || job.run_attempt !== B374_ATTEMPT
     || job.head_sha !== target.head)) b374Fail('B374_PRODUCER_JOB_IDENTITY');
   return { manifest, job, payload: path.join(bundlePath, 'payload') };
 }
@@ -1120,25 +1214,31 @@ async function b374OpenStage(target, modules, privateRoot, token, masterSecret, 
 // historical readers in the authorized GitHub-hosted runner.
 async function b374ReadBoundStages({
   sourceRoots, manifestBytes, zonesBytes, routingBytes, githubToken, stageMasterSecret,
-}) {
+}, b411 = false) {
   if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted'
     || process.env.GITHUB_REPOSITORY !== B374_REPO || !process.env.RUNNER_TEMP) b374Fail('B374_HOSTED_READER_REQUIRED');
-  if (sha(manifestBytes) !== B374_MANIFEST_SHA || sha(zonesBytes) !== B374_ZONES_SHA
+  const [previous, current] = b411 ? B411_TARGETS : B374_TARGETS;
+  const support = b411 ? B411_SUPPORT : B374_SUPPORT;
+  const restoredInputSha = b411 ? B411_RESTORED_INPUT_SHA : B374_RESTORED_INPUT_SHA;
+  const zonesSha = b411 ? B411_ZONES_SHA : B374_ZONES_SHA;
+  if (sha(manifestBytes) !== (b411 ? B411_MANIFEST_SHA : B374_MANIFEST_SHA) || sha(zonesBytes) !== zonesSha
     || sha(routingBytes) !== B374_ROUTING_FILE_SHA) b374Fail('B374_PUBLIC_FILE_DIGEST');
   const publicManifest = JSON.parse(manifestBytes);
   const geometry = JSON.parse(zonesBytes);
   const routing = JSON.parse(routingBytes);
-  if (publicManifest.datasetId !== B374_CURRENT.datasetId || publicManifest.productionReferenceAt !== B374_H0
-    || publicManifest.zoneRegistrySha256 !== B374_ZONES_SHA) b374Fail('B374_PUBLIC_GENERATION_IDENTITY');
+  if (publicManifest.datasetId !== current.datasetId || publicManifest.productionReferenceAt !== current.reference
+    || publicManifest.zoneRegistrySha256 !== zonesSha) b374Fail('B374_PUBLIC_GENERATION_IDENTITY');
+  if (b411 && !support.slots.every(time =>
+    publicManifest.detailDelivery?.hours?.[time]?.sha256 === B411_HOUR_SHAS[time])) b374Fail('B411_PUBLIC_HOUR_DIGEST');
   const work = await fs.mkdtemp(path.join(await fs.realpath(process.env.RUNNER_TEMP), 'rr-b374-audit-'));
   const artifactDirectories = [];
   try {
-    const older = await b374SourceModules(sourceRoots[0], B374_TARGETS[0]);
-    const newer = await b374SourceModules(sourceRoots[1], B374_CURRENT);
-    const b374 = await b374OpenStage(B374_CURRENT, newer, path.join(work, 'b374'), githubToken, stageMasterSecret, artifactDirectories);
-    b374VerifyNormalInputSteps(b374.job);
-    const b373 = await b374OpenStage(B374_TARGETS[0], older, path.join(work, 'b373'), githubToken, stageMasterSecret, artifactDirectories);
-    if (B374_RESTORED_INPUT_SHA !== b373.manifest.bundleContentSha256) b374Fail('B374_PREDECESSOR_NOT_B373');
+    const older = await b374SourceModules(sourceRoots[0], previous);
+    const newer = await b374SourceModules(sourceRoots[1], current);
+    const b374 = await b374OpenStage(current, newer, path.join(work, 'output'), githubToken, stageMasterSecret, artifactDirectories, true);
+    (b411 ? b411VerifyNormalInputSteps : b374VerifyNormalInputSteps)(b374.job);
+    const b373 = await b374OpenStage(previous, older, path.join(work, 'input'), githubToken, stageMasterSecret, artifactDirectories, false);
+    if (restoredInputSha !== b373.manifest.bundleContentSha256) b374Fail('B374_PREDECESSOR_NOT_B373');
     const [forecast, router, restrictions, partRecovery, bulk, companion, publicHours] = await Promise.all([
       'dmi-forecast-file', 'water-source-forecast-routing', 'dmi-marine-zone-exclusions', 'private-dmi-recovery-record',
       'dmi-bulk-storage', 'private-weather-component-pack', 'public-hour-delivery-pack',
@@ -1152,7 +1252,7 @@ async function b374ReadBoundStages({
     const unpackIndex = async (cache, target) => {
       const packed = await forecast.readDmiWaterSourceContinuity(cache);
       if (packed?.productionReferenceAt !== target.reference) b374Fail('B374_SOURCE_CONTINUITY_IDENTITY');
-      return router.unpackWaterSourceForecastContinuity(packed, B374_H0);
+      return router.unpackWaterSourceForecastContinuity(packed, current.reference);
     };
     const [conditions, stationDocument, diagnostics] = await Promise.all([
       'conditions', 'dmi-water-stations', 'ravradar-runtime-diagnostics',
@@ -1166,24 +1266,24 @@ async function b374ReadBoundStages({
     const [activeBulk, protectedBulk, sealedIndex, retainedIndex, hours] = await Promise.all([
       bulk.readDmiBulkDocument(path.join(companions, '.cache/dmi-candidate-progress.json')),
       bulk.readDmiBulkDocument(path.join(b373.payload, 'data/live/dmi-bulk-cache.json')),
-      unpackIndex(thisCache, B374_CURRENT), unpackIndex(previousCache, B374_TARGETS[0]),
+      unpackIndex(thisCache, current), unpackIndex(previousCache, previous),
       readSelectedPublicPartWeather(publicHours, path.join(b374.payload, '.cache/public-hour-delivery.pack'), conditions,
-        new Map(B374_SCOPE.map(([zone, id]) => [id, zone])), { target: { ...B374_CURRENT, productionReferenceAt: B374_H0 },
-          offsets: [0, 3], sourceDetailsSha256: publicManifest.publicConditionDetailsSha256,
-          expectedModelBinding: publicManifest.ravScoreModelBinding }),
+        new Map(support.scope.map(([zone, id]) => [id, zone])), { target: { ...current, productionReferenceAt: current.reference },
+          offsets: b411 ? [6, 9] : [0, 3], sourceDetailsSha256: publicManifest.publicConditionDetailsSha256,
+          expectedModelBinding: publicManifest.ravScoreModelBinding, exactHourShas: b411 ? B411_HOUR_SHAS : undefined }),
     ]);
-    const cases = new Map(B374_SCOPE.map(([zoneId, partId]) => {
+    const cases = new Map(support.scope.map(([zoneId, partId]) => {
       const part = conditions.coastalParts?.parts?.[partId];
       if (part?.zoneId !== zoneId) b374Fail('B374_PRIVATE_PART_IDENTITY');
       return [partId, { part: { ...part, partId },
         feature: geometry.features.find(candidate => candidate.properties?.id === zoneId), publicHours: hours.get(partId)?.rows }];
     }));
-    return auditB374WaterSourceSupport({
+    return projectFixedWaterSourceSupport({
       normal: { ...router, collectionAllowedForZone: restrictions.dmiMarineCollectionAllowedForZone,
         haversineKm: partRecovery.haversineKm },
       cases, stationRegistry: stationDocument.stations, routing, routingConfigurationSha256: B374_ROUTING_CONFIG_SHA, sealedIndex,
       activeBulk, protectedBulk, historicalBulk: null, retainedIndex,
-    });
+    }, support);
   } finally {
     try { while (artifactDirectories.length) await artifactDirectories.pop()(); }
     finally { await fs.rm(work, { recursive: true, force: true }); }
@@ -1197,14 +1297,18 @@ const handoff = { id: 14786022739, name: 'ravscore-operational-handoff-450882782
   sha256: '65fdda86ef17d29dfaa3e22c197f8675a9db6f557945d0c46ad76778cf21d255' };
 const pages = { id: 14785674825, name: 'github-pages', bytes: 196752290,
   sha256: 'c785eef0392f4ffff79f60bdc195991c3eb0356b59b142f5a1ed3490b029fd9d' };
+const B411_HANDOFF = { id: 15212620608, name: 'ravscore-operational-handoff-45997841484-1', bytes: 56980,
+  sha256: '098d5fd58d5edccd3f2b072f9cbf5403c35a99ab8e1f660c8a2738b4012004bb' };
+const B411_PAGES = { id: 15212905308, name: 'github-pages', bytes: 200124400,
+  sha256: '0a786a36990318cca544a2e33020cc61fe6709709fff00bf72f926827c0edc07' };
 
-export function b374CheckArtifactMetadata(meta, pin, now = Date.now()) {
+export function b374CheckArtifactMetadata(meta, pin, now = Date.now(), identity = B374_STAGE_IDENTITY) {
   if (meta?.id !== pin.id || meta.name !== pin.name || meta.size_in_bytes !== pin.bytes
     || meta.digest !== 'sha256:' + pin.sha256 || meta.expired !== false
     || !(Date.parse(meta.created_at) <= now && now < Date.parse(meta.expires_at))
-    || meta.workflow_run?.id !== Number(B374_STAGE_IDENTITY.runId) || meta.workflow_run.repository_id !== B374_REPO_ID
+    || meta.workflow_run?.id !== Number(identity.runId) || meta.workflow_run.repository_id !== B374_REPO_ID
     || meta.workflow_run.head_repository_id !== B374_REPO_ID || meta.workflow_run.head_branch !== 'main'
-    || meta.workflow_run.head_sha !== B374_STAGE_IDENTITY.sourceHead) b374Fail('B374_PUBLIC_ARTIFACT_IDENTITY');
+    || meta.workflow_run.head_sha !== identity.sourceHead) b374Fail('B374_PUBLIC_ARTIFACT_IDENTITY');
 }
 
 export function b374ArtifactRedirectUrl(status, destination) {
@@ -1253,26 +1357,38 @@ async function b374DownloadPublic(pin, destination, token, signal) {
   await b374TransferExact(response, createWriteStream(destination, { flags: 'wx', mode: 0o600 }), pin, signal);
 }
 
-async function b374BoundPublicFiles(source374, work, token) {
+async function b374BoundPublicFiles(source374, work, token, b411 = false) {
+  const current = b411 ? B411_CURRENT : B374_CURRENT;
+  const identity = b411 ? fixedStageIdentity(current) : B374_STAGE_IDENTITY;
+  const handoffPin = b411 ? B411_HANDOFF : handoff;
+  const pagesPin = b411 ? B411_PAGES : pages;
   const git = async args => (await b374Exec('git', ['-C', source374, '-c', 'core.fsmonitor=false', ...args], {
     timeout: 12_000, env: { PATH: process.env.PATH, GIT_CONFIG_GLOBAL: '/dev/null',
       GIT_CONFIG_SYSTEM: '/dev/null', GIT_OPTIONAL_LOCKS: '0' },
   })).stdout.trim();
-  if (await git(['rev-parse', 'HEAD']) !== B374_STAGE_IDENTITY.sourceHead
+  if (await git(['rev-parse', 'HEAD']) !== identity.sourceHead
     || await git(['status', '--porcelain', '--untracked-files=all']) !== '') b374Fail('B374_ARCHIVED_READER_SOURCE');
   const load = name => import(pathToFileURL(path.join(source374, 'scripts', name)));
   const [metadata, checks] = await Promise.all([load('read-pages-artifact-metadata.mjs'),
     load('ravscore-operational-pages-recovery.mjs')]);
   const deadline = Date.now() + 300_000;
   const signal = AbortSignal.timeout(deadline - Date.now());
-  const readMeta = async pin => {
+  const readMeta = async (pin, artifactIdentity = identity) => {
     const result = JSON.parse(await metadata.readPagesArtifactMetadata({
-      repository: B374_STAGE_IDENTITY.repository, artifactId: String(pin.id), token,
+      repository: identity.repository, artifactId: String(pin.id), token,
     }));
-    b374CheckArtifactMetadata(result, pin);
+    b374CheckArtifactMetadata(result, pin, Date.now(), artifactIdentity);
     return result;
   };
-  const [handoffMeta, pagesMeta] = await Promise.all([readMeta(handoff), readMeta(pages)]);
+  const [handoffMeta, pagesMeta] = await Promise.all([readMeta(handoffPin), readMeta(pagesPin)]);
+  if (b411) {
+    // The older ciphertext expires first. Check both identities before the
+    // normal downloader undertakes either private-artifact transfer.
+    await Promise.all(B411_TARGETS.map(target => readMeta({
+      id: target.id, name: `ravradar-private-build-stage-${target.runId}-1`,
+      bytes: target.bytes, sha256: target.digest.slice('sha256:'.length),
+    }, fixedStageIdentity(target))));
+  }
   if (Date.parse(handoffMeta.created_at) < Date.parse(pagesMeta.created_at)) b374Fail('B374_PUBLIC_ARTIFACT_ORDER');
   const extract = async (mode, pin, expectedManifest) => {
     const zipPath = path.join(work, mode + '.zip');
@@ -1291,41 +1407,62 @@ async function b374BoundPublicFiles(source374, work, token) {
     await fs.unlink(zipPath);
     return output;
   };
-  const sealed = await extract('handoff', handoff);
+  const sealed = await extract('handoff', handoffPin);
   const manifestPath = path.join(sealed, 'manifest.json');
   const [manifestBytes, sealBytes, handoffBytes, bindingBytes] = await Promise.all([
     fs.readFile(manifestPath),
     ...['pages-artifact-seal.json', 'handoff.json', 'target-binding.json'].map(name => fs.readFile(path.join(sealed, name))),
   ]);
   const manifest = JSON.parse(manifestBytes), seal = JSON.parse(sealBytes), facts = JSON.parse(handoffBytes);
-  if (sha(manifestBytes) !== B374_MANIFEST_SHA || manifest.datasetId !== 'rr-20261123020235-210'
-    || manifest.productionReferenceAt !== '2026-11-23T00:00:00.000Z'
-    || facts.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || facts.sourceHead !== B374_STAGE_IDENTITY.sourceHead
+  if (sha(manifestBytes) !== (b411 ? B411_MANIFEST_SHA : B374_MANIFEST_SHA) || manifest.datasetId !== current.datasetId
+    || manifest.productionReferenceAt !== current.reference
+    || facts.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || facts.sourceHead !== identity.sourceHead
     || !['integrated', 'integrated-historical-maintenance'].includes(facts.action)
     || facts.legacySourceRequired !== false || facts.privatePayloadIncluded !== false
     || facts.checkpointDatasetId !== manifest.datasetId
-    || seal.artifactId !== pages.id || seal.artifactSizeBytes !== pages.bytes || seal.artifactName !== pages.name
-    || checks.normalizeArtifactDigestSha256(seal.artifactDigestSha256) !== pages.sha256
+    || seal.artifactId !== pagesPin.id || seal.artifactSizeBytes !== pagesPin.bytes || seal.artifactName !== pagesPin.name
+    || checks.normalizeArtifactDigestSha256(seal.artifactDigestSha256) !== pagesPin.sha256
     || seal.createdAt !== new Date(pagesMeta.created_at).toISOString()) b374Fail('B374_PUBLIC_SEAL_IDENTITY');
   checks.assertUploadedOperationalPagesTarget({
-    seal, workflowIdentity: { repository: B374_STAGE_IDENTITY.repository, runId: Number(B374_STAGE_IDENTITY.runId), runAttempt: 1,
-      headSha: B374_STAGE_IDENTITY.sourceHead, ref: 'refs/heads/main', attemptId: `pages-${B374_STAGE_IDENTITY.runId}-1` },
+    seal, workflowIdentity: { repository: identity.repository, runId: Number(identity.runId), runAttempt: 1,
+      headSha: identity.sourceHead, ref: 'refs/heads/main', attemptId: `pages-${identity.runId}-1` },
     targetManifest: manifest, targetModelBinding: JSON.parse(bindingBytes),
     implementationClosureSha256: seal.targetImplementationClosureSha256,
   });
-  const snapshot = await extract('public', pages, manifestPath);
+  if (b411) {
+    // Both files are independently pinned to the exact archived generation.
+    // The ordinary static URLs let the audit avoid a second full Pages artifact.
+    const readPublic = async (name, bytes, sha256) => {
+      const destination = path.join(work, name);
+      const response = await fetch('https://ravradar.dk/data/' + name,
+        { redirect: 'error', signal, headers: { 'Accept-Encoding': 'identity' } });
+      await b374TransferExact(response, createWriteStream(destination, { flags: 'wx', mode: 0o600 }),
+        { bytes, sha256 }, signal);
+      return fs.readFile(destination);
+    };
+    const [zonesBytes, routingBytes] = await Promise.all([
+      readPublic('zones.geojson', 502411, B411_ZONES_SHA),
+      readPublic('water-level-station-routing.json', 80635, B374_ROUTING_FILE_SHA),
+    ]);
+    return { manifestBytes, zonesBytes, routingBytes };
+  }
+  const snapshot = await extract('public', pagesPin, manifestPath);
   const [pagesManifest, zonesBytes, routingBytes] = await Promise.all(
     ['manifest.json', 'zones.geojson', 'water-level-station-routing.json'].map(name => fs.readFile(path.join(snapshot, name))));
   if (!pagesManifest.equals(manifestBytes)) b374Fail('B374_PUBLIC_MANIFEST_MISMATCH');
   return { manifestBytes, zonesBytes, routingBytes };
 }
 
-async function b374Entry(argv) {
+function b374RequireHostedReader() {
   if (process.platform !== 'linux' || process.env.GITHUB_ACTIONS !== 'true'
     || process.env.RUNNER_ENVIRONMENT !== 'github-hosted'
     || process.env.GITHUB_REPOSITORY !== B374_STAGE_IDENTITY.repository || !process.env.RUNNER_TEMP) {
     b374Fail('B374_HOSTED_READER_REQUIRED');
   }
+}
+
+async function b374Entry(argv, b411 = false) {
+  b374RequireHostedReader();
   const [b373, b374, output, ...extra] = argv;
   if (extra.length || ![b373, b374, output].every(file => file && path.isAbsolute(file))) b374Fail('B374_ENTRY_ARGUMENTS');
   const temp = await fs.realpath(process.env.RUNNER_TEMP);
@@ -1343,24 +1480,234 @@ async function b374Entry(argv) {
   const work = await fs.mkdtemp(path.join(temp, 'rr-b374-public-'));
   let publicFiles;
   try {
-    publicFiles = await b374BoundPublicFiles(sourceRoots[1], work, token);
+    publicFiles = await b374BoundPublicFiles(sourceRoots[1], work, token, b411);
   } finally {
     await fs.rm(work, { recursive: true, force: true });
   }
   const report = await withoutSavedAuditSecrets(() => b374ReadBoundStages({
     sourceRoots, ...publicFiles, githubToken: token, stageMasterSecret: masterSecret,
-  }));
+  }, b411));
   const bytes = JSON.stringify(report) + '\n';
   await fs.writeFile(reportPath, bytes, { flag: 'wx', mode: 0o600 });
   process.stdout.write(bytes);
 }
 
 
+const B412_STAGE = Object.freeze({
+  runId: 46032811869, head: 'd9c7a9437caf87b868404f0102fe8b8481154e14',
+  id: 15224093079, bytes: 265459592, digest: 'sha256:673d6a24ade752f08a3a61c7b62afb57ce202b6dd964c1e260866cc294b900ba',
+  datasetId: 'rr-20261127180143-210', reference: '2026-11-27T16:00:00.000Z', jobId: 140621249531,
+});
+const B412_HOURS = Object.freeze({
+  '2026-11-27T16:00:00.000Z': 'a3ca54778ce798e6336ff418dcf862ad59c4b2bbfe45666e50d0b2f9c89666bc',
+  '2026-11-27T21:00:00.000Z': '5f256aa401ca2093fe3b01a3a0a238a92a766e574b8cfb0af393c01a2de796da',
+  '2026-11-29T15:00:00.000Z': 'f7eeceb53cfe30e944423694c7d03731e8c2819f914cdad1f8f97411cf377e60',
+});
+const B412_CELLS = [
+  ['DK-B05-24', 'dk-b05-24-national-part-03', 5, false],
+  ['DK-B05-24', 'dk-b05-24-national-part-06', 47, false],
+  ['DK-B12-05', 'dk-b12-05-national-part-03', 5, false],
+  ['DK-B12-05', 'dk-b12-05-national-part-02', 0, true],
+];
+const SST = 'waterTemperature';
+
+// Read only the fixed JSON entries of an already authenticated component pack.
+// Non-selected objects are never inflated, copied, or sent to a Python runner.
+export async function readB412TemperatureBankMetadata(file, marker, names) {
+  const magic = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
+  const selected = new Set(Object.values(names));
+  const handle = await fs.open(file, 'r');
+  try {
+    const { size } = await handle.stat();
+    if (size < magic.length + 6 || size > 768 * 1024 * 1024) inputFailure('B412_PACK_SIZE');
+    const read = async (position, length) => {
+      if (!Number.isSafeInteger(length) || length < 1 || position + length > size) inputFailure('B412_PACK_BOUNDS');
+      const result = Buffer.alloc(length);
+      for (let offset = 0; offset < length;) {
+        const { bytesRead } = await handle.read(result, offset, length - offset, position + offset);
+        if (!bytesRead) inputFailure('B412_PACK_TRUNCATED');
+        offset += bytesRead;
+      }
+      return result;
+    };
+    const prefix = await read(0, magic.length + 4);
+    if (!prefix.subarray(0, magic.length).equals(magic)) inputFailure('B412_PACK_HEADER');
+    const length = prefix.readUInt32BE(magic.length);
+    if (length > 32 * 1024 * 1024) inputFailure('B412_PACK_BOUNDS');
+    const manifest = JSON.parse(await read(prefix.length, length));
+    if (manifest.kind !== 'PRIVATE_WEATHER_COMPONENT_PACK' || manifest.schemaVersion !== 1
+      || !b374Equal(manifest.marker, marker) || !Array.isArray(manifest.files) || manifest.files.length > 65_536)
+      inputFailure('B412_PACK_MANIFEST');
+    let position = prefix.length + length;
+    const seen = new Set();
+    const banks = new Map();
+    let selectedComponentsSha256 = null;
+    for (const row of manifest.files) {
+      if (typeof row?.relativePath !== 'string' || seen.has(row.relativePath) || !Number.isSafeInteger(row.bytes)
+        || row.bytes < 1 || position + row.bytes > size || !/^[a-f0-9]{64}$/.test(row.sha256)) inputFailure('B412_PACK_ENTRY');
+      seen.add(row.relativePath);
+      if (selected.has(row.relativePath)) {
+        if (row.bytes > 256 * 1024 * 1024) inputFailure('B412_PACK_BOUNDS');
+        const bytes = await read(position, row.bytes);
+        const digest = sha(bytes);
+        if (digest !== row.sha256) inputFailure('B412_PACK_CHECKSUM');
+        if (row.relativePath === names.selectedComponents) selectedComponentsSha256 = digest;
+        banks.set(row.relativePath, JSON.parse(bytes));
+      }
+      position += row.bytes;
+    }
+    if (position !== size) inputFailure('B412_PACK_BOUNDS');
+    const result = Object.fromEntries(Object.entries(names).map(([key, relative]) => [key, banks.get(relative) ?? null]));
+    // The normal producer binds the complete ledger file. A retained bank
+    // can still be present when it was not selected in this generation.
+    if (!marker || (marker.openMeteoBankSha256 !== null && result.openMeteoBank?.bankSha256 !== marker.openMeteoBankSha256)
+      || (marker.copernicusBankSha256 !== null && result.copernicusBank?.bankSha256 !== marker.copernicusBankSha256)
+      || selectedComponentsSha256 !== marker.selectedComponentsSha256)
+      inputFailure('B412_PACK_SOURCE_BINDING');
+    return result;
+  } finally { await handle.close(); }
+}
+
+export function b412CopernicusTemperature(bank, progress, part, validTime) {
+  if (!bank) return 'NO_BANK_EVIDENCE';
+  const matches = request => request.component === SST && request.target?.partId === part.partId
+    && request.target?.parentZoneId === part.zoneId && same(request.target?.waterPoint, part.waterPoint);
+  const matchingRequests = new Map(bank.requests.filter(matches).map(request => [request.requestSha256, request]));
+  const sameHour = time => Date.parse(time) === Date.parse(validTime);
+  const inWindow = request => request?.expectedTimes?.some(sameHour);
+  if (bank.records.some(row => row.native?.partId === part.partId && sameHour(row.native?.validTime)
+    && inWindow(matchingRequests.get(row.requestSha256)) && finite(row.native?.values?.waterTemperatureC)))
+    return 'MATCHING_SAVED_NUMERIC_RECORD';
+  // A progress group or an unbound failed request is not exact-hour evidence.
+  if (progress?.bankSha256 === bank.bankSha256 && /^[a-f0-9]{64}$/.test(progress.planSha256?.replace(/^sha256:/, '') ?? '')
+    && progress.attempts?.some(row => {
+      const request = matchingRequests.get(row.requestSha256);
+      return row.partId === part.partId && row.status === 'PARSED' && request?.contractKey === row.contractKey
+        && Date.parse(request.productionReferenceAt) === Date.parse(B412_STAGE.reference) && inWindow(request);
+    })) return 'CURRENT_SAVED_REQUEST_NO_MATCHING_NUMERIC_RECORD';
+  return 'NO_EXACT_HOUR_EVIDENCE';
+}
+
+export function b412OpenMeteoTemperature(normal, bank, index, part, validTime) {
+  if (!bank) return 'NO_BANK_EVIDENCE';
+  if (normal.selectedOpenMeteoPartRecord(index, { part, validTime, component: SST })) return 'RETAINED_ADMISSIBLE';
+  const categories = new Set();
+  const identity = normal.openMeteoPartIdentity(part);
+  for (const evidence of Object.values(bank.responses)) {
+    const request = evidence?.request;
+    if (request?.component !== SST || request.productionReferenceAt !== B412_STAGE.reference
+      || !b374Equal(request.identity, identity) || validTime < request.productionReferenceAt || validTime > request.endAt) continue;
+    const parsed = normal.readOpenMeteoPartResponse(evidence, { part, spatialPolicies: normal.OPEN_METEO_NATIVE_NEAREST_POLICIES });
+    if (parsed.records.some(row => row.validTime === validTime)) categories.add('MATCHING_ORIGINAL_VALID_NOT_RETAINED');
+    else {
+      const times = JSON.parse(evidence.responseText)?.hourly?.time;
+      categories.add(times?.some(time => normal.openMeteoUtcTime(time) === validTime)
+        ? 'MATCHING_ORIGINAL_HOUR_UNUSABLE' : 'MATCHING_ORIGINAL_HOUR_ABSENT');
+    }
+  }
+  return categories.size === 1 ? [...categories][0]
+    : categories.size ? 'MATCHING_ORIGINALS_DIFFER' : 'NO_MATCHING_ORIGINAL_EVIDENCE';
+}
+
+async function b412Entry(argv) {
+  b374RequireHostedReader();
+  const [reader, output, ...extra] = argv;
+  const temp = await fs.realpath(process.env.RUNNER_TEMP);
+  if (extra.length || ![reader, output].every(file => file && path.isAbsolute(file))
+    || reader !== path.join(temp, 'ravradar-b374-water-reader')
+    || output !== path.join(temp, 'ravradar-b374-water-result/source-support.json'))
+    inputFailure('B412_READER_SCOPE');
+  const token = process.env.GITHUB_TOKEN, secret = process.env.WEATHER_PROGRESS_MASTER_SECRET;
+  if (!token || !secret) inputFailure('B412_CREDENTIALS_REQUIRED');
+  const cleanups = [];
+  let rows;
+  try {
+    const working = await ownScratch(temp, await fs.mkdtemp(path.join(temp, 'rr-b412-sst-')), 'rr-b412-sst-', cleanups);
+    rows = await withoutSavedAuditSecrets(async () => {
+      const modules = await b374SourceModules(reader, B412_STAGE);
+      const { payload, manifest, job } = await b374OpenStage(B412_STAGE, modules, path.join(working, 'stage'), token, secret, cleanups, true);
+      const fallbackSteps = new Map([[154, 'Update central weather cache'], [155, 'Report counts for each weather component after central cache']]);
+      if (![...fallbackSteps].every(([number, name]) => {
+        const steps = job.steps?.filter(step => step.number === number || step.name === name);
+        return steps?.length === 1 && steps[0].number === number && steps[0].name === name
+          && steps[0].status === 'completed' && steps[0].conclusion === 'success';
+      }))
+        inputFailure('B412_CENTRAL_PRODUCER');
+      const [inventory, forecast, continuity, adapter, needs, om, publicHours, utc] = await Promise.all([
+        'private-weather-component-inventory', 'dmi-forecast-file', 'dmi-part-continuity', 'ravscore-production-adapters',
+        'weather-component-needs', 'open-meteo-part-bank', 'public-hour-delivery-pack', 'open-meteo-hourly-components',
+      ].map(name => modules.load('scripts/lib/' + name + '.mjs')));
+      const conditions = JSON.parse(await fs.readFile(path.join(payload, 'data/live/conditions.json')));
+      const parts = Object.entries(conditions.coastalParts?.parts ?? {}).map(([partId, part]) => ({ ...part, partId }));
+      if (conditions.datasetId !== B412_STAGE.datasetId || conditions.productionReferenceAt !== B412_STAGE.reference
+        || parts.length !== 673) inputFailure('B412_CONDITIONS_IDENTITY');
+      const marker = inventory.privateWeatherComponentMarker(conditions);
+      if (!marker) inputFailure('B412_COMPONENT_MARKER');
+      const names = Object.fromEntries(['openMeteoBank', 'copernicusBank', 'copernicusProgress', 'selectedComponents']
+        .map(key => [key, inventory.PRIVATE_WEATHER_COMPONENT_FILES[key]]));
+      const banks = await readB412TemperatureBankMetadata(path.join(payload, inventory.PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath), marker, names);
+      const omIndex = banks.openMeteoBank ? om.validateOpenMeteoPartBank(banks.openMeteoBank,
+        { parts, spatialPolicies: om.OPEN_METEO_NATIVE_NEAREST_POLICIES }) : null;
+      const hours = await readSelectedPublicPartWeather(publicHours,
+        path.join(payload, inventory.PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath), conditions,
+        new Map(B412_CELLS.map(([zone, id]) => [id, zone])), {
+          target: { ...B412_STAGE, productionReferenceAt: B412_STAGE.reference }, offsets: [0, 5, 47],
+          sourceDetailsSha256: '73f0e13de1c4eb3d7365edd539ff8e3732754f02c7be86c80dfe4edb4ac66caf',
+          expectedModelBinding: manifest.modelBinding, exactHourShas: B412_HOURS, temperatureOnly: true,
+        });
+      const dmi = await forecast.inspectDmiForecastFile(path.join(payload, 'data/live/dmi-forecast-cache.json'));
+      const { metadata, entries } = dmi.continuity ?? {};
+      if (metadata?.productionReferenceAt !== B412_STAGE.reference || metadata.partCount !== parts.length
+        || entries?.length !== parts.length) inputFailure('B412_DMI_SCOPE');
+      const sortedIds = parts.map(part => part.partId).sort((a, b) => a.localeCompare(b));
+      const report = [];
+      for (const [zoneId, partId, offset, present] of B412_CELLS) {
+        const part = parts.find(part => part.partId === partId);
+        const validTime = at(B412_STAGE.reference, offset);
+        if (part?.zoneId !== zoneId || hours.get(partId)?.rows.get(validTime)?.temperaturePresent !== present)
+          inputFailure('B412_PUBLIC_CELL');
+        const entry = await forecast.readDmiForecastRecord(dmi, entries[sortedIds.indexOf(partId)]);
+        if (entry.partId !== partId) inputFailure('B412_DMI_SCOPE');
+        const decoded = await continuity.unpackDmiPartContinuity({
+          ...metadata, partCount: 1, rawBytes: entry.rawBytes, compressedBytes: entry.compressedBytes, entries: [entry],
+        }, [part], B412_STAGE.reference);
+        const row = decoded.get(partId)?.hourly?.find(hour => hour.time === validTime);
+        const identity = adapter.dmiExpectedIdentityForPart(part);
+        if (!row || !identity) inputFailure('B412_DMI_SCOPE');
+        const source = row.sources?.waterTemperature;
+        const hasValue = needs.hasValue(row, SST);
+        const selection = banks.selectedComponents.records.find(row => row.partId === partId && row.parentZoneId === zoneId
+          && same(row.samplingPoint, part.waterPoint) && row.time === validTime && row.component === SST);
+        report.push({ zoneId, partId, validTime, publicTemperaturePresent: present,
+          dmi: hasValue && adapter.eligibleDmiForecastComponentSource(source, validTime, SST, identity) ? 'DMI_ADMISSIBLE'
+            : hasValue || (source && source.provider !== 'missing') ? 'DMI_STORED_NOT_ADMISSIBLE' : 'DMI_NO_SAVED_VALUE',
+          copernicus: b412CopernicusTemperature(banks.copernicusBank, banks.copernicusProgress, part, validTime),
+          openMeteo: b412OpenMeteoTemperature({ ...om, openMeteoUtcTime: utc.openMeteoUtcTime }, banks.openMeteoBank, omIndex, part, validTime),
+          reserveSelection: selection?.provider === 'copernicus' ? 'COPERNICUS_LEDGER_ROW'
+            : selection?.provider === 'open-meteo' ? 'OPEN_METEO_LEDGER_ROW' : 'NO_RESERVE_LEDGER_ROW',
+        });
+      }
+      return report;
+    });
+  } finally { while (cleanups.length) await cleanups.pop()(); }
+  const safe = JSON.stringify({ kind: 'B412_SST_SOURCE_CATEGORIES', sourceRun: B412_STAGE.runId,
+    artifactId: B412_STAGE.id, dataset: B412_STAGE.datasetId, privatePayloadIncluded: false, rows }) + '\n';
+  await fs.writeFile(output, safe, { mode: 0o600, flag: 'wx' });
+  process.stdout.write(safe);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (process.argv[2] === '--b374') {
-    try { await b374Entry(process.argv.slice(3)); }
+  if (process.argv[2] === '--b412-sst') {
+    try { await b412Entry(process.argv.slice(3)); }
     catch (error) {
-      const code = /^(B374_|ORDINARY_STAGE_|SEALED_B374_|ALTERNATIVE_NORMAL_|AUTHENTICATED_INPUTS_)[A-Z0-9_]{1,74}$/
+      const code = error?.safeCode ?? error?.code;
+      process.stdout.write(/^(B412_|ORDINARY_STAGE_)[A-Z0-9_]{1,70}$/.test(code ?? '') ? code + '\n' : 'B412_READER_UNAVAILABLE\n');
+      process.exitCode = 1;
+    }
+  } else if (process.argv[2] === '--b374' || process.argv[2] === '--b411-dokkedal') {
+    try { await b374Entry(process.argv.slice(3), process.argv[2] === '--b411-dokkedal'); }
+    catch (error) {
+      const code = /^(B374_|B411_|ORDINARY_STAGE_|SEALED_B374_|ALTERNATIVE_NORMAL_|AUTHENTICATED_INPUTS_)[A-Z0-9_]{1,74}$/
         .test(error?.message ?? '') ? error.message : 'B374_ENTRY_UNAVAILABLE';
       process.stdout.write(code + '\n');
       process.exitCode = 1;

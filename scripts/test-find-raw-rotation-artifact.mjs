@@ -52,6 +52,44 @@ test('RAW receipts use their exact artifact endpoint and leave credentials at Gi
   }
 });
 
+test('RAW decision retries temporary API and storage visibility without relaxing identity', async () => {
+  const archive = receiptArchive(['decision.json']);
+  const expected = 'sha256:' + createHash('sha256').update(archive).digest('hex');
+  const api = 'https://api.github.com/repos/' + repository + '/actions/artifacts/14/zip';
+  const storage = 'https://test.blob.core.windows.net/receipt';
+  for (const failingPhase of ['api', 'storage']) {
+    let apiRequests = 0;
+    let storageRequests = 0;
+    const pauses = [];
+    const downloaded = await downloadRawRotationReceipt({ kind: 'result', artifactId: 14, digest: expected,
+      token: 'synthetic-token', python, pause: async ms => { pauses.push(ms); },
+      fetchImpl: async (url, options) => {
+        if (url === api) {
+          assert.equal(options.headers.Authorization, 'Bearer synthetic-token');
+          apiRequests++;
+          if (failingPhase === 'api' && apiRequests === 1) return new Response(null, { status: 404 });
+          return new Response(null, { status: 302, headers: { location: storage + '?ticket=' + apiRequests } });
+        }
+        assert.equal(options.headers, undefined);
+        assert.equal(url, storage + '?ticket=' + apiRequests);
+        storageRequests++;
+        if (failingPhase === 'storage' && storageRequests === 1) return new Response(null, { status: 404 });
+        return new Response(archive);
+      } });
+    assert.deepEqual(downloaded, { name: 'decision.json', bytes: Buffer.from('{}') });
+    assert.equal(apiRequests, 2);
+    assert.deepEqual(pauses, [3000]);
+  }
+  for (const [status, expectedReads] of [[404, 3], [403, 1]]) {
+    let reads = 0;
+    await assert.rejects(downloadRawRotationReceipt({ kind: 'result', artifactId: 14, digest: expected,
+      token: 'synthetic-token', python, pause: async () => {},
+      fetchImpl: async () => { reads++; return new Response(null, { status }); } }),
+    { message: 'RAW_RECEIPT_API_HTTP_' + status });
+    assert.equal(reads, expectedReads);
+  }
+});
+
 test('RAW receipt refuses a wrong digest, extra member or untrusted redirect', async () => {
   const archive = receiptArchive(['handoff.json']);
   await assert.rejects(directReceipt(archive, { expectedDigest: digest }).download('proof'), /RAW_RECEIPT_DIGEST/);

@@ -1,8 +1,19 @@
 // Public, deterministic and read-only knowledge derived from RavRadars groundbook.
 // Put narrow topics before broad assistant intents so common follow-up questions stay local.
-import { RAV_ASSISTANT_RESEARCH_EXAMPLES, RAV_ASSISTANT_RESEARCH_KNOWLEDGE } from './rav-assistant-research-v1.js';
+import { RAV_ASSISTANT_RESEARCH_EXAMPLES, RAV_ASSISTANT_RESEARCH_KNOWLEDGE } from './rav-assistant-research-v1.js?v=4.0.603&method=raman-compare-20261127';
+
+const WIND_CHANGE_ONSHORE_CURRENT = entry('wind-change-onshore-current',
+    new RegExp('^(?:' + [
+      'hvad (?:ændrer sig|sker der|betyder det),? (?:hvis|når) vinden (?:vender|skifter(?: retning)?),? (?:mens|selv om) (?:hav)?strømmen stadig (?:går|løber) mod (?:land|kysten)',
+      'was (?:ändert sich|passiert|bedeutet es),? wenn der wind (?:dreht|die richtung wechselt),? (?:während|obwohl) die (?:meeres)?strömung (?:weiterhin|noch immer) (?:zur küste|landwärts) (?:fließt|fliesst)',
+      'what (?:changes|happens|does it mean) (?:if|when) the wind (?:shifts|turns|changes direction),? (?:while|but|even though) the (?:sea )?current (?:still (?:flows|runs|heads)|keeps flowing) (?:towards? (?:land|(?:the )?shore|the coast)|onshore)',
+    ].join('|') + ')[?!.]*$', 'iu'),
+    'Når vinden vender, kan bølgerne og uroen i overfladen ændre sig. Det kan gøre det lettere eller sværere at se ned til bunden med ravlygten. Hvis havstrømmen stadig går mod land, kan den fortsat føre løst materiale ind mod kysten. RavRadar vurderer strømmen over flere timer. Se både på strømpilen og på vind og bølger, når du vælger, hvor og hvornår du vil lede.',
+    'Wenn der Wind dreht, können sich die Wellen und die Bewegung der Wasseroberfläche ändern. Dadurch kann es leichter oder schwieriger werden, mit der Bernsteinlampe bis zum Grund zu sehen. Fließt die Meeresströmung weiterhin zur Küste, kann sie weiterhin loses Material dorthin transportieren. RavRadar bewertet die Strömung über mehrere Stunden. Achte bei der Wahl von Ort und Zeitpunkt auf den Strömungspfeil sowie auf Wind und Wellen.',
+    'When the wind shifts, the waves and surface chop can change. That may make it easier or harder to see the seabed with an amber torch. If the current still flows towards shore, it can continue carrying loose material towards the coast. RavRadar assesses the current over several hours. Check the current arrow as well as the wind and waves when choosing where and when to search.');
 
 const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
+  WIND_CHANGE_ONSHORE_CURRENT,
   entry('amber-resin', /rav.*(?:harpiks|materiale)|hvad består rav|bernstein.*(?:harz|material)|woraus besteht bernstein|amber.*(?:resin|material)|what is amber made/iu,
     'Rav er fossiliseret harpiks fra fortidens træer. Det er organisk materiale, ikke en sten, selv om det efter millioner af år kan føles hårdt og stenagtigt.',
     'Bernstein ist fossiles Harz früherer Bäume. Er ist organisches Material und kein Stein, obwohl er nach Millionen Jahren hart und steinartig wirken kann.',
@@ -246,6 +257,11 @@ const CORE_LOCAL_RAV_KNOWLEDGE_EXAMPLES = Object.freeze({
   'waterline-method':['Hvordan leder jeg i vandkanten?','Wie suche ich an der Wasserkante?','How do I search at the waterline?'],
   'waders-method':['Hvordan leder jeg med waders?','Wie suche ich beim Waten?','How do I search while wading?'],
   'no-find-report':['Skal jeg indberette en tur uden fund?','Soll ich eine Tour ohne Fund melden?','Should I report a trip with no find?'],
+  'wind-change-onshore-current':[
+    'Hvad ændrer sig, hvis vinden vender, mens strømmen stadig går mod land?',
+    'Was ändert sich, wenn der Wind dreht, während die Strömung weiterhin zur Küste fließt?',
+    'What changes if the wind shifts while the current still flows towards shore?',
+  ],
   'current-arrow':['Hvad betyder den blå pil på kortet?','Was bedeutet der blaue Pfeil auf der Karte?','What does the blue arrow on the map mean?'],
   'wind-arrow':['Hvad betyder den hvide pil på kortet?','Was bedeutet der weiße Pfeil auf der Karte?','What does the white arrow on the map mean?'],
   'map-colours':['Hvad betyder kortets farver?','Was bedeuten die Kartenfarben?','What do the map colours mean?'],
@@ -284,6 +300,7 @@ function materialColourScope(question) {
 // topic. Existing fully covered field compositions still get first refusal.
 export function localRavQuestionRequiresWholeAnswer(question) {
   const text = String(question || '').trim().normalize('NFKC');
+  if (isWindChangeOnshoreCurrentQuestion(text)) return false;
   // One scientific comparison can be one grammatical question. A broad
   // current/wave/beach match does not cover how materials behave differently.
   // Exact catalogue FAQs retain their existing complete local answer; live
@@ -295,7 +312,7 @@ export function localRavQuestionRequiresWholeAnswer(question) {
   // cover another weather subject in the same grammatical clause.
   const coordinatedWeather = !exactFaq && [
     /(?<![\p{L}\p{N}_])(?:(?:hav)?strøm(?:men|mens|me|mene|retning(?:en|ens|er|erne)?|hastighed(?:en|ens)?)?|(?:meeres)?strömung(?:en|srichtung(?:en)?|sgeschwindigkeit(?:en)?)?|currents?)(?![\p{L}\p{N}_])/iu,
-    /(?<![\p{L}\p{N}_])(?:bølge(?:n|r|rne|højde(?:n|r)?|periode(?:n|r)?)?|welle(?:n(?:höhe|periode|richtung)?n?)?|waves?)(?![\p{L}\p{N}_])/iu,
+    /(?<![\p{L}\p{N}_])(?:bølge(?:n|r|rne|højde(?:n|r)?|periode(?:n|r)?)?|welle(?:n(?:höhe|periode|richtung)?n?)?|waves?|vinden\s+(?:vender|skifter)|wind\s+(?:dreht|die\s+richtung\s+wechselt|shifts|turns|changes))(?![\p{L}\p{N}_])/iu,
   ].every(pattern => pattern.test(text));
   const materialComparison = !exactFaq
     && /^(?:hvorfor|hvordan|forklar|kan|warum|wie|erkläre?|kann|why|how|explain|can)(?!\p{L})/iu.test(text)
@@ -311,6 +328,7 @@ export function localRavQuestionRequiresWholeAnswer(question) {
 
 export function matchLocalRavKnowledge(question) {
   const text = String(question || '').trim();
+  if (isWindChangeOnshoreCurrentQuestion(text)) return WIND_CHANGE_ONSHORE_CURRENT;
   const normalized = normalizeKnowledgeQuestion(text);
   const exact = LOCAL_RAV_KNOWLEDGE.find(item =>
     (LOCAL_RAV_KNOWLEDGE_EXAMPLES[item.id] || []).some(example => normalizeKnowledgeQuestion(example) === normalized)
@@ -328,6 +346,10 @@ export function matchLocalRavKnowledge(question) {
     ? item.pattern.test(materialText)
       || /(?<![\p{L}\p{N}_])(?:grøn(?:t|ne)?\s+rav|grün(?:e|en|em|er|es)?\s+bernstein|green\s+amber)(?![\p{L}\p{N}_])/iu.test(materialText)
     : item.pattern.test(text)) || null;
+}
+
+export function isWindChangeOnshoreCurrentQuestion(question) {
+  return WIND_CHANGE_ONSHORE_CURRENT.pattern.test(String(question || '').trim().normalize('NFKC').replace(/\s+/gu, ' '));
 }
 
 export function localRavKnowledgeAnswer(question, language = 'da') {

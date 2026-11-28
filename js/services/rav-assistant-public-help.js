@@ -1,7 +1,7 @@
 // App-owned public help for complete questions. Mixed questions keep the
 // existing whole-question path.
-import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.603&locale=topic-tab-20261125';
-import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.603';
+import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.603&locale=topic-tab-raman-20261127';
+import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.603&method=raman-compare-20261127';
 import {t} from '../i18n.js?v=4.0.603';
 
 const PUBLIC_ABOUT='https://ravradar.dk/about.html';
@@ -110,6 +110,12 @@ const FORMS={
     da:/^hvorfor finder (?:man|vi) (?:om vinteren efter (?:almindelige|normale|moderate) bølger|efter (?:almindelige|normale|moderate) bølger om vinteren) (?:nogle gange )?rav (?:mellem|blandt) (?:muslinge)?skaller og tang$/iu,
     de:/^(?:warum|wieso) (?:findet man|finden wir) (?:im winter nach (?:gewöhnlichen|normalen|mäßigen) wellen|nach (?:gewöhnlichen|normalen|mäßigen) wellen im winter) (?:manchmal )?bernstein zwischen (?:muschelschalen|muscheln) und (?:tang|seegras)$/iu,
     en:/^why (?:do|can) (?:you|we) (?:sometimes )?find amber (?:among|between|mixed with) (?:sea)?shells and (?:seaweed|kelp) (?:in winter after (?:ordinary|normal|moderate) waves|after (?:ordinary|normal|moderate) waves in winter)$/iu,
+  },
+  // A storm can describe when the wash appeared, without being the question.
+  'beach-signs':{
+    da:/^hvilke (?:tegn|spor) (?:skal|bør|kan) (?:jeg|vi) (?:se|kigge) efter i (?:opskyl(?:let)?|tang(?:en)? og (?:små )?træstumper)(?: efter (?:en |den )?storm)?(?: på stranden)?(?: for at finde rav)?$/iu,
+    de:/^welche hinweise (?:helfen, (?:eine )?(?:feine )?schicht aus (?:tang|seegras) und holzstück(?:chen|en) nach (?:einem|dem) sturm(?: am (?:ostsee)?strand)? für die bernsteinsuche zu beurteilen|soll(?:te)? ich in (?:einem |dem )?spülsaum(?: nach (?:einem|dem) sturm)?(?: bei der bernsteinsuche)? beachten)$/iu,
+    en:/^what (?:signs|clues) should (?:i|we) look for in (?:the )?(?:wash|strandline|seaweed and (?:small )?(?:wood fragments|pieces of wood))(?: after (?:a |the )?storm)?(?: on the beach)?(?: (?:for|when looking for) amber)?$/iu,
   },
 };
 // Both clauses compare a landing point with the area covered by the forecast.
@@ -375,6 +381,7 @@ export function publicRavAssistantHelp(question,language,previousTopic=null){
   const term=COMPOUND[language].exec(text)?.[1];
   if(!id&&term&&!KNOWN_COMPOUNDS.test(term)&&classifyRavQuestion(raw)==='origin')id='compound';
   if(!id)return null;
-  const answer=id==='origin-age'?t('assistant.local.origin',{},language):ANSWERS[id][language];
+  const answer=id==='origin-age'?t('assistant.local.origin',{},language)
+    :id==='beach-signs'?t('assistant.local.signs',{},language):ANSWERS[id][language];
   return {kind:'local-public-help',id,answer,...(id==='sandbar-transport'?{topic:SANDBAR_TRANSPORT_TOPIC}:{})};
 }

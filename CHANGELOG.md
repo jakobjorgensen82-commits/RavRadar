@@ -6,10 +6,19 @@
 - Et tysk spørgsmål om et apparat med et dansk ravnavn får det samme afklarende svar som spørgsmålet med et tysk navn.
 - Spørg RavRadar besvarer også spørgsmålet om forskellen mellem et præcist landingssted for rav og en vurdering af kystområdet.
 - Spørg RavRadar forklarer nu på dansk, tysk og engelsk, hvorfor almindelige bølger om vinteren kan efterlade rav blandt skaller og tang, og hvad man kan holde øje med på stranden.
+- Spørg RavRadar svarer med konkrete tegn at kigge efter, når spørgsmålet handler om et opskyl med tang og træ efter en storm.
+- Spørg RavRadar besvarer det gennemgåede spørgsmål om Raman-spektroskopi til at skelne rav fra plast på dansk, tysk og engelsk uden at vente på en ekstern AI-tjeneste.
+- Spørg RavRadar forklarer både søgeforholdene og transporten mod kysten, når vinden skifter, mens strømmen stadig går mod land.
+
+- Zonepanelet viser fortsat vandstandsprognosen time for time. Det særskilte felt for vandstandsændring over tre timer er fjernet.
 
 ## Drift — vandtemperatur fra allerede hentede DMI-filer
 
 - Den normale sene vandstandsrunde kan genbruge sine kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller. Temperatur læses i en separat proces med en kort frist. Der bruges allerede beregnede gitteropslag, og resultatet skelnes fra ny hentning. Effekten skal måles i almindelig drift.
+
+## Drift — stop af fejlupload
+
+- En fastfrossen upload af et vejrcheckpoint får sin egen tidsstyrede Linux-procesgruppe. Gruppen bruger fejlbehandlingens fælles frist på fire minutter. Succes kræver, at uploaden er bekræftet, og at alle processer i gruppen er ophørt inden fristen.
 
 ## Drift — tid til vandstand sidst i prognosen
 

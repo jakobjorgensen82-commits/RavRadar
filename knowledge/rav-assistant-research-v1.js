@@ -1,4 +1,4 @@
-import { RAV_ASSISTANT_RESEARCH_MATERIAL } from './rav-assistant-research-material-v1.js';
+import { RAV_ASSISTANT_RESEARCH_MATERIAL } from './rav-assistant-research-material-v1.js?v=4.0.603&method=raman-compare-20261127';
 import { RAV_ASSISTANT_RESEARCH_COAST } from './rav-assistant-research-coast-v1.js';
 
 export const RAV_ASSISTANT_RESEARCH_KNOWLEDGE = Object.freeze([

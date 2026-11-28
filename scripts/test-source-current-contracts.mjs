@@ -1653,6 +1653,12 @@ try{
         commandResults};
       const receipt=await receiptHelpers.buildCurrentChangeSourceReceipt(input);
       assert.equal(receiptHelpers.validateCurrentChangeSourceReceipt(receipt,input).validStructure,true);
+      const review={current,fullBaseline,changeBase:input.changeBase,currentPlan,cumulativePlan};
+      const alternateFieldOrder={commit:frontier,pullBaseCommit:frontier,gitTree:frontierTree};
+      assert.equal(receiptHelpers.currentChangePlanSha256({...review,changeBase:alternateFieldOrder}),
+        receiptHelpers.currentChangePlanSha256(review));
+      const reorderedReceipt=await receiptHelpers.buildCurrentChangeSourceReceipt({...input,changeBase:alternateFieldOrder});
+      assert.equal(JSON.stringify(reorderedReceipt),JSON.stringify(receipt));
       const currentFull={...input,fullBaseline:{...input.fullBaseline,historicalNationalScope:'NOT_EXECUTED'}};
       const currentReceipt=await receiptHelpers.buildCurrentChangeSourceReceipt(currentFull);
       assert.equal(currentReceipt.baselineScope.historicalNationalScope,'NOT_EXECUTED');
