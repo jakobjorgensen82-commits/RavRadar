@@ -372,8 +372,12 @@ export function analyzeSourceDomainInputs(input){
     };
     const automaticAccountOff=new Map(refs.map(ref=>{
       const rows=AUTOMATIC_ACCOUNT_OFF_INPUTS.map(({file})=>trees.get(ref).get(file));
-      if(!rows.some(Boolean))return [ref,0];
-      assert(tripRecoveryPresent(ref)&&rows.every(row=>row?.mode==='100644'&&row.type==='blob'),
+      const hasTripRecovery=tripRecoveryPresent(ref);
+      const hasAutomaticSql=rows.slice(1).some(Boolean);
+      // Current analysis code can accompany a historical tree predating trip recovery.
+      // An automatic SQL file, or its helper on a current tree, requires the entire inventory.
+      if(!hasAutomaticSql&&!(hasTripRecovery&&rows[0]))return [ref,0];
+      assert(hasTripRecovery&&rows.every(row=>row?.mode==='100644'&&row.type==='blob'),
         'DOMAIN_AUTOMATIC_ACCOUNT_OFF_INPUT_INCOMPLETE');
       load(rows.map(row=>row.blob),'INPUT');
       for(const {file,sha256:expected} of AUTOMATIC_ACCOUNT_OFF_INPUTS){
