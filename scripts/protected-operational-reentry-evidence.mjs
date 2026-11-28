@@ -601,7 +601,7 @@ export function createProtectedOperationalEvidenceClients({
           &&incoming.descriptor.sourceHead===isolatedRestoreTarget.sourceHead
           &&same(row?.payload?.current,incoming.descriptor) ? incoming.descriptor : null;
         let restoreFiles=null;
-        let usage=null,written=0;const fencedSlots=new Set();
+        let usage=null,carriedArchiveBytes=0,written=0;const fencedSlots=new Set();
         const candidates=[...unique.values()];
         if(afterCommittedCas)candidates.sort((a,b)=>Number(!slots.some(entry=>entry?.header.descriptor.objectPath===a.objectPath))
           -Number(!slots.some(entry=>entry?.header.descriptor.objectPath===b.objectPath)));
@@ -626,13 +626,18 @@ export function createProtectedOperationalEvidenceClients({
           if(!same(actual,d))throw new Error('OPERATIONAL_SLOT_DESCRIPTOR_CHANGED');
           const wire=encodeOperationalSlot(index+1,d,bytes,version);
           await fresh();
-          if(usage===null){await remote.ensurePrivateBucket();usage=await remote.bucketUsage();check();}
+          if(usage===null){
+            await remote.ensurePrivateBucket();
+            carriedArchiveBytes=await remote.archiveUploadReservationBytes();
+            usage=await remote.bucketUsage();check();
+          }
           // Reserve the complete six-slot maximum ON TOP of observed stock.
           // Never subtract an earlier GET size: an unresolved old PUT may change
           // it before the listing. This conservative bound preserves the normal
-          // next350MB archive + retirement marker +100MB reserve admission.
+          // next 350MB archive, retirement marker and 100MB reserve, even when
+          // older archive PUTs can still finish after this stock listing.
           const reserve=OPERATIONAL_EVIDENCE_SLOT_LIMIT*(PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY.maximumArchiveBytes+16_384);
-          if(usage.usedBytes+reserve>remote.maximumBucketBytes)throw new Error('OPERATIONAL_SLOT_BUCKET_HOLD');
+          if(usage.usedBytes+carriedArchiveBytes+reserve>remote.maximumBucketBytes)throw new Error('OPERATIONAL_SLOT_BUCKET_HOLD');
           check();let writeError=null;
           try{await remote.compareAndSwap(index+1,wire,old?.etag??null);}catch(error){writeError=error;}
           check();const observed=await remote.read(index+1);check();

@@ -285,21 +285,21 @@ export async function findRawRotationArtifact({ pause = wait, signal, ...context
   return lastIncompleteObservation ?? hold('artifact-not-ready');
 }
 
-// The finder already proved the artifact identity. Fetch its exact ZIP without
-// listing the run again, and verify the digest before opening the single file.
-export async function downloadRawRotationReceipt({ kind, artifactId, digest, token,
-  fetchImpl = fetch, python = 'python3' } = {}) {
-  if (!Object.hasOwn(RECEIPT_FILES, kind) || !positive(artifactId) || !ARTIFACT_DIGEST.test(digest ?? '')
-    || typeof token !== 'string' || !/^\S{1,4096}$/.test(token)) throw new Error('RAW_RECEIPT_IDENTITY');
+function receiptHttpError(response, phase) {
+  const error = metadataHttpError(response);
+  error.message = 'RAW_RECEIPT_' + phase + '_HTTP_' + response.status;
+  return error;
+}
 
-  const signal = AbortSignal.timeout(15_000);
+async function readRawRotationZip({ artifactId, digest, token, fetchImpl }, signal) {
   const route = `https://api.github.com/repos/${REPOSITORY}/actions/artifacts/${artifactId}/zip`;
   const response = await fetchImpl(route, { redirect: 'manual', cache: 'no-store', signal,
     headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2026-03-10' } });
-  await response.body?.cancel();
+  await response.body?.cancel().catch(() => {});
+  if (response.status !== 302) throw receiptHttpError(response, 'API');
   const location = response.headers.get('location');
-  if (response.status !== 302 || !location) throw new Error('RAW_RECEIPT_HTTP');
+  if (!location) throw new Error('RAW_RECEIPT_REDIRECT');
   const storage = new URL(location);
   if (storage.protocol !== 'https:' || storage.username || storage.password || storage.port || storage.hash
     || !['.blob.core.windows.net', '.githubusercontent.com'].some(suffix => storage.hostname.endsWith(suffix))) {
@@ -308,8 +308,12 @@ export async function downloadRawRotationReceipt({ kind, artifactId, digest, tok
 
   // The short-lived storage URL already authenticates this request.
   const archive = await fetchImpl(storage.href, { redirect: 'error', cache: 'no-store', signal });
+  if (archive.status !== 200) {
+    await archive.body?.cancel().catch(() => {});
+    throw receiptHttpError(archive, 'STORAGE');
+  }
   const contentLength = archive.headers.get('content-length');
-  if (archive.status !== 200 || !archive.body || ![null, 'identity'].includes(archive.headers.get('content-encoding'))
+  if (!archive.body || ![null, 'identity'].includes(archive.headers.get('content-encoding'))
     || (contentLength !== null && (!/^[1-9][0-9]*$/.test(contentLength) || Number(contentLength) > MAX_ARTIFACT_BYTES))) {
     await archive.body?.cancel();
     throw new Error('RAW_RECEIPT_HTTP');
@@ -332,6 +336,32 @@ export async function downloadRawRotationReceipt({ kind, artifactId, digest, tok
   const zip = Buffer.concat(chunks, size);
   if (!size || (contentLength !== null && size !== Number(contentLength))
     || 'sha256:' + createHash('sha256').update(zip).digest('hex') !== digest) throw new Error('RAW_RECEIPT_DIGEST');
+  return zip;
+}
+
+// The finder already proved the artifact identity. Retry only a temporary
+// read of that same immutable ZIP. Begin at GitHub again for a fresh signed URL.
+export async function downloadRawRotationReceipt({ kind, artifactId, digest, token,
+  fetchImpl = fetch, pause = wait, python = 'python3' } = {}) {
+  if (!Object.hasOwn(RECEIPT_FILES, kind) || !positive(artifactId) || !ARTIFACT_DIGEST.test(digest ?? '')
+    || typeof token !== 'string' || !/^\S{1,4096}$/.test(token)) throw new Error('RAW_RECEIPT_IDENTITY');
+
+  const receiptTimeoutMs = 30_000;
+  const expiresAt = performance.now() + receiptTimeoutMs;
+  const deadline = AbortSignal.timeout(receiptTimeoutMs);
+  let zip;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      zip = await readRawRotationZip({ artifactId, digest, token, fetchImpl },
+        AbortSignal.any([deadline, AbortSignal.timeout(8_000)]));
+      break;
+    } catch (error) {
+      if (attempt === 3 || deadline.aborted || (error?.statusCode !== 404 && !temporaryMetadataRead(error))) throw error;
+      const delay = Math.max(POLL_MS, error.retryDelayMs ?? 0);
+      if (performance.now() + delay >= expiresAt) throw error;
+      await pause(delay, undefined, { signal: deadline });
+    }
+  }
 
   const name = RECEIPT_FILES[kind];
   const extractor = [
@@ -410,5 +440,13 @@ async function main(env, args) {
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   try { await main(process.env, process.argv.slice(2)); }
-  catch { console.error('RAW_ROTATION_ARTIFACT_FINDER_REFUSED'); process.exitCode = 1; }
+  catch (error) {
+    const code = error?.message;
+    if (/^RAW_RECEIPT_(?:IDENTITY|CONTEXT|DIRECTORY|REDIRECT|HTTP|DIGEST|SIZE|ZIP|(?:API|STORAGE)_HTTP_[1-5][0-9]{2})$/.test(code ?? '')) {
+      console.error(code);
+    } else {
+      console.error('RAW_ROTATION_ARTIFACT_FINDER_REFUSED');
+    }
+    process.exitCode = 1;
+  }
 }

@@ -1,3 +1,13 @@
+## 28. november — download af RAW-kvitteringen standsede #414 før vejrhentning
+
+Den normale kørsel fandt den netop udgivne kvittering, men dens ene download
+blev afvist. Det oprindelige logtrin gemte kun en generel fejlkode. De samme
+bytes kunne senere hentes og verificeres. Den lokale rettelse genlæser kun den
+samme kvittering ved midlertidige transportfejl og viser en fast fase og
+HTTP-status ved afslag. Ejerens eksisterende, beskyttede genforsøg bruger nu den
+faktiske læser, når den kontrollerer samtidige kildeprøver. Det skal prøves
+gennem den normale ejervej før driftsverifikation.
+
 ## 27. november — et spørgsmål om både vind og strøm fik kun et svar om strøm
 
 På den offentlige side fik spørgsmålet »Hvad ændrer sig, hvis vinden vender, mens
@@ -161,6 +171,8 @@ Ved ét tidspunkt i den offentliggjorte prognose fra #409 manglede vandtemperatu
 
 Den lokale ændring gemmer den almindelige vandstand først. Derefter kan en kortlivet proces genlæse de samme kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller, når de nødvendige gitteropslag allerede er beregnet. Ved timeout standses kun denne proces, og hovedprocessen fortsætter. Tidligere kandidater, der kunne stoppe eller genstarte hovedprocessen, er forkastet. GitHub-kvalifikation og offentlig måling udestår.
 
+Efter #412 er der stadig afgrænsede temperaturhuller ved Hennedal, Sølyst og Kollund Strand. Den eksisterende skrivefri arkivlæsning er lokalt udvidet til at sammenholde fire faste kystdelstimer fra #412 med de gemte kildebeviser. Bøsbæk Hage er positiv kontrol. Uden en kildeknyttet gemt time vises årsagen som ukendt. Læsningen kræver det forseglede arkiv fra #412 før dets udløb og starter ingen ny vejrhentning. Kildekontrol og faktisk arkivlæsning udestår.
+
 ## 27. november — svar på et samlet spørgsmål om UV-lygter
 
 Et almindeligt spørgsmål om, hvorfor rav lyser under UV, om lygten kan bruges i dagslys, og om alt lysende er rav, nåede den eksterne model. Assistenten bad om at få spørgsmålet delt op, selv om alle tre led var dækket af gennemgået viden.
@@ -288,6 +300,16 @@ Den lokale rettelse læser højst hvert halve minut det normale offentlige manif
 GitHubs kørselsannotation viser de samme to lageroptællinger som joboversigten. Den udgiver tal for byte og objekter, eller en tom værdi for en fase uden måling. Den bruger de allerede læste tal fra både almindelig udgivelse og genoptagelse. Den første faktiske aflæsning af annotationen udestår.
 
 Den normale vejrarkivering rapporterer de faktiske byte- og objekttal fra lageropslagene før den første nye arkivfil og før upload af rotationsmarkøren. Den normale backupplan rapporterer målt lagerplads, når den kan læse den. Det samme lageropslag bruges fortsat til hver adgangskontrol. Offentlig prognose, bevaringsregler, sletning og adgang er uændrede. Måling i almindelig drift og Free-budget over hele fakturaperioden afventer.
+
+**27. november, lokal rettelse.** Den normale vejrarkivering registrerer nøglen og bytestørrelsen i én fast privat R2-journal, før den sender en ny arkivfil. Den kræver præcis genlæsning af journalen. Ved tabt svar forbliver de uafklarede bytes reserveret på tværs af kørsler. En senere normal kørsel kan bruge en allerede gemt del efter kontrol af længde og SHA-256. Et fraværende objekt beholder reservationen. Den almindelige 350 MB arkivgrænse, 100 MB reserve og eksisterende rotationsmarkør består.
+
+Den lokale journal bevarer kendte arkivdele efter positiv genlæsning af byteantal og SHA-256. Disse dele indgår i den normale lageroptælling. Før en central B-skrivning gemmer udgiveren den præcise før-version og forventede efterværdi i den samme journal. Ved genoptagelse kan en frisk læsning af den præcise B-peger overtage beskyttelsen. Hvis en anden generation vandt den næste version, bevares både de berørte dele og beviset for efterfølgeren. Gentagelse af en uafklaret B-skrivning afvises. S færdiggøres gennem det eksisterende forløb.
+
+Den normale udgiver kontrollerer højst én tidligere journalført arkivdel før næste pladsoptælling. Delen skal være positivt oprettet og verificeret, og journalen skal vise, at B-skrivningen aldrig blev sendt, eller at en anden kandidat vandt den næste centrale version. Udgiveren bevarer den indkommende arkivgruppe og begge centralt beskyttede generationer. Oprydningen genlæser de eksakte bytes, den aktuelle B-peger og den samme journalversion omkring en betinget journalopdatering. Den sender højst ét fysisk slettekald. Efter et tabt svar kræves en autentificeret R2-kvittering om, at netop objektnøglen mangler. Ukendte udfald, tidligere ubeviste poster og den eksisterende autoriserede rotation bevares.
+
+Fravær af journalen eller arkivdelen kræver, at R2 entydigt angiver den manglende nøgle i svar på et autentificeret opslag. En tom 404 eller en 404 for hele lageret afklarer intet. Tilbagerulning før B registrerer samme ene sletteforsøg i journalen før sletning. En senere kørsel kan genlæse fraværet for den samme indkommende arkivdel og kontrollere den igen før upload. Ældre sletteposter med mulig gentagelse holdes fortsat tilbage.
+
+Den valgfrie R2-kopi af driftsbevis afstår ved manglende plads eller uafklaret journal, mens den primære udgivelse til Supabase kan fortsætte. Den primære private vejrarkivering stopper før en ny skrivning, hvis pladsen eller reservationsloftet er opbrugt. De lokale prøver dækker tabte svar og præcis genlæsning. GitHub-kildekontrol og normal publicering på den leverede kode udestår. Se DEC-0255.
 
 ## 22. november — tysk AI-svar afvist efter assistentudgivelsen
 
