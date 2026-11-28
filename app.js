@@ -10,7 +10,7 @@ import { submitTripEvidenceObservation, syncPendingObservations } from "./js/ser
 import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.603";
 import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.603";
 import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.603";
-import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.603&ui=zone-panels-20261027&map=plain-map-v3-20261104";
+import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.603&ui=zone-panels-20261027&map=plain-map-v3-20261104&water-level-card=20261128";
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.603&ui=account-20261006&trip-test=20261125";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.603";
 import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.603&locale=topic-tab-raman-20261127";

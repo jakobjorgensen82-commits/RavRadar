@@ -1,3 +1,7 @@
+## 28. november — fjern feltet for vandstandsændring over tre timer
+
+Ejerens beslutning prioriterer den timevise vandstandsprognose. Den lokale ændring skjuler det særskilte felt i zonevisningen, i kortets forhåndsvisning og i den valgte prognosedag. Vandstandstallene vises fortsat time for time. Interne vandstandsdata, RavScore og de eksisterende kriterier for bedste tidspunkt bevares. Kildekontrol og offentlig levering udestår.
+
 ## 28. november — download af RAW-kvitteringen standsede #414 før vejrhentning
 
 Den normale kørsel fandt den netop udgivne kvittering, men dens ene download

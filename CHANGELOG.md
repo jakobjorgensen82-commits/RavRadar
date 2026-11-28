@@ -10,6 +10,8 @@
 - Spørg RavRadar besvarer det gennemgåede spørgsmål om Raman-spektroskopi til at skelne rav fra plast på dansk, tysk og engelsk uden at vente på en ekstern AI-tjeneste.
 - Spørg RavRadar forklarer både søgeforholdene og transporten mod kysten, når vinden skifter, mens strømmen stadig går mod land.
 
+- Zonepanelet viser fortsat vandstandsprognosen time for time. Det særskilte felt for vandstandsændring over tre timer er fjernet.
+
 ## Drift — vandtemperatur fra allerede hentede DMI-filer
 
 - Den normale sene vandstandsrunde kan genbruge sine kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller. Temperatur læses i en separat proces med en kort frist. Der bruges allerede beregnede gitteropslag, og resultatet skelnes fra ny hentning. Effekten skal måles i almindelig drift.
