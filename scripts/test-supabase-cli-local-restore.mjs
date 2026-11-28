@@ -13,7 +13,7 @@ import {setTimeout as sleep} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {Readable,Writable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
-import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
+import {accountErasureCatalogQuery,accountErasureCheckReference,readAccountErasureSource} from './verify-account-erasure-schema.mjs';
 import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-native-fixture.mjs';
 import {inactivityNoticeBody} from '../supabase/functions/_shared/inactivity-notice-mail.mjs';
 import {externalOwnerSubject} from '../supabase/functions/_shared/trip-storage.js';
@@ -1607,12 +1607,24 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     await login(fenced);const fenceAfter=await snapshot(fenced.id);
     need(fenceAfter.activity===null&&fenceAfter.journal===null&&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
     pass('B9_CLAIMS_ACL_AND_EXISTING_POST_PG_FENCE');
+    const selectCatalog=query=>value('select pg_catalog.to_jsonb(catalog) from ('+query.trim().replace(/;$/,'')+') as catalog;');
+    const priorAccountChecks=accountErasureCheckReference((await selectCatalog(accountErasureCatalogQuery)).metadata.checks);
     const recoveryMigration='supabase/migrations/20261127095500_trip_owner_erasure_intents.sql';
     await psql(c,p,'NATIVE_TRIP_ERASURE_RECOVERY_INSTALL',await fs.readFile(path.join(source.root,recoveryMigration)));
     const automaticCases=[];
     const automaticMigration='supabase/migrations/20261128073000_account_automatic_erasure_off.sql';
     const automaticSql=await fs.readFile(path.join(source.root,automaticMigration));
     await psql(c,p,'NATIVE_AUTOMATIC_ERASURE_INSTALL',automaticSql);
+    const noticeMigration='supabase/migrations/20261128103000_account_automatic_notices_off.sql';
+    await psql(c,p,'NATIVE_AUTOMATIC_NOTICE_INSTALL',await fs.readFile(path.join(source.root,noticeMigration)));
+    const priorStage=c.stage;
+    c.stage='NATIVE_AUTOMATIC_OFF_CATALOG';
+    const {createAutomaticAccountOffSchemaReadback}=await import('./verify-account-automatic-off-schema.mjs');
+    const readback=await createAutomaticAccountOffSchemaReadback(priorAccountChecks);
+    const installed=readback.verifyRows([await selectCatalog(readback.query)]);
+    assert.equal(installed.catalogVerified,true);
+    assert.equal(installed.activationAuthority,false);
+    c.stage=priorStage;
     const automaticWork=()=>rpc('service_role','public.list_account_automatic_erasure_work()');
     const prepareAutomatic=async testUser=>{
       const ready=await qualify(testUser),attempt=crypto.randomUUID(),provider=crypto.randomUUID();
@@ -1717,8 +1729,6 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     assert.deepEqual(minimized,{retainedFence:true,noticeAbsent:true,admissionAbsent:true,survivorNoticePreserved:true});
     automaticCases.push('SIGNED_WORKER_SQLITE_PURGE_AND_DURABLE_COMPLETE');
     const noticeCases=[];
-    const noticeMigration='supabase/migrations/20261128103000_account_automatic_notices_off.sql';
-    await psql(c,p,'NATIVE_AUTOMATIC_NOTICE_INSTALL',await fs.readFile(path.join(source.root,noticeMigration)));
     const chooseNotices=()=>rpc('service_role','public.prepare_account_automatic_notice_work()');
     await sql(`update public.account_inactivity_policy set coverage_epoch='${crypto.randomUUID()}' where singleton;`);
     const toWarn=await fresh(), manualTarget=await fresh(), recent=await fresh();
@@ -1784,6 +1794,7 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
       providerDeliverySynthetic:true,mailPostExecuted:false,controllerNoPostProof:'SQL_AUTHORITY_FALSE_ONLY',
       automaticErasureEnabled:false,hostedHookConfigured:false,productionAuthVerified:false,
       rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases,
+      isolatedAutomaticOffInstallation:installed,
       isolatedAutomaticErasure:{cases:automaticCases,realAuthDelete:true,tripStorage,
         syntheticDelivery:true,productionActivation:false},
       isolatedAutomaticNotice:{cases:noticeCases,syntheticDelivery:true,realMailSent:false,productionActivation:false}});
