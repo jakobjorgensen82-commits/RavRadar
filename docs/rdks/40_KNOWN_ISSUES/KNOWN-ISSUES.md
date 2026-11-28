@@ -1,3 +1,13 @@
+## 28. november — download af RAW-kvitteringen standsede #414 før vejrhentning
+
+Den normale kørsel fandt den netop udgivne kvittering, men dens ene download
+blev afvist. Det oprindelige logtrin gemte kun en generel fejlkode. De samme
+bytes kunne senere hentes og verificeres. Den lokale rettelse genlæser kun den
+samme kvittering ved midlertidige transportfejl og viser en fast fase og
+HTTP-status ved afslag. Ejerens eksisterende, beskyttede genforsøg bruger nu den
+faktiske læser, når den kontrollerer samtidige kildeprøver. Det skal prøves
+gennem den normale ejervej før driftsverifikation.
+
 ## 27. november — et spørgsmål om både vind og strøm fik kun et svar om strøm
 
 På den offentlige side fik spørgsmålet »Hvad ændrer sig, hvis vinden vender, mens
