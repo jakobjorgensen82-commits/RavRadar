@@ -395,6 +395,36 @@ test('active after601 treats all OFF account migrations as installed dependencie
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+pendingTrip,
     dryRunText:dryTrip}), /requires the matching installed append/);
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+remoteTrip}), /requires the matching installed append/);
+  const {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS:automatic}=await import('./lib/account-automatic-off-source.mjs');
+  const [erasure,notices]=automatic;
+  const accountRows=(installed)=>automatic.map(({version},index)=>'\n'+version+' | '+(index<installed?version:'')+' |').join('');
+  const accountDry=(installed)=>installed===automatic.length?noPending:
+    'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n'+
+    automatic.slice(installed).map(({filename})=>' • '+filename).join('\n')+'\nFinished supabase db push.';
+  await assert.rejects(cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'automatic-mixed'),
+    includeAutomaticAccountOffSource:true,includeTripErasureRecoverySource:true}), /separate exact schema plan/);
+  const automaticWork=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'automatic'),
+    includeAutomaticAccountOffSource:true});
+  await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:automaticWork.workdir,migrationListText:list()+remoteTrip+accountRows(0)});
+  const planAutomatic=(installed,migrationListText=list()+installedTrip+accountRows(installed),dryRunText=accountDry(installed))=>
+    cutover.assertAutomaticAccountOffMigrationPlan({migrationListText,dryRunText,migrationsDirectory:automaticWork.migrationsDirectory});
+  for(const installed of [0,1,2]){
+   assert.deepEqual((await planAutomatic(installed)).pendingVersions,automatic.slice(installed).map(({version})=>version));
+  }
+  await assert.rejects(planAutomatic(0,list()+pendingTrip+accountRows(0)),/installed append|installed trip recovery/);
+  await assert.rejects(planAutomatic(0,list()+installedTrip+'\n'+erasure.version+' | |\n'+notices.version+' | '+notices.version+' |'),
+    /installed predecessors/);
+  await assert.rejects(planAutomatic(0,list()+installedTrip+accountRows(0),accountDry(1)));
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip+accountRows(0),
+    migrationsDirectory:automaticWork.migrationsDirectory,dryRunText:accountDry(0)}), /installed predecessors/);
+  const remoteAutomatic=automatic.map(({version})=>'\n | '+version+' |').join('');
+  await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list()+installedTrip+remoteAutomatic});
+  assert.deepEqual((await cutover.assertSupabaseMigrationPlan({...input,
+    migrationListText:list()+installedTrip+accountRows(2)})).pendingVersions,[]);
+  assert.deepEqual(cutover.assertSupabaseMigrationsApplied(list()+installedTrip+accountRows(2)).appliedVersions.slice(-2),
+    automatic.map(({version})=>version));
+  await fs.promises.appendFile(path.join(automaticWork.migrationsDirectory,notices.filename),'\n-- changed\n');
+  await assert.rejects(planAutomatic(0),/must match the qualified source/);
   await fs.promises.appendFile(stagedTrip,'\n-- changed\n');
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip}), /Trip recovery migration source changed/);
  }finally{
