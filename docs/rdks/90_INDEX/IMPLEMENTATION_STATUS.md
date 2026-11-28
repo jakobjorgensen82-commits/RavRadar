@@ -4,6 +4,11 @@
 - [x] Afprøv hurtigere kontrol af forbudte nøgler gennem den eksisterende skrivefunktion i en isoleret database.
 - [ ] Indpas migrationen i den normale kontrollerede installationsvej. Bekræft funktionens adgang og en efterfølgende almindelig prognosegemning i drift.
 
+## 28. november — kontrol ved udskiftning af turlagerets Worker
+
+- [x] Brug de eksisterende driftslåse og kontroller af version, D1-bindinger og gendannelsesspærring i den lokale reparationsvej.
+- [ ] Kvalificér den samlede kilde og bekræft den aktive Worker gennem det normale leveringsforløb.
+
 ## 28. november — kontofunktionernes installation og verificering
 
 - [x] Afprøv den isolerede kontoproces mod PostgreSQL, GoTrue og ti lokale turdatabaser. Verificér kataloget og begge kontakter efter installationen.

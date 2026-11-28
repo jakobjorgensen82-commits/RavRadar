@@ -40,7 +40,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}
+  group: ${{ contains(fromJSON('["fixed-account-activity-hook-enable","fixed-account-activity-hook-disable","fixed-account-activity-receipt-arm","existing-worker-repair","existing-owner-export-upgrade","existing-owner-erasure-guard"]'), inputs.operation) && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}
   queue: max
   cancel-in-progress: false
 
@@ -1162,6 +1162,10 @@ jobs:
   repair-existing-worker:
     if: ${{ inputs.operation == 'existing-worker-repair' || inputs.operation == 'existing-owner-export-upgrade' || inputs.operation == 'existing-owner-erasure-guard' }}
     name: Bounded existing-D1 Worker repair
+    concurrency:
+      group: ravradar-trip-storage-production
+      queue: max
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
@@ -1176,6 +1180,7 @@ jobs:
       CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
       TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
       TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
+      TRIP_STORAGE_REQUIRE_UNHELD_BINDINGS: '1'
       TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
       TRIP_STORAGE_OWNER_EXPORT_UPGRADE: ${{ inputs.operation == 'existing-owner-export-upgrade' && '1' || '0' }}
       TRIP_STORAGE_OWNER_ERASURE_GUARD: ${{ inputs.operation == 'existing-owner-erasure-guard' && '1' || '0' }}
@@ -1321,6 +1326,7 @@ jobs:
           fi
           node scripts/audit-cloudflare-trip-storage.mjs
           node scripts/verify-trip-storage-edge.mjs
+          node scripts/verify-cloudflare-trip-gateway.mjs --before-replace
           node scripts/verify-cloudflare-trip-gateway.mjs
 
       # Metadata snapshot only: atomicWriterLease=false, not physical drain.
@@ -1452,6 +1458,7 @@ jobs:
           if (env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE === '1') {
             run('UPGRADE_READBACK', 'node', ['scripts/prepare-cloudflare-trip-storage.mjs', '--existing-owner-export-upgrade-check']);
           }
+          run('WORKER_BINDING_FENCE', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs', '--before-replace']);
           exactMain();
           lease(600);
           import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
@@ -1609,6 +1616,7 @@ jobs:
           }
           function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
           worker();
+          run('WORKER_BINDING_FENCE', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs', '--before-replace']);
           exactMain();
           lease(600);
           import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';

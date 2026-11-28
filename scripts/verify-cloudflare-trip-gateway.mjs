@@ -420,9 +420,11 @@ async function main() {
     let configuration;
     try { configuration = JSON.parse(fs.readFileSync(process.env.TRIP_WRANGLER_CONFIG_PATH, 'utf8')); }
     catch { throw new Error('TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'); }
-    const verify = process.env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE === '1' ? verifyExistingWorkerBindings : verifyActiveWorkerDeployment;
+    const requireUnheld = process.env.TRIP_STORAGE_REQUIRE_UNHELD_BINDINGS === '1';
+    const verify = requireUnheld || process.env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE === '1'
+      ? verifyExistingWorkerBindings : verifyActiveWorkerDeployment;
     await verify({
-      expectedBindings: configuration?.d1_databases,
+      expectedBindings: configuration?.d1_databases, requireUnheld,
       accountId: process.env.CLOUDFLARE_ACCOUNT_ID, apiToken: process.env.CLOUDFLARE_API_TOKEN,
       workerName: configuration?.name, expectedVersion: process.env.EXPECTED_TRIP_WORKER_VERSION,
     });
