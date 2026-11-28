@@ -118,7 +118,7 @@ concurrency:
 
 jobs:
   audit:
-    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))
+    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B412-SST-SOURCE-CATEGORIES' && inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))
     name: Authenticate existing packages and report only bounded aggregates
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
@@ -602,7 +602,7 @@ jobs:
           retention-days: 14
 
   component-summary:
-    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)
+    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B412-SST-SOURCE-CATEGORIES' && inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)
     name: Read only the authenticated protected component summary
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -731,7 +731,7 @@ jobs:
           retention-days: 14
 
   voersaa-water-trace:
-    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)
+    if: inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B412-SST-SOURCE-CATEGORIES' && inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)
     name: Read two exact original B water traces privately
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -994,7 +994,7 @@ jobs:
           retention-days: 1
 
   water-level-basis-272:
-    if: inputs.water_level_basis_272_only == true && inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT'
+    if: inputs.water_level_basis_272_only == true && inputs.confirmation != 'READ-B358-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B361-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B363-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B365-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B368-WATERLEVEL-TREND-ONLY' && inputs.confirmation != 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && inputs.confirmation != 'READ-B412-SST-SOURCE-CATEGORIES'
     name: Read only the fixed authenticated B272 water-level metadata
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1315,7 +1315,7 @@ jobs:
           retention-days: 1
 
   water-source-support-374:
-    if: inputs.confirmation == 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' || inputs.confirmation == 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT'
+    if: inputs.confirmation == 'READ-B374-ROMO-WATER-SOURCE-SUPPORT' || inputs.confirmation == 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' || inputs.confirmation == 'READ-B412-SST-SOURCE-CATEGORIES'
     name: Compare water-level endpoints in two fixed saved weather results
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1356,6 +1356,7 @@ jobs:
           const targets = new Map([
             ['READ-B374-ROMO-WATER-SOURCE-SUPPORT', '45088278207'],
             ['READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT', '45997841484'],
+            ['READ-B412-SST-SOURCE-CATEGORIES', '46032811869'],
           ]);
           assert(targets.has(confirmation));
           assert.equal(progress_source_run_id, targets.get(confirmation));
@@ -1391,11 +1392,16 @@ jobs:
             READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT)
               previous=cb34506224545f8d3cd0c3ddf4ee30be824ba363
               current=1681a3615f5186dd58cae1bf96f9869f17fc24de ;;
+            READ-B412-SST-SOURCE-CATEGORIES)
+              previous=
+              current=d9c7a9437caf87b868404f0102fe8b8481154e14 ;;
             *) exit 1 ;;
           esac
-          git merge-base --is-ancestor "$previous" "$GITHUB_SHA"
           git merge-base --is-ancestor "$current" "$GITHUB_SHA"
-          git -c protocol.allow=never worktree add --detach "$RUNNER_TEMP/ravradar-b373-water-reader" "$previous"
+          if [[ -n "$previous" ]]; then
+            git merge-base --is-ancestor "$previous" "$GITHUB_SHA"
+            git -c protocol.allow=never worktree add --detach "$RUNNER_TEMP/ravradar-b373-water-reader" "$previous"
+          fi
           git -c protocol.allow=never worktree add --detach "$RUNNER_TEMP/ravradar-b374-water-reader" "$current"
       - name: Compare qualified source endpoints without providers or production writes
         run: |
@@ -1406,6 +1412,7 @@ jobs:
           case "$SOURCE_SUPPORT_CONFIRMATION" in
             READ-B374-ROMO-WATER-SOURCE-SUPPORT) node scripts/audit-b358-water-level-trend.mjs --b374 "${args[@]}" ;;
             READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT) node scripts/audit-b358-water-level-trend.mjs --b411-dokkedal "${args[@]}" ;;
+            READ-B412-SST-SOURCE-CATEGORIES) node scripts/audit-b358-water-level-trend.mjs --b412-sst "${args[@]:1}" ;;
             *) exit 1 ;;
           esac
         env:
@@ -1414,7 +1421,7 @@ jobs:
       - name: Keep only the fixed outcome categories
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.confirmation == 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && 'b411-dokkedal-water-source-support' || 'b374-romo-water-source-support' }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ inputs.confirmation == 'READ-B412-SST-SOURCE-CATEGORIES' && 'b412-sst-source-categories' || inputs.confirmation == 'READ-B411-DOKKEDAL-WATER-SOURCE-SUPPORT' && 'b411-dokkedal-water-source-support' || 'b374-romo-water-source-support' }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ravradar-b374-water-result/source-support.json
           if-no-files-found: error
           retention-days: 1

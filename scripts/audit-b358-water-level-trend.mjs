@@ -189,7 +189,7 @@ function hourlyIndex(rows) {
   return new Map(rows.map(row => [row.time, row]));
 }
 
-async function readSelectedPublicPartWeather(module, packPath, conditions, scope, { target = TARGET, publicEvidence, offsets, sourceDetailsSha256, expectedModelBinding, exactHourShas } = {}) {
+async function readSelectedPublicPartWeather(module, packPath, conditions, scope, { target = TARGET, publicEvidence, offsets, sourceDetailsSha256, expectedModelBinding, exactHourShas, temperatureOnly = false } = {}) {
   const { manifest, payloadOffset, bytes } = await module.inspectPrivatePublicHourDeliveryPack({ packPath, conditions });
   if (manifest.datasetId !== target.datasetId || manifest.productionReferenceAt !== target.productionReferenceAt
     || manifest.entries.length !== PUBLIC_HOURS
@@ -230,6 +230,12 @@ async function readSelectedPublicPartWeather(module, packPath, conditions, scope
         const part = document.coastalParts?.parts?.[id];
         if (part?.id !== id || part.zoneId !== entryOutput.zone || part.current?.time !== entry.time || !part.current.weather)
           inputFailure('PUBLIC_PART_BINDING');
+        if (temperatureOnly) {
+          const temperature = part.current.weather.waterTemperatureC;
+          if (temperature != null && !finite(temperature)) inputFailure('B412_PUBLIC_TEMPERATURE_TYPE');
+          entryOutput.rows.set(entry.time, { temperaturePresent: finite(temperature) });
+          continue;
+        }
         const { waterLevelCm, waterLevelTrendCm3h } = part.current.weather;
         if ((waterLevelCm != null && !finite(waterLevelCm)) || (waterLevelTrendCm3h != null && !finite(waterLevelTrendCm3h)))
           inputFailure('PUBLIC_PART_WATER_TYPE');
@@ -1190,7 +1196,8 @@ async function b374OpenStage(target, modules, privateRoot, token, masterSecret, 
   }));
   const manifest = JSON.parse(await fs.readFile(path.join(bundlePath, 'manifest.json')));
   if (result.restored !== true || result.productionPointerUnchanged !== true
-    || manifest.bundleContentSha256 !== result.bundleContentSha256 || manifest.bundleContentSha256 !== target.bundleSha256
+    || manifest.bundleContentSha256 !== result.bundleContentSha256
+    || (target !== B412_STAGE && manifest.bundleContentSha256 !== target.bundleSha256)
     || manifest.productionReferenceAt !== reference || manifest.datasetId !== datasetId
     || !b374Equal(manifest.modelBinding, modules.expected.modelBinding) || !b374Equal(manifest.contractHashes, modules.expected.contractHashes)) {
     b374Fail('B374_STAGE_BUNDLE_IDENTITY');
@@ -1446,12 +1453,16 @@ async function b374BoundPublicFiles(source374, work, token, b411 = false) {
   return { manifestBytes, zonesBytes, routingBytes };
 }
 
-async function b374Entry(argv, b411 = false) {
+function b374RequireHostedReader() {
   if (process.platform !== 'linux' || process.env.GITHUB_ACTIONS !== 'true'
     || process.env.RUNNER_ENVIRONMENT !== 'github-hosted'
     || process.env.GITHUB_REPOSITORY !== B374_STAGE_IDENTITY.repository || !process.env.RUNNER_TEMP) {
     b374Fail('B374_HOSTED_READER_REQUIRED');
   }
+}
+
+async function b374Entry(argv, b411 = false) {
+  b374RequireHostedReader();
   const [b373, b374, output, ...extra] = argv;
   if (extra.length || ![b373, b374, output].every(file => file && path.isAbsolute(file))) b374Fail('B374_ENTRY_ARGUMENTS');
   const temp = await fs.realpath(process.env.RUNNER_TEMP);
@@ -1482,8 +1493,218 @@ async function b374Entry(argv, b411 = false) {
 }
 
 
+const B412_STAGE = Object.freeze({
+  runId: 46032811869, head: 'd9c7a9437caf87b868404f0102fe8b8481154e14',
+  id: 15224093079, bytes: 265459592, digest: 'sha256:673d6a24ade752f08a3a61c7b62afb57ce202b6dd964c1e260866cc294b900ba',
+  datasetId: 'rr-20261127180143-210', reference: '2026-11-27T16:00:00.000Z', jobId: 140621249531,
+});
+const B412_HOURS = Object.freeze({
+  '2026-11-27T16:00:00.000Z': 'a3ca54778ce798e6336ff418dcf862ad59c4b2bbfe45666e50d0b2f9c89666bc',
+  '2026-11-27T21:00:00.000Z': '5f256aa401ca2093fe3b01a3a0a238a92a766e574b8cfb0af393c01a2de796da',
+  '2026-11-29T15:00:00.000Z': 'f7eeceb53cfe30e944423694c7d03731e8c2819f914cdad1f8f97411cf377e60',
+});
+const B412_CELLS = [
+  ['DK-B05-24', 'dk-b05-24-national-part-03', 5, false],
+  ['DK-B05-24', 'dk-b05-24-national-part-06', 47, false],
+  ['DK-B12-05', 'dk-b12-05-national-part-03', 5, false],
+  ['DK-B12-05', 'dk-b12-05-national-part-02', 0, true],
+];
+const SST = 'waterTemperature';
+
+// Read only the fixed JSON entries of an already authenticated component pack.
+// Non-selected objects are never inflated, copied, or sent to a Python runner.
+export async function readB412TemperatureBankMetadata(file, marker, names) {
+  const magic = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
+  const selected = new Set(Object.values(names));
+  const handle = await fs.open(file, 'r');
+  try {
+    const { size } = await handle.stat();
+    if (size < magic.length + 6 || size > 768 * 1024 * 1024) inputFailure('B412_PACK_SIZE');
+    const read = async (position, length) => {
+      if (!Number.isSafeInteger(length) || length < 1 || position + length > size) inputFailure('B412_PACK_BOUNDS');
+      const result = Buffer.alloc(length);
+      for (let offset = 0; offset < length;) {
+        const { bytesRead } = await handle.read(result, offset, length - offset, position + offset);
+        if (!bytesRead) inputFailure('B412_PACK_TRUNCATED');
+        offset += bytesRead;
+      }
+      return result;
+    };
+    const prefix = await read(0, magic.length + 4);
+    if (!prefix.subarray(0, magic.length).equals(magic)) inputFailure('B412_PACK_HEADER');
+    const length = prefix.readUInt32BE(magic.length);
+    if (length > 32 * 1024 * 1024) inputFailure('B412_PACK_BOUNDS');
+    const manifest = JSON.parse(await read(prefix.length, length));
+    if (manifest.kind !== 'PRIVATE_WEATHER_COMPONENT_PACK' || manifest.schemaVersion !== 1
+      || !b374Equal(manifest.marker, marker) || !Array.isArray(manifest.files) || manifest.files.length > 65_536)
+      inputFailure('B412_PACK_MANIFEST');
+    let position = prefix.length + length;
+    const seen = new Set();
+    const banks = new Map();
+    let selectedComponentsSha256 = null;
+    for (const row of manifest.files) {
+      if (typeof row?.relativePath !== 'string' || seen.has(row.relativePath) || !Number.isSafeInteger(row.bytes)
+        || row.bytes < 1 || position + row.bytes > size || !/^[a-f0-9]{64}$/.test(row.sha256)) inputFailure('B412_PACK_ENTRY');
+      seen.add(row.relativePath);
+      if (selected.has(row.relativePath)) {
+        if (row.bytes > 256 * 1024 * 1024) inputFailure('B412_PACK_BOUNDS');
+        const bytes = await read(position, row.bytes);
+        const digest = sha(bytes);
+        if (digest !== row.sha256) inputFailure('B412_PACK_CHECKSUM');
+        if (row.relativePath === names.selectedComponents) selectedComponentsSha256 = digest;
+        banks.set(row.relativePath, JSON.parse(bytes));
+      }
+      position += row.bytes;
+    }
+    if (position !== size) inputFailure('B412_PACK_BOUNDS');
+    const result = Object.fromEntries(Object.entries(names).map(([key, relative]) => [key, banks.get(relative) ?? null]));
+    // The normal producer binds the complete ledger file. A retained bank
+    // can still be present when it was not selected in this generation.
+    if (!marker || (marker.openMeteoBankSha256 !== null && result.openMeteoBank?.bankSha256 !== marker.openMeteoBankSha256)
+      || (marker.copernicusBankSha256 !== null && result.copernicusBank?.bankSha256 !== marker.copernicusBankSha256)
+      || selectedComponentsSha256 !== marker.selectedComponentsSha256)
+      inputFailure('B412_PACK_SOURCE_BINDING');
+    return result;
+  } finally { await handle.close(); }
+}
+
+export function b412CopernicusTemperature(bank, progress, part, validTime) {
+  if (!bank) return 'NO_BANK_EVIDENCE';
+  const matches = request => request.component === SST && request.target?.partId === part.partId
+    && request.target?.parentZoneId === part.zoneId && same(request.target?.waterPoint, part.waterPoint);
+  const matchingRequests = new Map(bank.requests.filter(matches).map(request => [request.requestSha256, request]));
+  const sameHour = time => Date.parse(time) === Date.parse(validTime);
+  const inWindow = request => request?.expectedTimes?.some(sameHour);
+  if (bank.records.some(row => row.native?.partId === part.partId && sameHour(row.native?.validTime)
+    && inWindow(matchingRequests.get(row.requestSha256)) && finite(row.native?.values?.waterTemperatureC)))
+    return 'MATCHING_SAVED_NUMERIC_RECORD';
+  // A progress group or an unbound failed request is not exact-hour evidence.
+  if (progress?.bankSha256 === bank.bankSha256 && /^[a-f0-9]{64}$/.test(progress.planSha256?.replace(/^sha256:/, '') ?? '')
+    && progress.attempts?.some(row => {
+      const request = matchingRequests.get(row.requestSha256);
+      return row.partId === part.partId && row.status === 'PARSED' && request?.contractKey === row.contractKey
+        && Date.parse(request.productionReferenceAt) === Date.parse(B412_STAGE.reference) && inWindow(request);
+    })) return 'CURRENT_SAVED_REQUEST_NO_MATCHING_NUMERIC_RECORD';
+  return 'NO_EXACT_HOUR_EVIDENCE';
+}
+
+export function b412OpenMeteoTemperature(normal, bank, index, part, validTime) {
+  if (!bank) return 'NO_BANK_EVIDENCE';
+  if (normal.selectedOpenMeteoPartRecord(index, { part, validTime, component: SST })) return 'RETAINED_ADMISSIBLE';
+  const categories = new Set();
+  const identity = normal.openMeteoPartIdentity(part);
+  for (const evidence of Object.values(bank.responses)) {
+    const request = evidence?.request;
+    if (request?.component !== SST || request.productionReferenceAt !== B412_STAGE.reference
+      || !b374Equal(request.identity, identity) || validTime < request.productionReferenceAt || validTime > request.endAt) continue;
+    const parsed = normal.readOpenMeteoPartResponse(evidence, { part, spatialPolicies: normal.OPEN_METEO_NATIVE_NEAREST_POLICIES });
+    if (parsed.records.some(row => row.validTime === validTime)) categories.add('MATCHING_ORIGINAL_VALID_NOT_RETAINED');
+    else {
+      const times = JSON.parse(evidence.responseText)?.hourly?.time;
+      categories.add(times?.some(time => normal.openMeteoUtcTime(time) === validTime)
+        ? 'MATCHING_ORIGINAL_HOUR_UNUSABLE' : 'MATCHING_ORIGINAL_HOUR_ABSENT');
+    }
+  }
+  return categories.size === 1 ? [...categories][0]
+    : categories.size ? 'MATCHING_ORIGINALS_DIFFER' : 'NO_MATCHING_ORIGINAL_EVIDENCE';
+}
+
+async function b412Entry(argv) {
+  b374RequireHostedReader();
+  const [reader, output, ...extra] = argv;
+  const temp = await fs.realpath(process.env.RUNNER_TEMP);
+  if (extra.length || ![reader, output].every(file => file && path.isAbsolute(file))
+    || reader !== path.join(temp, 'ravradar-b374-water-reader')
+    || output !== path.join(temp, 'ravradar-b374-water-result/source-support.json'))
+    inputFailure('B412_READER_SCOPE');
+  const token = process.env.GITHUB_TOKEN, secret = process.env.WEATHER_PROGRESS_MASTER_SECRET;
+  if (!token || !secret) inputFailure('B412_CREDENTIALS_REQUIRED');
+  const cleanups = [];
+  let rows;
+  try {
+    const working = await ownScratch(temp, await fs.mkdtemp(path.join(temp, 'rr-b412-sst-')), 'rr-b412-sst-', cleanups);
+    rows = await withoutSavedAuditSecrets(async () => {
+      const modules = await b374SourceModules(reader, B412_STAGE);
+      const { payload, manifest, job } = await b374OpenStage(B412_STAGE, modules, path.join(working, 'stage'), token, secret, cleanups, true);
+      const fallbackSteps = new Map([[154, 'Update central weather cache'], [155, 'Report counts for each weather component after central cache']]);
+      if (![...fallbackSteps].every(([number, name]) => {
+        const steps = job.steps?.filter(step => step.number === number || step.name === name);
+        return steps?.length === 1 && steps[0].number === number && steps[0].name === name
+          && steps[0].status === 'completed' && steps[0].conclusion === 'success';
+      }))
+        inputFailure('B412_CENTRAL_PRODUCER');
+      const [inventory, forecast, continuity, adapter, needs, om, publicHours, utc] = await Promise.all([
+        'private-weather-component-inventory', 'dmi-forecast-file', 'dmi-part-continuity', 'ravscore-production-adapters',
+        'weather-component-needs', 'open-meteo-part-bank', 'public-hour-delivery-pack', 'open-meteo-hourly-components',
+      ].map(name => modules.load('scripts/lib/' + name + '.mjs')));
+      const conditions = JSON.parse(await fs.readFile(path.join(payload, 'data/live/conditions.json')));
+      const parts = Object.entries(conditions.coastalParts?.parts ?? {}).map(([partId, part]) => ({ ...part, partId }));
+      if (conditions.datasetId !== B412_STAGE.datasetId || conditions.productionReferenceAt !== B412_STAGE.reference
+        || parts.length !== 673) inputFailure('B412_CONDITIONS_IDENTITY');
+      const marker = inventory.privateWeatherComponentMarker(conditions);
+      if (!marker) inputFailure('B412_COMPONENT_MARKER');
+      const names = Object.fromEntries(['openMeteoBank', 'copernicusBank', 'copernicusProgress', 'selectedComponents']
+        .map(key => [key, inventory.PRIVATE_WEATHER_COMPONENT_FILES[key]]));
+      const banks = await readB412TemperatureBankMetadata(path.join(payload, inventory.PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath), marker, names);
+      const omIndex = banks.openMeteoBank ? om.validateOpenMeteoPartBank(banks.openMeteoBank,
+        { parts, spatialPolicies: om.OPEN_METEO_NATIVE_NEAREST_POLICIES }) : null;
+      const hours = await readSelectedPublicPartWeather(publicHours,
+        path.join(payload, inventory.PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath), conditions,
+        new Map(B412_CELLS.map(([zone, id]) => [id, zone])), {
+          target: { ...B412_STAGE, productionReferenceAt: B412_STAGE.reference }, offsets: [0, 5, 47],
+          sourceDetailsSha256: '73f0e13de1c4eb3d7365edd539ff8e3732754f02c7be86c80dfe4edb4ac66caf',
+          expectedModelBinding: manifest.modelBinding, exactHourShas: B412_HOURS, temperatureOnly: true,
+        });
+      const dmi = await forecast.inspectDmiForecastFile(path.join(payload, 'data/live/dmi-forecast-cache.json'));
+      const { metadata, entries } = dmi.continuity ?? {};
+      if (metadata?.productionReferenceAt !== B412_STAGE.reference || metadata.partCount !== parts.length
+        || entries?.length !== parts.length) inputFailure('B412_DMI_SCOPE');
+      const sortedIds = parts.map(part => part.partId).sort((a, b) => a.localeCompare(b));
+      const report = [];
+      for (const [zoneId, partId, offset, present] of B412_CELLS) {
+        const part = parts.find(part => part.partId === partId);
+        const validTime = at(B412_STAGE.reference, offset);
+        if (part?.zoneId !== zoneId || hours.get(partId)?.rows.get(validTime)?.temperaturePresent !== present)
+          inputFailure('B412_PUBLIC_CELL');
+        const entry = await forecast.readDmiForecastRecord(dmi, entries[sortedIds.indexOf(partId)]);
+        if (entry.partId !== partId) inputFailure('B412_DMI_SCOPE');
+        const decoded = await continuity.unpackDmiPartContinuity({
+          ...metadata, partCount: 1, rawBytes: entry.rawBytes, compressedBytes: entry.compressedBytes, entries: [entry],
+        }, [part], B412_STAGE.reference);
+        const row = decoded.get(partId)?.hourly?.find(hour => hour.time === validTime);
+        const identity = adapter.dmiExpectedIdentityForPart(part);
+        if (!row || !identity) inputFailure('B412_DMI_SCOPE');
+        const source = row.sources?.waterTemperature;
+        const hasValue = needs.hasValue(row, SST);
+        const selection = banks.selectedComponents.records.find(row => row.partId === partId && row.parentZoneId === zoneId
+          && same(row.samplingPoint, part.waterPoint) && row.time === validTime && row.component === SST);
+        report.push({ zoneId, partId, validTime, publicTemperaturePresent: present,
+          dmi: hasValue && adapter.eligibleDmiForecastComponentSource(source, validTime, SST, identity) ? 'DMI_ADMISSIBLE'
+            : hasValue || (source && source.provider !== 'missing') ? 'DMI_STORED_NOT_ADMISSIBLE' : 'DMI_NO_SAVED_VALUE',
+          copernicus: b412CopernicusTemperature(banks.copernicusBank, banks.copernicusProgress, part, validTime),
+          openMeteo: b412OpenMeteoTemperature({ ...om, openMeteoUtcTime: utc.openMeteoUtcTime }, banks.openMeteoBank, omIndex, part, validTime),
+          reserveSelection: selection?.provider === 'copernicus' ? 'COPERNICUS_LEDGER_ROW'
+            : selection?.provider === 'open-meteo' ? 'OPEN_METEO_LEDGER_ROW' : 'NO_RESERVE_LEDGER_ROW',
+        });
+      }
+      return report;
+    });
+  } finally { while (cleanups.length) await cleanups.pop()(); }
+  const safe = JSON.stringify({ kind: 'B412_SST_SOURCE_CATEGORIES', sourceRun: B412_STAGE.runId,
+    artifactId: B412_STAGE.id, dataset: B412_STAGE.datasetId, privatePayloadIncluded: false, rows }) + '\n';
+  await fs.writeFile(output, safe, { mode: 0o600, flag: 'wx' });
+  process.stdout.write(safe);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (process.argv[2] === '--b374' || process.argv[2] === '--b411-dokkedal') {
+  if (process.argv[2] === '--b412-sst') {
+    try { await b412Entry(process.argv.slice(3)); }
+    catch (error) {
+      const code = error?.safeCode ?? error?.code;
+      process.stdout.write(/^(B412_|ORDINARY_STAGE_)[A-Z0-9_]{1,70}$/.test(code ?? '') ? code + '\n' : 'B412_READER_UNAVAILABLE\n');
+      process.exitCode = 1;
+    }
+  } else if (process.argv[2] === '--b374' || process.argv[2] === '--b411-dokkedal') {
     try { await b374Entry(process.argv.slice(3), process.argv[2] === '--b411-dokkedal'); }
     catch (error) {
       const code = /^(B374_|B411_|ORDINARY_STAGE_|SEALED_B374_|ALTERNATIVE_NORMAL_|AUTHENTICATED_INPUTS_)[A-Z0-9_]{1,74}$/
