@@ -434,7 +434,8 @@ async function main() {
     ]);
     normalRuns = freshNormal;
     manualRuns = freshManual;
-    const independentValidationRuns = await readIndependentValidationRuns(activity, read);
+    const independentValidationRuns = await readIndependentValidationRuns(activity,
+      options => readWeatherCadenceGithub({ ...access, ...options }));
     ownerOrder = { failedRunId, requestId, headSha, history, activity, priorJobs, samePriorWorkflow,
       independentValidationRuns };
   }
