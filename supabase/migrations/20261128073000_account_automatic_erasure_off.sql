@@ -299,5 +299,22 @@ $auto_stage$;
 revoke all on function public.stage_account_automatic_erasure(uuid,bigint,text,text) from public,anon,authenticated,service_role;
 grant execute on function public.stage_account_automatic_erasure(uuid,bigint,text,text) to service_role;
 
+-- A completed outbox keeps the existing minimal replay fence. The notice
+-- and working copy of its delivery bindings are no longer needed.
+create function public.account_automatic_erasure_drop_notice_data()
+returns trigger language plpgsql security definer set search_path = '' as $drop_notice$
+begin
+  delete from public.account_automatic_erasure_admissions where operation_id = new.operation_id;
+  delete from public.account_inactivity_notices where target_user_id = new.target_user_id;
+  return null;
+end;
+$drop_notice$;
+revoke all on function public.account_automatic_erasure_drop_notice_data()
+  from public,anon,authenticated,service_role;
+create trigger account_automatic_erasure_drop_notice_data
+  after update of state on public.account_erasure_operations for each row
+  when (new.mode = 'AUTOMATIC_INACTIVITY' and old.state <> 'COMPLETE' and new.state = 'COMPLETE')
+  execute function public.account_automatic_erasure_drop_notice_data();
+
 notify pgrst, 'reload schema';
 commit;

@@ -163,6 +163,25 @@ export async function runManualAccountErasure(request, actorId, payload) {
 const AUTOMATIC_WORK_KEYS = ['noticeId', 'targetUserId', 'actorId', 'revision', 'authUserCreatedAt', 'recipientDigest', 'kind'];
 const AUTOMATIC_BATCH_LIMIT = 2;
 
+export const AUTOMATIC_ACCOUNT_ERASURE_HEADER = 'X-RavRadar-Automatic-Account-Erasure';
+
+export async function runScheduledAccountErasure(request) {
+  if (request.method !== 'POST' || request.headers.has('origin') || request.body !== null
+    || request.headers.get(AUTOMATIC_ACCOUNT_ERASURE_HEADER) !== 'schedule-v1') {
+    fail('ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN', 403);
+  }
+  const key = configured('SUPABASE_SERVICE_ROLE_KEY');
+  const expectedAuthorization = key.startsWith('sb_secret_') ? key : 'Bearer ' + key;
+  const authorization = request.headers.get(key.startsWith('sb_secret_') ? 'apikey' : 'authorization');
+  if (key.length < 32 || !authorization || authorization.length !== expectedAuthorization.length)
+    fail('ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN', 403);
+  const [expected, actual] = await Promise.all([sha256Hex(expectedAuthorization), sha256Hex(authorization)]);
+  let mismatch = 0;
+  for (let index = 0; index < expected.length; index += 1) mismatch |= expected.charCodeAt(index) ^ actual.charCodeAt(index);
+  if (mismatch) fail('ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN', 403);
+  return runAutomaticAccountErasureBatch();
+}
+
 export async function runAutomaticAccountErasureBatch() {
   const config = configuration();
   const headers = serviceHeaders(configured('SUPABASE_SERVICE_ROLE_KEY'));

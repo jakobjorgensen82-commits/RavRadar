@@ -16,6 +16,8 @@ import {pipeline} from 'node:stream/promises';
 import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
 import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-native-fixture.mjs';
 import {inactivityNoticeBody} from '../supabase/functions/_shared/inactivity-notice-mail.mjs';
+import {externalOwnerSubject} from '../supabase/functions/_shared/trip-storage.js';
+import {exerciseIsolatedTripErasureSqlite} from './lib/isolated-trip-erasure-sqlite.mjs';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
@@ -1643,12 +1645,33 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     const toKeep=await fresh();
     const cancelledWork=await prepareAutomatic(toKeep);
     await advanceNotice(cancelledWork);
+    await flags(toKeep.id,{mode:'hold-after-capture'});
+    let releaseAutomaticLogin;
+    const automaticLoginGate=new Promise(resolve=>{releaseAutomaticLogin=resolve;});
+    const automaticLoginLock=(async function*(){
+      yield Buffer.from("set local application_name='rr_auto_login_barrier';select pg_advisory_xact_lock(17030001);\n");
+      await automaticLoginGate;yield Buffer.from('select 1;\n');
+    })();
+    const automaticLoginHolder=track(psql(c,p,'NATIVE_AUTOMATIC_LOGIN_BARRIER',automaticLoginLock));
+    try{
+      let observed=false;
+      for(let check=0;check<40&&!observed;check++){
+        observed=await value("select to_jsonb(exists(select 1 from pg_catalog.pg_stat_activity where application_name='rr_auto_login_barrier' and state='idle in transaction'))");
+        if(!observed)await sleep(10);
+      }
+      need(observed,'NATIVE_AUTOMATIC_LOGIN_BARRIER_NOT_OBSERVED');
+      const signIn=track(login(toKeep));
+      await waitLock('rr_native_capture_hook','advisory');
+      await assert.rejects(()=>stageAutomatic(cancelledWork,toKeep),{code:'SQLSTATE_55P03'});
+      releaseAutomaticLogin();
+      await automaticLoginHolder;
+      await signIn;
+    }finally{releaseAutomaticLogin();await automaticLoginHolder.catch(()=>{});}
     await flags(toKeep.id);
-    await login(toKeep);
     assert.equal((await status(cancelledWork.receipt)).state,'CANCELLED');
     await assert.rejects(()=>stageAutomatic(cancelledWork,toKeep),{code:'SQLSTATE_22023'});
     assert.equal(await remains(toKeep),true);
-    automaticCases.push('CURRENT_AUTH_BINDING_AND_LOGIN_RECHECK');
+    automaticCases.push('CURRENT_AUTH_BINDING_AND_LOGIN_FIRST_RACE');
     await sql(`insert into public.observations(id,user_id) values (7281,'${toErase.id}');`);
     const staged=await stageAutomatic(ready,toErase),op=staged.operationId;
     assert.equal(staged.mode,'AUTOMATIC_INACTIVITY');
@@ -1659,7 +1682,9 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     assert.deepEqual((await automaticWork()).rows.map(row=>[row.noticeId,row.kind]),[[op,'RESUME']]);
     await assert.rejects(()=>rpc('authenticated',`public.get_account_erasure_status('${op}')`),{code:'SQLSTATE_22023'});
     automaticCases.push('DURABLE_STAGE_AND_SHUTDOWN_SAFE_RESUME');
-    const attempt=crypto.randomUUID(),subject='usr_v1_'+'x'.repeat(43);
+    const attempt=crypto.randomUUID(),syntheticSubjectKey='synthetic-private-owner-subject-key-only';
+    const subject=(await externalOwnerSubject({userId:toErase.id,secret:syntheticSubjectKey})).subject;
+    const otherSubject=(await externalOwnerSubject({userId:toKeep.id,secret:syntheticSubjectKey})).subject;
     const authClaim=createdAt=>rpc('service_role',`public.claim_account_erasure_auth('${op}','${fixtureActorId}',
       null,'${attempt}',${sqlString(createdAt)},'${subject}')`);
     await assert.rejects(()=>authClaim('2020-01-01T00:00:00Z'),{code:'SQLSTATE_40001'});
@@ -1674,6 +1699,18 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     assert.equal(authAck.state,'AUTH_ABSENT_D1_PENDING');
     assert.equal(authAck.complete,false);
     automaticCases.push('REAL_AUTH_DELETE_AND_PENDING_WITHOUT_D1_ACK');
+    const tripStorage=await exerciseIsolatedTripErasureSqlite(subject,otherSubject);
+    const complete=await rpc('service_role',`public.acknowledge_account_erasure_d1('${op}',
+      '${fixtureActorId}','${attempt}','${subject}',${tripStorage.deletedCount})`);
+    assert.equal(complete.state,'COMPLETE');
+    assert.equal(complete.d1DeletedCount,tripStorage.deletedCount);
+    const minimized=await value(`select jsonb_build_object(
+      'retainedFence',exists(select 1 from public.account_erasure_operations where operation_id='${op}'),
+      'noticeAbsent',not exists(select 1 from public.account_inactivity_notices where target_user_id='${toErase.id}'),
+      'admissionAbsent',not exists(select 1 from public.account_automatic_erasure_admissions where operation_id='${op}'),
+      'survivorNoticePreserved',exists(select 1 from public.account_inactivity_notices where target_user_id='${toKeep.id}'));`);
+    assert.deepEqual(minimized,{retainedFence:true,noticeAbsent:true,admissionAbsent:true,survivorNoticePreserved:true});
+    automaticCases.push('SIGNED_WORKER_SQLITE_PURGE_AND_DURABLE_COMPLETE');
     return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
       sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
       exactFunctionBodiesVerified:true,appScaffoldingSynthetic:true,realTwoYearHistoryVerified:false,
@@ -1681,7 +1718,7 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
       providerDeliverySynthetic:true,mailPostExecuted:false,controllerNoPostProof:'SQL_AUTHORITY_FALSE_ONLY',
       automaticErasureEnabled:false,hostedHookConfigured:false,productionAuthVerified:false,
       rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases,
-      isolatedAutomaticErasure:{cases:automaticCases,realAuthDelete:true,d1PhysicalDeletionExecuted:false,
+      isolatedAutomaticErasure:{cases:automaticCases,realAuthDelete:true,tripStorage,
         syntheticDelivery:true,productionActivation:false}});
   }catch(error){firstError=error;throw error;}
   finally{

@@ -1,0 +1,43 @@
+name: Process due RavRadar account erasures
+
+on:
+  schedule:
+    - cron: '47 7 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ vars.RAVRADAR_AUTOMATIC_ACCOUNT_ERASURE == 'enabled' && 'ravradar-weather-production-v2' || 'ravradar-account-erasure-inactive' }}
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  account-erasure:
+    if: >-
+      github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'schedule' &&
+      github.run_attempt == 1 &&
+      vars.RAVRADAR_AUTOMATIC_ACCOUNT_ERASURE == 'enabled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Reconfirm the current main revision before access
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: test "$(gh api repos/"$GITHUB_REPOSITORY"/git/ref/heads/main --jq .object.sha)" = "$GITHUB_SHA"
+      - name: Process a bounded batch of due account erasures
+        run: node scripts/run-automatic-account-erasure.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

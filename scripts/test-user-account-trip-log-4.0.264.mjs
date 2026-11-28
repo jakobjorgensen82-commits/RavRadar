@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isManualAccountErasureOperation, validateManualAccountErasurePayload, MANUAL_ACCOUNT_ERASURE_CONFIRMATION }
+import { AUTOMATIC_ACCOUNT_ERASURE_HEADER, isManualAccountErasureOperation, validateManualAccountErasurePayload, MANUAL_ACCOUNT_ERASURE_CONFIRMATION }
   from '../supabase/functions/_shared/account-lifecycle.js';
 import fs from 'node:fs';
 
@@ -411,6 +411,8 @@ const edgeScope = {
   requireAuthenticatedUserId: async () => {
     edgeCalls.push(['auth']); if (!edgeUser) throw new TestGatewayError(401, 'LOGIN_REQUIRED'); return edgeUser;
   },
+  AUTOMATIC_ACCOUNT_ERASURE_HEADER,
+  runScheduledAccountErasure: async () => { throw new TestGatewayError(403, "ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN"); },
   isManualAccountErasureOperation, validateManualAccountErasurePayload,
   runManualAccountErasure: async (_request, actor, payload) => {
     edgeCalls.push(['account-erasure', actor, payload.operation, payload.operationId]);
