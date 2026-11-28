@@ -4,6 +4,8 @@ Den afgrænsede installation genbruger den almindelige backendvej. Den kræver i
 
 Isoleret PostgreSQL og GoTrue har afprøvet installationen, varslets tidsfrist, login før sletning, sletning af kontoen og dens ture i ti lokale databaser samt beskyttelsen under gendannelse. Mailtransporten var simuleret. Produktionsinstallation og den eksisterende mailleverandørs leveringskvittering mangler fortsat. De tidligere PostgreSQL-kvitteringer beholder deres oprindelige omfang.
 
+Den lokale ejerprøve bruger samme opslag af leveringskvitteringen som den planlagte varsling. Den midlertidige funktion læser kvitteringen for sin ene faste prøvemail med den eksisterende nøgle. Den registrerer kun en leveringskategori. En leveringskvittering skal passe til afsender, modtager og besked. Faktisk leverandørprøve og aktivering af automatik afventer fortsat.
+
 ## 25. november — Spørg RavRadars lokale sprogkandidat
 
 Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog, den åbne fane viser. Et opfølgende spørgsmål om en anden dag bruger samme samtale og søger i prognosen for den nye dag.

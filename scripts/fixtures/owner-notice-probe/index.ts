@@ -1,5 +1,6 @@
 import { requireAuthenticatedUserId } from "../_shared/public-gateway.ts";
 import { tripGatewaySignature, verifyTripGatewaySignature } from "../_shared/trip-storage.js";
+import { readInactivityNoticeDelivery } from "../_shared/inactivity-notice-mail.mjs";
 import { createHostedOwnerNoticeProbe } from "./hosted-owner-adapter-v1/hosted-owner-notice-probe.mjs";
 import reservation from "./reservation.mjs";
 
@@ -133,6 +134,24 @@ export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
         method: request.method, headers: request.headers, signal: request.signal,
       }) : request;
     const response = await handleProbe(probeRequest);
+    if (response.status === 200 && Date.now() < expiresAt) {
+      // Only the authenticated, one-recipient acceptance can authorize this read.
+      // Keep the admin response and send result unchanged.
+      try {
+        const { providerId } = await response.clone().json();
+        const remaining = expiresAt - Date.now();
+        if (remaining > 0) {
+          const delivery = await readInactivityNoticeDelivery({
+            key: Deno.env.get("RAVRADAR_RESEND_NOTICE_SEND_KEY"),
+            providerId, recipient, probe: true,
+            signal: AbortSignal.timeout(Math.min(3_000, remaining)),
+          });
+          console.info("OWNER_NOTICE_PROBE_PROVIDER_DELIVERY", delivery);
+        }
+      } catch {
+        console.info("OWNER_NOTICE_PROBE_PROVIDER_DELIVERY", "unavailable");
+      }
+    }
     for (const [header, value] of Object.entries(CORS)) response.headers.set(header, value);
     return response;
   };
