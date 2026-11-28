@@ -12,6 +12,10 @@
 
 - Zonepanelet viser fortsat vandstandsprognosen time for time. Det særskilte felt for vandstandsændring over tre timer er fjernet.
 
+## Drift — privatkontrol ved prognosegemning
+
+- Et forslag reducerer gentaget kontrol af ens nøgler i en prognoses gemte beregningsdata. Det er afprøvet i en isoleret database og afventer leveringskontrol.
+
 ## Drift — installation af kontovarsling og kontosletning
 
 - Kontoskemaet kan installeres via den afgrænsede backendvej. Kataloget kontrollerer efter installationen, at automatisk varsling og sletning står slået fra.
@@ -28,6 +32,10 @@
 ## Drift — tid til vandstand sidst i prognosen
 
 - Den sene vandstandsrunde får en afgrænset del af DMI's arbejdsbudget, når den kvalificerede plan viser reelle huller. De kritiske henteopgaver får deres hidtidige første mulighed, og afbrudt fillæsning bevarer originale råfiler til genbrug. Den faktiske offentlige dækning måles efter almindelig drift.
+
+## Udvikling — genbrug af databaseprøven efter afbrudt forberedelse
+
+- GitHub kan genbruge en tidligere databasekvittering, når en senere kontrol blev afbrudt efter binding til kildekoden og før den fælles kildekontrol. Samme workflow og databaseinput samt GitHubs kvittering for alle trin er påkrævet. Lokal afprøvning er gennemført. Måling i GitHub afventer.
 
 ## Drift — nye vandstandsfiler under DMI-hentningen
 

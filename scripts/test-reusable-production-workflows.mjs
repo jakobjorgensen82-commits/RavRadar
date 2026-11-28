@@ -1188,12 +1188,13 @@ await withFrozenNative0600TestSource('routing',async frozenRoot=>{
     const guard=indentedBody(binding,'      - name: '+name).match(/^        if: (.+)$/m)?.[1];
     assert(guard,'The Edge step must have its normal mode guard');
     const expression=guard.replace('steps.integrated-implementation','steps.integratedImplementation');
-    for(let mode=0;mode<16;mode++){
-      const [erasure,receipt,diagnose,defer]=[1,2,4,8].map(bit=>Boolean(mode&bit));
-      const inputs={install_account_erasure:erasure,install_account_native_receipt:receipt,diagnose_current_grid_original:diagnose};
+    for(let mode=0;mode<32;mode++){
+      const [erasure,receipt,diagnose,defer,checkpointPrivacy]=[1,2,4,8,16].map(bit=>Boolean(mode&bit));
+      const inputs={install_account_erasure:erasure,install_account_native_receipt:receipt,diagnose_current_grid_original:diagnose,
+        confirmation:checkpointPrivacy?'APPLY-CHECKPOINT-PRIVACY':'APPLY-WEATHER-MODEL-BINDING'};
       const steps={integratedImplementation:{outputs:{defer_edges:String(defer)}}};
-      assert.equal(runInNewContext(expression,{inputs,steps}),!erasure&&!receipt&&!diagnose&&!defer,
-        'Every account-only or read-only mode and the independent current-grid floor must prevent Edge deployment');
+      assert.equal(runInNewContext(expression,{inputs,steps}),!erasure&&!receipt&&!diagnose&&!defer&&!checkpointPrivacy,
+        'Account-only, read-only and checkpoint-only modes and the current-grid floor prevent Edge deployment');
     }
   }
 

@@ -1,3 +1,9 @@
+## 28. november — privatkontrol ved prognosegemning
+
+- [x] Find de to afbrudte databaseskridt i Supabases log og bind dem til den faktisk installerede skrivefunktion.
+- [x] Afprøv hurtigere kontrol af forbudte nøgler gennem den eksisterende skrivefunktion i en isoleret database.
+- [ ] Indpas migrationen i den normale kontrollerede installationsvej. Bekræft funktionens adgang og en efterfølgende almindelig prognosegemning i drift.
+
 ## 28. november — kontofunktionernes installation og verificering
 
 - [x] Afprøv den isolerede kontoproces mod PostgreSQL, GoTrue og ti lokale turdatabaser. Verificér kataloget og begge kontakter efter installationen.
