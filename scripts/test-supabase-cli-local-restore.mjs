@@ -1450,7 +1450,7 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     await sql(`insert into public.profiles(id,email,role) values('${created.id}','owned-native-target@example.invalid','user');`);
     return {id:created.id,email,password,createdAt:created.created_at};
   };
-  const qualify=async target=>{
+  const seedInactivityEvidence=async target=>{
     // SYNTHETIC history/delivery attestation, never a two-year real-world claim.
     await sql(`update public.account_inactivity_policy set notices_enabled=true,coverage_status='CAPTURING',
       coverage_started_at=clock_timestamp()-interval '3 years',delivery_qualified=true where singleton;
@@ -1462,6 +1462,9 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
         from public.account_inactivity_policy where singleton on conflict(user_id) do update set
         first_observed_at=excluded.first_observed_at,last_activity_at=excluded.last_activity_at,coverage_epoch=excluded.coverage_epoch;
       update public.account_inactivity_notices set state='CANCELLED',delete_not_before=null where target_user_id='${target.id}';`);
+  };
+  const qualify=async target=>{
+    await seedInactivityEvidence(target);
     const notice=crypto.randomUUID(),prepared=await rpc('authenticated',`public.prepare_account_inactivity_notice('${notice}','${target.id}')`);
     try{return nativeActivityQualifiedReady(prepared);}
     catch(error){throw await nativeActivityNoticePolicyFailure(error,c,p,target.id);}
@@ -1711,6 +1714,44 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
       'survivorNoticePreserved',exists(select 1 from public.account_inactivity_notices where target_user_id='${toKeep.id}'));`);
     assert.deepEqual(minimized,{retainedFence:true,noticeAbsent:true,admissionAbsent:true,survivorNoticePreserved:true});
     automaticCases.push('SIGNED_WORKER_SQLITE_PURGE_AND_DURABLE_COMPLETE');
+    const noticeCases=[];
+    const noticeMigration='supabase/migrations/20261128103000_account_automatic_notices_off.sql';
+    await psql(c,p,'NATIVE_AUTOMATIC_NOTICE_INSTALL',await fs.readFile(path.join(source.root,noticeMigration)));
+    const chooseNotices=()=>rpc('service_role','public.prepare_account_automatic_notice_work()');
+    await sql(`update public.account_inactivity_policy set coverage_epoch='${crypto.randomUUID()}' where singleton;`);
+    const toWarn=await fresh(), manualTarget=await fresh(), recent=await fresh();
+    await seedInactivityEvidence(toWarn);
+    const manualReady=await qualify(manualTarget);
+    await flags(recent.id);await login(recent);
+    assert.deepEqual((await chooseNotices()).rows,[]);
+    await assert.rejects(()=>rpc('authenticated','public.prepare_account_automatic_notice_work()'),{code:'SQLSTATE_42501'});
+    noticeCases.push('DEFAULT_OFF_AND_BROWSER_DENIED');
+    await sql('update public.account_automatic_notice_policy set enabled=true where singleton;');
+    const selected=(await chooseNotices()).rows;
+    assert.deepEqual(selected.map(row=>[row.targetUserId,row.actorId,row.kind]),[[toWarn.id,fixtureActorId,'SEND']]);
+    const dueNotice=selected[0];
+    assert.notEqual(dueNotice.noticeId,manualReady.noticeId);
+    assert.equal((await chooseNotices()).rows[0].noticeId,dueNotice.noticeId);
+    noticeCases.push('ONLY_QUALIFIED_INACTIVE_AND_EXISTING_MANUAL_EXCLUDED');
+    const beforeClaim=await status(dueNotice),noticeAttempt=crypto.randomUUID(),mailProvider=crypto.randomUUID();
+    const digest=crypto.createHash('sha256').update(JSON.stringify(inactivityNoticeBody(toWarn.email))).digest('hex');
+    const claimAuto=hash=>rpc('service_role',`public.claim_account_automatic_notice('${dueNotice.noticeId}','${fixtureActorId}',
+      ${BigInt(beforeClaim.revision)},'${noticeAttempt}','${hash}',${sqlString(toWarn.createdAt)})`);
+    assert.equal((await claimAuto('0'.repeat(64))).shouldSend,false);
+    const firstMail=await claimAuto(digest);assert.equal(firstMail.shouldSend,true);
+    assert.equal((await claimAuto(digest)).shouldSend,false);
+    noticeCases.push('HASH_BOUND_CLAIM_AND_SINGLE_POST_AUTHORITY');
+    const acceptedMail=await acknowledge(firstMail,noticeAttempt,'accepted',mailProvider);
+    assert.equal(acceptedMail.deleteNotBefore,null);
+    const secondWarn=await fresh();await seedInactivityEvidence(secondWarn);
+    const mixedWork=(await chooseNotices()).rows;
+    assert.deepEqual(mixedWork.map(row=>row.kind).sort(),['POLL','SEND']);
+    assert.equal(mixedWork.find(row=>row.kind==='POLL').targetUserId,toWarn.id);
+    assert.equal(mixedWork.find(row=>row.kind==='SEND').targetUserId,secondWarn.id);
+    const deliveredMail=await acknowledge(acceptedMail,noticeAttempt,'delivered',mailProvider);
+    assert.equal(deliveredMail.state,'DELIVERED');assert.ok(deliveredMail.deleteNotBefore);
+    assert((await chooseNotices()).rows.every(row=>row.noticeId!==dueNotice.noticeId));
+    noticeCases.push('POLL_FAIRNESS_AND_CONFIRMED_DELIVERY_STARTS_DEADLINE');
     return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
       sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
       exactFunctionBodiesVerified:true,appScaffoldingSynthetic:true,realTwoYearHistoryVerified:false,
@@ -1719,7 +1760,8 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
       automaticErasureEnabled:false,hostedHookConfigured:false,productionAuthVerified:false,
       rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases,
       isolatedAutomaticErasure:{cases:automaticCases,realAuthDelete:true,tripStorage,
-        syntheticDelivery:true,productionActivation:false}});
+        syntheticDelivery:true,productionActivation:false},
+      isolatedAutomaticNotice:{cases:noticeCases,syntheticDelivery:true,realMailSent:false,productionActivation:false}});
   }catch(error){firstError=error;throw error;}
   finally{
     const settled=await Promise.allSettled(pending);

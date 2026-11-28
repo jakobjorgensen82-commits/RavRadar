@@ -1,7 +1,7 @@
 import { GatewayError } from './public-gateway.ts';
 import { accountLifecycleConfiguration as configuration, accountLifecycleSetting as setting,
   accountLifecycleServiceHeaders as serviceHeaders, accountLifecycleRequestJson as requestJson,
-  accountLifecycleRpc as rpc } from './account-lifecycle.js';
+  accountLifecycleRpc as rpc, requireAccountAutomationRequest } from './account-lifecycle.js';
 import { inactivityNoticeBody, sendInactivityNotice } from './inactivity-notice-mail.mjs';
 import { sha256Hex } from './trip-storage.js';
 
@@ -72,33 +72,74 @@ export async function runAccountInactivityNotice(request,actorId,payload){
  if(status.state==='HELD'&&!status.accepted)status=checkedAccountInactivityNotice(await rpc(config,'prepare_account_inactivity_notice',{
   p_notice:payload.noticeId,p_target:status.targetUserId},ownerHeaders),payload.noticeId);
  if(['CANCELLED','DELIVERED'].includes(status.state)||BLOCKED.includes(status.holdReason))return status;
- const headers=serviceHeaders(setting('SUPABASE_SERVICE_ROLE_KEY')),actor={p_notice:payload.noticeId,p_actor:actorId};
- const readService=async()=>checkedAccountInactivityNotice(await rpc(config,'get_account_inactivity_notice_service_status',actor,headers),payload.noticeId,true);
+ return advanceBoundInactivityNotice({config,actorId,noticeId:payload.noticeId,attemptId:payload.attemptId,
+  status,readStatus:readOwner});
+}
+
+export async function runScheduledAccountNotices(request) {
+ await requireAccountAutomationRequest(request,'notice-v1');
+ const config=configuration();
+ const headers=serviceHeaders(setting('SUPABASE_SERVICE_ROLE_KEY'));
+ const work=await rpc(config,'prepare_account_automatic_notice_work',{},headers);
+ if(!exact(work,['scope','rows'])||work.scope!=='account-automatic-notice-work'||!Array.isArray(work.rows)||work.rows.length>2)
+  fail('ACCOUNT_NOTICE_SCHEMA_UNAVAILABLE');
+ const notices=new Set(),targets=new Set();
+ for(const row of work.rows){
+  if(!exact(row,['noticeId','targetUserId','actorId','kind'])||!id(row.noticeId)||!id(row.targetUserId)||!id(row.actorId)
+   ||row.actorId===row.targetUserId||!['SEND','POLL'].includes(row.kind)||notices.has(row.noticeId)||targets.has(row.targetUserId))
+   fail('ACCOUNT_NOTICE_SCHEMA_UNAVAILABLE');
+  notices.add(row.noticeId);targets.add(row.targetUserId);
+ }
+ const result={selected:work.rows.length,completed:0,pending:0,failed:0};
+ for(const row of work.rows){
+  try{
+   const actor={p_notice:row.noticeId,p_actor:row.actorId};
+   const readStatus=async()=>publicStatus(checkedAccountInactivityNotice(await rpc(config,'get_account_inactivity_notice_service_status',
+    actor,headers),row.noticeId,true));
+   const state=await advanceBoundInactivityNotice({config,...row,attemptId:crypto.randomUUID(),readStatus,
+    status:{targetUserId:row.targetUserId},scheduleKind:row.kind});
+   if(['CANCELLED','DELIVERED'].includes(state.state))result.completed+=1;else result.pending+=1;
+  }catch{result.failed+=1;}
+ }
+ return result;
+}
+
+async function advanceBoundInactivityNotice({config,actorId,noticeId,attemptId,status,readStatus,scheduleKind=null}) {
+ const headers=serviceHeaders(setting('SUPABASE_SERVICE_ROLE_KEY')),actor={p_notice:noticeId,p_actor:actorId};
+ const readService=async()=>checkedAccountInactivityNotice(await rpc(config,'get_account_inactivity_notice_service_status',actor,headers),noticeId,true);
  let privateStatus=await readService();
+ if(privateStatus.targetUserId!==status.targetUserId)fail('ACCOUNT_NOTICE_SCHEMA_UNAVAILABLE');
+ if(scheduleKind&&(['CANCELLED','DELIVERED'].includes(privateStatus.state)||BLOCKED.includes(privateStatus.holdReason)
+  ||!privateStatus.accepted&&(scheduleKind!=='SEND'||privateStatus.state!=='READY')))return publicStatus(privateStatus);
  const hold=async reason=>checkedAccountInactivityNotice(await rpc(config,'hold_account_inactivity_notice',{
-  ...actor,p_expected_revision:privateStatus.revision,p_reason:reason},headers),payload.noticeId);
+  ...actor,p_expected_revision:privateStatus.revision,p_reason:reason},headers),noticeId);
+ const unavailable=()=>{
+  if(scheduleKind==='SEND'&&!privateStatus.accepted)fail('ACCOUNT_NOTICE_AUTH_UNAVAILABLE');
+  return hold('AUTH_UNAVAILABLE');
+ };
  let auth;
- try{auth=await requestJson(config.base+'/auth/v1/admin/users/'+status.targetUserId,{method:'GET',headers});}catch{return hold('AUTH_UNAVAILABLE');}
+ try{auth=await requestJson(config.base+'/auth/v1/admin/users/'+status.targetUserId,{method:'GET',headers});}catch{return unavailable();}
  if(auth.status===404&&auth.data?.error_code==='user_not_found')return hold('TARGET_MISSING');
  if(auth.status!==200||auth.data?.id!==status.targetUserId||!generation(auth.data.created_at)
-  ||typeof auth.data.email!=='string'||auth.data.email.length>254)return hold('AUTH_UNAVAILABLE');
+  ||typeof auth.data.email!=='string'||auth.data.email.length>254)return unavailable();
  // The private digest binds the complete wire body (recipient AND template).
  const body=inactivityNoticeBody(auth.data.email,false),digest=await sha256Hex(JSON.stringify(body));
  if(privateStatus.authUserCreatedAt!==null&&(privateStatus.authUserCreatedAt!==auth.data.created_at||privateStatus.recipientDigest!==digest))return hold('TARGET_CHANGED');
  const key=setting('RAVRADAR_RESEND_NOTICE_SEND_KEY');
  if(!privateStatus.accepted){
-  const claim=checkedAccountInactivityNotice(await rpc(config,'claim_account_inactivity_notice',{
-   ...actor,p_expected_revision:privateStatus.revision,p_attempt:payload.attemptId,p_recipient_digest:digest,
-   p_auth_created_at:auth.data.created_at},headers),payload.noticeId,true,true);
+  const claimMethod=scheduleKind?'claim_account_automatic_notice':'claim_account_inactivity_notice';
+  const claim=checkedAccountInactivityNotice(await rpc(config,claimMethod,{
+   ...actor,p_expected_revision:privateStatus.revision,p_attempt:attemptId,p_recipient_digest:digest,
+   p_auth_created_at:auth.data.created_at},headers),noticeId,true,true);
   if(!claim.shouldSend)return publicStatus(claim);
   privateStatus=claim;
   // The same notice/body/idempotency key, within the original 23h window. A new
   // explicit resume gets one CAS attempt; no automatic transport retry exists.
-  const receipt=await sendInactivityNotice({key,recipient:auth.data.email,noticeId:payload.noticeId,
+  const receipt=await sendInactivityNotice({key,recipient:auth.data.email,noticeId:noticeId,
    reservedAt:Date.parse(claim.reservedAt),probe:false});
   try{status=checkedAccountInactivityNotice(await rpc(config,'acknowledge_account_inactivity_notice',{
-   ...actor,p_expected_revision:claim.revision,p_attempt:payload.attemptId,p_outcome:receipt.state,
-   p_provider:receipt.state==='accepted'?receipt.providerId:null},headers),payload.noticeId);}catch{return readOwner();}
+   ...actor,p_expected_revision:claim.revision,p_attempt:attemptId,p_outcome:receipt.state,
+   p_provider:receipt.state==='accepted'?receipt.providerId:null},headers),noticeId);}catch{return readStatus();}
   if(!status.accepted||status.state==='CANCELLED')return status;
   privateStatus=await readService();
  }
@@ -110,8 +151,8 @@ export async function runAccountInactivityNotice(request,actorId,payload){
  if(provider.status!==200||data?.id!==privateStatus.providerId||data.from!==body.from
   ||JSON.stringify(data.to)!==JSON.stringify(body.to)||data.subject!==body.subject||data.text!==body.text
   ||JSON.stringify(data.reply_to)!==JSON.stringify([body.reply_to]))return hold('DELIVERY_UNAVAILABLE');
- if(data.last_event!=='delivered')return readOwner();
+ if(data.last_event!=='delivered')return readStatus();
  try{return checkedAccountInactivityNotice(await rpc(config,'acknowledge_account_inactivity_notice',{
   ...actor,p_expected_revision:privateStatus.revision,p_attempt:privateStatus.attemptId,p_outcome:'delivered',
-  p_provider:privateStatus.providerId},headers),payload.noticeId);}catch{return readOwner();}
+  p_provider:privateStatus.providerId},headers),noticeId);}catch{return readStatus();}
 }

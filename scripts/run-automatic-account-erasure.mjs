@@ -6,7 +6,8 @@ function refuse(code) {
   throw new Error(code);
 }
 
-export async function runAutomaticAccountErasureSchedule(env, fetchImpl = fetch) {
+export async function runAutomaticAccountErasureSchedule(env, fetchImpl = fetch, kind = 'schedule-v1') {
+  if (!['schedule-v1','notice-v1'].includes(kind)) refuse('ACCOUNT_ERASURE_OPERATION_INVALID');
   if (env.GITHUB_REPOSITORY !== 'jakobjorgensen82-commits/RavRadar' || env.GITHUB_REF !== 'refs/heads/main'
     || env.GITHUB_EVENT_NAME !== 'schedule' || env.GITHUB_RUN_ATTEMPT !== '1') {
     refuse('ACCOUNT_ERASURE_SCHEDULE_REQUIRED');
@@ -18,7 +19,7 @@ export async function runAutomaticAccountErasureSchedule(env, fetchImpl = fetch)
     || url.username || url.password || url.port || url.search || url.hash) refuse('ACCOUNT_ERASURE_TARGET_INVALID');
   const key = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!key || key.length < 32) refuse('ACCOUNT_ERASURE_CREDENTIAL_UNAVAILABLE');
-  const headers = {...buildSupabaseAdminHeaders(key), 'X-RavRadar-Automatic-Account-Erasure':'schedule-v1'};
+  const headers = {...buildSupabaseAdminHeaders(key), 'X-RavRadar-Automatic-Account-Erasure':kind};
   let response;
   try {
     response = await fetchImpl(url.origin + '/functions/v1/trip-log', {
@@ -55,7 +56,9 @@ export async function runAutomaticAccountErasureSchedule(env, fetchImpl = fetch)
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const result = await runAutomaticAccountErasureSchedule(process.env);
+    const args = process.argv.slice(2);
+    if (args.length > 1 || args.length === 1 && args[0] !== '--notice') refuse('ACCOUNT_ERASURE_OPERATION_INVALID');
+    const result = await runAutomaticAccountErasureSchedule(process.env, fetch, args.length ? 'notice-v1' : 'schedule-v1');
     console.log(JSON.stringify(result));
     if (result.failed > 0) process.exitCode = 1;
   } catch (error) {

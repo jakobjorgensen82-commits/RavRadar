@@ -165,9 +165,9 @@ const AUTOMATIC_BATCH_LIMIT = 2;
 
 export const AUTOMATIC_ACCOUNT_ERASURE_HEADER = 'X-RavRadar-Automatic-Account-Erasure';
 
-export async function runScheduledAccountErasure(request) {
+export async function requireAccountAutomationRequest(request, kind) {
   if (request.method !== 'POST' || request.headers.has('origin') || request.body !== null
-    || request.headers.get(AUTOMATIC_ACCOUNT_ERASURE_HEADER) !== 'schedule-v1') {
+    || !['schedule-v1', 'notice-v1'].includes(kind) || request.headers.get(AUTOMATIC_ACCOUNT_ERASURE_HEADER) !== kind) {
     fail('ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN', 403);
   }
   const key = configured('SUPABASE_SERVICE_ROLE_KEY');
@@ -179,6 +179,10 @@ export async function runScheduledAccountErasure(request) {
   let mismatch = 0;
   for (let index = 0; index < expected.length; index += 1) mismatch |= expected.charCodeAt(index) ^ actual.charCodeAt(index);
   if (mismatch) fail('ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN', 403);
+}
+
+export async function runScheduledAccountErasure(request) {
+  await requireAccountAutomationRequest(request, 'schedule-v1');
   return runAutomaticAccountErasureBatch();
 }
 

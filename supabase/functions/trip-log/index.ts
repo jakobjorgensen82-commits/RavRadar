@@ -22,12 +22,14 @@ import { readAdminTripCount } from "../_shared/admin-trip-count.ts";
 import { readAdminAccountCategories, validateAdminCategoryIds } from "../_shared/admin-account-categories.ts";
 import { AUTOMATIC_ACCOUNT_ERASURE_HEADER, runScheduledAccountErasure, isManualAccountErasureOperation,
   runManualAccountErasure, validateManualAccountErasurePayload } from "../_shared/account-lifecycle.js";
-import { runAccountInactivityNotice, validateAccountInactivityNoticePayload } from "../_shared/account-inactivity-notice.js";
+import { runAccountInactivityNotice, runScheduledAccountNotices, validateAccountInactivityNoticePayload } from "../_shared/account-inactivity-notice.js";
 
 Deno.serve(async (request) => {
   try {
     if (request.headers.has(AUTOMATIC_ACCOUNT_ERASURE_HEADER)) {
-      const outcome = await runScheduledAccountErasure(request);
+      const outcome = request.headers.get(AUTOMATIC_ACCOUNT_ERASURE_HEADER) === "notice-v1"
+        ? await runScheduledAccountNotices(request)
+        : await runScheduledAccountErasure(request);
       return new Response(JSON.stringify(outcome), {
         status: outcome.failed ? 503 : 200,
         headers: { "Content-Type": "application/json", "Cache-Control": "private, no-store" },
