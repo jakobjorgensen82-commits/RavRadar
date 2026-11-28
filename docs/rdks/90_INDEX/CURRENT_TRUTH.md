@@ -1,3 +1,7 @@
+## 28. november — hurtigere privatkontrol ved prognosegemning
+
+Et lokalt forslag samler ens JSON-nøgler, før den eksisterende normalisering og liste over forbudte felter anvendes. Den fulde skrivefunktion gav samme gemte indhold, versionsnummer og kvittering i en isoleret prøve med 673 kystdele. Prøven omfattede genforsøg og afvisning af en forbudt indlejret nøgle. Den installerede tidsgrænse er fortsat 55 sekunder. Den normale installationsvej og virkningen i drift mangler at blive verificeret.
+
 ## 28. november — kontovarsling og kontosletning klargjort med automatikken slået fra
 
 Den afgrænsede installation genbruger den almindelige backendvej. Den kræver installeret gendannelsesskema og en frisk genlæsning af den åbne lås. Migreringsplanen accepterer kun de to nye kontoændringer i deres faste rækkefølge. Efter skrivning kontrolleres kataloget, de eksisterende begrænsninger, de nye funktioner og begge kontopolitiske kontakter direkte. Aktivitetsregistrering og automatisk varsling eller sletning er separate trin.

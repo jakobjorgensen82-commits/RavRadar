@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: "Bekræft den ønskede binding, kontoændring, APPLY-TRIP-RECOVERY-SCHEMA eller APPLY-AUTOMATIC-ACCOUNT-OFF"
+        description: "Bekræft den ønskede binding, kontoændring, APPLY-TRIP-RECOVERY-SCHEMA, APPLY-AUTOMATIC-ACCOUNT-OFF eller APPLY-CHECKPOINT-PRIVACY"
         required: true
         type: string
       install_account_erasure:
@@ -77,6 +77,7 @@ jobs:
       RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: ${{ inputs.upgrade_current_grid_original }}
       RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY: ${{ inputs.diagnose_current_grid_original }}
       RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN: ${{ inputs.upgrade_assistant_later_h0_original }}
+      RAVRADAR_CHECKPOINT_DISTINCT_PRIVACY_OPT_IN: ${{ inputs.confirmation == 'APPLY-CHECKPOINT-PRIVACY' }}
       RAVRADAR_ASSISTANT_LATER_H0_BINDING_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
       - uses: actions/checkout@v7
@@ -98,7 +99,14 @@ jobs:
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
           test -z "$TRIP_RECOVERY_REFERENCE"
-          if test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
+          if test "$RAVRADAR_CHECKPOINT_DISTINCT_PRIVACY_OPT_IN" = true; then
+            test "$GITHUB_RUN_ATTEMPT" = 1
+            test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" != true
+            test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" != true
+            test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" != true
+            test "$RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY" != true
+            test "$RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN" != true
+          elif test "$RAVRADAR_ACCOUNT_NATIVE_RECEIPT_OPT_IN" = true; then
             test "$GITHUB_RUN_ATTEMPT" = 1
             test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" != true
             test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" != true
@@ -196,6 +204,8 @@ jobs:
             extra_app_source+=(--account-native-receipt-source)
           elif test "$RAVRADAR_ACCOUNT_ERASURE_OPT_IN" = true; then
             extra_app_source+=(--account-erasure-source)
+          elif test "$RAVRADAR_CHECKPOINT_DISTINCT_PRIVACY_OPT_IN" = true; then
+            extra_app_source+=(--checkpoint-distinct-privacy-source)
           fi
           node scripts/integrated-cutover-readiness.mjs prepare-workdir \
             --statistics-preference-revision-source --output "$migration_workdir" "${extra_app_source[@]}"
@@ -300,7 +310,11 @@ jobs:
           elif test "${RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN:-false}" = true; then
             node scripts/assistant-later-h0-binding-prewrite.mjs plan
           else
-            node scripts/verify-code-only-migration-plan.mjs --checkpoint-scalar-walk-plan \
+            checkpoint_plan=--checkpoint-scalar-walk-plan
+            if test "$RAVRADAR_CHECKPOINT_DISTINCT_PRIVACY_OPT_IN" = true; then
+              checkpoint_plan=--checkpoint-distinct-privacy-plan
+            fi
+            node scripts/verify-code-only-migration-plan.mjs "$checkpoint_plan" \
               --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
               --dry-run "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt" \
               --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
@@ -389,7 +403,11 @@ jobs:
           fi
           node scripts/integrated-cutover-readiness.mjs applied \
             --migration-list "$RUNNER_TEMP/weather-binding-migrations-applied.txt" "${extra_app_readback[@]}"
-          node scripts/integrated-cutover-readiness.mjs verify-db
+          if test "$RAVRADAR_CHECKPOINT_DISTINCT_PRIVACY_OPT_IN" = true; then
+            node scripts/integrated-cutover-readiness.mjs verify-db --checkpoint-distinct-privacy-installed
+          else
+            node scripts/integrated-cutover-readiness.mjs verify-db
+          fi
 
       - name: Read back the manual account-erasure app schema
         if: inputs.install_account_erasure == true
@@ -408,7 +426,7 @@ jobs:
         run: node scripts/verify-code-only-migration-plan.mjs --read-account-native-receipt-installed
 
       - name: Reconfirm exact main before assistant Edge deployment
-        if: inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
+        if: inputs.confirmation != 'APPLY-CHECKPOINT-PRIVACY' && inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -419,7 +437,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Deploy only the exact RavRadar assistant Edge function
-        if: inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
+        if: inputs.confirmation != 'APPLY-CHECKPOINT-PRIVACY' && inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
         timeout-minutes: 5
         shell: bash
         env:
@@ -439,7 +457,7 @@ jobs:
           exit 1
 
       - name: Verify exact backend and assistant readback without weather or Pages
-        if: inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
+        if: inputs.confirmation != 'APPLY-CHECKPOINT-PRIVACY' && inputs.install_account_erasure != true && inputs.install_account_native_receipt != true && inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

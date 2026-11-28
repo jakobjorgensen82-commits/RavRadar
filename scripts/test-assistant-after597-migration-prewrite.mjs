@@ -1,6 +1,7 @@
 // Udstedelsesfri kildeprøve. Ingen database, B/S-kapabilitet eller produktion.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {test} from 'node:test';
@@ -50,6 +51,7 @@ if(AFTER599_CURRENT_MODE){
 }
 if(AFTER601_PLAN_MODE){
   const ready=await import('./integrated-cutover-readiness.mjs');
+  const {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS}=await import('./lib/account-automatic-off-source.mjs');
   const {assistantAfter601PrewritePredecessor}=await import('./assistant-later-h0-binding-prewrite.mjs');
   const {source601OriginalPredecessor}=await import('./lib/authenticated-frozen586-predecessor.mjs');
   const profile=currentSource.INACTIVE_ASSISTANT_AFTER601_SUCCESSOR;
@@ -104,6 +106,43 @@ if(AFTER601_PLAN_MODE){
     const optimized=await ready.expectedCheckpointScalarWalkContract();
     assert.equal(optimized.id,originalCheckpoint.id);
     assert.notEqual(optimized.sha256,originalCheckpoint.sha256);
+  });
+  test('checkpoint privacy installs alone and weather hydrates its original only after installation',async()=>{
+    const privacy = ready.CHECKPOINT_DISTINCT_PRIVACY_MIGRATION;
+    const prior = [...rows, ready.CHECKPOINT_SCALAR_WALK_MIGRATION, ready.TRIP_ERASURE_RECOVERY_SQL,
+      ...ACCOUNT_AUTOMATIC_OFF_MIGRATIONS];
+    const withPrivacy = [...prior, privacy];
+    const dryRunText = pending.replace(rows.at(-1).filename, privacy.filename);
+    const plan = {migrationListText: ledger(withPrivacy,prior), dryRunText};
+    await assert.rejects(ready.assertSupabaseMigrationPlan(plan),/exact source and installed predecessors/);
+    const valid = await ready.assertSupabaseMigrationPlan({...plan,allowCheckpointDistinctPrivacyPlan:true});
+    assert.deepEqual(valid.pendingVersions,[privacy.version]);
+    await assert.rejects(ready.assertSupabaseMigrationPlan({...plan,allowCheckpointDistinctPrivacyPlan:true,
+      migrationListText:ledger(withPrivacy,prior.slice(0,-1))}),/installed predecessors/);
+    await assert.rejects(ready.assertSupabaseMigrationPlan({...plan,allowCheckpointDistinctPrivacyPlan:true,
+      dryRunText:pending}),/did not propose exactly/);
+    const appliedList = ledger(withPrivacy,withPrivacy);
+    assert(ready.assertSupabaseMigrationsApplied(appliedList).appliedVersions.includes(privacy.version));
+    assert.deepEqual((await ready.assertSupabaseMigrationPlan({
+      migrationListText:appliedList, dryRunText:upToDate, allowCheckpointDistinctPrivacyPlan:true,
+    })).pendingVersions,[]);
+
+    const workdir = await fs.mkdtemp(path.join(os.tmpdir(),'ravradar-privacy-source-'));
+    try {
+      const {migrationsDirectory} = await ready.prepareTemporarySupabaseCutoverWorkdir({workdir});
+      const file = path.join(migrationsDirectory,privacy.filename);
+      await assert.rejects(fs.stat(file),{code:'ENOENT'});
+      const local = [...rows,ready.CHECKPOINT_SCALAR_WALK_MIGRATION];
+      const migrationListText = ledger(local,local)+withPrivacy.slice(local.length).map(
+        ({version})=>'\n | '+version+' | ',
+      ).join('');
+      assert.deepEqual((await ready.hydrateTemporaryRemoteMigrationHistory({
+        workdir, migrationListText,
+      })).placeholders,[]);
+      assert.equal(await fs.readFile(file,'utf8'),await ready.readCheckpointDistinctPrivacySource());
+    } finally {
+      await fs.rm(workdir,{recursive:true,force:true});
+    }
   });
   test('after601 normal prewrite rejects missing SQL80, unknown or duplicate rows and a mismatched dry run',async()=>{
     const owner=assistantAfter601PrewritePredecessor();

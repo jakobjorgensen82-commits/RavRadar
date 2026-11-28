@@ -23,7 +23,7 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
 import {SOURCE601_ORIGINAL_DATA_PROFILE} from './check-assistant-later-h0-predecessor-source.mjs';
 
 import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,assistantAfter599RequiredMigrations,
-  CHECKPOINT_SCALAR_WALK_MIGRATION} from './integrated-cutover-readiness.mjs';
+  CHECKPOINT_SCALAR_WALK_MIGRATION,CHECKPOINT_DISTINCT_PRIVACY_MIGRATION} from './integrated-cutover-readiness.mjs';
 import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
 import {ASSISTANT_AFTER599_DATABASE_LEDGER} from './lib/assistant-later-h0-successor-source.mjs';
 import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE,FROZEN599_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
@@ -2237,6 +2237,7 @@ export async function captureAssistantAfter601PgInput(options){
 }
 
 const checkpointScalarWalkPath='supabase/migrations/'+CHECKPOINT_SCALAR_WALK_MIGRATION.filename;
+const checkpointDistinctPrivacyPath='supabase/migrations/'+CHECKPOINT_DISTINCT_PRIVACY_MIGRATION.filename;
 const tripErasureMigrationPath='supabase/migrations/'+TRIP_ERASURE_RECOVERY_MIGRATION;
 const tripErasureFixturePath='scripts/lib/trip-erasure-recovery-native-fixture.mjs';
 const automaticAccountOffSourcePath='scripts/lib/account-automatic-off-source.mjs';
@@ -2312,11 +2313,19 @@ async function captureAssistantNativePgInput(options,after601){
       assert(source.mode==='100644'&&source.sha256===expected,'Automatic account OFF input changed: '+file);
     }
   }
+  const distinctPrivacy=index.has(checkpointDistinctPrivacyPath);
+  if(distinctPrivacy){
+    assert(automaticAccountOff,'Checkpoint distinct privacy requires the exact SQL85 source');
+    load([checkpointDistinctPrivacyPath]);
+    const source=await read(checkpointDistinctPrivacyPath);
+    assert(source.mode==='100644'&&source.sha256===CHECKPOINT_DISTINCT_PRIVACY_MIGRATION.sha256,
+      'Checkpoint distinct privacy SQL input changed');
+  }
   if(after601){
     const scalarWalk=sql.includes(checkpointScalarWalkPath);
     assert(!tripErasureRecovery||(scalarWalk&&tripErasureFixture),'Trip erasure recovery requires its fixture and current82 predecessor');
     const expectedSqlFiles=(scalarWalk?82:81)+Number(tripErasureRecovery)
-      +(automaticAccountOff?automaticAccountOffSql.length:0);
+      +(automaticAccountOff?automaticAccountOffSql.length:0)+Number(distinctPrivacy);
     assert(receiptPresent&&sql.length===expectedSqlFiles,'After601 requires the complete current'+expectedSqlFiles+' source');
     assert(sql.includes('supabase/migrations/'+INACTIVE_ASSISTANT_AFTER601_SUCCESSOR.migration().filename),
       'After601 migration is missing');
@@ -2394,7 +2403,8 @@ async function captureAssistantNativePgInput(options,after601){
     ...(automaticAccountOff?{
       automaticAccountOffMigrationSha256:automaticAccountOffSql.map(({file})=>rows.get(file).sha256),
       automaticAccountOffSourceSha256:rows.get(automaticAccountOffSourcePath).sha256,
-    }:{})};
+    }:{}),
+    ...(distinctPrivacy?{checkpointDistinctPrivacyMigrationSha256:rows.get(checkpointDistinctPrivacyPath).sha256}:{})};
 }
 export function verifyAssistantAfter599PgInput(value,prior=value){
   requireAssistantAfter599Output();
@@ -2608,9 +2618,16 @@ async function decideAssistantNativeReuse(options,after601){
       assert.deepEqual(steps.map(step=>[step.name,step.number]),stepNames.map((name,index)=>[name,index+1]));
       const sourceIndex=steps.findIndex(step=>step.conclusion===row.conclusion);
       const source=steps[sourceIndex];
-      assert(terminalCancellation?source?.name==='Install source-gate dependencies'
-        :source?.name==='Build deterministic source-tree content identity'
+      if(terminalCancellation){
+        // The exact same workflow first binds the Git input, then runs
+        // preparation and isolated fixtures before source/SQL validation.
+        const identityIndex=stepNames.indexOf('Build deterministic source-tree content identity');
+        const sourceGateIndex=stepNames.indexOf('Validate source contracts and release governance');
+        assert(identityIndex>=0&&sourceIndex>identityIndex&&sourceIndex<sourceGateIndex);
+      }else{
+        assert(source?.name==='Build deterministic source-tree content identity'
           ||source?.name==='Validate source contracts and release governance');
+      }
       assert(sourceIndex<nativeUploadNumber-2);
       assert.equal(steps[nativeUploadNumber-2],pg);
       assert.equal(steps[nativeUploadNumber-1].name,CURRENT586_PHASE_UPLOAD);
@@ -2859,8 +2876,8 @@ function after601PhaseReceipt(current,runtime,report){
 }
 export function verifyAssistantAfter601PhaseReceipt(native,current,readGit){
   if(readGit)assert(!hasCheckpointScalarWalk(readGit,current.head)&&!hasNativeMigration(readGit,current.head,tripErasureMigrationPath)
-    &&!hasAutomaticAccountOffInput(readGit,current.head),
-    'Checkpoint scalar-walk, trip erasure recovery or the automatic account OFF pair requires exact native V2 execution');
+    &&!hasAutomaticAccountOffInput(readGit,current.head)&&!hasNativeMigration(readGit,current.head,checkpointDistinctPrivacyPath),
+    'The checkpoint and account append requires exact native V2 execution');
   assert.deepEqual(native,after601PhaseReceipt(current,native.runtime,native.report));
   return native;
 }
@@ -2887,6 +2904,15 @@ function after601ExecutedV2Receipt(current,runtime,report,nativeInput){
     assert.deepEqual(report.tripErasureRecovery,tripErasureRecovery,'Missing exact trip erasure recovery execution proof');
     receipt.report.tripErasureRecovery=tripErasureRecovery;
   }else assert.equal(report.tripErasureRecovery,undefined);
+  if(nativeInput.sqlFiles===86){
+    const append=CHECKPOINT_DISTINCT_PRIVACY_MIGRATION;
+    const distinctPrivacy={migrationVersion:append.version,migrationSha256:nativeInput.checkpointDistinctPrivacyMigrationSha256,
+      installedLedgerBeforeRows:71,installedLedgerAfterRows:72,
+      sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,priorDataPreserved:true,
+      forbiddenKeysUnchanged:true,normalCasUnchanged:true,integratedPartCount:673,companionPartCount:673};
+    assert.deepEqual(report.checkpointDistinctPrivacy,distinctPrivacy,'Missing exact checkpoint distinct privacy execution proof');
+    receipt.report.checkpointDistinctPrivacy=distinctPrivacy;
+  }else assert.equal(report.checkpointDistinctPrivacy,undefined);
   return {...receipt,schemaVersion:2,kind:ASSISTANT_AFTER601_EXECUTED_V2_KIND,nativeInput};
 }
 
@@ -2918,14 +2944,18 @@ export function verifyAssistantAfter601PgInput(value,prior=value){
     keys.push('tripErasureRecoveryMigrationSha256');
     assert.match(value.tripErasureRecoveryMigrationSha256,hashPattern);
   }
-  if(value.sqlFiles===85){
+  if(value.sqlFiles>=85){
     keys.push('automaticAccountOffMigrationSha256','automaticAccountOffSourceSha256');
     assert.deepEqual(value.automaticAccountOffMigrationSha256,automaticAccountOffSql.map(({sha256})=>sha256));
     assert.equal(value.automaticAccountOffSourceSha256,automaticAccountOffSourceSha256);
   }
+  if(value.sqlFiles===86){
+    keys.push('checkpointDistinctPrivacyMigrationSha256');
+    assert.equal(value.checkpointDistinctPrivacyMigrationSha256,CHECKPOINT_DISTINCT_PRIVACY_MIGRATION.sha256);
+  }
   assert.deepEqual(Object.keys(value).sort(),keys.sort());
   assert.equal(value.schemaVersion,1);assert.equal(value.kind,'AFTER601_ACTUAL_PG_INPUT_V1');
-  assert.equal(value.complete,true);assert([81,82,83,85].includes(value.sqlFiles));
+  assert.equal(value.complete,true);assert([81,82,83,85,86].includes(value.sqlFiles));
   assert(Number.isSafeInteger(value.files)&&value.files>0&&value.files<=512);assert.match(value.inputSha256,hashPattern);
   assert(Array.isArray(value.packageScopes)&&value.packageScopes.length>0&&value.packageScopes.length<=128);
   assert(Array.isArray(value.frozenGitTrees)&&value.frozenGitTrees.length>0&&value.frozenGitTrees.length<=64);
@@ -2986,14 +3016,15 @@ async function executeAssistantAfter601Native(){
   const scalarWalk=hasCheckpointScalarWalk(git,head);
   const tripErasureRecovery=hasNativeMigration(git,head,tripErasureMigrationPath);
   const automaticAccountOff=hasAutomaticAccountOffInput(git,head);
+  const distinctPrivacy=hasNativeMigration(git,head,checkpointDistinctPrivacyPath);
   let nativeInput;
   try{
     nativeInput=await captureAssistantAfter601PgInput({ref:head});
     assert.equal(nativeInput.complete,true);
     assert.equal(nativeInput.sqlFiles,(scalarWalk?82:81)+Number(tripErasureRecovery)
-      +(automaticAccountOff?automaticAccountOffSql.length:0));
+      +(automaticAccountOff?automaticAccountOffSql.length:0)+Number(distinctPrivacy));
   }catch(error){
-    if(scalarWalk||tripErasureRecovery||automaticAccountOff)throw error;
+    if(scalarWalk||tripErasureRecovery||automaticAccountOff||distinctPrivacy)throw error;
     // Unknown historical source projection still requires the original SQL test.
     nativeInput=null;
     console.log('AFTER601_PG_INPUT_ATTESTATION_UNAVAILABLE');

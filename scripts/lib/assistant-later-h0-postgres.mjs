@@ -47,7 +47,8 @@ import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0
   assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations,assistantPublic591SuccessorRequiredMigrations,installed593Original591RequiredMigrations,
   accountStatisticsAssistantRequiredMigrations,scalar597LaterH0RequiredMigrations,assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations,
   assistantAfter599RequiredMigrations,assistantAfter601RequiredMigrations,
-  CHECKPOINT_SCALAR_WALK_MIGRATION,expectedCheckpointScalarWalkContract,readCheckpointScalarWalkSource}
+  CHECKPOINT_SCALAR_WALK_MIGRATION,expectedCheckpointScalarWalkContract,readCheckpointScalarWalkSource,
+  CHECKPOINT_DISTINCT_PRIVACY_MIGRATION,expectedCheckpointDistinctPrivacyContract,readCheckpointDistinctPrivacySource}
   from '../integrated-cutover-readiness.mjs';
 import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata}
   from '../verify-account-assistant-schema.mjs';
@@ -693,9 +694,23 @@ export async function compareAssistantAfter601Successor(options){
     throw error;
   });
   const scalarWalkSource=scalarWalkPresent?await readCheckpointScalarWalkSource():null;
-  const report=await compareFixedSuccessor(ASSISTANT_AFTER601_NATIVE_PROFILE,{...options,originalProfile,scalarWalkSource});
+  const distinctPrivacyFile=path.join(ROOT,'supabase/migrations',CHECKPOINT_DISTINCT_PRIVACY_MIGRATION.filename);
+  const distinctPrivacyPresent=await fs.lstat(distinctPrivacyFile).then(()=>true,error=>{
+    if(error.code==='ENOENT')return false;
+    throw error;
+  });
+  let distinctPrivacySource=null;
+  if(distinctPrivacyPresent){
+    assert(scalarWalkSource,'Distinct checkpoint privacy requires scalar walk');
+    const {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS,readAccountAutomaticOffSql}=await import('./account-automatic-off-source.mjs');
+    await Promise.all(ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(migration=>readAccountAutomaticOffSql(migration)));
+    distinctPrivacySource=await readCheckpointDistinctPrivacySource();
+  }
+  const report=await compareFixedSuccessor(ASSISTANT_AFTER601_NATIVE_PROFILE,
+    {...options,originalProfile,scalarWalkSource,distinctPrivacySource});
   const expectedLedger=next.map(row=>row.version);
   if(scalarWalkPresent)expectedLedger.push(CHECKPOINT_SCALAR_WALK_MIGRATION.version);
+  if(distinctPrivacyPresent)expectedLedger.push(CHECKPOINT_DISTINCT_PRIVACY_MIGRATION.version);
   assert.deepEqual(await nativeLedgerRows(psql),expectedLedger);
   assert.deepEqual(await readNative601AccountOff(psql,app,inactivity,append),accountBefore);
   return {...report,installedLedgerBeforeRows:installed.length,installedLedgerAfterRows:next.length,
@@ -1298,7 +1313,7 @@ async function compareFixedSuccessor(profile,options){
       assert(after597Window);assert.equal(await psql(after597Window.historySql),after597Window.beforeHistory,'WHOLE597→NEXT history preserved');
     }else assert.equal(await psql('select count(*) from admin_document_versions;'),'0');
     assert.deepEqual(JSON.parse(await psql(catalogSql(allNames))),catalogAfter);
-    let checkpointScalarWalk;
+    let checkpointScalarWalk,checkpointDistinctPrivacy;
     if(options.scalarWalkSource){
       phase='CHECKPOINT_SCALAR_WALK';
       assert.equal(profile,ASSISTANT_AFTER601_NATIVE_PROFILE);
@@ -1339,10 +1354,53 @@ async function compareFixedSuccessor(profile,options){
         installedLedgerBeforeRows:beforeAppendLedger.length,installedLedgerAfterRows:beforeAppendLedger.length+1,
         sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,
         priorDataPreserved:true,forbiddenKeysUnchanged:true,normalCasUnchanged:true};
+
+      if(options.distinctPrivacySource){
+        phase='CHECKPOINT_DISTINCT_PRIVACY';
+        const distinct=CHECKPOINT_DISTINCT_PRIVACY_MIGRATION;
+        assert.equal(sha(options.distinctPrivacySource),distinct.sha256);
+        const {states,candidateGRollbackCompanion}=current.newer;
+        const integratedPartCount=Object.keys(states).length;
+        const companionPartCount=Object.keys(candidateGRollbackCompanion.states).length;
+        assert.deepEqual([integratedPartCount,companionPartCount],[673,673]);
+        const beforeDistinctLedger=[...beforeAppendLedger,append.version];
+        assert.deepEqual(await nativeLedgerRows(psql),beforeDistinctLedger);
+        const beforeDistinctCheckpoint=await psql(checkpointRows);
+        const distinctContract=await expectedCheckpointDistinctPrivacyContract();
+        const distinctHelper=/\n-- forbidden-key-validator --\n([\s\S]+?)\n-- /.exec(distinctContract.definition);
+        assert(distinctHelper);
+        const distinctBody=sha(distinctHelper[1]);
+        assert.notEqual(distinctBody,scalarCatalog[helper].body);
+        const repeatedKeys="select array[public."+helper+"('[{\"safe\":\"rawu\"},{\"safe\":null}]'::jsonb),public."
+          +helper+"('[{\"safe\":[{\"safe\":true},{\"Ra-w_U\":null}]}]'::jsonb)];";
+        assert.equal(await psql(repeatedKeys),'{f,t}');
+
+        await psql(options.distinctPrivacySource);
+        await psql('insert into supabase_migrations.schema_migrations values('+literal(distinct.version)+');');
+        assert.deepEqual(await nativeLedgerRows(psql),[...beforeDistinctLedger,distinct.version]);
+        assert.equal(await psql(checkpointRows),beforeDistinctCheckpoint);
+        assert.deepEqual(JSON.parse(await psql(catalogSql(allNames))),
+          {...scalarCatalog,[helper]:{...scalarCatalog[helper],body:distinctBody}});
+        const distinctReadback=JSON.parse(await psql("set request.jwt.claim.role='service_role';set role service_role;select public."+CP+'contract();'));
+        assert.deepEqual(distinctReadback,{...appendReadback,checkpointContract:{id:distinctContract.id,definition:distinctContract.definition}});
+        assert.equal(await psql(privacyCases),'{f,f,f,f,f,t,t}');
+        assert.equal(await psql(repeatedKeys),'{f,t}');
+        const {elapsedMs:distinctMs,...distinctCas}=await invokeCas(PREFIX+'same',PREFIX+'newer',1);
+        assert(Number.isFinite(distinctMs));
+        assert.deepEqual(distinctCas,afterCas);
+        assert.equal(await psql(currentMemoryWarmupPreservationInventorySql('original-bank')),bank);
+        assert.equal(await psql(accountRowsSql()),account);
+        assert.equal(await psql(after601Window.historySql),after601Window.beforeHistory);
+        checkpointDistinctPrivacy={migrationVersion:distinct.version,migrationSha256:distinct.sha256,
+          installedLedgerBeforeRows:beforeDistinctLedger.length,installedLedgerAfterRows:beforeDistinctLedger.length+1,
+          sqlExecuted:true,checkpointContractExact:true,helperOnlyCatalogChange:true,priorDataPreserved:true,
+          forbiddenKeysUnchanged:true,normalCasUnchanged:true,integratedPartCount,companionPartCount};
+      }
     }
     for(const[file,pin]of archivePins)assert.equal(sha(await fs.readFile(path.join(ROOT,'supabase/migrations',file))),pin);
     return {kind:profile.resultKind,sourceMigrationInventory:profile.migrationCount,sqlExecuted:true,wholeMigrationExecuted:true,
       ...(checkpointScalarWalk?{checkpointScalarWalk}:{}),
+      ...(checkpointDistinctPrivacy?{checkpointDistinctPrivacy}:{}),
       ...(profile.databaseBefore?{databaseBeforeVersion:DATABASE_BEFORE.version,originalStateRelease:profile.previousRelease,
         existingOriginalAliasesPreserved:ORIGINAL_ALIASES.length}:{}),
       migrationVersion:migration.version,partCount:673,checkpointOidSlots:checkpointShape?.oidSlots??profile.oidSlots,contractBodies:checkpointShape?.contractBodies??profile.contractBodies,

@@ -1,3 +1,9 @@
+## 28. november — privatkontrol ved prognosegemning
+
+- [x] Find de to afbrudte databaseskridt i Supabases log og bind dem til den faktisk installerede skrivefunktion.
+- [x] Afprøv hurtigere kontrol af forbudte nøgler gennem den eksisterende skrivefunktion i en isoleret database.
+- [ ] Indpas migrationen i den normale kontrollerede installationsvej. Bekræft funktionens adgang og en efterfølgende almindelig prognosegemning i drift.
+
 ## 28. november — kontrol ved udskiftning af turlagerets Worker
 
 - [x] Brug de eksisterende driftslåse og kontroller af version, D1-bindinger og gendannelsesspærring i den lokale reparationsvej.

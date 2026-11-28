@@ -12,6 +12,7 @@ import {
   assertSupabaseMigrationPlan,
   verifyIntegratedDatabaseReadback,
   CHECKPOINT_SCALAR_WALK_MIGRATION,
+  CHECKPOINT_DISTINCT_PRIVACY_MIGRATION,
   TRIP_ERASURE_RECOVERY_SQL,
 } from './integrated-cutover-readiness.mjs';
 import * as accountInactivityCutover from './integrated-cutover-readiness.mjs';
@@ -227,17 +228,22 @@ const currentGridRoute = process.argv.includes('--current-grid-prewrite-plan');
 const inactivityOffRoute=process.argv.includes('--account-erasure-plan');
 const receiptRoute=process.argv.includes('--account-native-receipt-plan');
 const scalarWalkRoute=process.argv.includes('--checkpoint-scalar-walk-plan');
-const permittedMigration = scalarWalkRoute ? CHECKPOINT_SCALAR_WALK_MIGRATION : latest;
-if(scalarWalkRoute){
+const distinctPrivacyRoute = process.argv.includes('--checkpoint-distinct-privacy-plan');
+const checkpointRoute = scalarWalkRoute || distinctPrivacyRoute;
+const permittedMigration = distinctPrivacyRoute ? CHECKPOINT_DISTINCT_PRIVACY_MIGRATION
+  : scalarWalkRoute ? CHECKPOINT_SCALAR_WALK_MIGRATION : latest;
+if(checkpointRoute){
   assert.equal(process.argv.length,9);
   assert.deepEqual([process.argv[2],process.argv[3],process.argv[5],process.argv[7]],
-    ['--checkpoint-scalar-walk-plan','--migration-list','--dry-run','--migrations-directory']);
+    [distinctPrivacyRoute ? '--checkpoint-distinct-privacy-plan' : '--checkpoint-scalar-walk-plan',
+      '--migration-list','--dry-run','--migrations-directory']);
   assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch');
   assert.equal(process.env.GITHUB_REF,'refs/heads/main');
   assert.equal(process.env.GITHUB_JOB,'apply-binding');
   assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
   assert.equal(process.env.GITHUB_WORKFLOW_REF,
     'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main');
+  if (distinctPrivacyRoute) assert.equal(process.env.RAVRADAR_CHECKPOINT_DISTINCT_PRIVACY_OPT_IN, 'true');
 }
 if(receiptRoute){
   assert.equal(process.argv.length,9);assert.deepEqual([process.argv[2],process.argv[3],process.argv[5],process.argv[7]],
@@ -271,13 +277,15 @@ const plan = await assertSupabaseMigrationPlan({
   allowAccountErasurePlan:inactivityOffRoute,
   allowAccountNativeReceiptPlan:receiptRoute,
   allowCheckpointScalarWalkPlan:scalarWalkRoute,
+  allowCheckpointDistinctPrivacyPlan: distinctPrivacyRoute,
 });
-if(scalarWalkRoute){
-  const pending=plan.pendingVersions.includes(CHECKPOINT_SCALAR_WALK_MIGRATION.version);
+if(checkpointRoute){
+  const pending=plan.pendingVersions.includes(permittedMigration.version);
   await verifyIntegratedDatabaseReadback({
     url:process.env.SUPABASE_URL,
     serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
-    checkpointScalarWalkInstalled:!pending,
+    checkpointScalarWalkInstalled:distinctPrivacyRoute || !pending,
+    checkpointDistinctPrivacyInstalled: distinctPrivacyRoute ? !pending : undefined,
   });
 }
 if (process.argv.includes('--require-prewrite-gate')

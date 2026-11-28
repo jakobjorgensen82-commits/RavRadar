@@ -34,6 +34,8 @@ const NATIVE_RECEIPT_SOURCE='scripts/lib/account-native-activity-receipt-source.
 // Issued current-family checkpoint append. Keep it in the PostgreSQL input inventory.
 const CHECKPOINT_SCALAR_WALK_SQL='supabase/migrations/20261126152500_checkpoint_scalar_privacy_walk.sql';
 const CHECKPOINT_SCALAR_WALK_SHA256='23f863a6ba9d3cebdae3944f010fb0517b632200cc2c4eac89e84efc59e78df2';
+const CHECKPOINT_DISTINCT_PRIVACY_SQL='supabase/migrations/20261128104500_checkpoint_distinct_privacy_keys.sql';
+const CHECKPOINT_DISTINCT_PRIVACY_SHA256='eec837073d416f2a8affb3922884835e1d4f4e43bf6f6eaf4f0f09fa82906a05';
 const TRIP_ERASURE_RECOVERY_SQL='supabase/migrations/20261127095500_trip_owner_erasure_intents.sql';
 const TRIP_ERASURE_RECOVERY_FIXTURE='scripts/lib/trip-erasure-recovery-native-fixture.mjs';
 const AUTOMATIC_ACCOUNT_OFF_SOURCE='scripts/lib/account-automatic-off-source.mjs';
@@ -385,13 +387,23 @@ export function analyzeSourceDomainInputs(input){
       }
       return [ref,AUTOMATIC_ACCOUNT_OFF_SQL.length];
     }));
+    const distinctPrivacy=new Map(refs.map(ref=>{
+      const row=trees.get(ref).get(CHECKPOINT_DISTINCT_PRIVACY_SQL);
+      if(!row)return [ref,0];
+      assert(automaticAccountOff.get(ref)===AUTOMATIC_ACCOUNT_OFF_SQL.length
+        &&row.mode==='100644'&&row.type==='blob','DOMAIN_CHECKPOINT_DISTINCT_PRIVACY_INPUT_INCOMPLETE');
+      load([row.blob],'INPUT');
+      assert.equal(sha(raw(ref,CHECKPOINT_DISTINCT_PRIVACY_SQL)),CHECKPOINT_DISTINCT_PRIVACY_SHA256,
+        'DOMAIN_CHECKPOINT_DISTINCT_PRIVACY_INPUT_CHANGED');
+      return [ref,1];
+    }));
     const receiptPresent=ref=>{
       const present=trees.get(ref).has(NATIVE_RECEIPT_SQL);
       assert.equal(trees.get(ref).has(NATIVE_RECEIPT_SOURCE),present,'DOMAIN_PARTIAL_NATIVE_RECEIPT_SOURCE');
       if(usesAssistantBrowserProfile)assert(present,'DOMAIN_ASSISTANT_SEPARATION_REQUIRES_FULL_PREDECESSOR_SQL');
       if(present)assert(has601AppSchema&&offPresent(ref)&&noticePresent(ref)&&
         sql(ref).length===80+Number(usesAssistantBrowserProfile)+scalarWalk.get(ref)+Number(tripRecoveryPresent(ref))
-          +automaticAccountOff.get(ref),
+          +automaticAccountOff.get(ref)+distinctPrivacy.get(ref),
         'DOMAIN_NATIVE_RECEIPT_REQUIRES_WHOLE80');
       return present;
     };
@@ -403,7 +415,7 @@ export function analyzeSourceDomainInputs(input){
     assert.equal(sql(input.baselineCommit).length,has601AppSchema
       ?77+2*Number(noticePresent(input.baselineCommit))+Number(receiptPresent(input.baselineCommit))+Number(usesAssistantBrowserProfile)
         +scalarWalk.get(input.baselineCommit)+Number(tripRecoveryPresent(input.baselineCommit))
-        +automaticAccountOff.get(input.baselineCommit)
+        +automaticAccountOff.get(input.baselineCommit)+distinctPrivacy.get(input.baselineCommit)
       :is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
       'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
     if(is597||is598||is599||is601){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
