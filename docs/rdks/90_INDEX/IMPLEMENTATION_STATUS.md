@@ -7,6 +7,7 @@
 ## 28. november — kontrol ved udskiftning af turlagerets Worker
 
 - [x] Brug de eksisterende driftslåse og kontroller af version, D1-bindinger og gendannelsesspærring i den lokale reparationsvej.
+- [x] Find årsagen til det første stop før vedligeholdelse. Indlæs de allerede installerede migrationskilder i den midlertidige visning og genlæs listen før validering.
 - [ ] Kvalificér den samlede kilde og bekræft den aktive Worker gennem det normale leveringsforløb.
 
 ## 28. november — kontofunktionernes installation og verificering
