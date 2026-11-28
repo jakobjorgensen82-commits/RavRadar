@@ -110,6 +110,8 @@ export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
   });
 
   return async (request: Request) => {
+    // Reserve two seconds of the admin button's 25 s budget for the response.
+    const receiptDeadline = Math.min(expiresAt, Date.now() + 23_000);
     const url = new URL(request.url);
     const reject = (category: string, window = "UNOBSERVED") => {
       reportGatewayGuard(request, true, category, window);
@@ -134,12 +136,12 @@ export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
         method: request.method, headers: request.headers, signal: request.signal,
       }) : request;
     const response = await handleProbe(probeRequest);
-    if (response.status === 200 && Date.now() < expiresAt) {
+    if (response.status === 200 && Date.now() < receiptDeadline) {
       // Only the authenticated, one-recipient acceptance can authorize this read.
       // Keep the admin response and send result unchanged.
       try {
         const { providerId } = await response.clone().json();
-        const stopAt = Math.min(expiresAt, Date.now() + 8_000);
+        const stopAt = Math.min(receiptDeadline, Date.now() + 8_000);
         if (Date.now() < stopAt) {
           const checkDelivery = () => readInactivityNoticeDelivery({
             key: Deno.env.get("RAVRADAR_RESEND_NOTICE_SEND_KEY"),
