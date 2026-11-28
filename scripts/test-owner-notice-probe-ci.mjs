@@ -261,7 +261,8 @@ for(const body of [null,''])test('the normal owner button sends once and checks 
         assert.equal(options.headers.Authorization,'Bearer re_synthetic');
         assert.equal(options.body,undefined);
         if(body!==null)return new Response(null,{status:403});
-        return Response.json({...sentBody,id:providerId,last_event:'delivered',reply_to:[sentBody.reply_to]});
+        return Response.json({...sentBody,id:providerId,
+          last_event:deliveryReads===1?'sent':'delivered',reply_to:[sentBody.reply_to]});
       }
       assert.equal(url,'https://api.resend.com/emails');sends++;
       sentBody=JSON.parse(options.body);
@@ -286,7 +287,7 @@ for(const body of [null,''])test('the normal owner button sends once and checks 
     vm.runInNewContext(source.slice(start,end)+'\nmountOwnerNoticeProbe();',context);
     await button.onclick();await button.onclick();
     assert.deepEqual(statuses,[200]);assert.equal(auths,1);assert.equal(profiles,1);assert.equal(sends,1);
-    assert.equal(deliveryReads,1);
+    assert.equal(deliveryReads,body===null?2:1);
     assert.deepEqual(deliveryDiagnostics,[[body===null?'delivered':'permission-denied']]);
     assert(status.textContent.includes(providerId));assert(!status.textContent.includes(user.email));
   }finally{
