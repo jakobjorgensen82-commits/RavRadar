@@ -33,6 +33,8 @@ const NATIVE_RECEIPT_SOURCE='scripts/lib/account-native-activity-receipt-source.
 // Issued current-family checkpoint append. Keep it in the PostgreSQL input inventory.
 const CHECKPOINT_SCALAR_WALK_SQL='supabase/migrations/20261126152500_checkpoint_scalar_privacy_walk.sql';
 const CHECKPOINT_SCALAR_WALK_SHA256='23f863a6ba9d3cebdae3944f010fb0517b632200cc2c4eac89e84efc59e78df2';
+const TRIP_ERASURE_RECOVERY_SQL='supabase/migrations/20261127095500_trip_owner_erasure_intents.sql';
+const TRIP_ERASURE_RECOVERY_FIXTURE='scripts/lib/trip-erasure-recovery-native-fixture.mjs';
 const PROFILE_FILE='scripts/lib/source-impact-domain-inputs-594.json';
 const PROFILE_SHA256='ae33e59b09a9d005579da78a32e2be5943856bfe03fdc2a54ba252071e5fe563';
 const MAX_BLOB=4*1024*1024,MAX_TOTAL=32*1024*1024,MAX_GIT=64*1024*1024;
@@ -353,20 +355,28 @@ export function analyzeSourceDomainInputs(input){
       assert(count===0||(has601AppSchema&&count===2),'DOMAIN_PARTIAL_OR_WRONG_FAMILY_NOTICE_SQL');
       return count===2;
     };
+    const tripRecoveryPresent=ref=>{
+      if(!trees.get(ref).has(TRIP_ERASURE_RECOVERY_SQL))return false;
+      assert(usesAssistantBrowserProfile&&scalarWalk.get(ref)===1
+        &&trees.get(ref).has(TRIP_ERASURE_RECOVERY_FIXTURE),'DOMAIN_TRIP_ERASURE_RECOVERY_INPUT_INCOMPLETE');
+      return true;
+    };
     const receiptPresent=ref=>{
       const present=trees.get(ref).has(NATIVE_RECEIPT_SQL);
       assert.equal(trees.get(ref).has(NATIVE_RECEIPT_SOURCE),present,'DOMAIN_PARTIAL_NATIVE_RECEIPT_SOURCE');
       if(usesAssistantBrowserProfile)assert(present,'DOMAIN_ASSISTANT_SEPARATION_REQUIRES_FULL_PREDECESSOR_SQL');
       if(present)assert(has601AppSchema&&offPresent(ref)&&noticePresent(ref)&&
-        sql(ref).length===80+Number(usesAssistantBrowserProfile)+scalarWalk.get(ref),'DOMAIN_NATIVE_RECEIPT_REQUIRES_WHOLE80');
+        sql(ref).length===80+Number(usesAssistantBrowserProfile)+scalarWalk.get(ref)+Number(tripRecoveryPresent(ref)),
+        'DOMAIN_NATIVE_RECEIPT_REQUIRES_WHOLE80');
       return present;
     };
     const pgModules=ref=>{noticePresent(ref);const receipt=receiptPresent(ref);return offPresent(ref)
-      ?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER,...(receipt?[NATIVE_RECEIPT_SOURCE]:[])]:p.postgresModules;};
+      ?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER,...(receipt?[NATIVE_RECEIPT_SOURCE]:[]),
+        ...(tripRecoveryPresent(ref)?[TRIP_ERASURE_RECOVERY_FIXTURE]:[])]:p.postgresModules;};
     // All SQL stays in the real PG inventory; the known76th row grants no reuse.
     assert.equal(sql(input.baselineCommit).length,has601AppSchema
       ?77+2*Number(noticePresent(input.baselineCommit))+Number(receiptPresent(input.baselineCommit))+Number(usesAssistantBrowserProfile)
-        +scalarWalk.get(input.baselineCommit)
+        +scalarWalk.get(input.baselineCommit)+Number(tripRecoveryPresent(input.baselineCommit))
       :is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
       'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
     if(is597||is598||is599||is601){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');

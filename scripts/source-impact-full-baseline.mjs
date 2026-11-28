@@ -26,6 +26,11 @@ export const SOURCE_IMPACT_FULL_BASELINE_KIND='RAVRADAR_SOURCE_IMPACT_FULL_BASEL
 const qualifiedAccountErasureChecksByResult=new WeakMap();
 const qualifiedAccountInactivityChecksByResult=new WeakMap();
 const qualifiedAccountNativeReceiptByResult=new WeakMap();
+const qualifiedTripRecoveryByResult=new WeakMap();
+export function qualifiedTripErasureRecovery(result) {
+  const value=result&&typeof result==='object'?qualifiedTripRecoveryByResult.get(result):null;
+  return value?structuredClone(value):null;
+}
 export function qualifiedAccountNativeReceipt(result){
   const value=result&&typeof result==='object'?qualifiedAccountNativeReceiptByResult.get(result):null;
   return value?structuredClone(value):null;
@@ -346,6 +351,18 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       qualifiedAccountNativeReceiptByResult.set(result,{candidateCommit:input.candidateCommit,reference,
         execution:{status:native.status,executedInThisRun:native.executedInThisRun,origin:structuredClone(native.origin)},
         receipt:structuredClone(native.report.accountNativeReceipt)});
+    }
+    if (input.candidateCommit === reference.mergeCommit
+      && [ASSISTANT_AFTER601_EXECUTED_V2_KIND, ASSISTANT_AFTER601_REUSE_V2_KIND].includes(native.kind)
+      && native.nativeInput?.sqlFiles === 83 && native.report.tripErasureRecovery) {
+      qualifiedTripRecoveryByResult.set(result, {
+        candidateCommit:input.candidateCommit,
+        sqlFiles:native.nativeInput.sqlFiles,
+        nativeInputSha256:native.nativeInput.inputSha256,
+        executedInThisRun:native.executedInThisRun,
+        status:native.status,
+        receipt:structuredClone(native.report.tripErasureRecovery),
+      });
     }
     return result;
   }catch{return refused();}

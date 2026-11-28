@@ -261,6 +261,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node scripts/prepare-cloudflare-trip-storage.mjs --verify-installation-unheld
           cd "${{ steps.integrated_cutover.outputs.workdir }}"
           (supabase db push --linked --skip-vault)
 
@@ -491,8 +492,13 @@ jobs:
       - name: Install deploy and attest the private D1 gateway after Edge quiescence
         timeout-minutes: 7
         shell: bash
+        env:
+          EXISTING_D1: ${{ steps.prepare_d1.outputs.legacy_d1_detected == 'true' || steps.prepare_d1.outputs.d1_activation_attempted == 'true' }}
         run: |
           set -euo pipefail
+          if [ "$EXISTING_D1" = true ]; then
+            node scripts/verify-cloudflare-trip-gateway.mjs --before-replace
+          fi
           printf '%s' "$TRIP_GATEWAY_SHARED_SECRET" | npx --yes wrangler@4.28.1 secret put TRIP_GATEWAY_SHARED_SECRET --config "$TRIP_WRANGLER_CONFIG_PATH"
           npx --yes wrangler@4.28.1 deploy --config "$TRIP_WRANGLER_CONFIG_PATH"
           node scripts/verify-cloudflare-trip-gateway.mjs
@@ -733,7 +739,11 @@ jobs:
             && steps.failure_marker_exact_head.outcome == 'success'
           }}
         continue-on-error: true
-        run: node scripts/mark-cloudflare-trip-storage-activation.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-cloudflare-trip-gateway.mjs --before-replace
+          node scripts/mark-cloudflare-trip-storage-activation.mjs
 
       - name: Reconfirm exact main before maintenance-capable failure Edge predeployment
         id: failure_maintenance_edge_exact_head
@@ -869,6 +879,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node scripts/verify-cloudflare-trip-gateway.mjs --before-replace
           printf '%s' "$TRIP_GATEWAY_SHARED_SECRET" | npx --yes wrangler@4.28.1 secret put TRIP_GATEWAY_SHARED_SECRET --config "$TRIP_WRANGLER_CONFIG_PATH"
           npx --yes wrangler@4.28.1 deploy --config "$TRIP_WRANGLER_CONFIG_PATH"
           node scripts/verify-cloudflare-trip-gateway.mjs

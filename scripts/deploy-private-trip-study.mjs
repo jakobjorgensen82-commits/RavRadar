@@ -7,7 +7,8 @@ import {DatabaseSync} from 'node:sqlite';
 import {pathToFileURL} from 'node:url';
 import {isDeepStrictEqual} from 'node:util';
 import {schemaTokens} from './prepare-cloudflare-trip-storage.mjs';
-import {verifyExistingWorkerBindings} from './verify-cloudflare-trip-gateway.mjs';
+import {verifyExistingWorkerBindings,waitForWorkerHealth} from './verify-cloudflare-trip-gateway.mjs';
+import {normalizeCloudflareGatewayUrl} from '../supabase/functions/_shared/trip-storage.js';
 import {deployTripWorker} from './lib/trip-worker-deploy-process.mjs';
 import {waitForTripStorageEdgeReadiness} from './lib/trip-storage-edge-readiness.mjs';
 import {boundedFetch} from './lib/bounded-fetch.mjs';
@@ -236,13 +237,18 @@ export async function deployPrivateTripStudy(){
     const fence=oldFence();if(!isDeepStrictEqual({...fence,workerVersionId:null},{...originalFence,workerVersionId:null}))throw fail('OLD_SCHEMA_CHANGED');
     schemaVerified=true;return result;
   };
-  const quiesce=()=>{
-    stage='QUIESCE';exactMain();deadline=Date.now()+20*60000;
+  const requireOpenWorker=async()=>{
+    const gatewayUrl=normalizeCloudflareGatewayUrl(env.CLOUDFLARE_TRIP_GATEWAY_URL);
+    if(!(await waitForWorkerHealth({gatewayUrl,retryDelaysMs:[0]})).verified)throw fail('WORKER_RESTORE_HOLD_OR_UNKNOWN');
+  };
+  const quiesce=async()=>{
+    stage='QUIESCE';await requireOpenWorker();exactMain();deadline=Date.now()+20*60000;
     run('supabase',['secrets','set','--project-ref',env.SUPABASE_PROJECT_ID,'TRIP_STORAGE_MODE=maintenance:'+new Date(deadline).toISOString()]);
     edge('maintenance');run('sleep',['20']);
   };
   const replace=async()=>{
-    stage='WORKER_REPLACE';if(!schemaVerified)throw fail(stage);await verifySchema();await attest(undefined,enableMode,VARS);exactMain();lease(600);
+    stage='WORKER_REPLACE';if(!schemaVerified)throw fail(stage);await verifySchema();await attest(undefined,enableMode,VARS);
+    await requireOpenWorker();exactMain();lease(600);
     stage='WORKER_REPLACE';
     workerIntent=true;stopKnown=false;let deployed;
     try{deployed=await deployTripWorker({configPath:CONFIG,env});stopKnown=deployed?.terminationConfirmed===true;if(!stopKnown)throw fail(stage);}
@@ -252,7 +258,7 @@ export async function deployPrivateTripStudy(){
     await attest(versions[0][1],true);return versions[0][1];
   };
   const restore=async version=>{
-    stage='RESTORE';await verifySchema();await attest(version,true);exactMain();lease(1);
+    stage='RESTORE';await verifySchema();await attest(version,true);await requireOpenWorker();exactMain();lease(1);
     stage='RESTORE';
     run('supabase',['secrets','set','--project-ref',env.SUPABASE_PROJECT_ID,'TRIP_STORAGE_MODE=d1']);edge('d1');await attest(version,true);
   };
@@ -306,7 +312,7 @@ export async function deployPrivateTripStudy(){
       if(before.state!=='EXACT_004_005_006_007')throw fail('ENABLE_REQUIRES_EXACT_007');
       desiredSchemaState=before.state;
       stage='PRE_ENABLE_WORKER_OFF';await attest(currentVersion,true);
-      quiesce();stage='PRE_ENABLE_REVALIDATION';lease(600);exactMain();
+      await quiesce();stage='PRE_ENABLE_REVALIDATION';lease(600);exactMain();
       if(!isDeepStrictEqual(readOwnedJson(PLAN),plan)||!isDeepStrictEqual(await inspect(),before))throw fail(stage);
       await attest(currentVersion,true);
       expectedVars=ENABLE_VARS;
@@ -334,7 +340,7 @@ export async function deployPrivateTripStudy(){
     // og plain-text-readback, ikke lokal config eller en rapportboolean.
     if(migrationSteps.includes('006')){stage='PRE_BINDING_WORKER_OFF';await attest(currentVersion,true);}
     if(migrationSteps.includes('007')){stage='PRE_CATEGORICAL_WORKER_OFF';await attest(currentVersion,true);}
-    quiesce();stage='PRE_APPLY_REVALIDATION';lease(600);exactMain();
+    await quiesce();stage='PRE_APPLY_REVALIDATION';lease(600);exactMain();
     if(!isDeepStrictEqual(readOwnedJson(PLAN),plan)||!isDeepStrictEqual(await inspect(),before))throw fail(stage);
     await attest(currentVersion);
     for(const migration of migrationSteps){
@@ -349,6 +355,7 @@ export async function deployPrivateTripStudy(){
       if(migration==='007'){
         await verifySchema('EXACT_004_005_006');await attest(currentVersion,true);exactMain();lease(600);
       }
+      await requireOpenWorker();exactMain();lease(600);
       const jobs=migration==='005',binding=migration==='006',categorical=migration==='007';
       stage=migration+'_APPLY_INTENT';fs.writeFileSync(categorical?CATEGORICAL_INTENT:binding?BINDING_INTENT:jobs?JOBS_INTENT:INTENT,JSON.stringify(plan)+'\n',{flag:'wx',mode:0o600});
       stage=migration+'_APPLY_OUTCOME_UNKNOWN';
@@ -370,7 +377,7 @@ export async function deployPrivateTripStudy(){
           const maintained=await waitForTripStorageEdgeReadiness({...options,expectedStorageMode:'maintenance'});
           const normal=maintained.ok?null:await waitForTripStorageEdgeReadiness({...options,expectedStorageMode:'d1'});
           if(!maintained.ok&&!normal?.ok)throw fail('RECOVERY_READBACK');
-          await verifySchema();quiesce();const recovered=await replace();await restore(recovered);
+          await verifySchema();await quiesce();const recovered=await replace();await restore(recovered);
         }catch{}
       }
       throw first;

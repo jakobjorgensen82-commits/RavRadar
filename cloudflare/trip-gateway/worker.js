@@ -415,9 +415,26 @@ async function assertOwnerTripRowsAbsent(databaseList, ownerSubject) {
   }
 }
 
-async function deleteOwnerTrips(env, body) {
+const erasureOwnerSubjectPattern = /^(?:usr|anon)_v1_[A-Za-z0-9_-]{43}$/;
+
+async function assertOwnerTripTombstones(databaseList, ownerSubject) {
+  for (const database of databaseList) {
+    if (!await ownerErased(database, ownerSubject)) throw new Error('TRIP_DELETE_INVALID');
+  }
+}
+
+export async function assertOwnerTripErasureReadback(env, ownerSubject) {
+  if (typeof ownerSubject !== 'string' || !erasureOwnerSubjectPattern.test(ownerSubject)) {
+    throw new Error('TRIP_OWNER_INVALID');
+  }
+  const databaseList = databases(env);
+  await assertOwnerTripRowsAbsent(databaseList, ownerSubject);
+  await assertOwnerTripTombstones(databaseList, ownerSubject);
+}
+
+export async function deleteOwnerTrips(env, body, { verifyTombstones = false } = {}) {
   const ownerSubject = body.owner_subject;
-  if (typeof ownerSubject !== 'string' || !/^(?:usr|anon)_v1_[A-Za-z0-9_-]{43}$/.test(ownerSubject)) {
+  if (typeof ownerSubject !== 'string' || !erasureOwnerSubjectPattern.test(ownerSubject)) {
     throw new Error('TRIP_OWNER_INVALID');
   }
   const databaseList = databases(env);
@@ -433,11 +450,17 @@ async function deleteOwnerTrips(env, body) {
   }
   const deleted = await purgeOwnerTrips(databaseList, ownerSubject);
   await assertOwnerTripRowsAbsent(databaseList, ownerSubject);
+  if (verifyTombstones) {
+    await assertOwnerTripTombstones(databaseList, ownerSubject);
+  }
   return deleted;
 }
 
 export async function handleRequest(request, env) {
   const url = new URL(request.url);
+  // The operator controls this encrypted setting outside ordinary Wrangler vars.
+  const restoreHold = env.TRIP_RESTORE_HOLD;
+  const restoreHeld = restoreHold !== undefined && restoreHold !== 'false';
   if (request.method === 'GET' && url.pathname === '/health') {
     return json(200, {
       ok: true,
@@ -448,6 +471,7 @@ export async function handleRequest(request, env) {
       owner_erasure_tombstone_schema_version: 1,
       trip_export_version: 1,
       shards: 10,
+      ...(restoreHeld ? { restore_hold: true } : {}),
     });
   }
   if (request.method !== 'POST' || !['/v1/trips/store', '/v1/trips/list', '/v1/trips/export-page', '/v1/trips/count', '/v1/trips/delete-owner', AGGREGATE_PATH, AGGREGATE_VERIFY_PATH].includes(url.pathname)) {
@@ -456,6 +480,7 @@ export async function handleRequest(request, env) {
   try {
     const bodyText = await requestBody(request);
     if (!await authorized(request, env, url.pathname, bodyText)) return json(401, { ok: false, error: 'UNAUTHORIZED' });
+    if (restoreHeld) return json(503, { ok: false, error: 'TRIP_RESTORE_HOLD' });
     const body = parsedObject(bodyText);
     // Aggregate preparation and frozen export are separately opt-in; OFF must do no D1 work.
     if ((url.pathname === AGGREGATE_PATH || url.pathname === AGGREGATE_VERIFY_PATH)
