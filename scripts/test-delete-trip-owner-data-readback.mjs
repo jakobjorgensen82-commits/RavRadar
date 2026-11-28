@@ -20,11 +20,11 @@ const ownerId = '11111111-1111-4111-8111-111111111111';
 const gateway = 'https://synthetic-trip-storage.example.workers.dev';
 const supabase = 'https://synthetic-trip-storage.supabase.co';
 const secret = 'synthetic-shared-secret-for-local-test-only';
-const routeOrder = ['d1-delete', 'supabase-delete', 'd1-readback', 'supabase-readback'];
+const routeOrder = ['intent-start', 'd1-delete', 'supabase-delete', 'd1-readback', 'supabase-readback', 'intent-complete'];
 
 async function run({ body = [], status = 200, jsonError, firstError, failAt, confirmed = true,
   direct = false, targetUserId = ownerId, heldReadback = null,
-  serviceKey = 'synthetic-service-key' } = {}) {
+  serviceKey = 'synthetic-service-key', intentBody = true } = {}) {
   const calls = [], logs = [];
   let bodyReads = 0;
   const fetchImpl = async (input, options) => {
@@ -48,12 +48,25 @@ async function run({ body = [], status = 200, jsonError, firstError, failAt, con
       calls.push('d1-readback');
       return Response.json({ ok: true, rows: failAt === 'd1-readback' ? [{}] : [] });
     }
-    assert.equal(url.pathname, '/rest/v1/observations');
-    assert.equal(url.searchParams.get('user_id'), `eq.${ownerId}`);
     assert.equal(options.headers.apikey, serviceKey);
     assert.equal(new Headers(options.headers).get('authorization'),
       serviceKey.startsWith('sb_secret_') ? null : `Bearer ${serviceKey}`,
-      'Both Supabase requests retain apikey and use Bearer only for legacy keys');
+      'Supabase requests retain apikey and use Bearer only for legacy keys');
+    if (url.pathname === '/rest/v1/rpc/record_trip_owner_erasure_intent') {
+      assert.equal(options.method, 'POST');
+      assert.equal(url.search, '');
+      const payload = JSON.parse(options.body);
+      const owner = await externalOwnerSubject({ userId: ownerId, secret });
+      const completing = calls.length !== 0;
+      assert.deepEqual(payload, { p_owner_subject: owner.subject, p_completed: completing });
+      assert.equal(options.body.includes(ownerId), false);
+      const phase = completing ? 'intent-complete' : 'intent-start';
+      calls.push(phase);
+      if (failAt === phase) return Response.json(true, { status: 503 });
+      return Response.json(intentBody);
+    }
+    assert.equal(url.pathname, '/rest/v1/observations');
+    assert.equal(url.searchParams.get('user_id'), `eq.${ownerId}`);
     if (options.method === 'DELETE') {
       calls.push('supabase-delete');
       assert.equal(options.headers.Prefer, 'return=minimal');
@@ -128,7 +141,7 @@ for (const [name, body] of [
     const result = await run({ body });
     assert.equal(result.ok, false, `${name} must not produce verified-deletion success`);
     assert.equal(result.logs.length, 0);
-    assert.deepEqual(result.calls, routeOrder);
+    assert.deepEqual(result.calls, routeOrder.slice(0, -1));
   });
 }
 
@@ -147,7 +160,7 @@ test('malformed JSON preserves its first error and never reports success', async
   assert.equal(result.bodyReads, 1);
 });
 
-for (const failAt of ['d1-delete', 'supabase-delete', 'd1-readback', 'supabase-readback']) {
+for (const failAt of routeOrder) {
   test(`failure at ${failAt} stops all later operations`, async () => {
     const error = new Error('synthetic-first-transport-error');
     const result = await run({ failAt, firstError: error });
@@ -156,6 +169,12 @@ for (const failAt of ['d1-delete', 'supabase-delete', 'd1-readback', 'supabase-r
     if (failAt === 'd1-delete' || failAt === 'supabase-readback') assert.equal(result.error, error);
   });
 }
+
+test('a non-boolean intent receipt stops before any trip storage is touched', async () => {
+  const result = await run({ intentBody: { ok: true } });
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.calls, ['intent-start']);
+});
 
 test('missing explicit CLI confirmation reaches no transport', async () => {
   const result = await run({ confirmed: false });

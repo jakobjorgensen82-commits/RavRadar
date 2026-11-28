@@ -76,7 +76,7 @@ const anonymousOwner = await externalOwnerSubject({ anonymousId, secret });
     if(specifier==='jsr:@supabase/functions-js/edge-runtime.d.ts')return {url:'data:text/javascript,export{}',shortCircuit:true};
     return next(specifier,context);
   }});
-  globalThis.Deno={env:{get:name=>environment[name]??null},serve:handler=>{callback=handler;}};
+  globalThis.Deno={env:{get:name=>environment[name]},serve:handler=>{callback=handler;}};
   globalThis.fetch=async(input,init={})=>{
     const request=new Request(input,init),url=new URL(request.url);
     if(url.origin===gatewayUrl){workerCalls++;assert.equal(url.pathname,'/v1/trips/count');
@@ -534,7 +534,7 @@ try {
     TRIP_GATEWAY_SHARED_SECRET: 'synthetic-shared-secret-with-thirty-two-characters',
     TRIP_PSEUDONYM_SECRET_V1: 'synthetic-pseudonym-secret-with-thirty-two-characters',
   };
-  globalThis.Deno = { env: { get: name => tripStoreEnvironment[name] ?? null } };
+  globalThis.Deno = { env: { get: name => tripStoreEnvironment[name] } };
   globalThis.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
     if (url.hostname === 'lease-test.workers.dev') {
@@ -2013,7 +2013,7 @@ const activationMarker = fs.readFileSync('scripts/mark-cloudflare-trip-storage-a
 const capacityAudit = fs.readFileSync('scripts/audit-cloudflare-trip-storage.mjs', 'utf8');
 assert.match(worker, /Array\.from\(\{ length: 10 \}/);
 assert.match(worker, /verifyTripGatewaySignature/);
-const workerCountFunction = worker.match(/async function countTrips\(env\) \{[\s\S]*?(?=\nasync function deleteOwnerTrips)/)?.[0] || '';
+const workerCountFunction = worker.match(/async function countTrips\(env\) \{[\s\S]*?(?=\n(?:export )?async function deleteOwnerTrips)/)?.[0] || '';
 assert.match(workerCountFunction, /select count\(\*\) as trip_count from trip_observations/i);
 assert.doesNotMatch(workerCountFunction, /\b(?:insert|update|delete|replace|upsert|run)\b/i);
 assert.match(
@@ -2353,7 +2353,7 @@ async function checkServiceKeyHeadersOnly() {
   const inputBefore = canonicalJson(input), expectedBody = activeRavScoreTripAdmissionBody(input);
   const requests = [];
   let responseFor;
-  globalThis.Deno = { env: { get: name => environment[name] ?? null } };
+  globalThis.Deno = { env: { get: name => environment[name] } };
   globalThis.fetch = async (input, init = {}) => {
     const request = new Request(input, init);
     assert.equal(new URL(request.url).origin, environment.SUPABASE_URL);

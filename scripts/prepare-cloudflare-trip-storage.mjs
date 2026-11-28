@@ -65,6 +65,20 @@ async function listDatabases(readOnlyRepair = false) {
   }
 }
 
+async function verifyUnheldInstallation(databases) {
+  const kind = classifyExistingTripStorageDatabases(databases);
+  if (kind === 'legacy') {
+    await verifyExistingWorkerBindings({
+      accountId, apiToken, workerName: 'ravradar-trip-gateway', requireUnheld: true,
+      expectedBindings: TRIP_STORAGE_REQUIRED_SHARD_NAMES.map((database_name, index) => ({
+        binding: `TRIP_DB_${index}`, database_name,
+        database_id: databases.find(row => row.name === database_name).uuid,
+      })),
+    });
+  }
+  return kind;
+}
+
 async function ensureDatabases(existingDatabases) {
   const databases = [...existingDatabases];
   const requiredNames = TRIP_STORAGE_REQUIRED_SHARD_NAMES;
@@ -297,7 +311,8 @@ async function prepareOwnerExportUpgrade(phase) {
     const migrationSha256 = createHash('sha256').update(migration).digest('hex');
     if (migrationSha256 !== 'a84490c7cd8a173447188cbec3c275714195f29688340cbbd35b33ff4248a4eb') throw upgradeFailure();
     const inspection = await inspectOwnerExportShards();
-    const descriptor = { accountId, apiToken, workerName: 'ravradar-trip-gateway', expectedBindings: inspection.bindings };
+    const descriptor = { accountId, apiToken, workerName: 'ravradar-trip-gateway', expectedBindings: inspection.bindings,
+      requireUnheld: phase === 'apply' };
     if (phase === 'plan') {
       const current = await verifyExistingWorkerBindings(descriptor);
       upgradeMainAndLease(false);
@@ -414,7 +429,8 @@ export async function prepareOwnerErasureGuard(phase) {
   };
   const inspection = await inspectOwnerExportShards();
   if (inspection.missing.length) throw failure();
-  const descriptor = { accountId, apiToken, workerName: 'ravradar-trip-gateway', expectedBindings: inspection.bindings };
+  const descriptor = { accountId, apiToken, workerName: 'ravradar-trip-gateway', expectedBindings: inspection.bindings,
+    requireUnheld: phase === 'apply' };
   const current = await verifyExistingWorkerBindings(descriptor);
   descriptor.expectedVersion = current.versionId;
   const bindingMappingSha256=createHash('sha256').update(JSON.stringify(inspection.bindings)).digest('hex');
@@ -466,6 +482,10 @@ export async function prepareOwnerErasureGuard(phase) {
 
 async function main() {
 const arguments_ = process.argv.slice(2);
+if (arguments_.length === 1 && arguments_[0] === '--verify-installation-unheld') {
+  await verifyUnheldInstallation(await listDatabases());
+  return;
+}
 const repairOnly = arguments_.length === 1 && arguments_[0] === '--existing-worker-repair';
 const upgradePhase = arguments_.length === 1 ? ({
   '--existing-owner-export-upgrade-plan': 'plan',
@@ -488,7 +508,7 @@ if (repairOnly) {
 required(accountId, 'CLOUDFLARE_ACCOUNT_ID');
 required(apiToken, 'CLOUDFLARE_API_TOKEN');
 const existingDatabases = await listDatabases();
-const installationClass = classifyExistingTripStorageDatabases(existingDatabases);
+const installationClass = await verifyUnheldInstallation(existingDatabases);
 const legacyD1Detected = installationClass === 'legacy';
 if (legacyD1Detected) {
   await verifyLegacyActivationEvidence({

@@ -986,8 +986,10 @@ const withoutImports = source => source.replace(/^import[\s\S]*?;\r?\n/gm,'');
 const names=classification.TRIP_STORAGE_REQUIRED_SHARD_NAMES;
 const shardRows=()=>names.map((name,index)=>({name,uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,jurisdiction:'eu'}));
 
-async function prepareFixture({args=['--existing-worker-repair'],list=shardRows(),mutate=()=>{},databaseMutation=()=>{},fetchFailure=false}={}) {
+async function prepareFixture({args=['--existing-worker-repair'],list=shardRows(),mutate=()=>{},databaseMutation=()=>{},fetchFailure=false,restoreHold=false}={}) {
   const calls=[],writes=[],files=[],databases=names.map(()=>new DatabaseSync(':memory:'));
+  const { verifyExistingWorkerBindings } = await import('./verify-cloudflare-trip-gateway.mjs');
+  const workerVersion='11111111-1111-4111-8111-111111111111';
   let error=null;
   try {
     for(const database of databases){database.exec(schema);if(args.includes('--existing-worker-repair'))database.exec(exportIndex);database.prepare('insert into trip_storage_control(control_key,control_value) values(?,?)').run('d1_activation_attempted','true');}
@@ -1002,6 +1004,13 @@ async function prepareFixture({args=['--existing-worker-repair'],list=shardRows(
       } else if(url.pathname.endsWith('/database')) {
         const page=Number(url.searchParams.get('page'));const result=page===1?list:[];
         body={success:true,result,result_info:{page,per_page:100,count:result.length,total_count:list.length,total_pages:1}};
+      } else if(url.pathname.endsWith('/deployments')) {
+        body={success:true,result:{deployments:[{id:'22222222-2222-4222-8222-222222222222',strategy:'percentage',
+          versions:[{version_id:workerVersion,percentage:100}]}]}};
+      } else if(url.pathname.endsWith('/versions/'+workerVersion)) {
+        const bindings=shardRows().map((row,index)=>({name:'TRIP_DB_'+index,type:'d1',id:row.uuid}));
+        if(restoreHold)bindings.push({name:'TRIP_RESTORE_HOLD',type:'secret_text'});
+        body={success:true,result:{id:workerVersion,resources:{bindings}}};
       } else if(url.pathname.endsWith('/query')) {
         const index=Number(url.pathname.split('/').at(-2).slice(-12));
         const {sql,params=[]}=JSON.parse(init.body);calls.at(-1).sql=sql;
@@ -1011,7 +1020,7 @@ async function prepareFixture({args=['--existing-worker-repair'],list=shardRows(
         body={success:true,result:[{success:true,results}]};
       } else throw new Error('Unexpected provider route');
       mutate(body,{url,init,calls});
-      return {ok:true,status:200,headers:{get:()=>null},json:async()=>body};
+      return new Response(JSON.stringify(body));
     };
     await evaluate(withoutImports(preparation).replace(/^export /gm,'').split("\nif (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)")[0]+"\nawait main();",{
       fs:{writeFileSync:(name,value,options)=>files.push({name,value,options}),appendFileSync:(...value)=>files.push({output:value})},path,
@@ -1019,7 +1028,8 @@ async function prepareFixture({args=['--existing-worker-repair'],list=shardRows(
       TRIP_STORAGE_REQUIRED_SHARD_NAMES:names,SHARD_COUNT:10,
       classifyExistingTripStorageDatabases:classification.classifyExistingTripStorageDatabases,
       verifyLegacyActivationEvidence:classification.verifyLegacyActivationEvidence,
-      process:{argv:['node','scripts/prepare-cloudflare-trip-storage.mjs',...args],env:{CLOUDFLARE_ACCOUNT_ID:'synthetic',CLOUDFLARE_API_TOKEN:'synthetic',TRIP_WRANGLER_CONFIG_PATH:'/synthetic/wrangler.json',GITHUB_TOKEN:'synthetic',GITHUB_REPOSITORY:classification.LEGACY_D1_ACTIVATION_EVIDENCE.repository}},
+      verifyExistingWorkerBindings:options=>verifyExistingWorkerBindings({...options,fetchImpl:boundedFetch}),
+      process:{argv:['node','scripts/prepare-cloudflare-trip-storage.mjs',...args],env:{CLOUDFLARE_ACCOUNT_ID:'a'.repeat(32),CLOUDFLARE_API_TOKEN:'synthetic',TRIP_WRANGLER_CONFIG_PATH:'/synthetic/wrangler.json',GITHUB_TOKEN:'synthetic',GITHUB_REPOSITORY:classification.LEGACY_D1_ACTIVATION_EVIDENCE.repository}},
       console:{log:()=>{}},
     });
   }catch(caught){error=caught;}finally{for(const database of databases)database.close();}
@@ -1040,6 +1050,28 @@ repairTest('repair default CLI retains legacy evidence, ten DDL statements and p
   const result=await prepareFixture({args:[]});assert.equal(result.error,null);
   assert.equal(result.writes.length,100);
   assert.equal(result.calls.filter(call=>/^pragma /.test(call.sql||'')).length,20);assert.equal(result.calls.filter(call=>call.url.includes('/actions/')).length,2);assert.equal(result.files.length,1);
+});
+repairTest('repair default CLI cannot write when the active Worker has a restore hold',async()=>{
+  const result=await prepareFixture({args:[],restoreHold:true});
+  assert.equal(result.error?.message,'TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED');
+  assert.equal(result.files.length,0);
+  assert.ok(result.calls.some(call=>call.url.includes('/versions/')));
+  assert.ok(result.calls.every(call=>call.method==='GET'));
+});
+repairTest('full install preflight is read-only, blocks a held Worker and preserves a genuinely fresh account',async()=>{
+  const args=['--verify-installation-unheld'];
+  const existing=await prepareFixture({args});
+  const held=await prepareFixture({args,restoreHold:true});
+  const fresh=await prepareFixture({args,list:[]});
+  assert.equal(existing.error,null);
+  assert.equal(held.error?.message,'TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED');
+  assert.equal(fresh.error,null);
+  assert.ok(existing.calls.some(call=>call.url.includes('/versions/')));
+  assert.ok(fresh.calls.every(call=>call.url.endsWith('/database')));
+  for(const result of [existing,held,fresh]){
+    assert.deepEqual(result.files,[]);
+    assert.ok(result.calls.every(call=>call.method==='GET'));
+  }
 });
 for(const args of [['--unknown'],['--existing-worker-repair','--unknown'],['--existing-worker-repair','--existing-worker-repair']])
 repairTest('repair rejects unknown arguments before I/O '+args.join(' '),async()=>{
@@ -1248,9 +1280,66 @@ repairTest('repair uses unchanged normal expiring-maintenance behavior, never cl
   const body=source.slice(start,end).replace('export function','function').replace(': TripStorageMode','');
   const now=1800000000000,deadline=now+20*60000;
   const result=await evaluate(body+'\nreturn [tripStorageMode(now),tripStorageMode(deadline)];',{
-    now,deadline,Deno:{env:{get:()=>`maintenance:${new Date(deadline).toISOString()}`}},
+    now,deadline,Deno:{env:{get:key=>key==='TRIP_STORAGE_MODE'?`maintenance:${new Date(deadline).toISOString()}`:undefined}},
     TRIP_STORAGE_MAINTENANCE_MAX_LEASE_MS:30*60000,GatewayError:class extends Error{},
   });assert.deepEqual(result,['maintenance','d1']);
+});
+repairTest('restore hold marks Worker health and fences every signed trip route before D1',async()=>{
+  const { handleRequest } = await import('../cloudflare/trip-gateway/worker.js');
+  const { waitForWorkerHealth } = await import('./verify-cloudflare-trip-gateway.mjs');
+  const { AGGREGATE_PATH, AGGREGATE_VERIFY_PATH } =
+    await import('../supabase/functions/_shared/trip-aggregate-contract.js');
+  const env = {
+    TRIP_GATEWAY_SHARED_SECRET: sharedSecret,
+    TRIP_RESTORE_HOLD: 'true',
+    TRIP_AGGREGATE_ENABLED: 'true',
+  };
+  let shardReads = 0;
+  for (let index = 0; index < 10; index += 1) env[`TRIP_DB_${index}`] = {
+    prepare() { shardReads += 1; throw new Error('Synthetic held D1 must remain untouched'); },
+  };
+  const health = await handleRequest(new Request(baseUrl + '/health'), env);
+  assert.equal(health.status, 200);
+  assert.equal((await health.json()).restore_hold, true);
+  const readinessOptions = {
+    gatewayUrl: 'https://trip-gateway-test.example.workers.dev', retryDelaysMs: [0],
+    fetchImpl: (input, init) => handleRequest(new Request(input, init), env),
+  };
+  assert.equal((await waitForWorkerHealth(readinessOptions)).verified, false);
+  assert.equal((await waitForWorkerHealth({ ...readinessOptions, expectedRestoreHold: true })).verified, true);
+  const countOptions = { gatewayUrl: readinessOptions.gatewayUrl, sharedSecret, fetchImpl: readinessOptions.fetchImpl };
+  assert.equal((await runWorkerCountReadProbe({ ...countOptions, probeKind: WORKER_COUNT_UNSIGNED_PROBE_KIND })).status, 401);
+  assert.deepEqual(await runWorkerCountReadProbe({
+    ...countOptions, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true,
+  }), { ok: true, attempts: 1, status: 503, restoreHeld: true });
+  await assert.rejects(runWorkerCountReadProbe({
+    ...countOptions, probeKind: WORKER_COUNT_SIGNED_PROBE_KIND, expectedRestoreHold: true,
+    fetchImpl: async () => Response.json({ ok: false, error: 'COUNT_UNAVAILABLE' }, { status: 503 }),
+  }), { code: 'TRIP_STORAGE_WORKER_COUNT_CONTRACT_MISMATCH' });
+  for (const pathname of [
+    '/v1/trips/store', '/v1/trips/list', '/v1/trips/export-page',
+    '/v1/trips/count', '/v1/trips/delete-owner', AGGREGATE_PATH, AGGREGATE_VERIFY_PATH,
+  ]) {
+    const method = 'POST';
+    const bodyText = '{}';
+    const timestamp = String(Date.now());
+    const signature = await storage.tripGatewaySignature({ secret: sharedSecret, timestamp, method, pathname, bodyText });
+    const headers = { 'content-type': 'application/json', 'x-ravradar-timestamp': timestamp };
+    const send = (requestHeaders) => handleRequest(
+      new Request(baseUrl + pathname, { method, headers: requestHeaders, body: bodyText }), env,
+    );
+    assert.equal((await send(headers)).status, 401);
+    const result = await send({ ...headers, 'x-ravradar-signature': signature });
+    assert.equal(result.status, 503);
+    assert.deepEqual(await result.json(), { ok: false, error: 'TRIP_RESTORE_HOLD' });
+  }
+  env.TRIP_RESTORE_HOLD = 'unrecognized';
+  assert.equal((await (await handleRequest(new Request(baseUrl + '/health'), env)).json()).restore_hold, true);
+  env.TRIP_RESTORE_HOLD = 'false';
+  assert.equal(Object.hasOwn(await (await handleRequest(new Request(baseUrl + '/health'), env)).json(), 'restore_hold'), false);
+  assert.equal((await waitForWorkerHealth(readinessOptions)).verified, true);
+  assert.equal((await waitForWorkerHealth({ ...readinessOptions, expectedRestoreHold: true })).verified, false);
+  assert.equal(shardReads, 0);
 });
 repairTest('deployment workflow requires its own primary receipt after deploy and before/after restore',async()=>{
   const result=await workflowFixture();assert.equal(result.firstError,null);
@@ -1358,12 +1447,19 @@ deploymentTest('deployment receipt bounds held body and closes stream',async()=>
 for(const overrides of [{expectedVersion:''},{expectedVersion:undefined},{expectedVersion:other.slice(1)},{workerName:'other-worker'},{accountId:'../different'},{apiToken:''}])deploymentTest('deployment receipt invalid intent makes zero HTTP '+JSON.stringify(overrides),async()=>{
   let calls=0;await assert.rejects(probe({...overrides,fetchImpl:async()=>{calls++;return new Response('{}');}}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});assert.equal(calls,0);
 });
-async function verifierMain({claim,body=valid(),badConfig=false}={}) {
+async function verifierMain({claim,body=valid(),badConfig=false,args=[],restoreHold=false}={}) {
   let code=fs.readFileSync('scripts/verify-cloudflare-trip-gateway.mjs','utf8').replaceAll('\r\n','\n');
   code=code.slice(0,code.lastIndexOf('\nif (process.argv[1]')).replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm,'').replace(/^export /gm,'');
   const calls=[],logs=[],configReads=[];
+  const d1_databases=Array.from({length:10},(_,i)=>({binding:'TRIP_DB_'+i,database_name:'ravradar-trips-'+i,
+    database_id:'00000000-0000-4000-8000-'+String(i).padStart(12,'0')}));
   const fetchImpl=async(input,init)=>{
     calls.push({input:String(input),init});
+    if(String(input).includes('/versions/')){
+      const bindings=d1_databases.map(row=>({type:'d1',name:row.binding,id:row.database_id}));
+      if(restoreHold)bindings.push({type:'secret_text',name:'TRIP_RESTORE_HOLD'});
+      return new Response(JSON.stringify({success:true,result:{id:expected,resources:{bindings}}}));
+    }
     if(String(input).includes('api.cloudflare.com'))return new Response(JSON.stringify(body));
     if(String(input).endsWith('/health'))return new Response(JSON.stringify({ok:true,contract_version:'4.0.311',shards:10,storage_schema_version:1,idempotency_registry_schema_version:2,owner_erasure_tombstone_schema_version:1,trip_export_version:1}));
     return init.headers['X-RavRadar-Signature']?new Response(JSON.stringify({ok:true,trip_count:0})):new Response('',{status:401});
@@ -1371,7 +1467,7 @@ async function verifierMain({claim,body=valid(),badConfig=false}={}) {
   const env={CLOUDFLARE_TRIP_GATEWAY_URL:'https://synthetic-gateway.example.workers.dev',TRIP_GATEWAY_SHARED_SECRET:'synthetic-existing-shared-secret-with-32-characters',CLOUDFLARE_ACCOUNT_ID:accountId,CLOUDFLARE_API_TOKEN:apiToken,TRIP_WRANGLER_CONFIG_PATH:'/synthetic/config'};
   if(claim!==undefined)env.EXPECTED_TRIP_WORKER_VERSION=claim;
   let error;try{await compileFunction('return(async()=>{'+code+'\nawait main();})();',['fs','process','fetch','globalThis','boundedFetch','TRIP_STORAGE_NETWORK_TIMEOUT_CODE','TRIP_STORAGE_NETWORK_TIMEOUT_MS','normalizeCloudflareGatewayUrl','tripGatewaySignature','console'])(
-    {readFileSync:p=>{configReads.push(p);return JSON.stringify({name:badConfig?'wrong-worker':workerName});}},{env},fetchImpl,{fetch:fetchImpl},boundedFetch,TRIP_STORAGE_NETWORK_TIMEOUT_CODE,TRIP_STORAGE_NETWORK_TIMEOUT_MS,normalizeCloudflareGatewayUrl,tripGatewaySignature,{log:value=>logs.push(value)});
+    {readFileSync:p=>{configReads.push(p);return JSON.stringify({name:badConfig?'wrong-worker':workerName,d1_databases});}},{env,argv:['node','verify',...args]},fetchImpl,{fetch:fetchImpl},boundedFetch,TRIP_STORAGE_NETWORK_TIMEOUT_CODE,TRIP_STORAGE_NETWORK_TIMEOUT_MS,normalizeCloudflareGatewayUrl,tripGatewaySignature,{log:value=>logs.push(value)});
   }catch(caught){error=caught;}return{calls,logs,configReads,error};
 }
 deploymentTest('deployment normal CLI default retains exactly original three probes and no config/provider read',async()=>{
@@ -1388,6 +1484,17 @@ deploymentTest('deployment normal CLI empty required claim cannot silently fall 
 });
 deploymentTest('deployment normal CLI wrong config cannot query another Worker',async()=>{
   const result=await verifierMain({claim:expected,badConfig:true});assert.equal(result.error?.message,'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');assert.deepEqual(result.logs,[]);assert.equal(result.calls.length,3);
+});
+deploymentTest('before-replace CLI permits only the exact existing Worker with no hold binding',async()=>{
+  const args=['--before-replace'];
+  const unheld=await verifierMain({args});
+  assert.equal(unheld.error,undefined);
+  assert.equal(unheld.calls.length,3);
+  assert.ok(unheld.calls.every(call=>call.init.method==='GET'&&call.input.includes('api.cloudflare.com')));
+  const held=await verifierMain({args,restoreHold:true});
+  assert.equal(held.error?.message,'TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED');
+  assert.equal(held.calls.length,2);
+  assert.deepEqual(held.logs,[]);
 });
 }
 

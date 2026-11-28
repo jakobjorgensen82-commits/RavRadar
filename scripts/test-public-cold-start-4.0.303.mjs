@@ -102,8 +102,10 @@ const tripTestTag = '&trip-test=20261125';
 const previousCareSuffix = previousTopicTabSuffix.replace('assistant-help=20261125-uv-identification-daylight', 'assistant-help=20261126-cracked-amber-care');
 const previousTripTestSuffix = `${previousTopicTabSuffix}${tripTestTag}`;
 const previousCareTripTestSuffix = `${previousCareSuffix}${tripTestTag}`;
-const suffix = previousCareTripTestSuffix.replace('assistant-help=20261126-cracked-amber-care', 'assistant-help=20261127-beach-signs')
+const previousRamanEntrySuffix = previousCareTripTestSuffix.replace('assistant-help=20261126-cracked-amber-care', 'assistant-help=20261127-beach-signs')
   .replace('assistant-locale=topic-tab-20261125', 'assistant-locale=topic-tab-raman-20261127');
+const waterLevelCardTag = '&water-level-card=20261128';
+const suffix = previousRamanEntrySuffix + waterLevelCardTag;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const oldAccountPanelSuffix = `?v=${releaseVersion}&ui=account-20261006`;
@@ -145,6 +147,10 @@ const workerAssets = worker.replaceAll('${APP_VERSION}', releaseVersion)
   .replaceAll('${COMPACT_MAP}', workerMapTag).replaceAll('${PUBLIC_JSON_TRANSPORT}', workerTransportTag);
 assert.ok(workerAssets.includes(`./bootstrap.js${suffix}`));
 assert.ok(workerAssets.includes(`./app.js${suffix}`));
+const previousZonePanel = `./js/ui/info-panel.js?v=${releaseVersion}&ui=zone-panels-20261027&map=${workerMapTag}`;
+const zonePanel = previousZonePanel + waterLevelCardTag;
+assert.ok(app.includes(`"${zonePanel}"`));
+assert.ok(workerAssets.includes(zonePanel));
 assert.ok(workerAssets.includes(`./js/ui/account-panel.js${accountPanelSuffix}`));
 assert.ok(workerAssets.includes(`./js/i18n.js?v=${releaseVersion}`));
 assert.ok(workerAssets.includes(`./js/ui/admin-dashboard.js${adminEntrypointSuffix}`));
@@ -184,7 +190,7 @@ const previousDeliveredAssets = [
   [previousTabLanguageSuffix, 'previous-tab-language'],
   [previousTopicTabSuffix, 'previous-topic-tab'],
   [previousCareSuffix, 'previous-care'], [previousTripTestSuffix, 'previous-trip-test'],
-  [previousCareTripTestSuffix, 'previous-care-trip-test'],
+  [previousCareTripTestSuffix, 'previous-care-trip-test'], [previousRamanEntrySuffix, 'previous-raman-entry'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
@@ -224,12 +230,22 @@ for (const file of ['bootstrap.js', 'app.js']) {
     file === 'bootstrap.js' ? 'share-bootstrap' : 'share-app');
   for (const [oldSuffix, label] of previousDeliveredAssets) {
     assert.equal(await cached.get(`${origin}/${file}${oldSuffix}`).clone().text(), `${label}-${file}`,
-      'Previously delivered same-version assets stay separate from the new assistant cache key.');
+      'Previously delivered same-version assets stay separate from the new app cache key.');
   }
   handlers.get('fetch')({request,respondWith:value => {response=value;}});
   assert.equal(await (await response).text(), `new:${request.url}`,
     'The exact new UI asset must be reusable from its own cache key.');
 }
+assert.ok(precached.includes(zonePanel));
+const previousZonePanelUrl = new URL(previousZonePanel, origin).href;
+const zonePanelUrl = new URL(zonePanel, origin).href;
+cached.set(previousZonePanelUrl, new Response('previous-zone-panel'));
+for (let pass = 0; pass < 2; pass++) {
+  let response;
+  handlers.get('fetch')({request:{method:'GET',mode:'cors',url:zonePanelUrl},respondWith:value => {response=value;}});
+  assert.equal(await (await response).text(), `new:${zonePanelUrl}`);
+}
+assert.equal(await cached.get(previousZonePanelUrl).clone().text(), 'previous-zone-panel');
 const oldHelpUrl = `${origin}/js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261120`;
 const previousPublishedHelpPath = `./js/services/rav-assistant-public-help.js?v=${releaseVersion}&ui=public-help-20261123&followup=daylight-20261122`;
 const previousOriginHelpPath = previousPublishedHelpPath.replace('ui=public-help-20261123', 'ui=public-help-20261123-origin-and-net');
@@ -306,7 +322,7 @@ for (const [url, oldSuffix] of tripAssets) {
   }
   assert.equal(await cached.get(oldUrl).clone().text(), 'previous-trip-module');
 }
-const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, ...assistantModuleUrls,
+const startupRequests = [`${origin}/bootstrap.js${suffix}`, `${origin}/app.js${suffix}`, zonePanelUrl, ...assistantModuleUrls,
   ...tripAssets.map(([url]) => url.href)];
 assert.deepEqual(fetched, startupRequests);
 

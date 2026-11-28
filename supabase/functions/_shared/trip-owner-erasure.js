@@ -9,6 +9,18 @@ function required(value, name) {
   return value;
 }
 
+async function recordErasureIntent({ supabaseUrl, supabaseHeaders, ownerSubject, completed, fetchImpl }) {
+  const receipt = await fetchImpl(new URL('/rest/v1/rpc/record_trip_owner_erasure_intent', supabaseUrl), {
+    method: 'POST',
+    headers: { ...supabaseHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_owner_subject: ownerSubject, p_completed: completed }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!receipt.ok || await receipt.json().catch(() => null) !== true) {
+    throw new Error('Den uafhængige slettekvittering for ture kunne ikke bekræftes.');
+  }
+}
+
 // Server-only trip-source stage of permanent owner erasure, not an HTTP route.
 // The caller must authorize the owner before calling; browser-supplied identity
 // is not authority. This does not delete Auth/profiles or implement retention.
@@ -33,6 +45,8 @@ export async function eraseTripOwnerSources({
     sharedSecret: required(sharedSecret, 'TRIP_GATEWAY_SHARED_SECRET'),
     fetchImpl,
   };
+  const intent = { supabaseUrl: parsedSupabaseUrl, supabaseHeaders, ownerSubject: owner.subject, fetchImpl };
+  await recordErasureIntent({ ...intent, completed: false });
   const deletedFromD1 = await deleteCloudflareTrips({ ...cloudflareConfiguration, ownerSubject: owner.subject });
   const supabaseDelete = await fetchImpl(`${supabaseUrl}/rest/v1/observations?user_id=eq.${encodeURIComponent(userId)}`, {
     method: 'DELETE',
@@ -49,6 +63,7 @@ export async function eraseTripOwnerSources({
   });
   const remainingSupabase = supabaseVerify.ok ? await supabaseVerify.json() : null;
   if (!Array.isArray(remainingSupabase) || remainingSupabase.length) throw new Error('Supabase-verifikationen kunne ikke bekræfte, at ejerens ture er slettet.');
+  await recordErasureIntent({ ...intent, completed: true });
   // The guarded D1 list is empty for a tombstoned owner. It is not an
   // independent physical row-absence check or a backup/Auth deletion receipt.
   return Object.freeze({
