@@ -13,8 +13,11 @@ import {setTimeout as sleep} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {Readable,Writable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
-import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
+import {accountErasureCatalogQuery,accountErasureCheckReference,readAccountErasureSource} from './verify-account-erasure-schema.mjs';
 import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-native-fixture.mjs';
+import {inactivityNoticeBody} from '../supabase/functions/_shared/inactivity-notice-mail.mjs';
+import {externalOwnerSubject} from '../supabase/functions/_shared/trip-storage.js';
+import {exerciseIsolatedTripErasureSqlite} from './lib/isolated-trip-erasure-sqlite.mjs';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
@@ -1447,7 +1450,7 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     await sql(`insert into public.profiles(id,email,role) values('${created.id}','owned-native-target@example.invalid','user');`);
     return {id:created.id,email,password,createdAt:created.created_at};
   };
-  const qualify=async target=>{
+  const seedInactivityEvidence=async target=>{
     // SYNTHETIC history/delivery attestation, never a two-year real-world claim.
     await sql(`update public.account_inactivity_policy set notices_enabled=true,coverage_status='CAPTURING',
       coverage_started_at=clock_timestamp()-interval '3 years',delivery_qualified=true where singleton;
@@ -1459,6 +1462,9 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
         from public.account_inactivity_policy where singleton on conflict(user_id) do update set
         first_observed_at=excluded.first_observed_at,last_activity_at=excluded.last_activity_at,coverage_epoch=excluded.coverage_epoch;
       update public.account_inactivity_notices set state='CANCELLED',delete_not_before=null where target_user_id='${target.id}';`);
+  };
+  const qualify=async target=>{
+    await seedInactivityEvidence(target);
     const notice=crypto.randomUUID(),prepared=await rpc('authenticated',`public.prepare_account_inactivity_notice('${notice}','${target.id}')`);
     try{return nativeActivityQualifiedReady(prepared);}
     catch(error){throw await nativeActivityNoticePolicyFailure(error,c,p,target.id);}
@@ -1601,13 +1607,197 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     await login(fenced);const fenceAfter=await snapshot(fenced.id);
     need(fenceAfter.activity===null&&fenceAfter.journal===null&&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
     pass('B9_CLAIMS_ACL_AND_EXISTING_POST_PG_FENCE');
+    const selectCatalog=query=>value('select pg_catalog.to_jsonb(catalog) from ('+query.trim().replace(/;$/,'')+') as catalog;');
+    const priorAccountChecks=accountErasureCheckReference((await selectCatalog(accountErasureCatalogQuery)).metadata.checks);
+    const recoveryMigration='supabase/migrations/20261127095500_trip_owner_erasure_intents.sql';
+    await psql(c,p,'NATIVE_TRIP_ERASURE_RECOVERY_INSTALL',await fs.readFile(path.join(source.root,recoveryMigration)));
+    const automaticCases=[];
+    const automaticMigration='supabase/migrations/20261128073000_account_automatic_erasure_off.sql';
+    const automaticSql=await fs.readFile(path.join(source.root,automaticMigration));
+    await psql(c,p,'NATIVE_AUTOMATIC_ERASURE_INSTALL',automaticSql);
+    const noticeMigration='supabase/migrations/20261128103000_account_automatic_notices_off.sql';
+    await psql(c,p,'NATIVE_AUTOMATIC_NOTICE_INSTALL',await fs.readFile(path.join(source.root,noticeMigration)));
+    const priorStage=c.stage;
+    c.stage='NATIVE_AUTOMATIC_OFF_CATALOG';
+    const {createAutomaticAccountOffSchemaReadback}=await import('./verify-account-automatic-off-schema.mjs');
+    const readback=await createAutomaticAccountOffSchemaReadback(priorAccountChecks);
+    const installed=readback.verifyRows([await selectCatalog(readback.query)]);
+    assert.equal(installed.catalogVerified,true);
+    assert.equal(installed.activationAuthority,false);
+    c.stage=priorStage;
+    const automaticWork=()=>rpc('service_role','public.list_account_automatic_erasure_work()');
+    const prepareAutomatic=async testUser=>{
+      const ready=await qualify(testUser),attempt=crypto.randomUUID(),provider=crypto.randomUUID();
+      const digest=crypto.createHash('sha256').update(JSON.stringify(inactivityNoticeBody(testUser.email))).digest('hex');
+      const claimed=await rpc('service_role',`public.claim_account_inactivity_notice('${ready.noticeId}','${fixtureActorId}',
+        ${BigInt(ready.revision)},'${attempt}','${digest}',${sqlString(testUser.createdAt)})`);
+      assert.equal(claimed.shouldSend,true);
+      const accepted=await acknowledge(claimed,attempt,'accepted',provider);
+      const receipt=await acknowledge(accepted,attempt,'delivered',provider);
+      assert.equal(receipt.state,'DELIVERED');
+      return {receipt,digest};
+    };
+    const advanceNotice=({receipt})=>sql(`update public.account_inactivity_notices set
+      created_at=created_at-interval '31 days',claimed_at=claimed_at-interval '31 days',
+      accepted_at=accepted_at-interval '31 days',delivered_at=delivered_at-interval '31 days',
+      delete_not_before=delete_not_before-interval '31 days' where notice_id='${receipt.noticeId}';`);
+    const stageAutomatic=({receipt,digest},testUser)=>rpc('service_role',`public.stage_account_automatic_erasure(
+      '${receipt.noticeId}',${BigInt(receipt.revision)},${sqlString(testUser.createdAt)},'${digest}')`);
+    const remains=subject=>value(`select to_jsonb(exists(select 1 from auth.users where id='${subject.id}'));`);
+    const toErase=await fresh();
+    const ready=await prepareAutomatic(toErase);
+    await assert.rejects(()=>rpc('authenticated','public.list_account_automatic_erasure_work()'),{code:'SQLSTATE_42501'});
+    assert.deepEqual((await automaticWork()).rows,[]);
+    await assert.rejects(()=>stageAutomatic(ready,toErase),{code:'SQLSTATE_22023'});
+    assert.equal(await remains(toErase),true);
+    automaticCases.push('DEFAULT_OFF_AND_BROWSER_DENIED');
+    await sql('update public.account_automatic_erasure_policy set enabled=true,recovery_qualified=true where singleton;');
+    assert.deepEqual((await automaticWork()).rows,[]);
+    await assert.rejects(()=>stageAutomatic(ready,toErase),{code:'SQLSTATE_22023'});
+    assert.equal(await remains(toErase),true);
+    automaticCases.push('NOT_DUE_PRESERVES_AUTH');
+    await advanceNotice(ready);
+    assert.deepEqual((await automaticWork()).rows.map(row=>[row.noticeId,row.kind]),[[ready.receipt.noticeId,'STAGE']]);
+    await assert.rejects(()=>stageAutomatic({...ready,digest:'0'.repeat(64)},toErase),{code:'SQLSTATE_40001'});
+    const toKeep=await fresh();
+    const cancelledWork=await prepareAutomatic(toKeep);
+    await advanceNotice(cancelledWork);
+    await flags(toKeep.id,{mode:'hold-after-capture'});
+    let releaseAutomaticLogin;
+    const automaticLoginGate=new Promise(resolve=>{releaseAutomaticLogin=resolve;});
+    const automaticLoginLock=(async function*(){
+      yield Buffer.from("set local application_name='rr_auto_login_barrier';select pg_advisory_xact_lock(17030001);\n");
+      await automaticLoginGate;yield Buffer.from('select 1;\n');
+    })();
+    const automaticLoginHolder=track(psql(c,p,'NATIVE_AUTOMATIC_LOGIN_BARRIER',automaticLoginLock));
+    try{
+      let observed=false;
+      for(let check=0;check<40&&!observed;check++){
+        observed=await value("select to_jsonb(exists(select 1 from pg_catalog.pg_stat_activity where application_name='rr_auto_login_barrier' and state='idle in transaction'))");
+        if(!observed)await sleep(10);
+      }
+      need(observed,'NATIVE_AUTOMATIC_LOGIN_BARRIER_NOT_OBSERVED');
+      const signIn=track(login(toKeep));
+      await waitLock('rr_native_capture_hook','advisory');
+      await assert.rejects(()=>stageAutomatic(cancelledWork,toKeep),{code:'SQLSTATE_55P03'});
+      releaseAutomaticLogin();
+      await automaticLoginHolder;
+      await signIn;
+    }finally{releaseAutomaticLogin();await automaticLoginHolder.catch(()=>{});}
+    await flags(toKeep.id);
+    assert.equal((await status(cancelledWork.receipt)).state,'CANCELLED');
+    await assert.rejects(()=>stageAutomatic(cancelledWork,toKeep),{code:'SQLSTATE_22023'});
+    assert.equal(await remains(toKeep),true);
+    automaticCases.push('CURRENT_AUTH_BINDING_AND_LOGIN_FIRST_RACE');
+    await sql(`insert into public.observations(id,user_id) values (7281,'${toErase.id}');`);
+    const staged=await stageAutomatic(ready,toErase),op=staged.operationId;
+    assert.equal(staged.mode,'AUTOMATIC_INACTIVITY');
+    assert.equal(staged.state,'PG_STAGED_AUTH_PENDING');
+    assert.equal(staged.pgRowsRemoved,1);
+    assert.equal(await remains(toErase),true);
+    await sql('update public.account_automatic_erasure_policy set enabled=false where singleton;');
+    assert.deepEqual((await automaticWork()).rows.map(row=>[row.noticeId,row.kind]),[[op,'RESUME']]);
+    await assert.rejects(()=>rpc('authenticated',`public.get_account_erasure_status('${op}')`),{code:'SQLSTATE_22023'});
+    automaticCases.push('DURABLE_STAGE_AND_SHUTDOWN_SAFE_RESUME');
+    const attempt=crypto.randomUUID(),syntheticSubjectKey='synthetic-private-owner-subject-key-only';
+    const subject=(await externalOwnerSubject({userId:toErase.id,secret:syntheticSubjectKey})).subject;
+    const otherSubject=(await externalOwnerSubject({userId:toKeep.id,secret:syntheticSubjectKey})).subject;
+    const authClaim=createdAt=>rpc('service_role',`public.claim_account_erasure_auth('${op}','${fixtureActorId}',
+      null,'${attempt}',${sqlString(createdAt)},'${subject}')`);
+    await assert.rejects(()=>authClaim('2020-01-01T00:00:00Z'),{code:'SQLSTATE_40001'});
+    assert.equal((await authClaim(toErase.createdAt)).shouldIssueDelete,true);
+    await auth(c,p,'/admin/users/'+toErase.id,{token:p.service,body:{should_soft_delete:false},method:'DELETE'});
+    const absent=await auth(c,p,'/admin/users/'+toErase.id,{token:p.service,status:[200,404]});
+    assert.deepEqual(absent,{status:404,user:null});
+    await login(toErase,400);
+    assert.equal(await remains(toKeep),true);
+    const authAck=await rpc('service_role',`public.acknowledge_account_erasure_auth_absent('${op}',
+      '${fixtureActorId}','${attempt}','${attempt}','${subject}')`);
+    assert.equal(authAck.state,'AUTH_ABSENT_D1_PENDING');
+    assert.equal(authAck.complete,false);
+    automaticCases.push('REAL_AUTH_DELETE_AND_PENDING_WITHOUT_D1_ACK');
+    const tripStorage=await exerciseIsolatedTripErasureSqlite(subject,otherSubject);
+    const complete=await rpc('service_role',`public.acknowledge_account_erasure_d1('${op}',
+      '${fixtureActorId}','${attempt}','${subject}',${tripStorage.deletedCount})`);
+    assert.equal(complete.state,'COMPLETE');
+    assert.equal(complete.d1DeletedCount,tripStorage.deletedCount);
+    const minimized=await value(`select jsonb_build_object(
+      'retainedFence',exists(select 1 from public.account_erasure_operations where operation_id='${op}'),
+      'noticeAbsent',not exists(select 1 from public.account_inactivity_notices where target_user_id='${toErase.id}'),
+      'admissionAbsent',not exists(select 1 from public.account_automatic_erasure_admissions where operation_id='${op}'),
+      'survivorNoticePreserved',exists(select 1 from public.account_inactivity_notices where target_user_id='${toKeep.id}'));`);
+    assert.deepEqual(minimized,{retainedFence:true,noticeAbsent:true,admissionAbsent:true,survivorNoticePreserved:true});
+    automaticCases.push('SIGNED_WORKER_SQLITE_PURGE_AND_DURABLE_COMPLETE');
+    const noticeCases=[];
+    const chooseNotices=()=>rpc('service_role','public.prepare_account_automatic_notice_work()');
+    await sql(`update public.account_inactivity_policy set coverage_epoch='${crypto.randomUUID()}' where singleton;`);
+    const toWarn=await fresh(), manualTarget=await fresh(), recent=await fresh();
+    await seedInactivityEvidence(toWarn);
+    const manualReady=await qualify(manualTarget);
+    await flags(recent.id);await login(recent);
+    assert.deepEqual((await chooseNotices()).rows,[]);
+    await assert.rejects(()=>rpc('authenticated','public.prepare_account_automatic_notice_work()'),{code:'SQLSTATE_42501'});
+    noticeCases.push('DEFAULT_OFF_AND_BROWSER_DENIED');
+    await sql('update public.account_automatic_notice_policy set enabled=true where singleton;');
+    const selected=(await chooseNotices()).rows;
+    assert.deepEqual(selected.map(row=>[row.targetUserId,row.actorId,row.kind]),[[toWarn.id,fixtureActorId,'SEND']]);
+    const dueNotice=selected[0];
+    assert.notEqual(dueNotice.noticeId,manualReady.noticeId);
+    assert.equal((await chooseNotices()).rows[0].noticeId,dueNotice.noticeId);
+    noticeCases.push('ONLY_QUALIFIED_INACTIVE_AND_EXISTING_MANUAL_EXCLUDED');
+    const beforeClaim=await status(dueNotice),noticeAttempt=crypto.randomUUID(),mailProvider=crypto.randomUUID();
+    const digest=crypto.createHash('sha256').update(JSON.stringify(inactivityNoticeBody(toWarn.email))).digest('hex');
+    const claimAuto=hash=>rpc('service_role',`public.claim_account_automatic_notice('${dueNotice.noticeId}','${fixtureActorId}',
+      ${BigInt(beforeClaim.revision)},'${noticeAttempt}','${hash}',${sqlString(toWarn.createdAt)})`);
+    assert.equal((await claimAuto('0'.repeat(64))).shouldSend,false);
+    const firstMail=await claimAuto(digest);assert.equal(firstMail.shouldSend,true);
+    assert.equal((await claimAuto(digest)).shouldSend,false);
+    noticeCases.push('HASH_BOUND_CLAIM_AND_SINGLE_POST_AUTHORITY');
+    const acceptedMail=await acknowledge(firstMail,noticeAttempt,'accepted',mailProvider);
+    assert.equal(acceptedMail.deleteNotBefore,null);
+    const secondWarn=await fresh();await seedInactivityEvidence(secondWarn);
+    const mixedWork=(await chooseNotices()).rows;
+    assert.deepEqual(mixedWork.map(row=>row.kind).sort(),['POLL','SEND']);
+    assert.equal(mixedWork.find(row=>row.kind==='POLL').targetUserId,toWarn.id);
+    assert.equal(mixedWork.find(row=>row.kind==='SEND').targetUserId,secondWarn.id);
+    const deliveredMail=await acknowledge(acceptedMail,noticeAttempt,'delivered',mailProvider);
+    assert.equal(deliveredMail.state,'DELIVERED');assert.ok(deliveredMail.deleteNotBefore);
+    assert((await chooseNotices()).rows.every(row=>row.noticeId!==dueNotice.noticeId));
+    noticeCases.push('POLL_FAIRNESS_AND_CONFIRMED_DELIVERY_STARTS_DEADLINE');
+
+    const heldUser=await fresh();
+    const heldNotice=await prepareAutomatic(heldUser);
+    await advanceNotice(heldNotice);
+    await sql(`insert into public.observations(id,user_id) values (7282,'${heldUser.id}');`);
+    await sql('update public.account_automatic_erasure_policy set enabled=true where singleton;');
+    const secondNotice=mixedWork.find(row=>row.kind==='SEND');
+    const secondReady=await status(secondNotice);
+    assert.equal(secondReady.state,'READY');
+    const secondDigest=crypto.createHash('sha256').update(JSON.stringify(inactivityNoticeBody(secondWarn.email))).digest('hex');
+    const recoveryHold=crypto.randomUUID();
+    assert.equal(typeof await rpc('service_role',`pg_catalog.to_jsonb(public.acquire_trip_erasure_recovery_hold('${recoveryHold}'))`),'string');
+    await assert.rejects(()=>stageAutomatic(heldNotice,heldUser),{code:'SQLSTATE_55000'});
+    assert.equal(await remains(heldUser),true);
+    assert.equal(await value(`select to_jsonb(exists(select 1 from public.observations where id=7282 and user_id='${heldUser.id}'));`),true);
+    assert.equal(await value('select to_jsonb(hold_id) from public.trip_erasure_recovery_gate;'),recoveryHold);
+    automaticCases.push('RECOVERY_HOLD_PRESERVES_ACCOUNT_AND_TRIP');
+    assert.deepEqual((await chooseNotices()).rows,[]);
+    await assert.rejects(()=>rpc('service_role',`public.claim_account_automatic_notice('${secondNotice.noticeId}',
+      '${fixtureActorId}',${BigInt(secondReady.revision)},'${crypto.randomUUID()}','${secondDigest}',${sqlString(secondWarn.createdAt)})`),
+      {code:'SQLSTATE_55000'});
+    assert.equal((await status(secondNotice)).state,'READY');
+    noticeCases.push('RECOVERY_HOLD_REFUSES_NEW_AUTOMATIC_NOTICE');
     return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
       sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
       exactFunctionBodiesVerified:true,appScaffoldingSynthetic:true,realTwoYearHistoryVerified:false,
       storageImagePin:ARCHIVE_VENDOR_IMAGES.storage,storageBootstrap:'OWNED_CLI_FRESH_B_ONE_SHOT',persistentStorageService:false,
       providerDeliverySynthetic:true,mailPostExecuted:false,controllerNoPostProof:'SQL_AUTHORITY_FALSE_ONLY',
       automaticErasureEnabled:false,hostedHookConfigured:false,productionAuthVerified:false,
-      rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases});
+      rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases,
+      isolatedAutomaticOffInstallation:installed,
+      isolatedAutomaticErasure:{cases:automaticCases,realAuthDelete:true,tripStorage,
+        syntheticDelivery:true,productionActivation:false},
+      isolatedAutomaticNotice:{cases:noticeCases,syntheticDelivery:true,realMailSent:false,productionActivation:false}});
   }catch(error){firstError=error;throw error;}
   finally{
     const settled=await Promise.allSettled(pending);

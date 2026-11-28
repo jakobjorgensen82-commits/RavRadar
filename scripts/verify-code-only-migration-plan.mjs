@@ -121,6 +121,55 @@ if (tripRecoveryQualification || appProofMode === '--read-trip-erasure-recovery-
   }
   process.exit(process.exitCode ?? 0);
 }
+const automaticAccountOffModes = [
+  '--qualify-automatic-account-off-source',
+  '--read-automatic-account-off-predecessor',
+  '--read-automatic-account-off-installed',
+];
+if (automaticAccountOffModes.includes(appProofMode)) {
+  try {
+    assert.equal(process.argv.length, 3);
+    assert.equal(process.env.GITHUB_EVENT_NAME, 'workflow_dispatch');
+    assert.equal(process.env.GITHUB_REF, 'refs/heads/main');
+    assert.equal(process.env.GITHUB_RUN_ATTEMPT, '1');
+    assert.equal(process.env.GITHUB_REPOSITORY, 'jakobjorgensen82-commits/RavRadar');
+    assert.equal(process.env.GITHUB_JOB, 'apply-automatic-account-off');
+    assert.equal(process.env.GITHUB_WORKFLOW_REF,
+      'jakobjorgensen82-commits/RavRadar/.github/workflows/apply-weather-model-binding-only.yml@refs/heads/main');
+    assert.equal(process.env.RAVRADAR_AUTOMATIC_ACCOUNT_OFF_CONFIRMATION, 'APPLY-AUTOMATIC-ACCOUNT-OFF');
+    assert.match(process.env.GITHUB_SHA ?? '', /^[a-f0-9]{40}$/);
+    const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], {encoding:'utf8', timeout:10000}).trim();
+    assert.equal(head, process.env.GITHUB_SHA);
+
+    if (appProofMode === '--qualify-automatic-account-off-source') {
+      const {SOURCE_IMPACT_FULL_BASELINE_KIND} = await import('./source-impact-full-baseline.mjs');
+      const qualified = await qualifyExactMergedFullSource(process.env.RAVRADAR_AUTOMATIC_ACCOUNT_OFF_SOURCE_REFERENCE);
+      assert.equal(qualified.kind, SOURCE_IMPACT_FULL_BASELINE_KIND);
+      assert.equal(qualified.mergeCommit, head);
+      const {qualifyAutomaticAccountOffNative, installedManualAccountCheckReference} =
+        await import('./lib/account-automatic-off-install-proof.mjs');
+      const native = await qualifyAutomaticAccountOffNative(head);
+      installedManualAccountCheckReference();
+      console.log(JSON.stringify({kind:'QUALIFIED_AUTOMATIC_ACCOUNT_OFF_SOURCE', ...native, activationAuthority:false}));
+    } else if (appProofMode === '--read-automatic-account-off-predecessor') {
+      const {verifyInstalledTripErasureRecoverySchema} = await import('./lib/reconcile-held-trip-erasures.mjs');
+      console.log(JSON.stringify(await verifyInstalledTripErasureRecoverySchema({
+        accessToken:process.env.SUPABASE_ACCESS_TOKEN, serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
+      })));
+    } else {
+      const {installedManualAccountCheckReference} = await import('./lib/account-automatic-off-install-proof.mjs');
+      const {verifyInstalledAutomaticAccountOffSchema} = await import('./verify-account-automatic-off-schema.mjs');
+      console.log(JSON.stringify(await verifyInstalledAutomaticAccountOffSchema({
+        accessToken:process.env.SUPABASE_ACCESS_TOKEN, expectedManualCheckReference:installedManualAccountCheckReference(),
+      })));
+    }
+  } catch {
+    console.error('AUTOMATIC_ACCOUNT_OFF_INSTALL_REFUSED', appProofMode);
+    process.exitCode = 1;
+  }
+  process.exit(process.exitCode ?? 0);
+}
+
 const receiptProofModes=['--qualify-account-native-receipt-source','--read-account-native-receipt-before','--read-account-native-receipt-installed'];
 if(receiptProofModes.includes(appProofMode)){
   let readbackPhase;

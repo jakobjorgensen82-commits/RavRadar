@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isManualAccountErasureOperation, validateManualAccountErasurePayload, MANUAL_ACCOUNT_ERASURE_CONFIRMATION }
+import { AUTOMATIC_ACCOUNT_ERASURE_HEADER, isManualAccountErasureOperation, validateManualAccountErasurePayload, MANUAL_ACCOUNT_ERASURE_CONFIRMATION }
   from '../supabase/functions/_shared/account-lifecycle.js';
 import fs from 'node:fs';
 
@@ -411,6 +411,8 @@ const edgeScope = {
   requireAuthenticatedUserId: async () => {
     edgeCalls.push(['auth']); if (!edgeUser) throw new TestGatewayError(401, 'LOGIN_REQUIRED'); return edgeUser;
   },
+  AUTOMATIC_ACCOUNT_ERASURE_HEADER,
+  runScheduledAccountErasure: async () => { throw new TestGatewayError(403, "ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN"); },
   isManualAccountErasureOperation, validateManualAccountErasurePayload,
   runManualAccountErasure: async (_request, actor, payload) => {
     edgeCalls.push(['account-erasure', actor, payload.operation, payload.operationId]);
@@ -1303,7 +1305,7 @@ for (const action of ['logout', 'same-login', 'other-login', 'unchanged', 'renew
 {
 const { default: test } = await import('node:test');
 const { runInNewContext } = await import('node:vm');
-const { runAccountInactivityNotice, checkedAccountInactivityNotice, validateAccountInactivityNoticePayload,
+const { runAccountInactivityNotice, runScheduledAccountNotices, checkedAccountInactivityNotice, validateAccountInactivityNoticePayload,
  NOTICE_CONFIRMATION } = await import('../supabase/functions/_shared/account-inactivity-notice.js');
 const { sendInactivityNotice, inactivityNoticeBody } = await import('../supabase/functions/_shared/inactivity-notice-mail.mjs');
 const { sendInactivityNotice: oldSender } = await import('./fixtures/owner-notice-probe/inactivity-notice-mail.mjs');
@@ -1314,11 +1316,12 @@ const initial=(extra={})=>({noticeId:notice,targetUserId:target,state:'READY',ho
  delivered:false,deleteNotBefore:null,automaticDeletionEnabled:false,attemptId:null,recipientDigest:null,authUserCreatedAt:null,providerId:null,reservedAt:null,...extra});
 const pub=row=>Object.fromEntries(keys.map(key=>[key,row[key]]));
 const payload=attempt=>({operation:'account-inactivity-resume',noticeId:notice,attemptId:attempt,confirmation:NOTICE_CONFIRMATION});
+const scheduleKey='sb_secret_synthetic_account_notice_test_key_only';
 async function fixture(options,work){
  const originalFetch=globalThis.fetch,originalDeno=globalThis.Deno;
  const h={row:initial(options.initial),calls:[],posts:[],reads:0,failures:options.failures||0,authFailures:0,providerFailures:0,usedAttempts:new Set()};
  const env={SUPABASE_URL:'https://notice-fixture.supabase.co',SUPABASE_ANON_KEY:'synthetic-publishable',
-  SUPABASE_SERVICE_ROLE_KEY:'sb_secret_synthetic',RAVRADAR_RESEND_NOTICE_SEND_KEY:'re_synthetic_existing_key'};
+  SUPABASE_SERVICE_ROLE_KEY:scheduleKey,RAVRADAR_RESEND_NOTICE_SEND_KEY:'re_synthetic_existing_key'};
  const body=inactivityNoticeBody('synthetic@example.invalid',false);
  globalThis.Deno={env:{get:name=>env[name]}};
  const json=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});
@@ -1326,7 +1329,11 @@ async function fixture(options,work){
   const url=new URL(input);h.calls.push({path:url.pathname,method:init.method,body:init.body});
   if(url.origin===env.SUPABASE_URL&&url.pathname.startsWith('/rest/v1/rpc/')){
    const name=url.pathname.split('/').at(-1),p=JSON.parse(init.body);
-   if(init.headers.apikey==='sb_secret_synthetic')assert.equal(init.headers.Authorization,undefined,'opaque service key is not a JWT');
+   if(init.headers.apikey===scheduleKey)assert.equal(init.headers.Authorization,undefined,'opaque service key is not a JWT');
+   if(name==='prepare_account_automatic_notice_work'){
+    assert.equal(init.headers.apikey,scheduleKey);assert.deepEqual(p,{});
+    return json({scope:'account-automatic-notice-work',rows:options.emptyBatch?[]:[{noticeId:notice,targetUserId:target,actorId:owner,kind:h.kind}]});
+   }
    if(name==='get_account_inactivity_notice_status'||name==='prepare_account_inactivity_notice')return json(pub(h.row));
    if(name==='list_account_inactivity_notices')return json({scope:'own-account-inactivity-notices',rows:[pub(h.row)],truncated:false});
    if(name==='get_account_inactivity_notice_service_status')return json(h.row);
@@ -1336,7 +1343,8 @@ async function fixture(options,work){
       revision:String(BigInt(h.row.revision)+1n),deleteNotBefore:null};
     return json(pub(h.row));
    }
-   if(name==='claim_account_inactivity_notice'){
+   if(name==='claim_account_inactivity_notice'||name==='claim_account_automatic_notice'){
+    if(name==='claim_account_automatic_notice')assert.equal(h.kind,'SEND');
     const allowed=p.p_expected_revision===h.row.revision&&!h.row.accepted
      &&['HELD','READY','CLAIMED','UNKNOWN'].includes(h.row.state)&&!h.usedAttempts.has(p.p_attempt);
     if(allowed){h.usedAttempts.add(p.p_attempt);h.row={...h.row,state:'CLAIMED',holdReason:null,revision:String(BigInt(h.row.revision)+1n),attemptId:p.p_attempt,
@@ -1384,10 +1392,53 @@ async function fixture(options,work){
  };
  h.run=p=>runAccountInactivityNotice(new Request('https://notice-fixture.supabase.co/functions/v1/trip-log',{
   method:'POST',headers:{Authorization:'Bearer synthetic-owner-token'}}),owner,p);
+ h.schedule=async(kind='SEND')=>{
+  h.kind=kind;
+  return runScheduledAccountNotices(new Request(env.SUPABASE_URL+'/functions/v1/trip-log',{method:'POST',
+   headers:{[AUTOMATIC_ACCOUNT_ERASURE_HEADER]:'notice-v1',apikey:scheduleKey}}));
+ };
  h.ack=p=>globalThis.fetch(env.SUPABASE_URL+'/rest/v1/rpc/acknowledge_account_inactivity_notice',{
-  method:'POST',headers:{apikey:'sb_secret_synthetic'},body:JSON.stringify(p)});
+  method:'POST',headers:{apikey:scheduleKey},body:JSON.stringify(p)});
  try{await work(h);}finally{globalThis.fetch=originalFetch;globalThis.Deno=originalDeno;}
 }
+test('scheduled warning sends once through the dedicated claim and requires delivery before recording the deadline',async()=>{
+ await fixture({event:'sent'},async h=>{
+  assert.deepEqual(await h.schedule(),{selected:1,completed:0,pending:1,failed:0});
+  assert.equal(h.row.state,'ACCEPTED');assert.equal(h.row.deleteNotBefore,null);
+  assert.equal(h.posts.length,1);
+  assert.ok(h.calls.some(call=>call.path.endsWith('/claim_account_automatic_notice')));
+  await h.schedule('POLL');assert.equal(h.posts.length,1);assert.equal(h.reads,2);
+ });
+ await fixture({},async h=>{
+  assert.deepEqual(await h.schedule(),{selected:1,completed:1,pending:0,failed:0});
+  assert.equal(h.row.state,'DELIVERED');assert.ok(h.row.deleteNotBefore);
+  assert.equal(h.posts.length,1);
+ });
+});
+test('scheduled warning polls without POST authority and never reclaims a lost send',async()=>{
+ await fixture({},async h=>{
+  assert.deepEqual(await h.schedule('POLL'),{selected:1,completed:0,pending:1,failed:0});
+  assert.equal(h.posts.length,0);assert.equal(h.reads,0);
+ });
+ await fixture({failures:1},async h=>{
+  assert.equal((await h.schedule()).pending,1);assert.equal(h.row.state,'UNKNOWN');
+  assert.equal((await h.schedule()).pending,1);assert.equal(h.posts.length,1);
+ });
+ await fixture({emptyBatch:true},async h=>{
+  assert.deepEqual(await h.schedule(),{selected:0,completed:0,pending:0,failed:0});
+  assert.equal(h.calls.length,1);
+ });
+});
+
+test('scheduled warning can resume after a transient Auth read before reserving any mail',async()=>{
+ await fixture({},async h=>{
+  h.authFailures=1;
+  assert.deepEqual(await h.schedule(),{selected:1,completed:0,pending:0,failed:1});
+  assert.equal(h.row.state,'READY');assert.equal(h.posts.length,0);
+  assert.equal((await h.schedule()).completed,1);assert.equal(h.posts.length,1);
+ });
+});
+
 test('inactivity notice: existing sender wire body and idempotency remain unchanged',async()=>{
  const request={key:'re_synthetic',recipient:'synthetic@example.invalid',noticeId:notice,reservedAt:Date.now(),probe:false};
  const sent=[];const fetchImpl=async(url,init)=>{sent.push({url,body:init.body,key:init.headers['Idempotency-Key']});return new Response(JSON.stringify({id:providerId}),{headers:{'Content-Type':'application/json'}});};

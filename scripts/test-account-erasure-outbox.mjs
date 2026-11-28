@@ -395,6 +395,36 @@ test('active after601 treats all OFF account migrations as installed dependencie
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+pendingTrip,
     dryRunText:dryTrip}), /requires the matching installed append/);
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+remoteTrip}), /requires the matching installed append/);
+  const {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS:automatic}=await import('./lib/account-automatic-off-source.mjs');
+  const [erasure,notices]=automatic;
+  const accountRows=(installed)=>automatic.map(({version},index)=>'\n'+version+' | '+(index<installed?version:'')+' |').join('');
+  const accountDry=(installed)=>installed===automatic.length?noPending:
+    'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n'+
+    automatic.slice(installed).map(({filename})=>' • '+filename).join('\n')+'\nFinished supabase db push.';
+  await assert.rejects(cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'automatic-mixed'),
+    includeAutomaticAccountOffSource:true,includeTripErasureRecoverySource:true}), /separate exact schema plan/);
+  const automaticWork=await cutover.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(work,'automatic'),
+    includeAutomaticAccountOffSource:true});
+  await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:automaticWork.workdir,migrationListText:list()+remoteTrip+accountRows(0)});
+  const planAutomatic=(installed,migrationListText=list()+installedTrip+accountRows(installed),dryRunText=accountDry(installed))=>
+    cutover.assertAutomaticAccountOffMigrationPlan({migrationListText,dryRunText,migrationsDirectory:automaticWork.migrationsDirectory});
+  for(const installed of [0,1,2]){
+   assert.deepEqual((await planAutomatic(installed)).pendingVersions,automatic.slice(installed).map(({version})=>version));
+  }
+  await assert.rejects(planAutomatic(0,list()+pendingTrip+accountRows(0)),/installed append|installed trip recovery/);
+  await assert.rejects(planAutomatic(0,list()+installedTrip+'\n'+erasure.version+' | |\n'+notices.version+' | '+notices.version+' |'),
+    /installed predecessors/);
+  await assert.rejects(planAutomatic(0,list()+installedTrip+accountRows(0),accountDry(1)));
+  await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip+accountRows(0),
+    migrationsDirectory:automaticWork.migrationsDirectory,dryRunText:accountDry(0)}), /installed predecessors/);
+  const remoteAutomatic=automatic.map(({version})=>'\n | '+version+' |').join('');
+  await cutover.hydrateTemporaryRemoteMigrationHistory({workdir:work,migrationListText:list()+installedTrip+remoteAutomatic});
+  assert.deepEqual((await cutover.assertSupabaseMigrationPlan({...input,
+    migrationListText:list()+installedTrip+accountRows(2)})).pendingVersions,[]);
+  assert.deepEqual(cutover.assertSupabaseMigrationsApplied(list()+installedTrip+accountRows(2)).appliedVersions.slice(-2),
+    automatic.map(({version})=>version));
+  await fs.promises.appendFile(path.join(automaticWork.migrationsDirectory,notices.filename),'\n-- changed\n');
+  await assert.rejects(planAutomatic(0),/must match the qualified source/);
   await fs.promises.appendFile(stagedTrip,'\n-- changed\n');
   await assert.rejects(cutover.assertSupabaseMigrationPlan({...input,migrationListText:list()+installedTrip}), /Trip recovery migration source changed/);
  }finally{
@@ -448,6 +478,51 @@ test('current80 normal workflow binds qualification finite plan and inactive rea
 test('current80 installation proof modes refuse before transport without exact owned FULL authority',async()=>{
  const {spawnSync}=await import('node:child_process');const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
  for(const mode of ['--qualify-account-native-receipt-source','--read-account-native-receipt-before','--read-account-native-receipt-installed']){const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],{env,encoding:'utf8',timeout:15000});assert.equal(result.status,1);assert.equal(result.stdout,'');assert.equal(result.stderr.trim(),'ACCOUNT_NATIVE_RECEIPT_QUALIFIED_INSTALL_EVIDENCE_REQUIRED');}
+});
+
+test('automatic OFF installer validates its existing source proof before any backend access',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const {installedManualAccountCheckReference,qualifyAutomaticAccountOffNative}=await import('./lib/account-automatic-off-install-proof.mjs');
+ const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+ const known=installedManualAccountCheckReference();
+ assert.equal(known.postgresMajor,16);
+ assert.equal(known.definitions.length,28);
+ assert.equal(known.definitionsSha256,'8b2c8cec94df18b5412c71b3719aab82226a88146d4dac55b9ff43041416df2a');
+ for(const mode of ['--qualify-automatic-account-off-source','--read-automatic-account-off-predecessor','--read-automatic-account-off-installed']){
+   const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],
+     {env,encoding:'utf8',timeout:15000});
+   assert.equal(result.status,1);
+   assert.equal(result.stdout,'');
+   assert.equal(result.stderr.trim(),'AUTOMATIC_ACCOUNT_OFF_INSTALL_REFUSED '+mode);
+ }
+ const head='39ec5aedf193e9ba327e8c724d7d85570ad61447';
+ const readGit=args=>{
+   if(args[0]==='rev-parse')return head;
+   if(args[0]==='diff')throw new Error('CANDIDATE_SQL_INPUT_CHANGED');
+   return '';
+ };
+ await assert.rejects(qualifyAutomaticAccountOffNative(head,{
+   readGit,read:()=>assert.fail('Changed protected input reached GitHub evidence'),
+ }),/CANDIDATE_SQL_INPUT_CHANGED/);
+});
+
+test('automatic OFF workflow has one bounded write followed by authoritative readback',()=>{
+ const workflow=fs.readFileSync(new URL('../.github/workflows/apply-weather-model-binding-only.yml',import.meta.url),'utf8').replaceAll('\r\n','\n');
+ const mode="APPLY-AUTOMATIC-ACCOUNT-OFF";
+ assert(workflow.includes("inputs.confirmation != '"+mode+"'"));
+ const section=workflow.split('\n  apply-automatic-account-off:\n');
+ assert.equal(section.length,2);
+ const job=section[1];
+ for(const required of [
+   "inputs.confirmation == '"+mode+"'", 'group: ravradar-trip-storage-production',
+   'test "$MIXED_MODE" = false','test "$AUTOMATION_ENABLED" = false'
+ ])assert(job.includes(required));
+ const inOrder=['--qualify-automatic-account-off-source','--read-automatic-account-off-predecessor',
+   '--automatic-account-off-source','automatic-account-off-plan','--read-automatic-account-off-installed'];
+ for(let index=1;index<inOrder.length;index++)assert(job.indexOf(inOrder[index])>job.indexOf(inOrder[index-1]));
+ assert.equal(job.match(/supabase db push --linked --skip-vault/g)?.length,1);
+ assert(!job.includes('functions deploy'));
+ assert(!job.includes('--include-all'));
 });
 
 test('trip recovery install qualification requires the exact owned workflow and FULL reference',async()=>{
@@ -510,7 +585,8 @@ test('trip recovery schema readback checks catalog restrictions and a genuinely 
 
 test('trip recovery schema workflow is exclusive, has one possible write and always verifies readback',async()=>{
  const workflow=await fs.promises.readFile(new URL('../.github/workflows/apply-weather-model-binding-only.yml',import.meta.url),'utf8');
- const [common,trip]=workflow.split('\n  apply-trip-recovery-schema:');
+ const [common,rest]=workflow.split('\n  apply-trip-recovery-schema:');
+ const [trip]=rest.split('\n  apply-automatic-account-off:');
  assert.match(common,/group: ravradar-weather-production-v2/u);
  assert.match(common,/apply-binding:\s+if: inputs.confirmation != 'APPLY-TRIP-RECOVERY-SCHEMA'/u);
  assert.match(trip,/if: inputs.confirmation == 'APPLY-TRIP-RECOVERY-SCHEMA'/u);

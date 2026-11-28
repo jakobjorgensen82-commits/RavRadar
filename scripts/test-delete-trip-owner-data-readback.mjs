@@ -3,9 +3,12 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import { eraseTripOwnerSources } from '../supabase/functions/_shared/trip-owner-erasure.js';
-import { deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, verifyTripGatewaySignature }
+import { deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, sha256Hex, verifyTripGatewaySignature }
   from '../supabase/functions/_shared/trip-storage.js';
-import { runManualAccountErasure, MANUAL_ACCOUNT_ERASURE_CONFIRMATION, validateManualAccountErasurePayload }
+import { inactivityNoticeBody } from '../supabase/functions/_shared/inactivity-notice-mail.mjs';
+import { runAutomaticAccountErasureSchedule } from './run-automatic-account-erasure.mjs';
+import { AUTOMATIC_ACCOUNT_ERASURE_HEADER, runScheduledAccountErasure, runManualAccountErasure,
+  MANUAL_ACCOUNT_ERASURE_CONFIRMATION, validateManualAccountErasurePayload }
   from '../supabase/functions/_shared/account-lifecycle.js';
 
 // Execute the actual CLI body and actual signed gateway clients. Only the
@@ -237,9 +240,15 @@ test('shared server erasure waits for actual Supabase body before any receipt', 
 const lifecycleTarget='22222222-2222-4222-8222-222222222222', lifecycleOperation='33333333-3333-4333-8333-333333333333';
 const lifecycleAttempt='44444444-4444-4444-8444-444444444444', lifecycleNext='55555555-5555-4555-8555-555555555555';
 const nativeGeneration='2026-11-16T19:00:00.123456789Z';
+const erasureServiceKey='sb_secret_synthetic_service_key_for_account_fixture';
 async function lifecycleFixture(options={}) {
   const subject=(await externalOwnerSubject({userId:lifecycleTarget,secret})).subject;
-  const row={operationId:lifecycleOperation,targetUserId:lifecycleTarget,mode:'MANUAL_OWNER',state:'PREPARED',holdReason:null,
+  const testEmail = 'inactive@example.invalid';
+  const workItem = { noticeId: lifecycleOperation, targetUserId: lifecycleTarget, actorId: ownerId, revision: '7',
+    authUserCreatedAt: nativeGeneration, recipientDigest: await sha256Hex(JSON.stringify(inactivityNoticeBody(testEmail))),
+    kind: options.resumeAuto ? 'RESUME' : 'STAGE' };
+  const mode = options.automatic ? 'AUTOMATIC_INACTIVITY' : 'MANUAL_OWNER';
+  const row={operationId:lifecycleOperation,targetUserId:lifecycleTarget,mode,state:'PREPARED',holdReason:null,
     pgStageCommitted:false,pgRowsRemoved:0,authAbsent:false,d1Acknowledged:false,d1DeletedCount:null,complete:false,
     authAttemptId:null,authUserCreatedAt:null,d1OwnerSubject:null,...options.row};
   const used=new Set(row.authAttemptId?[row.authAttemptId]:[]),calls=[];
@@ -261,12 +270,24 @@ async function lifecycleFixture(options={}) {
       const name=url.pathname.split('/').at(-1);calls.push(name);
       const isOwner=['prepare_account_erasure','get_account_erasure_status','stage_account_erasure_pg','list_account_erasure_operations'].includes(name);
       const headers=new Headers(init.headers);
-      assert.equal(headers.get('apikey'),isOwner?'fixture-anon':'sb_secret_fixture_only');
+      assert.equal(headers.get('apikey'),isOwner?'fixture-anon':erasureServiceKey);
       assert.equal(headers.get('authorization'),isOwner?'Bearer fixture-owner':null);
       if(name==='list_account_erasure_operations'){
         assert.deepEqual(body,{p_after:options.listCursor??null});
         if(options.ownerDenied)return response({message:'ACCOUNT_ERASURE_OWNER_REQUIRED'},403);
         return response(options.listResponse??{scope:'own-account-erasure-operations',rows:[publicRow()],truncated:false});
+      }
+      if(name==='list_account_automatic_erasure_work'){
+        assert.deepEqual(body, {});
+        return response({scope:'account-automatic-erasure-work',rows:options.noDueWork ? [] : options.duplicateDue ? [workItem,workItem] : [workItem]});
+      }
+      if(name==='stage_account_automatic_erasure'){
+        assert.deepEqual(body,{p_notice:workItem.noticeId,p_revision:workItem.revision,
+          p_auth_user_created_at:workItem.authUserCreatedAt,p_recipient_digest:workItem.recipientDigest});
+        if(options.autoStageRefused)return response({message:'ACCOUNT_INACTIVITY_NOT_ELIGIBLE'},409);
+        Object.assign(row,{state:'PG_STAGED_AUTH_PENDING',pgStageCommitted:true,pgRowsRemoved:3});
+        if(stageLost){stageLost=false;throw new Error('unknown-auto-stage-reply');}
+        return response({...row});
       }
       assert.equal(body.p_operation,lifecycleOperation);
       if(!isOwner)assert.equal(body.p_actor,ownerId);
@@ -317,17 +338,27 @@ async function lifecycleFixture(options={}) {
     }
     calls.push('auth-get');assert.equal(init.method,'GET');
     if(options.adminFailure)return response({code:options.adminFailure,error_code:'unavailable'},options.adminFailure);
-    if(present)return response({id:options.wrongTarget?ownerId:lifecycleTarget,created_at:options.changedGeneration??nativeGeneration});
+    if(present)return response({id:options.wrongTarget?ownerId:lifecycleTarget,created_at:options.changedGeneration??nativeGeneration,
+      email:options.changedContact || options.changeAfterStage && row.pgStageCommitted ? 'other@example.invalid' : testEmail});
     return response(options.false404?{error:'missing-route'}:{code:404,error_code:'user_not_found',msg:'User not found'},404);
   };
-  const env={SUPABASE_URL:supabase,SUPABASE_ANON_KEY:'fixture-anon',SUPABASE_SERVICE_ROLE_KEY:'sb_secret_fixture_only',
+  const env={SUPABASE_URL:supabase,SUPABASE_ANON_KEY:'fixture-anon',SUPABASE_SERVICE_ROLE_KEY:erasureServiceKey,
     TRIP_STORAGE_MODE:options.mode??'d1',TRIP_PSEUDONYM_SECRET_V1:secret,CLOUDFLARE_TRIP_GATEWAY_URL:gateway,TRIP_GATEWAY_SHARED_SECRET:secret};
   if(options.listOnly)for(const key of Object.keys(env))if(!['SUPABASE_URL','SUPABASE_ANON_KEY'].includes(key))delete env[key];
   async function invoke(payload={operation:'account-erasure-resume',operationId:lifecycleOperation,attemptId:lifecycleAttempt,
     confirmation:MANUAL_ACCOUNT_ERASURE_CONFIRMATION}){
     const savedFetch=globalThis.fetch,savedDeno=globalThis.Deno;globalThis.fetch=fetchImpl;globalThis.Deno={env:{get:name=>env[name]}};
-    try{return {ok:true,value:await runManualAccountErasure(new Request(supabase+'/functions/v1/trip-log',{
-      method:'POST',headers:{authorization:'Bearer fixture-owner'}}),ownerId,payload)};}
+    try{
+      if(options.automatic){
+        const headers={[AUTOMATIC_ACCOUNT_ERASURE_HEADER]:'schedule-v1',
+          apikey:options.invalidServiceKey?'x'.repeat(erasureServiceKey.length):erasureServiceKey};
+        if(options.browserOrigin)headers.origin='https://ravradar.dk';
+        const request=new Request(supabase+'/functions/v1/trip-log',{method:'POST',headers});
+        return {ok:true,value:await runScheduledAccountErasure(request)};
+      }
+      return {ok:true,value:await runManualAccountErasure(new Request(supabase+'/functions/v1/trip-log',{
+        method:'POST',headers:{authorization:'Bearer fixture-owner'}}),ownerId,payload)};
+    }
     catch(error){return {ok:false,error};}
     finally{globalThis.fetch=savedFetch;if(savedDeno===undefined)delete globalThis.Deno;else globalThis.Deno=savedDeno;}
   }
@@ -342,6 +373,76 @@ test('actual account controller requires PG, qualified native absence and physic
   for(const key of ['authAttemptId','authUserCreatedAt','d1OwnerSubject'])assert.equal(Object.hasOwn(r.value,key),false);
   assert.equal(JSON.stringify(r.value).includes(nativeGeneration),false);
 });
+test('automatic erasure stages a qualified notice before shared Auth and signed D1 deletion', async () => {
+  const f = await lifecycleFixture({automatic:true,stageReplyLost:true,deleteReplyLost:true,d1AckLost:true});
+  const outcome = await f.invoke();
+  assert.deepEqual(outcome.value,{selected:1,completed:1,pending:0,failed:0});
+  assert.equal(f.deletes(),1);
+  assert.deepEqual(f.calls,[
+    'list_account_automatic_erasure_work','auth-get','stage_account_automatic_erasure','get_account_erasure_service_status',
+    'auth-get','claim_account_erasure_auth','auth-delete','auth-get','acknowledge_account_erasure_auth_absent',
+    'd1','acknowledge_account_erasure_d1','get_account_erasure_service_status',
+  ]);
+});
+test('automatic erasure resumes a committed operation without staging a second time', async () => {
+  const f = await lifecycleFixture({automatic:true,resumeAuto:true,row:{state:'PG_STAGED_AUTH_PENDING',pgStageCommitted:true}});
+  assert.equal((await f.invoke()).value.completed,1);
+  assert.equal(f.calls.includes('stage_account_automatic_erasure'), false);
+});
+for (const options of [{changedContact:true},{changeAfterStage:true},{autoStageRefused:true}]) {
+  test('automatic erasure stops on stale notice authority: '+JSON.stringify(options), async () => {
+    const f = await lifecycleFixture({automatic:true,...options});
+    assert.deepEqual((await f.invoke()).value,{selected:1,completed:0,pending:0,failed:1});
+    assert.equal(f.deletes(),0);
+    assert.equal(f.calls.includes('d1'),false);
+    assert.equal(f.calls.includes('stage_account_automatic_erasure'), !options.changedContact);
+  });
+}
+test('automatic dispatcher accepts an empty due list and rejects duplicate authority before mutation', async () => {
+  const dry = await lifecycleFixture({automatic:true,noDueWork:true});
+  assert.deepEqual((await dry.invoke()).value,{selected:0,completed:0,pending:0,failed:0});
+  const duplicate = await lifecycleFixture({automatic:true,duplicateDue:true});
+  assert.equal((await duplicate.invoke()).ok,false);
+  assert.deepEqual(duplicate.calls,['list_account_automatic_erasure_work']);
+});
+test('scheduled account erasure refuses browser calls and unknown secrets before any lookup', async () => {
+  for(const options of [{browserOrigin:true},{invalidServiceKey:true}]){
+    const f=await lifecycleFixture({automatic:true,...options}),result=await f.invoke();
+    assert.equal(result.error?.code,'ACCOUNT_ERASURE_SCHEDULE_FORBIDDEN');
+    assert.deepEqual(f.calls,[]);
+  }
+});
+test('only the scheduled runner sends one fixed request and checks the private receipt', async () => {
+  const env={
+    GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',GITHUB_REF:'refs/heads/main',
+    GITHUB_EVENT_NAME:'schedule',GITHUB_RUN_ATTEMPT:'1',SUPABASE_URL:supabase,SUPABASE_SERVICE_ROLE_KEY:erasureServiceKey,
+  };
+  const reply={selected:2,completed:1,pending:1,failed:0};
+  const transport=async (url, init)=>{
+    assert.equal(url,supabase+'/functions/v1/trip-log');
+    assert.equal(init.method,'POST');
+    assert.equal(init.redirect,'error');
+    assert.equal(init.headers[AUTOMATIC_ACCOUNT_ERASURE_HEADER], 'schedule-v1');
+    assert.equal(init.headers.apikey,erasureServiceKey);
+    assert.equal(init.headers.Authorization,undefined);
+    return Response.json(reply);
+  };
+  assert.deepEqual(await runAutomaticAccountErasureSchedule(env,transport),reply);
+  const neverContact=()=>assert.fail('unexpected private request');
+  await assert.rejects(runAutomaticAccountErasureSchedule({...env,GITHUB_EVENT_NAME:'workflow_dispatch'},neverContact),/SCHEDULE_REQUIRED/);
+  await assert.rejects(runAutomaticAccountErasureSchedule({...env,SUPABASE_URL:'https://supabase.co.example.invalid'},neverContact),/TARGET_INVALID/);
+  let queries=0;
+  await assert.rejects(runAutomaticAccountErasureSchedule(env,async()=>{queries++;throw new Error('synthetic transport loss');}),/OUTCOME_UNKNOWN/);
+  assert.equal(queries,1);
+  await assert.rejects(runAutomaticAccountErasureSchedule(env,async()=>Response.json({...reply,extra:1})),/RESPONSE_INVALID/);
+});
+
+test('manual continuation refuses an automatic operation', async () => {
+  const f = await lifecycleFixture({row:{mode:'AUTOMATIC_INACTIVITY'}});
+  assert.equal((await f.invoke()).ok,false);
+  assert.deepEqual(f.calls,['get_account_erasure_service_status']);
+});
+
 test('unknown claim never issues DELETE; new explicit CAS attempt resumes while replay stays spent',async()=>{
   const f=await lifecycleFixture({claimReplyLost:true});
   assert.equal((await f.invoke()).value.complete,false);assert.equal(f.deletes(),0);

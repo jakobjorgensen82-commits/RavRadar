@@ -3366,7 +3366,10 @@ test('after601 receipt accepts the measured whole-history and quota results and 
   const {TRIP_ERASURE_RECOVERY_MIGRATION}=await import('./lib/trip-erasure-recovery-native-fixture.mjs');
   const tripSql='supabase/migrations/'+TRIP_ERASURE_RECOVERY_MIGRATION;
   const hasTripErasure=readGit(['ls-tree',realHead,'--',tripSql]).length!==0;
-  assert.equal(input.sqlFiles,(scalarWalk?82:81)+Number(hasTripErasure));
+  const {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS}=await import('./lib/account-automatic-off-source.mjs');
+  const offSql=ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(({filename})=>'supabase/migrations/'+filename);
+  const automaticOffCount=offSql.filter(file=>readGit(['ls-tree',realHead,'--',file]).length!==0).length;
+  assert.equal(input.sqlFiles,(scalarWalk?82:81)+Number(hasTripErasure)+automaticOffCount);
   const tripErasureRecovery={migration:TRIP_ERASURE_RECOVERY_MIGRATION,
     migrationSha256:hasTripErasure?cryptoHash('sha256').update(readGit(['cat-file','blob',realHead+':'+tripSql])).digest('hex'):null,
     actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,accountClaimCommitRefusesHold:true,
@@ -3381,6 +3384,19 @@ test('after601 receipt accepts the measured whole-history and quota results and 
     nativeInput:input,report:{...report,...(scalarWalk?{checkpointScalarWalk}:{}),
       ...(hasTripErasure?{tripErasureRecovery}:{})}};
   assert.equal(await native.verifyAssistantAfter601ExecutedV2Receipt(v2,exactCurrent,readGit),v2);
+  if(automaticOffCount){
+    assert.deepEqual(v2.nativeInput.automaticAccountOffMigrationSha256,ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(({sha256})=>sha256));
+    assert(!Object.hasOwn(v2.report,'automaticAccountOff'));
+    const falseExecution=copy(v2);
+    falseExecution.report.automaticAccountOff={actualPostgres:true};
+    await assert.rejects(native.verifyAssistantAfter601ExecutedV2Receipt(falseExecution,exactCurrent,readGit));
+    for(const mutate of [value=>value.nativeInput.sqlFiles=84,
+      value=>value.nativeInput.automaticAccountOffMigrationSha256.reverse(),
+      value=>value.nativeInput.automaticAccountOffSourceSha256='a'.repeat(64)]){
+      const changed=copy(v2);mutate(changed);
+      assert.throws(()=>native.verifyAssistantAfter601PgInput(changed.nativeInput));
+    }
+  }
   if(scalarWalk){
     assert.throws(()=>native.verifyAssistantAfter601PhaseReceipt(issued,exactCurrent,readGit),/requires exact native V2 execution/);
     const missing=copy(v2);delete missing.report.checkpointScalarWalk;
@@ -3728,7 +3744,11 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
   const {TRIP_ERASURE_RECOVERY_MIGRATION}=await import('./lib/trip-erasure-recovery-native-fixture.mjs');
   const tripMigration='supabase/migrations/'+TRIP_ERASURE_RECOVERY_MIGRATION;
   const tripErasure=treeFor(head).paths.has(tripMigration);
-  assert.equal(current.sqlFiles,(scalarWalk?82:81)+Number(tripErasure));
+  const {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS}=await import('./lib/account-automatic-off-source.mjs');
+  const offSql=ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(({filename})=>'supabase/migrations/'+filename);
+  const automaticOffSource='scripts/lib/account-automatic-off-source.mjs';
+  const automaticOffCount=offSql.filter(file=>treeFor(head).paths.has(file)).length;
+  assert.equal(current.sqlFiles,(scalarWalk?82:81)+Number(tripErasure)+automaticOffCount);
   assert.equal(current.complete,true);
   assert.ok(current.frozenGitTrees.some(({head,tree})=>head===SOURCE601_ORIGINAL_DATA_PROFILE.head
     &&tree===SOURCE601_ORIGINAL_DATA_PROFILE.tree));
@@ -3745,9 +3765,13 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
     const unchangedCount=await capture(variant(tripMigration,appendTo(tripMigration,'\n-- Synthetic D1 SQL input change\n')));
     assert.notEqual(unchangedCount.tripErasureRecoveryMigrationSha256,current.tripErasureRecoveryMigrationSha256);
     assert.notEqual(unchangedCount.inputSha256,current.inputSha256);
-    const predecessor=await capture(variant(tripMigration,null));
-    assert.equal(predecessor.sqlFiles,82);
-    assert.equal(predecessor.tripErasureRecoveryMigrationSha256,undefined);
+    const predecessor=capture(variant(tripMigration,null));
+    if(automaticOffCount)await assert.rejects(predecessor,/require SQL83/);
+    else{
+      const prior=await predecessor;
+      assert.equal(prior.sqlFiles,82);
+      assert.equal(prior.tripErasureRecoveryMigrationSha256,undefined);
+    }
     await assert.rejects(capture(variant('scripts/lib/trip-erasure-recovery-native-fixture.mjs',null)),/requires its fixture/);
   }
   if(scalarWalk){
@@ -3757,6 +3781,14 @@ test('after601 native input distinguishes a Pages edit from SQL and module-resol
     const noScalarWalk=capture(variant(scalarWalkFile,null));
     if(tripErasure)await assert.rejects(noScalarWalk,/requires its fixture and current82 predecessor/);
     else assert.equal((await noScalarWalk).sqlFiles,81);
+  }
+
+  if(automaticOffCount){
+    assert.deepEqual(current.automaticAccountOffMigrationSha256,ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(({sha256})=>sha256));
+    for(const file of [...offSql,automaticOffSource]){
+      await assert.rejects(capture(variant(file,null)),/both exact SQL files and the source helper/);
+      await assert.rejects(capture(variant(file,appendTo(file,'\n-- changed OFF input\n'))),/Automatic account OFF input changed/);
+    }
   }
 
   const scope='js/core/package.json';

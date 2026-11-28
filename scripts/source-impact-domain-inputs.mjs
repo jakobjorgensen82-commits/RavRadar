@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {ACCOUNT_AUTOMATIC_OFF_MIGRATIONS} from './lib/account-automatic-off-source.mjs';
 import {
   ASSISTANT_AFTER599_BINDING as FAMILY601,
   ASSISTANT_AFTER601_BINDING,
@@ -35,6 +36,14 @@ const CHECKPOINT_SCALAR_WALK_SQL='supabase/migrations/20261126152500_checkpoint_
 const CHECKPOINT_SCALAR_WALK_SHA256='23f863a6ba9d3cebdae3944f010fb0517b632200cc2c4eac89e84efc59e78df2';
 const TRIP_ERASURE_RECOVERY_SQL='supabase/migrations/20261127095500_trip_owner_erasure_intents.sql';
 const TRIP_ERASURE_RECOVERY_FIXTURE='scripts/lib/trip-erasure-recovery-native-fixture.mjs';
+const AUTOMATIC_ACCOUNT_OFF_SOURCE='scripts/lib/account-automatic-off-source.mjs';
+const AUTOMATIC_ACCOUNT_OFF_SQL=ACCOUNT_AUTOMATIC_OFF_MIGRATIONS.map(migration=>({
+  file:'supabase/migrations/'+migration.filename,sha256:migration.sha256,
+}));
+const AUTOMATIC_ACCOUNT_OFF_INPUTS=[
+  {file:AUTOMATIC_ACCOUNT_OFF_SOURCE,sha256:'022d3f0bb6d9123aaf4001000e26d182bcbfafbb155cd41ff4807f4c6d9c33cc'},
+  ...AUTOMATIC_ACCOUNT_OFF_SQL,
+];
 const PROFILE_FILE='scripts/lib/source-impact-domain-inputs-594.json';
 const PROFILE_SHA256='ae33e59b09a9d005579da78a32e2be5943856bfe03fdc2a54ba252071e5fe563';
 const MAX_BLOB=4*1024*1024,MAX_TOTAL=32*1024*1024,MAX_GIT=64*1024*1024;
@@ -361,22 +370,40 @@ export function analyzeSourceDomainInputs(input){
         &&trees.get(ref).has(TRIP_ERASURE_RECOVERY_FIXTURE),'DOMAIN_TRIP_ERASURE_RECOVERY_INPUT_INCOMPLETE');
       return true;
     };
+    const automaticAccountOff=new Map(refs.map(ref=>{
+      const rows=AUTOMATIC_ACCOUNT_OFF_INPUTS.map(({file})=>trees.get(ref).get(file));
+      const hasTripRecovery=tripRecoveryPresent(ref);
+      const hasAutomaticSql=rows.slice(1).some(Boolean);
+      // Current analysis code can accompany a historical tree predating trip recovery.
+      // An automatic SQL file, or its helper on a current tree, requires the entire inventory.
+      if(!hasAutomaticSql&&!(hasTripRecovery&&rows[0]))return [ref,0];
+      assert(hasTripRecovery&&rows.every(row=>row?.mode==='100644'&&row.type==='blob'),
+        'DOMAIN_AUTOMATIC_ACCOUNT_OFF_INPUT_INCOMPLETE');
+      load(rows.map(row=>row.blob),'INPUT');
+      for(const {file,sha256:expected} of AUTOMATIC_ACCOUNT_OFF_INPUTS){
+        assert.equal(sha(raw(ref,file)),expected,'DOMAIN_AUTOMATIC_ACCOUNT_OFF_INPUT_CHANGED');
+      }
+      return [ref,AUTOMATIC_ACCOUNT_OFF_SQL.length];
+    }));
     const receiptPresent=ref=>{
       const present=trees.get(ref).has(NATIVE_RECEIPT_SQL);
       assert.equal(trees.get(ref).has(NATIVE_RECEIPT_SOURCE),present,'DOMAIN_PARTIAL_NATIVE_RECEIPT_SOURCE');
       if(usesAssistantBrowserProfile)assert(present,'DOMAIN_ASSISTANT_SEPARATION_REQUIRES_FULL_PREDECESSOR_SQL');
       if(present)assert(has601AppSchema&&offPresent(ref)&&noticePresent(ref)&&
-        sql(ref).length===80+Number(usesAssistantBrowserProfile)+scalarWalk.get(ref)+Number(tripRecoveryPresent(ref)),
+        sql(ref).length===80+Number(usesAssistantBrowserProfile)+scalarWalk.get(ref)+Number(tripRecoveryPresent(ref))
+          +automaticAccountOff.get(ref),
         'DOMAIN_NATIVE_RECEIPT_REQUIRES_WHOLE80');
       return present;
     };
     const pgModules=ref=>{noticePresent(ref);const receipt=receiptPresent(ref);return offPresent(ref)
       ?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER,...(receipt?[NATIVE_RECEIPT_SOURCE]:[]),
-        ...(tripRecoveryPresent(ref)?[TRIP_ERASURE_RECOVERY_FIXTURE]:[])]:p.postgresModules;};
+        ...(tripRecoveryPresent(ref)?[TRIP_ERASURE_RECOVERY_FIXTURE]:[]),
+        ...(automaticAccountOff.get(ref)?[AUTOMATIC_ACCOUNT_OFF_SOURCE]:[])]:p.postgresModules;};
     // All SQL stays in the real PG inventory; the known76th row grants no reuse.
     assert.equal(sql(input.baselineCommit).length,has601AppSchema
       ?77+2*Number(noticePresent(input.baselineCommit))+Number(receiptPresent(input.baselineCommit))+Number(usesAssistantBrowserProfile)
         +scalarWalk.get(input.baselineCommit)+Number(tripRecoveryPresent(input.baselineCommit))
+        +automaticAccountOff.get(input.baselineCommit)
       :is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
       'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
     if(is597||is598||is599||is601){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');

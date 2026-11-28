@@ -25,6 +25,7 @@ import {
   TRIP_STORAGE_SIGNED_LOGIN_SIGNATURE_PATH,
 } from '../supabase/functions/_shared/trip-storage-contract-probe.js';
 import { verifyTripGatewaySignature } from '../supabase/functions/_shared/trip-storage.js';
+import { AUTOMATIC_ACCOUNT_ERASURE_HEADER } from '../supabase/functions/_shared/account-lifecycle.js';
 
 const baseUrl = 'https://trip-edge-test.example';
 const publishableKey = 'synthetic-public-test-key';
@@ -138,6 +139,8 @@ const edgeScope = vm.createContext({
   assertAllowedOrigin: request => assert.equal(request.headers.get('origin'), origin),
   corsHeaders: () => ({ 'Access-Control-Allow-Origin': origin }),
   tripStorageMode: () => 'd1',
+  AUTOMATIC_ACCOUNT_ERASURE_HEADER,
+  runScheduledAccountErasure: forbiddenEdgeCall, runScheduledAccountNotices: forbiddenEdgeCall,
   classifyTripStorageContractProbe, TRIP_STORAGE_CONTRACT_PROBE_HEADER,
   TRIP_STORAGE_SIGNED_LOGIN_METHOD, TRIP_STORAGE_SIGNED_LOGIN_PROBE_KIND,
   TRIP_STORAGE_SIGNED_LOGIN_SIGNATURE_PATH, verifyTripGatewaySignature,
