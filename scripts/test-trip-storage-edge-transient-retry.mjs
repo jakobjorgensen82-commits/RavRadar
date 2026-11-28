@@ -1150,7 +1150,7 @@ const condition=(value,steps,failed,cancelled=false,operation='existing-worker-r
   return Function('steps','failure','cancelled','success','always','inputs','return '+value.replace(/^\$\{\{\s*|\s*\}\}$/g,''))(
     steps,()=>failed,()=>cancelled,()=>!failed&&!cancelled,()=>true,{operation});
 };
-async function workflowFixture({failCommand,driftCommand,preflightFailure=false,invalidLease=false,recoveryFailure=false,edgeUnavailable=false,badDeployVersion=false,lateDrift='',expireAfterWorkerPreflight=false,cancelRecovery=false,deployVersions={},unknownDeployStep='',falseReceiptStep='',operation='existing-worker-repair',applyUpgrade}={}) {
+async function workflowFixture({failCommand,driftCommand,preflightFailure=false,invalidLease=false,recoveryFailure=false,edgeUnavailable=false,badDeployVersion=false,lateDrift='',expireAfterWorkerPreflight=false,cancelRecovery=false,deployVersions={},unknownDeployStep='',falseReceiptStep='',heldBeforeReplace='',operation='existing-worker-repair',applyUpgrade}={}) {
   const states={},calls=[],logs=[];let firstError=preflightFailure?new Error('PREFLIGHT_FAILED'):null,clock=1800000000000,failedOnce=false;
   for(const step of steps){
     if(step.id==='repair_replace'&&operation==='existing-owner-export-upgrade'&&!firstError&&applyUpgrade){
@@ -1161,14 +1161,18 @@ async function workflowFixture({failCommand,driftCommand,preflightFailure=false,
     if(!condition(step.condition,states,!!firstError,cancelRecovery&&!!firstError,operation)) {states[step.id]={outcome:'skipped',outputs:{}};continue;}
     const outputs={},env={GITHUB_SHA:'a'.repeat(40),GITHUB_REF:'refs/heads/main',GITHUB_OUTPUT:'/synthetic/output',SUPABASE_PROJECT_ID:'synthetic',SUPABASE_URL:'https://synthetic.invalid',SUPABASE_PUBLISHABLE_KEY:'synthetic',TRIP_GATEWAY_SHARED_SECRET:'synthetic-existing-secret-at-least-32-characters',TRIP_WRANGLER_CONFIG_PATH:'/synthetic/config'};
     env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE=operation==='existing-owner-export-upgrade'?'1':'0';
+    if (/^      TRIP_STORAGE_REQUIRE_UNHELD_BINDINGS: '1'$/m.test(repairJob)) {
+      env.TRIP_STORAGE_REQUIRE_UNHELD_BINDINGS = '1';
+    }
     const deadlineId=/REPAIR_LEASE_DEADLINE: \$\{\{ steps\.([a-z_]+)\.outputs\.deadline \}\}/.exec(step.text)?.[1];
     if(deadlineId)env.REPAIR_LEASE_DEADLINE=invalidLease?'0':states[deadlineId].outputs.deadline;
     const versionId=/REPAIR_EXPECTED_WORKER_VERSION: \$\{\{ steps\.([a-z_]+)\.outputs\.version \}\}/.exec(step.text)?.[1];
     if(versionId)env.REPAIR_EXPECTED_WORKER_VERSION=states[versionId]?.outputs.version||'';
     const execFileSync=(command,args,options)=>{
       const action=command==='git'?(args[0]==='fetch'?'fetch':'head'):command==='supabase'?(args.at(-1)==='TRIP_STORAGE_MODE=d1'?'restore':'maintenance'):command==='npx'?(args.includes('deploy')?'deploy':'secret'):command==='sleep'?'drain':args[0].includes('prepare-cloudflare-trip-storage')?'upgrade-check':args[0].includes('verify-trip-storage-edge')?'edge':'worker';
-      const recordedAction=action==='worker'&&step.id.endsWith('replace')&&!calls.some(call=>call.step===step.id&&call.action==='deploy')?'worker-preflight':action;
+      const recordedAction = args.includes('--before-replace') ? 'worker-binding-fence' : action==='worker'&&step.id.endsWith('replace')&&!calls.some(call=>call.step===step.id&&call.action==='deploy')?'worker-preflight':action;
       calls.push({step:step.id,action:recordedAction,args,options});
+      if (recordedAction === 'worker-binding-fence' && (step.id === heldBeforeReplace || heldBeforeReplace === 'all')) throw new Error('held Worker');
       if((!failedOnce&&recordedAction===failCommand)||(recoveryFailure&&step.id.startsWith('repair_recovery')&&action==='maintenance')){failedOnce=true;throw new Error('do not print synthetic secret cause');}
       if(action==='head')return action===driftCommand||(lateDrift===step.id)?'b'.repeat(40):env.GITHUB_SHA;
       if(action==='drain'){clock+=20000;return '';}
@@ -1344,12 +1348,41 @@ repairTest('restore hold marks Worker health and fences every signed trip route 
   assert.equal((await waitForWorkerHealth({ ...readinessOptions, expectedRestoreHold: true })).verified, false);
   assert.equal(shardReads, 0);
 });
+repairTest('repair options acquire the production group before the shared trip group',()=>{
+  const expression = /^  group: [$][{][{]\s*(.*?)\s*[}][}]$/m.exec(workflow)?.[1];
+  assert.ok(expression);
+  const selectGroup = Function('contains','fromJSON','inputs','return '+expression.trim());
+  const group = operation => selectGroup((values,value)=>values.includes(value), JSON.parse, {operation});
+  for (const operation of ['existing-worker-repair','existing-owner-export-upgrade','existing-owner-erasure-guard',
+    'fixed-account-activity-hook-enable','fixed-account-activity-hook-disable','fixed-account-activity-receipt-arm']) {
+    assert.equal(group(operation),'ravradar-weather-production-v2');
+  }
+  for (const operation of ['', 'full-install','fixed-account-activity-hook-catalog-read','unknown']) {
+    assert.equal(group(operation),'ravradar-trip-storage-production');
+  }
+  assert.match(repairJob,/^    concurrency:\n      group: ravradar-trip-storage-production\n      queue: max\n      cancel-in-progress: false$/m);
+});
 repairTest('deployment workflow requires its own primary receipt after deploy and before/after restore',async()=>{
   const result=await workflowFixture();assert.equal(result.firstError,null);
   const calls=result.calls.filter(call=>Object.hasOwn(call.options?.env||{},'EXPECTED_TRIP_WORKER_VERSION'));
   assert.deepEqual(calls.map(call=>call.step),['repair_replace','repair_restore','repair_restore']);
   assert.ok(calls.every(call=>call.options.env.EXPECTED_TRIP_WORKER_VERSION===result.states.repair_replace.outputs.version));
+  assert.ok(calls.every(call=>call.options.env.TRIP_STORAGE_REQUIRE_UNHELD_BINDINGS==='1'));
   assert.match(result.states.repair_replace.outputs.version,/^11111111-/);
+});
+repairTest('repair checks existing bindings before either Wrangler replacement and refuses a hold',async()=>{
+  const normal = await workflowFixture({failCommand:'deploy'});
+  for (const step of ['repair_replace', 'repair_recovery_replace']) {
+    const calls = normal.calls.filter(call=>call.step===step);
+    const fence = calls.findIndex(call=>call.action==='worker-binding-fence');
+    const deploy = calls.findIndex(call=>call.action==='deploy');
+    assert.ok(fence>=0 && fence<deploy);
+    const refused = await workflowFixture(step==='repair_recovery_replace'
+      ? {heldBeforeReplace:step,failCommand:'deploy'} : {heldBeforeReplace:'all'});
+    assert.equal(refused.states[step].error?.message,'TRIP_REPAIR_WORKER_BINDING_FENCE');
+    assert.equal(refused.calls.some(call=>call.step===step && call.action==='deploy'),false);
+    assert.equal(refused.calls.some(call=>call.action==='restore'),false);
+  }
 });
 repairTest('deployment workflow recovery never reuses the failed primary version receipt',async()=>{
   const recovered='22222222-2222-4222-8222-222222222222';
@@ -1450,7 +1483,7 @@ deploymentTest('deployment receipt bounds held body and closes stream',async()=>
 for(const overrides of [{expectedVersion:''},{expectedVersion:undefined},{expectedVersion:other.slice(1)},{workerName:'other-worker'},{accountId:'../different'},{apiToken:''}])deploymentTest('deployment receipt invalid intent makes zero HTTP '+JSON.stringify(overrides),async()=>{
   let calls=0;await assert.rejects(probe({...overrides,fetchImpl:async()=>{calls++;return new Response('{}');}}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});assert.equal(calls,0);
 });
-async function verifierMain({claim,body=valid(),badConfig=false,args=[],restoreHold=false}={}) {
+async function verifierMain({claim,body=valid(),badConfig=false,args=[],restoreHold=false,requireUnheldBindings=false,wrongShard=false}={}) {
   let code=fs.readFileSync('scripts/verify-cloudflare-trip-gateway.mjs','utf8').replaceAll('\r\n','\n');
   code=code.slice(0,code.lastIndexOf('\nif (process.argv[1]')).replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm,'').replace(/^export /gm,'');
   const calls=[],logs=[],configReads=[];
@@ -1461,6 +1494,7 @@ async function verifierMain({claim,body=valid(),badConfig=false,args=[],restoreH
     if(String(input).includes('/versions/')){
       const bindings=d1_databases.map(row=>({type:'d1',name:row.binding,id:row.database_id}));
       if(restoreHold)bindings.push({type:'secret_text',name:'TRIP_RESTORE_HOLD'});
+      if (wrongShard) bindings[9].id = other;
       return new Response(JSON.stringify({success:true,result:{id:expected,resources:{bindings}}}));
     }
     if(String(input).includes('api.cloudflare.com'))return new Response(JSON.stringify(body));
@@ -1469,6 +1503,7 @@ async function verifierMain({claim,body=valid(),badConfig=false,args=[],restoreH
   };
   const env={CLOUDFLARE_TRIP_GATEWAY_URL:'https://synthetic-gateway.example.workers.dev',TRIP_GATEWAY_SHARED_SECRET:'synthetic-existing-shared-secret-with-32-characters',CLOUDFLARE_ACCOUNT_ID:accountId,CLOUDFLARE_API_TOKEN:apiToken,TRIP_WRANGLER_CONFIG_PATH:'/synthetic/config'};
   if(claim!==undefined)env.EXPECTED_TRIP_WORKER_VERSION=claim;
+  if (requireUnheldBindings) env.TRIP_STORAGE_REQUIRE_UNHELD_BINDINGS='1';
   let error;try{await compileFunction('return(async()=>{'+code+'\nawait main();})();',['fs','process','fetch','globalThis','boundedFetch','TRIP_STORAGE_NETWORK_TIMEOUT_CODE','TRIP_STORAGE_NETWORK_TIMEOUT_MS','normalizeCloudflareGatewayUrl','tripGatewaySignature','console'])(
     {readFileSync:p=>{configReads.push(p);return JSON.stringify({name:badConfig?'wrong-worker':workerName,d1_databases});}},{env,argv:['node','verify',...args]},fetchImpl,{fetch:fetchImpl},boundedFetch,TRIP_STORAGE_NETWORK_TIMEOUT_CODE,TRIP_STORAGE_NETWORK_TIMEOUT_MS,normalizeCloudflareGatewayUrl,tripGatewaySignature,{log:value=>logs.push(value)});
   }catch(caught){error=caught;}return{calls,logs,configReads,error};
@@ -1478,6 +1513,19 @@ deploymentTest('deployment normal CLI default retains exactly original three pro
 });
 deploymentTest('deployment normal CLI optional healthy claim performs one bounded active metadata read',async()=>{
   const result=await verifierMain({claim:expected});assert.equal(result.error,undefined);assert.equal(result.calls.length,4);assert.deepEqual(result.configReads,['/synthetic/config']);assert.equal(result.logs.length,1);assert.doesNotMatch(JSON.stringify(result.logs),/author|do-not-retain|token/);
+});
+deploymentTest('deployment repair CLI attests exact new version, every binding and no hold before success',async()=>{
+  const options = {claim:expected,requireUnheldBindings:true};
+  const accepted = await verifierMain(options);
+  assert.equal(accepted.error,undefined);
+  const reads = accepted.calls.filter(call=>call.input.includes('api.cloudflare.com'));
+  assert.equal(reads.length,3);
+  assert.ok(reads[1].input.endsWith('/versions/'+expected));
+  for (const mismatch of [{restoreHold:true},{wrongShard:true}]) {
+    const refused = await verifierMain({...options,...mismatch});
+    assert.equal(refused.error?.message,'TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED');
+    assert.deepEqual(refused.logs,[]);
+  }
 });
 deploymentTest('deployment normal CLI optional mismatched claim cannot print normal success',async()=>{
   const body=valid();body.result.deployments[0].versions[0].version_id=other;const result=await verifierMain({claim:expected,body});assert.equal(result.error?.message,'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');assert.deepEqual(result.logs,[]);
@@ -2715,9 +2763,6 @@ test('erasure workflow: the actual named source program runs plan/apply/check on
   const { assertOwnerErasureSchemaAcknowledgment }=await import('./prepare-cloudflare-trip-storage.mjs');
   const workflow=fs.readFileSync('.github/workflows/deploy-trip-storage.yml','utf8').replaceAll('\r\n','\n');
   assert.match(workflow,/default: full-install/);
-  const outer=/^concurrency:\n([\s\S]*?)\njobs:\n/m.exec(workflow)?.[1];
-  assert.equal(outer,"  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}\n  queue: max\n  cancel-in-progress: false\n",
-    'Only the fixed account activity writes select weather outer; erasure and all old operations retain trip outer with the reviewed queue');
   const title='      - name: Install and physically attest only the named owner-erasure INSERT guards\n';
   const at=workflow.indexOf(title),end=workflow.indexOf('\n      - name:',at+title.length);
   assert(at>0&&end>at); assert.equal(workflow.indexOf(title,at+title.length),-1);

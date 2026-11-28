@@ -534,7 +534,16 @@ test('actual workflow preserves old operations and gates the fixed job with weat
     'typed-trip-catalog-read', 'fixed-account-activity-hook-read', 'fixed-account-activity-hook-catalog-read', 'fixed-account-activity-hook-enable', 'fixed-account-activity-hook-disable', 'fixed-account-activity-receipt-arm']) {
     assert.ok(header.includes('          - ' + option + '\n'));
   }
-  assert.ok(header.includes("  group: ${{ (inputs.operation == 'fixed-account-activity-hook-enable' || inputs.operation == 'fixed-account-activity-hook-disable' || inputs.operation == 'fixed-account-activity-receipt-arm') && 'ravradar-weather-production-v2' || 'ravradar-trip-storage-production' }}"));
+  const expression = /^  group: [$][{][{]\s*(.*?)\s*[}][}]$/m.exec(header)?.[1];
+  assert.ok(expression);
+  const selectGroup = Function('contains','fromJSON','inputs','return '+expression.trim());
+  const group = operation => selectGroup((values, value) => values.includes(value), JSON.parse, { operation });
+  for (const suffix of ['hook-enable', 'hook-disable', 'receipt-arm']) {
+    assert.equal(group('fixed-account-activity-'+suffix), 'ravradar-weather-production-v2');
+  }
+  for (const suffix of ['hook-read', 'hook-catalog-read']) {
+    assert.equal(group('fixed-account-activity-'+suffix), 'ravradar-trip-storage-production');
+  }
   assert.match(header, /concurrency:\n  group: [^\n]+\n  queue: max\n  cancel-in-progress: false/);
   assert.match(header, /permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n/);
   const start = workflow.indexOf('\n  configure-fixed-account-activity-hook:\n');
