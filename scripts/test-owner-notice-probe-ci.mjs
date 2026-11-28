@@ -234,28 +234,52 @@ test('CLI/help and inventory fail closed',()=>{
   assert.throws(()=>ownerProbeInventory([...permanent,extra]),/OWNER_PROBE_INVENTORY/);
   assert.throws(()=>ownerProbeInventory([{...permanent[0],version:0},...permanent.slice(1)]),/OWNER_PROBE_INVENTORY/);
 });
-for(const body of [null,''])test('the actual normal owner button reaches the unchanged nine-file probe once with '+(body===null?'null':'empty-string')+' body',async()=>{
+for(const scenario of [
+  {body:null,slowAccept:false,expectedReads:2,diagnostic:'delivered',name:'null body'},
+  {body:'',slowAccept:false,expectedReads:1,diagnostic:'permission-denied',name:'empty-string body'},
+  {body:null,slowAccept:true,expectedReads:0,diagnostic:null,name:'a late provider acceptance'},
+])test('the normal owner button returns acceptance and bounds receipt reads with '+scenario.name,async()=>{
+  const {body,slowAccept,expectedReads,diagnostic}=scenario;
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'rr-mail-owner-'));
-  const oldFetch=globalThis.fetch,oldDeno=globalThis.Deno;let sends=0,auths=0,profiles=0,registered;const statuses=[];
+  const oldFetch=globalThis.fetch,oldDeno=globalThis.Deno,oldInfo=console.info,oldNow=Date.now;
+  let sends=0,deliveryReads=0,auths=0,profiles=0,registered;
+  let providerDelay=0;
+  const statuses=[],deliveryDiagnostics=[];
+  let sentBody;
   const providerId='5b4529f7-1f0d-4276-a253-dbe5c1baa4f0',session={user:{id:ownerId},access_token:'synthetic.owner.token'};
   try{
+    Date.now=()=>oldNow()+providerDelay;
     materializeOwnerProbe({sourceRoot:root,target:tmp,reservation:null});
     // Restore the existing inert template: deployment materialization above deliberately writes null.
     globalThis.Deno={serve:h=>{registered=h;},env:{get:key=>({
       SUPABASE_URL:project,SUPABASE_ANON_KEY:'synthetic-public',
       TRIP_GATEWAY_SHARED_SECRET:'synthetic-shared'.repeat(3),RAVRADAR_RESEND_NOTICE_SEND_KEY:'re_synthetic',
     })[key]}};
+    console.info=(label,...data)=>{
+      if(label==='OWNER_NOTICE_PROBE_PROVIDER_DELIVERY')deliveryDiagnostics.push(data);
+    };
     globalThis.fetch=async(input,options)=>{
       const url=String(input);
       if(url===project+'/auth/v1/user'){auths++;assert.equal(new Headers(options.headers).get('authorization'),'Bearer '+session.access_token);return Response.json({id:ownerId});}
       if(url.startsWith(project+'/rest/v1/profiles?')){profiles++;return Response.json([profile]);}
+      if(url==='https://api.resend.com/emails/'+providerId){
+        deliveryReads++;
+        assert.equal(options.method,'GET');
+        assert.equal(options.headers.Authorization,'Bearer re_synthetic');
+        assert.equal(options.body,undefined);
+        if(body!==null)return new Response(null,{status:403});
+        return Response.json({...sentBody,id:providerId,
+          last_event:deliveryReads===1?'sent':'delivered',reply_to:[sentBody.reply_to]});
+      }
       assert.equal(url,'https://api.resend.com/emails');sends++;
-      assert.deepEqual(JSON.parse(options.body).to,[user.email]);
+      sentBody=JSON.parse(options.body);
+      assert.deepEqual(sentBody.to,[user.email]);
+      if(slowAccept)providerDelay=23_001;
       return Response.json({id:providerId.toUpperCase()});
     };
     const {createOwnerNoticeEdgeHandler}=await import(pathToFileURL(path.join(tmp,'supabase/functions/'+slug+'/index.ts')).href);
     assert.equal((await registered(new Request(project+'/functions/v1/'+slug,{method:'POST'}))).status,404);
-    const handler=createOwnerNoticeEdgeHandler({ownerId,recipient:user.email,noticeId,reservedAt:Date.now()-100,expiresAt:Date.now()+10_000});
+    const handler=createOwnerNoticeEdgeHandler({ownerId,recipient:user.email,noticeId,reservedAt:Date.now()-100,expiresAt:Date.now()+30_000});
     const button={disabled:false,isConnected:true},status={textContent:''};
     const content={insertAdjacentHTML(){},querySelector:id=>id==='#sendOwnerNoticeProbe'?button:status};
     const context={content,state:{tab:'system',access:{profile:{role:'owner'}}},SITE_TEST_MODE:false,
@@ -271,9 +295,11 @@ for(const body of [null,''])test('the actual normal owner button reaches the unc
     vm.runInNewContext(source.slice(start,end)+'\nmountOwnerNoticeProbe();',context);
     await button.onclick();await button.onclick();
     assert.deepEqual(statuses,[200]);assert.equal(auths,1);assert.equal(profiles,1);assert.equal(sends,1);
+    assert.equal(deliveryReads,expectedReads);
+    assert.deepEqual(deliveryDiagnostics,diagnostic===null?[]:[[diagnostic]]);
     assert(status.textContent.includes(providerId));assert(!status.textContent.includes(user.email));
   }finally{
-    globalThis.fetch=oldFetch;globalThis.Deno=oldDeno;
+    globalThis.fetch=oldFetch;globalThis.Deno=oldDeno;console.info=oldInfo;Date.now=oldNow;
     const target=path.resolve(tmp);assert(target.startsWith(path.resolve(os.tmpdir())+path.sep));fs.rmSync(target,{recursive:true,force:true});
   }
 });

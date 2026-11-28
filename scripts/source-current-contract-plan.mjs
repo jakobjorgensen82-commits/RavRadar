@@ -55,7 +55,8 @@ const LOCAL_RESTORE_INVENTORY_DISPATCH=[
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
 const RAW_CACHE_ROTATION_SOURCE_COMMAND = 'node --test scripts/test-terminal-dmi-cache.mjs scripts/test-find-raw-rotation-artifact.mjs scripts/test-github-actions-cache-stock.mjs scripts/test-weather-acquisition-workflows.mjs scripts/test-committed-raw-current-capture-union.mjs';
 const WEATHER_CADENCE_SOURCE_COMMAND = 'node scripts/test-weather-cadence-watchdog.mjs';
-const ACCOUNT_TRIP_UI_SOURCE_TEST = 'node --test scripts/test-user-account-trip-log-4.0.264.mjs scripts/test-trip-evidence-upload-receipt.mjs';
+const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
+const ACCOUNT_TRIP_UI_SOURCE_TEST = TRIP_LOG_SOURCE_TEST+' scripts/test-trip-evidence-upload-receipt.mjs';
 
 const WEATHER_COMPONENT_RUNTIME_SOURCE_COMMAND='node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs';
 
@@ -87,6 +88,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   assistantDiagnostic1712:['node scripts/test-fixed-assistant-failure-log-20261121-1712.mjs'],
   accountActivityHookRead:['node --test scripts/test-fixed-account-activity-hook.mjs'],
   accountSchemaFixture:[ACCOUNT_SCHEMA_SOURCE_TEST],
+  accountInactivityNotice:[TRIP_LOG_SOURCE_TEST],
   accountTripUI:[ACCOUNT_TRIP_UI_SOURCE_TEST],
   assistantPublic:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
@@ -297,6 +299,10 @@ const PATH_AREAS=freeze({
     'scripts/test-fixed-account-activity-hook.mjs',
   ],
   accountSchemaFixture:[ACCOUNT_SCHEMA_FIXTURE],
+  accountInactivityNotice:[
+    'supabase/functions/_shared/account-inactivity-notice.js',
+    'supabase/functions/_shared/inactivity-notice-mail.mjs',
+  ],
   accountTripUI:[
     'js/services/trip-evidence-controller.js',
     'js/services/trip-evidence-runtime.js',
@@ -444,6 +450,7 @@ const PATH_AREAS=freeze({
     '.github/workflows/test-owner-notice-mail.yml',
     'scripts/owner-notice-probe-ci.mjs',
     'scripts/test-owner-notice-probe-ci.mjs',
+    'supabase/functions/_shared/inactivity-notice-mail.mjs',
     'scripts/fixtures/owner-notice-probe/index.ts',
     'scripts/fixtures/owner-notice-probe/inactivity-notice-mail.mjs',
     'scripts/fixtures/owner-notice-probe/owner-notice-probe.mjs',
@@ -559,7 +566,7 @@ const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
 const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure,
   ...PATH_AREAS.privateStudy,...PATH_AREAS.accountActivityHookRead,...PATH_AREAS.accountSchemaFixture,
-  ...PATH_AREAS.accountTripUI]);
+  ...PATH_AREAS.accountInactivityNotice,...PATH_AREAS.accountTripUI]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
@@ -605,7 +612,6 @@ export function currentWorkflowTargets(relative){
 }
 // Existing whole callers for precise app and Pages inputs. This lookup
 // selects test commands without adding short-path qualification authority.
-const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
 const TRIP_HYBRID_SOURCE_TEST='node --test scripts/test-hybrid-trip-storage-4.0.287.mjs';
 const TRIP_EDGE_SOURCE_TEST='node --test scripts/test-trip-storage-edge-transient-retry.mjs';
 const TRIP_RECOVERY_SOURCE_TEST='node --test scripts/test-reconcile-held-trip-erasures.mjs';
@@ -675,9 +681,7 @@ const SOURCE_EXECUTION_TARGETS=freeze({
   'scripts/lib/trip-erasure-recovery-native-fixture.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST,'node --test scripts/test-native-postgres-evidence.mjs'],
   'scripts/prepare-cloudflare-trip-storage.mjs':[TRIP_HYBRID_SOURCE_TEST,TRIP_EDGE_SOURCE_TEST],
   'scripts/verify-cloudflare-trip-gateway.mjs':[TRIP_EDGE_SOURCE_TEST,TRIP_RECOVERY_SOURCE_TEST],
-  'supabase/functions/_shared/account-inactivity-notice.js':[TRIP_LOG_SOURCE_TEST],
   'supabase/functions/_shared/account-lifecycle.js':[TRIP_LOG_SOURCE_TEST,...COMMANDS.ownerErasure],
-  'supabase/functions/_shared/inactivity-notice-mail.mjs':[TRIP_LOG_SOURCE_TEST],
   'supabase/functions/trip-log/index.ts':[TRIP_LOG_SOURCE_TEST],
 });
 

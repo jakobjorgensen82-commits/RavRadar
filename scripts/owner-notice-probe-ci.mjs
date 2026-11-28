@@ -12,7 +12,7 @@ const SLUG='inactivity-notice-owner-probe',WORKFLOW='Test one RavRadar owner not
 const PERMANENT=['ravradar-assistant','submit-observation','trip-log'];
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const TEMPLATE='scripts/fixtures/owner-notice-probe/';
-const SHARED=['public-gateway.ts','trip-storage.js','trip-storage-contract-probe.js'];
+const SHARED=['public-gateway.ts','trip-storage.js','trip-storage-contract-probe.js','inactivity-notice-mail.mjs'];
 const PROBE=['index.ts','inactivity-notice-mail.mjs','owner-notice-probe.mjs',
   'owner-notice-probe-invoke.mjs','reservation.mjs','hosted-owner-adapter-v1/hosted-owner-notice-probe.mjs'];
 const CONFIG='project_id = "ravradar-private-owner-mail-probe"\n\n[functions.'+SLUG+']\nverify_jwt = false\n';

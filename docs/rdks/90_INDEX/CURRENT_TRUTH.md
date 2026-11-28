@@ -2,7 +2,9 @@
 
 Den afgrænsede installation genbruger den almindelige backendvej. Den kræver installeret gendannelsesskema og en frisk genlæsning af den åbne lås. Migreringsplanen accepterer kun de to nye kontoændringer i deres faste rækkefølge. Efter skrivning kontrolleres kataloget, de eksisterende begrænsninger, de nye funktioner og begge kontopolitiske kontakter direkte. Aktivitetsregistrering og automatisk varsling eller sletning er separate trin.
 
-Isoleret PostgreSQL og GoTrue har afprøvet installationen, varslets tidsfrist, login før sletning, sletning af kontoen og dens ture i ti lokale databaser samt beskyttelsen under gendannelse. Mailtransporten var simuleret. Produktionsinstallation og den eksisterende mailleverandørs leveringskvittering mangler fortsat. De tidligere PostgreSQL-kvitteringer beholder deres oprindelige omfang.
+Isoleret PostgreSQL og GoTrue har afprøvet installationen, varslets tidsfrist, login før sletning, sletning af kontoen og dens ture i ti lokale databaser samt beskyttelsen under gendannelse. Mailtransporten var simuleret. Produktionsinstallation #28 bekræftede begge skemaer og genlæste begge kontakter som slået fra. Den eksisterende mailleverandørs kvittering for ejerprøven skal stadig kontrolleres gennem det normale forløb.
+
+Den lokale ejerprøve bruger samme opslag af leveringskvitteringen som den planlagte varsling. Den midlertidige funktion læser kvitteringen for sin ene faste prøvemail med den eksisterende nøgle. En leveringskvittering skal passe til afsender, modtager og besked. Ved sen leverandøraccept returnerer prøven svaret straks uden at vente på et leveringsopslag. Faktisk leverandørprøve og aktivering af automatik afventer fortsat.
 
 ## 25. november — Spørg RavRadars lokale sprogkandidat
 

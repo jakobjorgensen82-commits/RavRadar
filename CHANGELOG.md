@@ -15,6 +15,7 @@
 ## Drift — installation af kontovarsling og kontosletning
 
 - Kontoskemaet kan installeres via den afgrænsede backendvej. Kataloget kontrollerer efter installationen, at automatisk varsling og sletning står slået fra.
+- Ejerens prøvemail bruger samme kontrol af leveringskvitteringen som kontovarslingen. Kvitteringsopslaget reserverer tid til at svare adminpanelet, også når leverandøren accepterer mailen sent.
 
 ## Drift — vandtemperatur fra allerede hentede DMI-filer
 

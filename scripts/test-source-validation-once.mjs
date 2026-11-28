@@ -76,7 +76,8 @@ assert.deepEqual(sourceCommandsForChangedPaths(['scripts/verify-code-only-migrat
 assert.deepEqual(sourceCommandsForChangedPaths(['supabase/functions/trip-log/index.ts',
   'supabase/functions/_shared/account-lifecycle.js','supabase/functions/_shared/inactivity-notice-mail.mjs']),
   ['node --test scripts/test-user-account-trip-log-4.0.264.mjs',
-    'node --test scripts/test-delete-trip-owner-data-readback.mjs']);
+    'node --test scripts/test-delete-trip-owner-data-readback.mjs',
+    'node --test scripts/test-owner-notice-probe-ci.mjs']);
 for(const path of ['scripts/audit-pages-artifact-unreviewed.mjs','supabase/functions/trip-log/unreviewed.ts'])
   assert.throws(()=>sourceCommandsForChangedPaths([path]),/SOURCE_CHANGED_OWNER_REQUIRED/);
 assert.throws(()=>sourceCommandsForChangedPaths(['../arbitrary.mjs']));

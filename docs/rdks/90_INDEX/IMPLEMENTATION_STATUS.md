@@ -2,8 +2,9 @@
 
 - [x] Afprøv den isolerede kontoproces mod PostgreSQL, GoTrue og ti lokale turdatabaser. Verificér kataloget og begge kontakter efter installationen.
 - [x] Tilføj den afgrænsede migrationsplan, kontrolleret skrivning og direkte genlæsning til den eksisterende backendvej.
-- [ ] Kvalificér den samlede kilde, og verificér installationen i drift, mens de automatiske funktioner står slået fra.
+- [x] Kvalificér den samlede kilde, og verificér installationen i drift, mens de automatiske funktioner står slået fra. GitHub #1811 og installationskørsel #28 bekræftede det.
 - [ ] Verificér aktivitetsregistrering og mailleverandørens leveringskvittering før varsling aktiveres. Verificér den særskilte slette- og gendannelsesgrænse før automatisk sletning aktiveres.
+- [x] Afprøv kvitteringsopslaget lokalt gennem ejerens normale prøvemail. Den samme kode bruges af kontovarslingen. De lokale svar fra leverandøren er simulerede.
 
 ## 27. november — fysisk stop af upload i fejlbehandlingen
 
