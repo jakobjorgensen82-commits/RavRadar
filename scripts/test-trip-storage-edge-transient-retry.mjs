@@ -1240,6 +1240,15 @@ repairTest('repair workflow separates full default, repair and unknown selection
   assert.match(repairJob,/apply-candidate-g-trip-quality-migration\.mjs --verify-only/);
   for(const step of steps.filter(step=>step.id.endsWith('replace')))assert.match(step.text,/timeout-minutes: 7/);
 });
+repairTest('repair checks installed migrations after hydrating and rereading the isolated view',()=>{
+  const preflight=repairJob.split('      - name: Read exact applied metadata without SQL installation\n')[1]
+    ?.split('      - name: ')[0]??'';
+  const reads=[...preflight.matchAll(/supabase migration list --linked/g)];
+  const hydrate=preflight.indexOf('integrated-cutover-readiness.mjs hydrate-history');
+  const applied=preflight.indexOf('integrated-cutover-readiness.mjs applied');
+  assert.equal(reads.length,2);
+  assert.ok(reads[0].index<hydrate&&hydrate<reads[1].index&&reads[1].index<applied);
+});
 repairTest('repair actual workflow node steps preserve exact-main/lease/drain and version receipt',async()=>{
   const result=await workflowFixture();assert.equal(result.firstError,null);
   assert.deepEqual(result.calls.filter(call=>['maintenance','secret','deploy','restore','drain'].includes(call.action)).map(call=>call.action),['maintenance','drain','deploy','restore']);

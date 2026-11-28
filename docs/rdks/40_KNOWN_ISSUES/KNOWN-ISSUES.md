@@ -5,7 +5,12 @@ reparationsjob dele produktionslåsen med vejret og derefter turlagerlåsen
 med andre turlagerforløb. Før hver Worker-udskiftning kontrolleres de ti
 D1-bindinger og fraværet af gendannelsesspærringen. Efter udskiftning og ved
 genåbning kontrolleres den aktive Worker-version og samme bindingskrav.
-GitHub-kvalifikation og driftsverifikation udestår.
+GitHub godkendte ændringen. Den første udgivelse stoppede i Supabases
+migrationskontrol før vedligeholdelse. Udgivelsesjobbet læste den midlertidige
+migrationsliste, før allerede installerede konto- og gendannelsesmigrationer
+var indlæst. Reparationsvejen bruger nu den eksisterende historikindlæsning
+og kontrollerer en frisk liste. Den udfører ingen SQL-installation.
+Kildekontrol og ny afprøvning af udgivelsen udestår.
 
 ## 28. november — fjern feltet for vandstandsændring over tre timer
 
