@@ -12,6 +12,10 @@
 
 - Zonepanelet viser fortsat vandstandsprognosen time for time. Det særskilte felt for vandstandsændring over tre timer er fjernet.
 
+## Drift — privatkontrol ved prognosegemning
+
+- Et forslag reducerer gentaget kontrol af ens nøgler i en prognoses gemte beregningsdata. Det er afprøvet i en isoleret database og afventer leveringskontrol.
+
 ## Drift — installation af kontovarsling og kontosletning
 
 - Kontoskemaet kan installeres via den afgrænsede backendvej. Kataloget kontrollerer efter installationen, at automatisk varsling og sletning står slået fra.
