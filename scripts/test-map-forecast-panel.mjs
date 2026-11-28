@@ -1,7 +1,7 @@
 // The selected-hour header and the full zone forecast are independent views.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {showZoneInfo} from '../js/ui/info-panel.js';
+import {bindZoneInfoInteractions,showZoneInfo,showZoneMapPreview} from '../js/ui/info-panel.js';
 import '../js/ui/map-timeline-copy.js?v=4.0.579';
 import { exactForecastShareSelection, readForecastShare, forecastShareUrl, forecastShareDate,
   forecastShareScoreText, forecastShareCopy } from '../js/services/forecast-share-contract.js';
@@ -10,19 +10,34 @@ const time='2026-10-18T12:00:00.000Z';
 const result={available:true,score:72,level:'fair',time,
   components:{huntability:60,transport:50,release:40},componentReasons:{},reasons:[]};
 const zone={id:'synthetic-only',name:'Syntetisk område',region:'Lokal prøve'};
-const weather={time,windSpeedMps:6,windDirectionDeg:90};
+const weather={time,windSpeedMps:6,windDirectionDeg:90,waterLevelCm:47,waterLevelTrendCm3h:-16};
 const forecast={hourly:[weather]};
 test('selected-hour panel retains the same full forecast and water-level panels as Now',t=>{
   // The synthetic forecast must belong to the test's date, not the CI host's
   // moving Danish day. Keep the normal renderer's real expiry rule unchanged.
   t.mock.timers.enable({apis:['Date'],now:Date.parse('2026-10-18T10:00:00.000Z')});
+  const bestByDate={'2026-10-18':{hour:weather,result,recommended:true}};
   for(const mode of ['waders','beach']){
-    const current={innerHTML:''};showZoneInfo(current,zone,result,weather,mode,{forecast});
+    const current={innerHTML:''};showZoneInfo(current,zone,result,weather,mode,{forecast,bestByDate});
     assert.match(current.innerHTML,/data-forecast-section/);assert.match(current.innerHTML,/data-tide-section/);
-    const selected={innerHTML:''};showZoneInfo(selected,zone,result,weather,mode,{forecast,mapForecastTime:time});
+    const selected={innerHTML:''};showZoneInfo(selected,zone,result,weather,mode,{forecast,bestByDate,mapForecastTime:time});
     assert.match(selected.innerHTML,/>72</);assert.match(selected.innerHTML,/data-forecast-section/);
     assert.match(selected.innerHTML,/data-tide-section/);
     assert.doesNotMatch(selected.innerHTML,/map-timeline-zone-scope/);
+    const preview={innerHTML:''};showZoneMapPreview(preview,zone,result,weather,mode);
+    const detail={innerHTML:''};
+    const dailySection={
+      querySelector: selector => selector==='.forecast-payload'
+        ? {textContent: current.innerHTML.match(/class="forecast-payload">([^<]+)</)[1]} : detail,
+      querySelectorAll: () => [],
+    };
+    bindZoneInfoInteractions({addEventListener(){},querySelector:selector =>
+      selector==='[data-forecast-section]' ? dailySection : null},zone,mode,{});
+    for (const panel of [current,selected,preview,detail]) {
+      assert.match(panel.innerHTML, /<strong>47 cm<\/strong>/);
+      assert.doesNotMatch(panel.innerHTML, /<strong>-16 cm<\/strong>/);
+      assert.doesNotMatch(panel.innerHTML, /Vandstandsændring på 3 timer/);
+    }
     for(const payload of ['forecast-payload','tide-payload']){
       const read=html=>JSON.parse(html.match(new RegExp('class="'+payload+'">([^<]+)<'))[1]);
       assert.deepEqual(read(selected.innerHTML),read(current.innerHTML));

@@ -94,6 +94,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
     'node scripts/test-ravscore-public-browser-closure.mjs',
   ],
+  zoneInfoPanel:['node --test scripts/test-map-forecast-panel.mjs'],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -315,13 +316,13 @@ const PATH_AREAS=freeze({
     'scripts/test-assistant-ui-error-boundary.mjs',
     'scripts/test-rav-assistant-local-knowledge-4.0.293.mjs',
   ],
+  zoneInfoPanel:['js/ui/info-panel.js','scripts/test-map-forecast-panel.mjs'],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'js/services/data-service.js',
     'scripts/test-ravscore-public-data-service-binding.mjs',
     'scripts/test-ravscore-public-browser-closure.mjs',
     'scripts/test-map-forecast-timeline.mjs',
-    'scripts/test-map-forecast-panel.mjs',
     'scripts/test-map-timeline-generation.mjs',
     'scripts/test-public-json-reader-bridge.mjs',
     'scripts/test-public-cold-start-4.0.303.mjs',
