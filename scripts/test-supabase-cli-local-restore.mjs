@@ -1607,6 +1607,8 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     await login(fenced);const fenceAfter=await snapshot(fenced.id);
     need(fenceAfter.activity===null&&fenceAfter.journal===null&&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
     pass('B9_CLAIMS_ACL_AND_EXISTING_POST_PG_FENCE');
+    const recoveryMigration='supabase/migrations/20261127095500_trip_owner_erasure_intents.sql';
+    await psql(c,p,'NATIVE_TRIP_ERASURE_RECOVERY_INSTALL',await fs.readFile(path.join(source.root,recoveryMigration)));
     const automaticCases=[];
     const automaticMigration='supabase/migrations/20261128073000_account_automatic_erasure_off.sql';
     const automaticSql=await fs.readFile(path.join(source.root,automaticMigration));
@@ -1752,6 +1754,29 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     assert.equal(deliveredMail.state,'DELIVERED');assert.ok(deliveredMail.deleteNotBefore);
     assert((await chooseNotices()).rows.every(row=>row.noticeId!==dueNotice.noticeId));
     noticeCases.push('POLL_FAIRNESS_AND_CONFIRMED_DELIVERY_STARTS_DEADLINE');
+
+    const heldUser=await fresh();
+    const heldNotice=await prepareAutomatic(heldUser);
+    await advanceNotice(heldNotice);
+    await sql(`insert into public.observations(id,user_id) values (7282,'${heldUser.id}');`);
+    await sql('update public.account_automatic_erasure_policy set enabled=true where singleton;');
+    const secondNotice=mixedWork.find(row=>row.kind==='SEND');
+    const secondReady=await status(secondNotice);
+    assert.equal(secondReady.state,'READY');
+    const secondDigest=crypto.createHash('sha256').update(JSON.stringify(inactivityNoticeBody(secondWarn.email))).digest('hex');
+    const recoveryHold=crypto.randomUUID();
+    assert.equal(typeof await rpc('service_role',`pg_catalog.to_jsonb(public.acquire_trip_erasure_recovery_hold('${recoveryHold}'))`),'string');
+    await assert.rejects(()=>stageAutomatic(heldNotice,heldUser),{code:'SQLSTATE_55000'});
+    assert.equal(await remains(heldUser),true);
+    assert.equal(await value(`select to_jsonb(exists(select 1 from public.observations where id=7282 and user_id='${heldUser.id}'));`),true);
+    assert.equal(await value('select to_jsonb(hold_id) from public.trip_erasure_recovery_gate;'),recoveryHold);
+    automaticCases.push('RECOVERY_HOLD_PRESERVES_ACCOUNT_AND_TRIP');
+    assert.deepEqual((await chooseNotices()).rows,[]);
+    await assert.rejects(()=>rpc('service_role',`public.claim_account_automatic_notice('${secondNotice.noticeId}',
+      '${fixtureActorId}',${BigInt(secondReady.revision)},'${crypto.randomUUID()}','${secondDigest}',${sqlString(secondWarn.createdAt)})`),
+      {code:'SQLSTATE_55000'});
+    assert.equal((await status(secondNotice)).state,'READY');
+    noticeCases.push('RECOVERY_HOLD_REFUSES_NEW_AUTOMATIC_NOTICE');
     return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
       sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
       exactFunctionBodiesVerified:true,appScaffoldingSynthetic:true,realTwoYearHistoryVerified:false,

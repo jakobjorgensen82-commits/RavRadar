@@ -40,6 +40,10 @@ begin
     raise exception 'ACCOUNT_AUTOMATIC_NOTICE_SERVICE_REQUIRED' using errcode = '42501';
   end if;
 
+  -- Exclude new notice work while trip recovery owns the gate.
+  perform 1 from public.trip_erasure_recovery_gate where singleton and hold_id is null for share;
+  if not found then return empty_work; end if;
+
   -- Serialize only automatic selection. Claims share the same switch.
   perform 1 from public.account_automatic_notice_policy where singleton and enabled for update;
   if not found then return empty_work; end if;
@@ -184,6 +188,8 @@ begin
   if auth.role() is distinct from 'service_role' then
     raise exception 'ACCOUNT_AUTOMATIC_NOTICE_SERVICE_REQUIRED' using errcode = '42501';
   end if;
+  perform 1 from public.trip_erasure_recovery_gate where singleton and hold_id is null for share;
+  if not found then raise exception 'ACCOUNT_AUTOMATIC_NOTICE_RECOVERY_HELD' using errcode = '55000'; end if;
   perform 1 from public.account_automatic_notice_policy where singleton and enabled for share;
   if not found then raise exception 'ACCOUNT_AUTOMATIC_NOTICE_POLICY_OFF' using errcode = '22023'; end if;
   actor := public.account_erasure_require_service_owner(p_actor);
