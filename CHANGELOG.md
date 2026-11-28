@@ -32,6 +32,10 @@
 
 - Den sene vandstandsrunde får en afgrænset del af DMI's arbejdsbudget, når den kvalificerede plan viser reelle huller. De kritiske henteopgaver får deres hidtidige første mulighed, og afbrudt fillæsning bevarer originale råfiler til genbrug. Den faktiske offentlige dækning måles efter almindelig drift.
 
+## Udvikling — genbrug af databaseprøven efter afbrudt forberedelse
+
+- GitHub kan genbruge en tidligere databasekvittering, når en senere kontrol blev afbrudt efter binding til kildekoden og før den fælles kildekontrol. Samme workflow og databaseinput samt GitHubs kvittering for alle trin er påkrævet. Lokal afprøvning er gennemført. Måling i GitHub afventer.
+
 ## Drift — nye vandstandsfiler under DMI-hentningen
 
 - DMI kan genlæse kataloget sent i hentevinduet for at udfylde dokumenterede vandstandshuller. Den almindelige kontrollæsning af originaler, tidsfristen og downloadgrænserne gælder fortsat.
