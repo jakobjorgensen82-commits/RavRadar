@@ -6,8 +6,9 @@ const MAILBOX = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
 const MAX_RETRY_AGE_MS = 23 * 60 * 60 * 1000;
 
 const MAX_PROVIDER_RECEIPT_BYTES = 1_024;
+const MAX_PROVIDER_DELIVERY_BYTES = 8_192;
 
-async function readProviderId(response) {
+async function readProviderJson(response, maxBytes) {
   const mediaType = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
   if (mediaType !== "application/json" || !response.body) {
     void response.body?.cancel().catch(() => {});
@@ -15,7 +16,7 @@ async function readProviderId(response) {
   }
 
   const reader = response.body.getReader();
-  const buffer = new Uint8Array(MAX_PROVIDER_RECEIPT_BYTES);
+  const buffer = new Uint8Array(maxBytes);
   let size = 0;
   try {
     for (;;) {
@@ -26,8 +27,7 @@ async function readProviderId(response) {
       size += value.byteLength;
     }
     const decoded = new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, size));
-    const id = JSON.parse(decoded)?.id;
-    return typeof id === "string" && UUID.test(id) ? id.toLowerCase() : null;
+    return JSON.parse(decoded);
   } finally {
     void reader.cancel().catch(() => {});
     reader.releaseLock();
@@ -88,9 +88,39 @@ export async function sendInactivityNotice({
       }
       return { state: "unknown" };
     }
-    const providerId = await readProviderId(response);
-    return providerId ? { state: "accepted", providerId } : { state: "unknown" };
+    const id = (await readProviderJson(response, MAX_PROVIDER_RECEIPT_BYTES))?.id;
+    return typeof id === "string" && UUID.test(id)
+      ? { state: "accepted", providerId: id.toLowerCase() } : { state: "unknown" };
   } catch {
     return { state: "unknown" };
+  }
+}
+
+export async function readInactivityNoticeDelivery({
+  key, providerId, recipient, probe = false, fetchImpl = fetch, signal = AbortSignal.timeout(8_000),
+}) {
+  if (typeof key !== "string" || !/^re_[A-Za-z0-9_-]+$/.test(key)
+      || typeof providerId !== "string" || !UUID.test(providerId)
+      || typeof recipient !== "string" || recipient.length > 254 || !MAILBOX.test(recipient)
+      || typeof probe !== "boolean") return "unavailable";
+  const body = inactivityNoticeBody(recipient, probe);
+  try {
+    const response = await fetchImpl(RESEND_EMAILS + "/" + providerId, {
+      method: "GET", redirect: "error", cache: "no-store", signal,
+      headers: { Authorization: "Bearer " + key },
+    });
+    if (response.status !== 200) {
+      void response.body?.cancel().catch(() => {});
+      return [401, 403].includes(response.status) ? "permission-denied" : "unavailable";
+    }
+    const data = await readProviderJson(response, MAX_PROVIDER_DELIVERY_BYTES);
+    if (data?.id !== providerId || data.from !== body.from
+        || JSON.stringify(data.to) !== JSON.stringify(body.to) || data.subject !== body.subject
+        || data.text !== body.text || JSON.stringify(data.reply_to) !== JSON.stringify([body.reply_to])) {
+      return "unmatched";
+    }
+    return data.last_event === "delivered" ? "delivered" : "pending";
+  } catch {
+    return "unavailable";
   }
 }

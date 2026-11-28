@@ -2,7 +2,7 @@ import { GatewayError } from './public-gateway.ts';
 import { accountLifecycleConfiguration as configuration, accountLifecycleSetting as setting,
   accountLifecycleServiceHeaders as serviceHeaders, accountLifecycleRequestJson as requestJson,
   accountLifecycleRpc as rpc, requireAccountAutomationRequest } from './account-lifecycle.js';
-import { inactivityNoticeBody, sendInactivityNotice } from './inactivity-notice-mail.mjs';
+import { inactivityNoticeBody, readInactivityNoticeDelivery, sendInactivityNotice } from './inactivity-notice-mail.mjs';
 import { sha256Hex } from './trip-storage.js';
 
 const PREFIX='account-inactivity-';
@@ -144,14 +144,9 @@ async function advanceBoundInactivityNotice({config,actorId,noticeId,attemptId,s
   privateStatus=await readService();
  }
  // Existing provider/key only. A send-only key's 403 is HOLD, never delivery.
- let provider;
- try{provider=await requestJson('https://api.resend.com/emails/'+privateStatus.providerId,{
-  method:'GET',headers:{Authorization:'Bearer '+key}});}catch{return hold('DELIVERY_UNAVAILABLE');}
- const data=provider.data;
- if(provider.status!==200||data?.id!==privateStatus.providerId||data.from!==body.from
-  ||JSON.stringify(data.to)!==JSON.stringify(body.to)||data.subject!==body.subject||data.text!==body.text
-  ||JSON.stringify(data.reply_to)!==JSON.stringify([body.reply_to]))return hold('DELIVERY_UNAVAILABLE');
- if(data.last_event!=='delivered')return readStatus();
+ const delivery=await readInactivityNoticeDelivery({key,providerId:privateStatus.providerId,recipient:auth.data.email});
+ if(delivery==='pending')return readStatus();
+ if(delivery!=='delivered')return hold('DELIVERY_UNAVAILABLE');
  try{return checkedAccountInactivityNotice(await rpc(config,'acknowledge_account_inactivity_notice',{
   ...actor,p_expected_revision:privateStatus.revision,p_attempt:privateStatus.attemptId,p_outcome:'delivered',
   p_provider:privateStatus.providerId},headers),noticeId);}catch{return readStatus();}
