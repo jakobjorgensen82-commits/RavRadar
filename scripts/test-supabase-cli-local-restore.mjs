@@ -15,6 +15,7 @@ import {Readable,Writable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
 import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-native-fixture.mjs';
+import {inactivityNoticeBody} from '../supabase/functions/_shared/inactivity-notice-mail.mjs';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
@@ -1601,13 +1602,87 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     await login(fenced);const fenceAfter=await snapshot(fenced.id);
     need(fenceAfter.activity===null&&fenceAfter.journal===null&&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
     pass('B9_CLAIMS_ACL_AND_EXISTING_POST_PG_FENCE');
+    const automaticCases=[];
+    const automaticMigration='supabase/migrations/20261128073000_account_automatic_erasure_off.sql';
+    const automaticSql=await fs.readFile(path.join(source.root,automaticMigration));
+    await psql(c,p,'NATIVE_AUTOMATIC_ERASURE_INSTALL',automaticSql);
+    const automaticWork=()=>rpc('service_role','public.list_account_automatic_erasure_work()');
+    const prepareAutomatic=async testUser=>{
+      const ready=await qualify(testUser),attempt=crypto.randomUUID(),provider=crypto.randomUUID();
+      const digest=crypto.createHash('sha256').update(JSON.stringify(inactivityNoticeBody(testUser.email))).digest('hex');
+      const claimed=await rpc('service_role',`public.claim_account_inactivity_notice('${ready.noticeId}','${fixtureActorId}',
+        ${BigInt(ready.revision)},'${attempt}','${digest}',${sqlString(testUser.createdAt)})`);
+      assert.equal(claimed.shouldSend,true);
+      const accepted=await acknowledge(claimed,attempt,'accepted',provider);
+      const receipt=await acknowledge(accepted,attempt,'delivered',provider);
+      assert.equal(receipt.state,'DELIVERED');
+      return {receipt,digest};
+    };
+    const advanceNotice=({receipt})=>sql(`update public.account_inactivity_notices set
+      created_at=created_at-interval '31 days',claimed_at=claimed_at-interval '31 days',
+      accepted_at=accepted_at-interval '31 days',delivered_at=delivered_at-interval '31 days',
+      delete_not_before=delete_not_before-interval '31 days' where notice_id='${receipt.noticeId}';`);
+    const stageAutomatic=({receipt,digest},testUser)=>rpc('service_role',`public.stage_account_automatic_erasure(
+      '${receipt.noticeId}',${BigInt(receipt.revision)},${sqlString(testUser.createdAt)},'${digest}')`);
+    const remains=subject=>value(`select to_jsonb(exists(select 1 from auth.users where id='${subject.id}'));`);
+    const toErase=await fresh();
+    const ready=await prepareAutomatic(toErase);
+    await assert.rejects(()=>rpc('authenticated','public.list_account_automatic_erasure_work()'),{code:'SQLSTATE_42501'});
+    assert.deepEqual((await automaticWork()).rows,[]);
+    await assert.rejects(()=>stageAutomatic(ready,toErase),{code:'SQLSTATE_22023'});
+    assert.equal(await remains(toErase),true);
+    automaticCases.push('DEFAULT_OFF_AND_BROWSER_DENIED');
+    await sql('update public.account_automatic_erasure_policy set enabled=true,recovery_qualified=true where singleton;');
+    assert.deepEqual((await automaticWork()).rows,[]);
+    await assert.rejects(()=>stageAutomatic(ready,toErase),{code:'SQLSTATE_22023'});
+    assert.equal(await remains(toErase),true);
+    automaticCases.push('NOT_DUE_PRESERVES_AUTH');
+    await advanceNotice(ready);
+    assert.deepEqual((await automaticWork()).rows.map(row=>[row.noticeId,row.kind]),[[ready.receipt.noticeId,'STAGE']]);
+    await assert.rejects(()=>stageAutomatic({...ready,digest:'0'.repeat(64)},toErase),{code:'SQLSTATE_40001'});
+    const toKeep=await fresh();
+    const cancelledWork=await prepareAutomatic(toKeep);
+    await advanceNotice(cancelledWork);
+    await flags(toKeep.id);
+    await login(toKeep);
+    assert.equal((await status(cancelledWork.receipt)).state,'CANCELLED');
+    await assert.rejects(()=>stageAutomatic(cancelledWork,toKeep),{code:'SQLSTATE_22023'});
+    assert.equal(await remains(toKeep),true);
+    automaticCases.push('CURRENT_AUTH_BINDING_AND_LOGIN_RECHECK');
+    await sql(`insert into public.observations(id,user_id) values (7281,'${toErase.id}');`);
+    const staged=await stageAutomatic(ready,toErase),op=staged.operationId;
+    assert.equal(staged.mode,'AUTOMATIC_INACTIVITY');
+    assert.equal(staged.state,'PG_STAGED_AUTH_PENDING');
+    assert.equal(staged.pgRowsRemoved,1);
+    assert.equal(await remains(toErase),true);
+    await sql('update public.account_automatic_erasure_policy set enabled=false where singleton;');
+    assert.deepEqual((await automaticWork()).rows.map(row=>[row.noticeId,row.kind]),[[op,'RESUME']]);
+    await assert.rejects(()=>rpc('authenticated',`public.get_account_erasure_status('${op}')`),{code:'SQLSTATE_22023'});
+    automaticCases.push('DURABLE_STAGE_AND_SHUTDOWN_SAFE_RESUME');
+    const attempt=crypto.randomUUID(),subject='usr_v1_'+'x'.repeat(43);
+    const authClaim=createdAt=>rpc('service_role',`public.claim_account_erasure_auth('${op}','${fixtureActorId}',
+      null,'${attempt}',${sqlString(createdAt)},'${subject}')`);
+    await assert.rejects(()=>authClaim('2020-01-01T00:00:00Z'),{code:'SQLSTATE_40001'});
+    assert.equal((await authClaim(toErase.createdAt)).shouldIssueDelete,true);
+    await auth(c,p,'/admin/users/'+toErase.id,{token:p.service,body:{should_soft_delete:false},method:'DELETE'});
+    const absent=await auth(c,p,'/admin/users/'+toErase.id,{token:p.service,status:[200,404]});
+    assert.deepEqual(absent,{status:404,user:null});
+    await login(toErase,400);
+    assert.equal(await remains(toKeep),true);
+    const authAck=await rpc('service_role',`public.acknowledge_account_erasure_auth_absent('${op}',
+      '${fixtureActorId}','${attempt}','${attempt}','${subject}')`);
+    assert.equal(authAck.state,'AUTH_ABSENT_D1_PENDING');
+    assert.equal(authAck.complete,false);
+    automaticCases.push('REAL_AUTH_DELETE_AND_PENDING_WITHOUT_D1_ACK');
     return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
       sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
       exactFunctionBodiesVerified:true,appScaffoldingSynthetic:true,realTwoYearHistoryVerified:false,
       storageImagePin:ARCHIVE_VENDOR_IMAGES.storage,storageBootstrap:'OWNED_CLI_FRESH_B_ONE_SHOT',persistentStorageService:false,
       providerDeliverySynthetic:true,mailPostExecuted:false,controllerNoPostProof:'SQL_AUTHORITY_FALSE_ONLY',
       automaticErasureEnabled:false,hostedHookConfigured:false,productionAuthVerified:false,
-      rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases});
+      rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases,
+      isolatedAutomaticErasure:{cases:automaticCases,realAuthDelete:true,d1PhysicalDeletionExecuted:false,
+        syntheticDelivery:true,productionActivation:false}});
   }catch(error){firstError=error;throw error;}
   finally{
     const settled=await Promise.allSettled(pending);

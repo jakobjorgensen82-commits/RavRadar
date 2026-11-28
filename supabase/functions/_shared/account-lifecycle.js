@@ -1,6 +1,7 @@
 import { GatewayError } from './public-gateway.ts';
 import { tripStorageMode } from './trip-store.ts';
-import { deleteCloudflareTrips, externalOwnerSubject, normalizeCloudflareGatewayUrl } from './trip-storage.js';
+import { deleteCloudflareTrips, externalOwnerSubject, normalizeCloudflareGatewayUrl, sha256Hex } from './trip-storage.js';
+import { inactivityNoticeBody } from './inactivity-notice-mail.mjs';
 
 export const MANUAL_ACCOUNT_ERASURE_CONFIRMATION = 'DELETE-MANUAL-ACCOUNT-PERMANENTLY';
 const OPERATIONS = ['account-erasure-prepare', 'account-erasure-status', 'account-erasure-resume', 'account-erasure-list'];
@@ -39,9 +40,9 @@ export function validateManualAccountErasurePayload(payload) {
       || payload.confirmation !== MANUAL_ACCOUNT_ERASURE_CONFIRMATION)) fail('ACCOUNT_ERASURE_INPUT_INVALID', 400);
 }
 
-function checkedStatus(value, operationId, internal = false, claim = false) {
+function checkedStatus(value, operationId, internal = false, claim = false, mode = 'MANUAL_OWNER') {
   if (!sameKeys(value, [...(internal ? SERVICE_KEYS : PUBLIC_KEYS), ...(claim ? ['shouldIssueDelete'] : [])])
-    || value.operationId !== operationId || !id(value.targetUserId) || value.mode !== 'MANUAL_OWNER'
+    || value.operationId !== operationId || !id(value.targetUserId) || value.mode !== mode
     || !STATES.includes(value.state) || !(value.holdReason === null || HOLD_REASONS.includes(value.holdReason))
     || !count(value.pgRowsRemoved) || !(value.d1DeletedCount === null || count(value.d1DeletedCount))
     || ['pgStageCommitted', 'authAbsent', 'd1Acknowledged', 'complete'].some(key => typeof value[key] !== 'boolean')
@@ -151,40 +152,108 @@ export async function runManualAccountErasure(request, actorId, payload) {
     return result;
   }
 
+  return resumeAccountErasure({
+    config, operationId, actorId, attempt: payload.attemptId,
+    stage: () => rpc(config, 'stage_account_erasure_pg', {
+      p_operation: operationId, p_confirmation: 'STAGE-MANUAL-ACCOUNT-PG-ERASURE',
+    }, ownerHeaders),
+  });
+}
+
+const AUTOMATIC_WORK_KEYS = ['noticeId', 'targetUserId', 'actorId', 'revision', 'authUserCreatedAt', 'recipientDigest', 'kind'];
+const AUTOMATIC_BATCH_LIMIT = 2;
+
+export async function runAutomaticAccountErasureBatch() {
+  const config = configuration();
+  const headers = serviceHeaders(configured('SUPABASE_SERVICE_ROLE_KEY'));
+  const work = await rpc(config, 'list_account_automatic_erasure_work', {}, headers);
+  if (!sameKeys(work, ['scope', 'rows']) || work.scope !== 'account-automatic-erasure-work'
+    || !Array.isArray(work.rows) || work.rows.length > AUTOMATIC_BATCH_LIMIT) fail('ACCOUNT_ERASURE_SCHEMA_UNAVAILABLE');
+  const notices = new Set(), subjects = new Set();
+  for (const row of work.rows) {
+    if (!sameKeys(row, AUTOMATIC_WORK_KEYS) || !id(row.noticeId) || !id(row.targetUserId) || !id(row.actorId)
+      || row.actorId === row.targetUserId || notices.has(row.noticeId) || subjects.has(row.targetUserId)
+      || !['STAGE', 'RESUME'].includes(row.kind) || typeof row.revision !== 'string'
+      || !/^[1-9][0-9]{0,18}$/.test(row.revision) || BigInt(row.revision) > 9223372036854775807n
+      || !generation(row.authUserCreatedAt) || typeof row.recipientDigest !== 'string'
+      || !/^[a-f0-9]{64}$/.test(row.recipientDigest)) fail('ACCOUNT_ERASURE_SCHEMA_UNAVAILABLE');
+    notices.add(row.noticeId);
+    subjects.add(row.targetUserId);
+  }
+  const result = { selected: work.rows.length, completed: 0, pending: 0, failed: 0 };
+  const started = performance.now();
+  for (const row of work.rows) {
+    if (performance.now() - started >= 45_000) {
+      result.pending += 1;
+      continue;
+    }
+    try {
+      const status = await resumeAccountErasure({
+        config, operationId: row.noticeId, actorId: row.actorId, attempt: crypto.randomUUID(),
+        automatic: row, stage: () => stageAutomaticAccountErasure(config, headers, row),
+      });
+      if (status.complete) result.completed += 1;
+      else result.pending += 1;
+    } catch {
+      result.failed += 1;
+    }
+  }
+  return result;
+}
+
+async function noticeTargetMatches(user, row) {
+  return user?.id === row.targetUserId && user.created_at === row.authUserCreatedAt
+    && typeof user.email === 'string' && user.email.length <= 254
+    && await sha256Hex(JSON.stringify(inactivityNoticeBody(user.email, false))) === row.recipientDigest;
+}
+
+async function stageAutomaticAccountErasure(config, headers, row) {
+  const response = await requestJson(config.base + '/auth/v1/admin/users/' + row.targetUserId, { method: 'GET', headers });
+  if (response.status !== 200 || !await noticeTargetMatches(response.data, row)) {
+    fail('ACCOUNT_ERASURE_NOTICE_TARGET_CHANGED', 409);
+  }
+  await rpc(config, 'stage_account_automatic_erasure', {
+    p_notice: row.noticeId, p_revision: row.revision, p_auth_user_created_at: row.authUserCreatedAt,
+    p_recipient_digest: row.recipientDigest,
+  }, headers);
+}
+
+async function resumeAccountErasure({ config, operationId, actorId, attempt, stage, automatic = null }) {
   const key = configured('SUPABASE_SERVICE_ROLE_KEY'), headers = serviceHeaders(key);
   const actor = { p_operation: operationId, p_actor: actorId };
-  let boundTarget = null;
+  const mode = automatic ? 'AUTOMATIC_INACTIVITY' : 'MANUAL_OWNER';
+  let boundTarget = automatic?.targetUserId ?? null;
   const serviceStatus = (value, claim = false) => {
-    const status = checkedStatus(value, operationId, true, claim);
+    const status = checkedStatus(value, operationId, true, claim, mode);
     if (status.targetUserId === actorId || boundTarget !== null && status.targetUserId !== boundTarget) fail('ACCOUNT_ERASURE_TARGET_CHANGED', 409);
     boundTarget = status.targetUserId;
     return status;
   };
   const readService = async () => serviceStatus(await rpc(config, 'get_account_erasure_service_status', actor, headers));
-  let status = await readService(); // Require the complete new RPC contract before irreversible PG stage.
-  if (status.complete || held(status)) return publicStatus(status);
+  // A new automatic candidate has no erasure row until atomic inactivity admission.
+  let status = automatic?.kind === 'STAGE' ? null : await readService();
+  if (status && (status.complete || held(status))) return publicStatus(status);
   if (tripStorageMode() !== 'd1') fail('ACCOUNT_ERASURE_STORAGE_NOT_READY');
   const pseudonymSecret = configured('TRIP_PSEUDONYM_SECRET_V1');
-  const owner = await externalOwnerSubject({ userId: status.targetUserId, secret: pseudonymSecret });
+  const owner = await externalOwnerSubject({ userId: status?.targetUserId ?? boundTarget, secret: pseudonymSecret });
   const d1Subject = owner.subject, gatewayUrl = normalizeCloudflareGatewayUrl(configured('CLOUDFLARE_TRIP_GATEWAY_URL')),
     sharedSecret = configured('TRIP_GATEWAY_SHARED_SECRET');
-  if (!subject(d1Subject) || sharedSecret.length < 32 || status.d1OwnerSubject !== null && status.d1OwnerSubject !== d1Subject) {
+  if (!subject(d1Subject) || sharedSecret.length < 32 || status?.d1OwnerSubject && status.d1OwnerSubject !== d1Subject) {
     fail('ACCOUNT_ERASURE_SUBJECT_CHANGED', 409);
   }
-  if (!status.pgStageCommitted) {
-    try { await rpc(config, 'stage_account_erasure_pg', {
-      p_operation: operationId, p_confirmation: 'STAGE-MANUAL-ACCOUNT-PG-ERASURE',
-    }, ownerHeaders); } catch { /* Reconcile the same UUID, never infer commit from HTTP. */ }
+  if (!status?.pgStageCommitted) {
+    try { await stage(); } catch { /* Reconcile the same UUID, never infer commit from HTTP. */ }
     status = await readService();
     if (status.holdReason !== null) return publicStatus(status);
     if (!status.pgStageCommitted) fail('ACCOUNT_ERASURE_OUTCOME_UNKNOWN');
   }
-  const target = status.targetUserId, attempt = payload.attemptId;
+  const target = status.targetUserId;
   const adminRead = async () => {
     const result = await requestJson(config.base + '/auth/v1/admin/users/' + target, { method: 'GET', headers });
     if (result.status === 404 && result.data?.code === 404 && result.data?.error_code === 'user_not_found') return null;
     if (result.status !== 200 || result.data?.id !== target || !generation(result.data.created_at)) fail('ACCOUNT_ERASURE_AUTH_OUTCOME_UNKNOWN');
     if (status.authUserCreatedAt !== null && result.data.created_at !== status.authUserCreatedAt) fail('ACCOUNT_ERASURE_AUTH_GENERATION_CHANGED', 409);
+    if (automatic && !await noticeTargetMatches(result.data, automatic)) fail('ACCOUNT_ERASURE_NOTICE_TARGET_CHANGED', 409);
     return result.data.created_at; // Preserve the exact native string; never round through Date.
   };
   const acknowledgeAbsent = async () => {
