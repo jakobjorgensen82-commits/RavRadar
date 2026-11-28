@@ -1,3 +1,9 @@
+## 28. november — kontovarsling og kontosletning klargjort med automatikken slået fra
+
+Den afgrænsede installation genbruger den almindelige backendvej. Den kræver installeret gendannelsesskema og en frisk genlæsning af den åbne lås. Migreringsplanen accepterer kun de to nye kontoændringer i deres faste rækkefølge. Efter skrivning kontrolleres kataloget, de eksisterende begrænsninger, de nye funktioner og begge kontopolitiske kontakter direkte. Aktivitetsregistrering og automatisk varsling eller sletning er separate trin.
+
+Isoleret PostgreSQL og GoTrue har afprøvet installationen, varslets tidsfrist, login før sletning, sletning af kontoen og dens ture i ti lokale databaser samt beskyttelsen under gendannelse. Mailtransporten var simuleret. Produktionsinstallation og den eksisterende mailleverandørs leveringskvittering mangler fortsat. De tidligere PostgreSQL-kvitteringer beholder deres oprindelige omfang.
+
 ## 25. november — Spørg RavRadars lokale sprogkandidat
 
 Når du skifter sprog i en anden fane, fortsætter Spørg RavRadar på det sprog, den åbne fane viser. Et opfølgende spørgsmål om en anden dag bruger samme samtale og søger i prognosen for den nye dag.

@@ -12,6 +12,10 @@
 
 - Zonepanelet viser fortsat vandstandsprognosen time for time. Det særskilte felt for vandstandsændring over tre timer er fjernet.
 
+## Drift — installation af kontovarsling og kontosletning
+
+- Kontoskemaet kan installeres via den afgrænsede backendvej. Kataloget kontrollerer efter installationen, at automatisk varsling og sletning står slået fra.
+
 ## Drift — vandtemperatur fra allerede hentede DMI-filer
 
 - Den normale sene vandstandsrunde kan genbruge sine kontrollerede IDW- og NSBS-originaler til dokumenterede temperaturhuller. Temperatur læses i en separat proces med en kort frist. Der bruges allerede beregnede gitteropslag, og resultatet skelnes fra ny hentning. Effekten skal måles i almindelig drift.

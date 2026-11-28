@@ -1,3 +1,10 @@
+## 28. november — kontofunktionernes installation og verificering
+
+- [x] Afprøv den isolerede kontoproces mod PostgreSQL, GoTrue og ti lokale turdatabaser. Verificér kataloget og begge kontakter efter installationen.
+- [x] Tilføj den afgrænsede migrationsplan, kontrolleret skrivning og direkte genlæsning til den eksisterende backendvej.
+- [ ] Kvalificér den samlede kilde, og verificér installationen i drift, mens de automatiske funktioner står slået fra.
+- [ ] Verificér aktivitetsregistrering og mailleverandørens leveringskvittering før varsling aktiveres. Verificér den særskilte slette- og gendannelsesgrænse før automatisk sletning aktiveres.
+
 ## 27. november — fysisk stop af upload i fejlbehandlingen
 
 - [x] Knyt gemning og upload til den samme lokale Linux-frist. Lad den indre upload beholde den eksisterende skrivelås og kontrollér gruppens ophør før succes.

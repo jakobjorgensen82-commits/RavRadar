@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: "Bekræft den ønskede binding, kontoændring eller APPLY-TRIP-RECOVERY-SCHEMA"
+        description: "Bekræft den ønskede binding, kontoændring, APPLY-TRIP-RECOVERY-SCHEMA eller APPLY-AUTOMATIC-ACCOUNT-OFF"
         required: true
         type: string
       install_account_erasure:
@@ -24,6 +24,11 @@ on:
         type: string
       trip_erasure_recovery_source_reference:
         description: "Kun APPLY-TRIP-RECOVERY-SCHEMA: FULL-reference fra den eksakt mergede og PostgreSQL-kvalificerede kilde"
+        required: false
+        default: ""
+        type: string
+      automatic_account_off_source_reference:
+        description: "Kun APPLY-AUTOMATIC-ACCOUNT-OFF: FULL-reference fra den eksakt mergede kilde"
         required: false
         default: ""
         type: string
@@ -59,7 +64,7 @@ concurrency:
 
 jobs:
   apply-binding:
-    if: inputs.confirmation != 'APPLY-TRIP-RECOVERY-SCHEMA'
+    if: inputs.confirmation != 'APPLY-TRIP-RECOVERY-SCHEMA' && inputs.confirmation != 'APPLY-AUTOMATIC-ACCOUNT-OFF'
     name: Apply exact database and assistant bindings without touching saved weather
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -467,7 +472,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           RAVRADAR_TRIP_RECOVERY_SOURCE_REFERENCE: ${{ inputs.trip_erasure_recovery_source_reference }}
-          MIXED_MODE: ${{ inputs.install_account_erasure || inputs.install_account_native_receipt || inputs.upgrade_current_grid_original || inputs.diagnose_current_grid_original || inputs.upgrade_assistant_later_h0_original || inputs.account_erasure_source_reference != '' }}
+          MIXED_MODE: ${{ inputs.install_account_erasure || inputs.install_account_native_receipt || inputs.upgrade_current_grid_original || inputs.diagnose_current_grid_original || inputs.upgrade_assistant_later_h0_original || inputs.account_erasure_source_reference != '' || inputs.automatic_account_off_source_reference != '' }}
         run: |
           set -euo pipefail
           test "$MIXED_MODE" = false
@@ -516,3 +521,76 @@ jobs:
           jq -e '.pendingVersions == []' <<< "$plan" > /dev/null
           node scripts/integrated-cutover-readiness.mjs applied --migration-list "$list"
           node scripts/verify-code-only-migration-plan.mjs --read-trip-erasure-recovery-installed
+
+  apply-automatic-account-off:
+    if: inputs.confirmation == 'APPLY-AUTOMATIC-ACCOUNT-OFF'
+    name: Install automatic account schema with automation off
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    env:
+      RAVRADAR_AUTOMATIC_ACCOUNT_OFF_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require the current merged source and isolated account PostgreSQL proof
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RAVRADAR_AUTOMATIC_ACCOUNT_OFF_SOURCE_REFERENCE: ${{ inputs.automatic_account_off_source_reference }}
+          MIXED_MODE: ${{ inputs.install_account_erasure || inputs.install_account_native_receipt || inputs.upgrade_current_grid_original || inputs.diagnose_current_grid_original || inputs.upgrade_assistant_later_h0_original || inputs.account_erasure_source_reference != '' || inputs.trip_erasure_recovery_source_reference != '' }}
+          AUTOMATION_ENABLED: ${{ vars.RAVRADAR_AUTOMATIC_ACCOUNT_ERASURE == 'enabled' || vars.RAVRADAR_AUTOMATIC_ACCOUNT_NOTICES == 'enabled' }}
+        run: |
+          set -euo pipefail
+          test "$MIXED_MODE" = false
+          test "$AUTOMATION_ENABLED" = false
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          node scripts/verify-code-only-migration-plan.mjs --qualify-automatic-account-off-source
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+      - name: Install only the admitted account schema and verify both switches are off
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+        run: |
+          set -euo pipefail
+          umask 077
+          view="$(mktemp -d "$RUNNER_TEMP/automatic-account-off.XXXXXX")"
+          list="$view/migration-list.txt"
+          dry="$view/migration-dry-run.txt"
+          node scripts/verify-code-only-migration-plan.mjs --read-automatic-account-off-predecessor
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir --output "$view" --automatic-account-off-source
+          (cd "$view" && supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD")
+          (cd "$view" && supabase migration list --linked) > "$list"
+          node scripts/integrated-cutover-readiness.mjs hydrate-history --workdir "$view" --migration-list "$list"
+          read_plan() {
+            (cd "$view" && supabase migration list --linked) > "$list" || return 1
+            (cd "$view" && supabase db push --linked --dry-run --skip-vault) > "$dry" 2>&1 || return 1
+            node scripts/integrated-cutover-readiness.mjs automatic-account-off-plan \
+              --migration-list "$list" --dry-run "$dry" --migrations-directory "$view/supabase/migrations"
+          }
+          plan="$(read_plan)"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          if ! jq -e '.pendingVersions == []' <<< "$plan" > /dev/null; then
+            if ! (cd "$view" && supabase db push --linked --skip-vault) > "$view/migration-push.txt" 2>&1; then
+              echo 'Automatic account migration acknowledgment uncertain; checking installed state.'
+            fi
+            plan="$(read_plan)"
+          fi
+          jq -e '.pendingVersions == []' <<< "$plan" > /dev/null
+          node scripts/integrated-cutover-readiness.mjs applied --migration-list "$list"
+          node scripts/verify-code-only-migration-plan.mjs --read-automatic-account-off-installed

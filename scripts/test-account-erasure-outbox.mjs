@@ -480,6 +480,51 @@ test('current80 installation proof modes refuse before transport without exact o
  for(const mode of ['--qualify-account-native-receipt-source','--read-account-native-receipt-before','--read-account-native-receipt-installed']){const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],{env,encoding:'utf8',timeout:15000});assert.equal(result.status,1);assert.equal(result.stdout,'');assert.equal(result.stderr.trim(),'ACCOUNT_NATIVE_RECEIPT_QUALIFIED_INSTALL_EVIDENCE_REQUIRED');}
 });
 
+test('automatic OFF installer validates its existing source proof before any backend access',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const {installedManualAccountCheckReference,qualifyAutomaticAccountOffNative}=await import('./lib/account-automatic-off-install-proof.mjs');
+ const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+ const known=installedManualAccountCheckReference();
+ assert.equal(known.postgresMajor,16);
+ assert.equal(known.definitions.length,28);
+ assert.equal(known.definitionsSha256,'8b2c8cec94df18b5412c71b3719aab82226a88146d4dac55b9ff43041416df2a');
+ for(const mode of ['--qualify-automatic-account-off-source','--read-automatic-account-off-predecessor','--read-automatic-account-off-installed']){
+   const result=spawnSync(process.execPath,['scripts/verify-code-only-migration-plan.mjs',mode],
+     {env,encoding:'utf8',timeout:15000});
+   assert.equal(result.status,1);
+   assert.equal(result.stdout,'');
+   assert.equal(result.stderr.trim(),'AUTOMATIC_ACCOUNT_OFF_INSTALL_REFUSED '+mode);
+ }
+ const head='39ec5aedf193e9ba327e8c724d7d85570ad61447';
+ const readGit=args=>{
+   if(args[0]==='rev-parse')return head;
+   if(args[0]==='diff')throw new Error('CANDIDATE_SQL_INPUT_CHANGED');
+   return '';
+ };
+ await assert.rejects(qualifyAutomaticAccountOffNative(head,{
+   readGit,read:()=>assert.fail('Changed protected input reached GitHub evidence'),
+ }),/CANDIDATE_SQL_INPUT_CHANGED/);
+});
+
+test('automatic OFF workflow has one bounded write followed by authoritative readback',()=>{
+ const workflow=fs.readFileSync(new URL('../.github/workflows/apply-weather-model-binding-only.yml',import.meta.url),'utf8').replaceAll('\r\n','\n');
+ const mode="APPLY-AUTOMATIC-ACCOUNT-OFF";
+ assert(workflow.includes("inputs.confirmation != '"+mode+"'"));
+ const section=workflow.split('\n  apply-automatic-account-off:\n');
+ assert.equal(section.length,2);
+ const job=section[1];
+ for(const required of [
+   "inputs.confirmation == '"+mode+"'", 'group: ravradar-trip-storage-production',
+   'test "$MIXED_MODE" = false','test "$AUTOMATION_ENABLED" = false'
+ ])assert(job.includes(required));
+ const inOrder=['--qualify-automatic-account-off-source','--read-automatic-account-off-predecessor',
+   '--automatic-account-off-source','automatic-account-off-plan','--read-automatic-account-off-installed'];
+ for(let index=1;index<inOrder.length;index++)assert(job.indexOf(inOrder[index])>job.indexOf(inOrder[index-1]));
+ assert.equal(job.match(/supabase db push --linked --skip-vault/g)?.length,1);
+ assert(!job.includes('functions deploy'));
+ assert(!job.includes('--include-all'));
+});
+
 test('trip recovery install qualification requires the exact owned workflow and FULL reference',async()=>{
  const {spawnSync}=await import('node:child_process');
  const {qualifiedTripErasureRecovery}=await import('./source-impact-full-baseline.mjs');
@@ -540,7 +585,8 @@ test('trip recovery schema readback checks catalog restrictions and a genuinely 
 
 test('trip recovery schema workflow is exclusive, has one possible write and always verifies readback',async()=>{
  const workflow=await fs.promises.readFile(new URL('../.github/workflows/apply-weather-model-binding-only.yml',import.meta.url),'utf8');
- const [common,trip]=workflow.split('\n  apply-trip-recovery-schema:');
+ const [common,rest]=workflow.split('\n  apply-trip-recovery-schema:');
+ const [trip]=rest.split('\n  apply-automatic-account-off:');
  assert.match(common,/group: ravradar-weather-production-v2/u);
  assert.match(common,/apply-binding:\s+if: inputs.confirmation != 'APPLY-TRIP-RECOVERY-SCHEMA'/u);
  assert.match(trip,/if: inputs.confirmation == 'APPLY-TRIP-RECOVERY-SCHEMA'/u);
